@@ -110,11 +110,24 @@ docker compose down -v
 
 ## Next Steps
 
-- **Development**: See [development.md](./development.md) for detailed workflow
-- **API Reference**: See [api-endpoints.md](./api-endpoints.md) for complete endpoint documentation
-- **Authentication**: See [authentication.md](./authentication.md) for auth system guide
-- **Configuration**: See [configuration.md](./configuration.md) for all environment options
-- **Architecture**: See [architecture.md](./architecture.md) for system overview
+Now that you have the system running, follow these guides to understand and extend the starter:
+
+### 📚 Learning Path (Read in Order)
+1. **[Architecture Overview](./guides/01-architecture.md)** - System design and why it's built this way
+2. **[Authentication System](./guides/02-authentication.md)** - How secure user sessions work  
+3. **[Foundation Patterns](./guides/03-patterns.md)** - Circuit breakers, retry strategies, dead letter queues
+4. **[Background Tasks](./guides/04-background-tasks.md)** - Async task processing system
+5. **[Custom Task Types](./guides/05-task-types.md)** - Creating your own background tasks
+6. **[Task Registry](./guides/06-task-registry.md)** - Organizing and managing task handlers
+
+### 🔧 Development Resources
+- **[Development Workflow](./development.md)** - Daily development process
+- **[Configuration Reference](./configuration.md)** - All environment variables
+- **[API Reference](./api-reference.md)** - Complete endpoint documentation
+
+### 🆘 When You Need Help
+- **[Troubleshooting](./reference/troubleshooting.md)** - Common issues and solutions
+- **[Built-in Handlers](./reference/task-handlers.md)** - Reference for included task types
 
 ## Quick Commands Reference
 

@@ -1,6 +1,7 @@
 use crate::{
     api::health,
     auth::{api as auth_api, middleware::{auth_middleware, admin_middleware}},
+    tasks::api as tasks_api,
     error::Error,
     types::{AppState, Result},
     config::AppConfig,
@@ -34,6 +35,12 @@ pub fn create_router(state: AppState) -> Router {
         .route("/auth/logout-all", post(auth_api::logout_all))
         .route("/auth/me", get(auth_api::me))
         .route("/auth/refresh", post(auth_api::refresh))
+        // Task management routes
+        .route("/tasks", post(tasks_api::create_task))
+        .route("/tasks", get(tasks_api::list_tasks))
+        .route("/tasks/stats", get(tasks_api::get_stats))
+        .route("/tasks/{id}", get(tasks_api::get_task))
+        .route("/tasks/{id}/cancel", post(tasks_api::cancel_task))
         .layer(middleware::from_fn_with_state(state.clone(), auth_middleware));
 
     // Admin routes (admin role required)

@@ -1,5 +1,5 @@
 use clap::{Parser, Subcommand};
-use starter::{AppConfig, Database, server};
+use starter::{AppConfig, Database, server, tasks};
 
 #[derive(Parser)]
 #[command(name = "starter")]
@@ -45,9 +45,28 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
         Commands::Worker => {
             let config = AppConfig::load()?;
-            let _database = Database::connect(&config).await?;
-            println!("Worker starting with {} concurrency", config.worker.concurrency);
-            // Worker implementation will be added in Phase 5
+            let database = Database::connect(&config).await?;
+            database.migrate().await?;
+            
+            // Create task processor with configuration
+            let processor_config = tasks::processor::ProcessorConfig {
+                poll_interval: config.poll_interval(),
+                task_timeout: std::time::Duration::from_secs(300),
+                max_concurrent_tasks: config.worker.concurrency,
+                batch_size: 50,
+                enable_circuit_breaker: true,
+            };
+            
+            let processor = tasks::processor::TaskProcessor::new(database, processor_config);
+            
+            // Register example task handlers
+            tasks::handlers::register_example_handlers(&processor).await;
+            
+            println!("Background worker starting with {} max concurrent tasks", config.worker.concurrency);
+            
+            // Start the worker loop
+            processor.start_worker().await?;
+            
             Ok(())
         }
     }

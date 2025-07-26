@@ -1,4 +1,4 @@
-# API Endpoints Reference
+# API Reference
 
 This document provides a comprehensive reference for all available API endpoints in the Rust Full-Stack Starter.
 
@@ -297,6 +297,199 @@ Get another user's profile (public information only).
 - `401` - Invalid or expired token
 - `404` - User not found
 
+## Task Management Endpoints
+
+Task endpoints demonstrate background job processing patterns.
+
+### POST /tasks
+
+Create a background task for async processing.
+
+**Authentication**: Required
+
+**Request Body**:
+```json
+{
+  "task_type": "email",
+  "payload": {
+    "to": "recipient@example.com",
+    "subject": "Hello",
+    "body": "Example email task"
+  },
+  "priority": "normal"
+}
+```
+
+**Available Task Types**:
+- `email` - Example email notifications
+- `data_processing` - Simple data operations (sum, count)
+- `webhook` - HTTP request examples
+- `file_cleanup` - File management examples  
+- `report_generation` - Report creation examples
+
+**Response** (201 Created):
+```json
+{
+  "success": true,
+  "data": {
+    "id": "uuid-here",
+    "task_type": "email",
+    "payload": { "to": "recipient@example.com", "subject": "...", "body": "..." },
+    "status": "pending",
+    "priority": "normal",
+    "max_attempts": 3,
+    "current_attempt": 0,
+    "created_at": "2024-01-01T00:00:00Z",
+    "updated_at": "2024-01-01T00:00:00Z",
+    "scheduled_at": "2024-01-01T12:00:00Z",
+    "created_by": "uuid-here",
+    "metadata": { "source": "api" }
+  }
+}
+```
+
+**Error Responses**:
+- `400` - Invalid task type or payload
+- `401` - Authentication required
+
+### GET /tasks
+
+List your background tasks.
+
+**Authentication**: Required
+
+**Query Parameters**:
+- `task_type` (optional): Filter by task type
+- `status` (optional): Filter by status  
+- `limit` (optional): Number of results (default: 100)
+
+**Response** (200 OK):
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": "uuid-here",
+      "task_type": "email",
+      "status": "completed",
+      "priority": "normal",
+      "current_attempt": 1,
+      "created_at": "2024-01-01T00:00:00Z",
+      "completed_at": "2024-01-01T00:01:00Z"
+    }
+  ]
+}
+```
+
+### GET /tasks/{task_id}
+
+Get details about a specific task.
+
+**Authentication**: Required
+
+**Parameters**:
+- `task_id` (path): UUID of the task
+
+**Response** (200 OK):
+```json
+{
+  "success": true,
+  "data": {
+    "id": "uuid-here",
+    "task_type": "email",
+    "payload": { "to": "recipient@example.com", "subject": "...", "body": "..." },
+    "status": "completed",
+    "priority": "normal",
+    "max_attempts": 3,
+    "current_attempt": 1,
+    "last_error": null,
+    "created_at": "2024-01-01T00:00:00Z",
+    "updated_at": "2024-01-01T00:01:00Z",
+    "started_at": "2024-01-01T00:00:30Z",
+    "completed_at": "2024-01-01T00:01:00Z",
+    "created_by": "uuid-here",
+    "metadata": { "source": "api" }
+  }
+}
+```
+
+**Error Responses**:
+- `401` - Authentication required
+- `404` - Task not found
+
+### GET /tasks/stats
+
+Get basic task statistics.
+
+**Authentication**: Required
+
+**Response** (200 OK):
+```json
+{
+  "success": true,
+  "data": {
+    "total": 150,
+    "pending": 5,
+    "running": 2,
+    "completed": 140,
+    "failed": 2,
+    "cancelled": 1,
+    "retrying": 0
+  }
+}
+```
+
+### POST /tasks/{task_id}/cancel
+
+Cancel a pending or retrying task.
+
+**Authentication**: Required
+
+**Parameters**:
+- `task_id` (path): UUID of the task
+
+**Request Body**: None
+
+**Response** (200 OK):
+```json
+{
+  "success": true,
+  "data": "Task cancelled successfully",
+  "message": "Task uuid-here has been cancelled"
+}
+```
+
+**Error Responses**:
+- `401` - Authentication required
+- `404` - Task not found
+- `400` - Task cannot be cancelled (already completed/running)
+
+## Task Types Reference
+
+These are example task types to demonstrate different background job patterns:
+
+### Email Task (`email`)
+```json
+{
+  "to": "user@example.com",
+  "subject": "Hello",
+  "body": "Example message"
+}
+```
+
+### Data Processing Task (`data_processing`)
+```json
+{
+  "operation": "sum",
+  "data": [1, 2, 3, 4, 5]
+}
+```
+
+### Other Task Types
+- `webhook` - HTTP request examples
+- `file_cleanup` - File management examples
+- `report_generation` - Report creation examples
+
 ## Admin Endpoints
 
 ### GET /admin/health
@@ -395,8 +588,9 @@ curl -X POST http://localhost:3000/auth/logout \
 
 ## Testing
 
-Use the provided test script to validate all endpoints:
+Use the provided test scripts to validate all endpoints:
 
+### Authentication Testing
 ```bash
 ./scripts/test_auth.sh
 ```
@@ -408,6 +602,51 @@ This script will:
 - ✅ Test unauthorized access blocking
 - ✅ Test logout functionality
 - ✅ Test invalid credentials
+
+### System Testing
+```bash
+./scripts/test_tasks_integration.sh
+```
+
+This script tests:
+- Authentication flow
+- Task creation and processing  
+- Background worker functionality
+- Basic statistics
+
+### Manual Task Testing
+```bash
+# 1. Start services
+./scripts/server.sh 3000
+./scripts/worker.sh
+
+# 2. Register and login
+curl -X POST http://localhost:3000/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{"username":"testuser","email":"test@example.com","password":"password123"}'
+
+TOKEN=$(curl -s -X POST http://localhost:3000/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"username_or_email":"testuser","password":"password123"}' \
+  | python3 -c "import json,sys; print(json.load(sys.stdin)['data']['session_token'])")
+
+# 3. Create and monitor task
+curl -X POST http://localhost:3000/tasks \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "task_type": "email",
+    "payload": {
+      "to": "test@example.com",
+      "subject": "Test Email",
+      "body": "Hello from background worker!"
+    },
+    "priority": "normal"
+  }'
+
+# 4. Check task statistics
+curl -H "Authorization: Bearer $TOKEN" http://localhost:3000/tasks/stats
+```
 
 ## Error Handling
 

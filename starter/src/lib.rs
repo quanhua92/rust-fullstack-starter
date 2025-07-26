@@ -7,6 +7,7 @@ pub mod api;
 pub mod server;
 pub mod auth;
 pub mod users;
+pub mod tasks;
 
 // Re-export common types
 pub use config::AppConfig;
