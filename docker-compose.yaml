@@ -1,0 +1,36 @@
+# This file defines the services, networks, and volumes for the local development environment.
+# It uses environment variables defined in a `.env` file for configuration.
+
+services:
+  # -------------------------------------
+  # -- PostgreSQL Database Service
+  # -------------------------------------
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: ${STARTER__DATABASE__USER}
+      POSTGRES_PASSWORD: ${STARTER__DATABASE__PASSWORD}
+      POSTGRES_DB: ${STARTER__DATABASE__DATABASE}
+      # Set PostgreSQL configuration via environment
+      POSTGRES_INITDB_ARGS: "--auth-host=scram-sha-256"
+    command: >
+      postgres
+      -c max_connections=1000
+      -c shared_buffers=256MB
+      -c effective_cache_size=1GB
+    ports:
+      # By specifying 127.0.0.1, we ensure the database is only accessible
+      # from the host machine itself (localhost).   
+      - "127.0.0.1:${STARTER__DATABASE__PORT}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${STARTER__DATABASE__USER} -d ${STARTER__DATABASE__DATABASE}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+# Named volumes for persistent data storage
+volumes:
+  postgres_data:
