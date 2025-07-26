@@ -111,6 +111,8 @@ docker compose down -v
 ## Next Steps
 
 - **Development**: See [development.md](./development.md) for detailed workflow
+- **API Reference**: See [api-endpoints.md](./api-endpoints.md) for complete endpoint documentation
+- **Authentication**: See [authentication.md](./authentication.md) for auth system guide
 - **Configuration**: See [configuration.md](./configuration.md) for all environment options
 - **Architecture**: See [architecture.md](./architecture.md) for system overview
 

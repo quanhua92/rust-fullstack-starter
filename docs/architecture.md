@@ -4,7 +4,7 @@ This document provides a high-level overview of the Rust Full-Stack Starter proj
 
 ## System Overview
 
-The Rust Full-Stack Starter is designed as a production-ready foundation for building full-stack web applications. It follows clean architecture principles with clear separation of concerns.
+The Rust Full-Stack Starter provides a well-structured foundation for learning and building full-stack web applications. It demonstrates clean architecture principles with clear separation of concerns.
 
 ```
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
@@ -63,7 +63,7 @@ Default Values → Environment Variables → CLI Arguments → Runtime Config
 
 ### 3. Database Layer
 
-Production-ready PostgreSQL integration with:
+Robust PostgreSQL integration with:
 
 - **Connection Pooling**: Configurable min/max connections with timeouts
 - **Migrations**: Version-controlled schema changes with sqlx
@@ -117,7 +117,52 @@ Core business entities and their relationships:
 - **ApiKey**: Machine-to-machine authentication
 - **Task**: Background job processing
 
-### 3. Dependency Injection
+### 3. Modular Architecture
+
+The codebase follows a modular pattern where related functionality is grouped into self-contained modules:
+
+```rust
+// Each module contains its own api, models, and services
+src/auth/           -- Authentication domain
+├── api.rs          -- HTTP endpoints
+├── models.rs       -- Domain models  
+├── services.rs     -- Business logic
+└── middleware.rs   -- Auth guards
+
+src/users/          -- User management domain
+├── api.rs          -- HTTP endpoints
+├── models.rs       -- Domain models
+└── services.rs     -- Business logic
+```
+
+**Key Principles:**
+- **Domain Separation**: Each module owns its domain logic
+- **Service Layer**: Functions take `&mut DbConn` as first parameter
+- **API Layer**: Handlers acquire connections and pass to services
+- **Model Layer**: Domain-specific types and validation
+
+**Service Layer Pattern:**
+```rust
+// Services take database connections as first parameter
+pub async fn create_user(
+    conn: &mut DbConn,
+    req: CreateUserRequest,
+) -> Result<UserProfile> {
+    // Business logic here
+}
+
+// API handlers acquire connections
+pub async fn register(
+    State(app_state): State<AppState>,
+    Json(payload): Json<CreateUserRequest>,
+) -> Result<Json<ApiResponse<UserProfile>>, Error> {
+    let mut conn = app_state.database.pool.acquire().await?;
+    let user_profile = user_services::create_user(&mut conn, payload).await?;
+    Ok(Json(ApiResponse::success(user_profile)))
+}
+```
+
+### 4. Dependency Injection
 
 Configuration and database connections are injected through application state:
 
@@ -150,7 +195,6 @@ sessions        -- User session management
 ├── token (unique)
 ├── expires_at
 ├── user_agent
-├── ip_address
 └── timestamps
 
 api_keys        -- Machine authentication
@@ -180,23 +224,59 @@ tasks           -- Background job queue
 4. **Indexes**: Performance-optimized indexes on frequently queried columns
 5. **Constraints**: Data integrity enforced at database level
 
-## Security Architecture
+## Authentication Architecture
+
+### Session-Based Authentication
+
+The starter implements a session-based authentication system using secure tokens:
+
+```rust
+// Session model
+pub struct Session {
+    pub id: Uuid,
+    pub user_id: Uuid,
+    pub token: String,        // 64-character alphanumeric
+    pub expires_at: DateTime<Utc>,  // 24-hour expiry
+    pub user_agent: Option<String>,
+    pub is_active: bool,
+}
+```
 
 ### Authentication Flow
 
-```
-1. User Login → Password Verification → Session Creation
-2. Request with Session Token → Session Validation → User Context
-3. Session Expiry → Cleanup Process → Token Invalidation
+```mermaid
+sequenceDiagram
+    participant C as Client
+    participant A as Auth API
+    participant M as Middleware
+    participant S as Services
+    participant D as Database
+
+    C->>A: POST /auth/login {email, password}
+    A->>S: auth::login(conn, request)
+    S->>D: Find user by email
+    S->>S: Verify password (Argon2)
+    S->>D: Create session with token
+    A->>C: {session_token, expires_at, user}
+
+    C->>M: GET /auth/me (Bearer token)
+    M->>S: validate_session_with_user(conn, token)
+    S->>D: Find session + user
+    M->>M: Add AuthUser to request
+    M->>A: Continue to handler
+    A->>C: {user_profile}
 ```
 
 ### Security Features
 
 - **Password Hashing**: Argon2 with secure defaults
-- **Session Management**: Secure token generation and validation
-- **API Key Authentication**: Machine-to-machine access
+- **Session Tokens**: 64-character cryptographically secure tokens
+- **Token Validation**: Middleware validates tokens on protected routes
+- **Session Expiry**: Automatic 24-hour expiration with cleanup
 - **Role-Based Access**: Admin/user role separation
 - **SQL Injection Prevention**: Parameterized queries only
+
+For detailed API endpoint documentation, see [api-endpoints.md](./api-endpoints.md).
 
 ## Performance Considerations
 
@@ -242,10 +322,22 @@ src/
 ├── database.rs     -- Database connection and migrations
 ├── error.rs        -- Error types and HTTP conversion
 ├── types.rs        -- Common type definitions
-├── models.rs       -- Domain models and validation
-├── api/            -- HTTP handlers and routing (future)
-├── auth/           -- Authentication and authorization (future)
-└── worker/         -- Background job processing (future)
+├── models.rs       -- Legacy models (being phased out)
+├── server.rs       -- HTTP server and routing
+├── api/            -- Shared API handlers (health checks)
+├── auth/           -- Authentication module
+│   ├── mod.rs      -- Module exports
+│   ├── api.rs      -- Auth endpoints (login, register, logout)
+│   ├── models.rs   -- Auth models (Session, LoginRequest)
+│   ├── services.rs -- Auth business logic
+│   ├── middleware.rs -- Auth middleware and guards
+│   ├── cleanup.rs  -- Session cleanup jobs
+│   └── tests.rs    -- Auth tests
+└── users/          -- User management module
+    ├── mod.rs      -- Module exports
+    ├── api.rs      -- User endpoints (profile, management)
+    ├── models.rs   -- User models (User, UserProfile)
+    └── services.rs -- User business logic
 ```
 
 ### Testing Strategy
@@ -264,28 +356,30 @@ src/
 
 ## Future Architecture
 
-### Current Implementation (Phase 3)
+### Current Implementation
 
 ✅ **HTTP API Layer**: Basic Axum server with health endpoints  
 ✅ **Database Layer**: PostgreSQL with SQLx and migrations  
+✅ **Authentication**: Session-based auth with middleware
+✅ **User Management**: Registration, login, and profile management
 ✅ **Error Handling**: Custom error types with HTTP conversion  
 ✅ **Configuration**: Environment-based configuration system  
 ✅ **Development Scripts**: Automated server management
 
-### Planned Extensions
+### Potential Extensions
 
-1. **Authentication Middleware**: Session and API key validation (Phase 4)
-2. **Business Logic Services**: User management, data processing
-3. **Background Workers**: Task processing and scheduling
-4. **Frontend Integration**: React or similar SPA framework
+1. **Background Workers**: Task processing and scheduling
+2. **Frontend Integration**: React or similar SPA framework
+3. **API Keys**: Machine-to-machine authentication
+4. **Advanced Features**: File upload, email, notifications
 
 ### Technology Choices
 
 - **Web Framework**: Axum (fast, type-safe, async)
 - **Database**: PostgreSQL (ACID compliance, JSON support)
-- **Authentication**: Session-based (scalable, secure)
-- **Background Jobs**: Database-backed queue (simple, reliable)
-- **Deployment**: Docker containers (portable, consistent)
+- **Authentication**: Session-based (simple, secure)
+- **Background Jobs**: Database-backed queue (straightforward, reliable)
+- **Development**: Docker containers (consistent environment)
 
 ## Operational Considerations
 
