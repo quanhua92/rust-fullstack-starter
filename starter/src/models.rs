@@ -67,7 +67,6 @@ pub struct Session {
     pub updated_at: DateTime<Utc>,
     pub last_activity_at: DateTime<Utc>,
     pub user_agent: Option<String>,
-    pub ip_address: Option<std::net::IpAddr>,
     pub is_active: bool,
 }
 
@@ -151,7 +150,6 @@ pub struct LoginRequest {
     pub username_or_email: String,
     pub password: String,
     pub user_agent: Option<String>,
-    pub ip_address: Option<String>,
 }
 
 impl LoginRequest {

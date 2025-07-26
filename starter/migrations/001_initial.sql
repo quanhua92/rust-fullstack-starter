@@ -28,7 +28,6 @@ CREATE TABLE sessions (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     last_activity_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     user_agent TEXT,
-    ip_address INET,
     is_active BOOLEAN NOT NULL DEFAULT true
 );
 

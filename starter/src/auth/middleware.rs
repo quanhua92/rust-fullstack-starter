@@ -1,0 +1,129 @@
+use axum::{
+    extract::{Request, State},
+    middleware::Next,
+    response::Response,
+    http::StatusCode,
+};
+use crate::types::AppState;
+use crate::auth::services;
+use uuid::Uuid;
+
+#[derive(Debug, Clone, serde::Serialize)]
+pub struct AuthUser {
+    pub id: Uuid,
+    pub username: String,
+    pub email: String,
+    pub role: String,
+}
+
+/// Extract Bearer token from Authorization header
+fn extract_bearer_token(req: &Request) -> Option<String> {
+    req.headers()
+        .get("authorization")
+        .and_then(|header| header.to_str().ok())
+        .and_then(|auth_header| {
+            if auth_header.starts_with("Bearer ") {
+                Some(auth_header[7..].to_string())
+            } else {
+                None
+            }
+        })
+}
+
+/// Session-based authentication middleware
+pub async fn auth_middleware(
+    State(app_state): State<AppState>,
+    mut req: Request,
+    next: Next,
+) -> Result<Response, StatusCode> {
+    // Extract token from Authorization header
+    let token = match extract_bearer_token(&req) {
+        Some(token) => token,
+        None => return Err(StatusCode::UNAUTHORIZED),
+    };
+    
+    // Get database connection
+    let mut conn = match app_state.database.pool.acquire().await {
+        Ok(conn) => conn,
+        Err(_) => {
+            tracing::error!("Failed to acquire database connection");
+            return Err(StatusCode::INTERNAL_SERVER_ERROR);
+        }
+    };
+    
+    // Validate session and get user
+    let user = match services::validate_session_with_user(&mut conn, &token).await {
+        Ok(Some(user)) => user,
+        Ok(None) => {
+            tracing::debug!("Invalid or expired session token");
+            return Err(StatusCode::UNAUTHORIZED);
+        }
+        Err(e) => {
+            tracing::error!("Error validating session: {}", e);
+            return Err(StatusCode::INTERNAL_SERVER_ERROR);
+        }
+    };
+    
+    // Check if user is active
+    if !user.is_active {
+        tracing::debug!("User {} is not active", user.id);
+        return Err(StatusCode::UNAUTHORIZED);
+    }
+    
+    // Add user info to request extensions
+    req.extensions_mut().insert(AuthUser {
+        id: user.id,
+        username: user.username,
+        email: user.email,
+        role: user.role,
+    });
+    
+    Ok(next.run(req).await)
+}
+
+/// Optional authentication middleware - sets user if token is valid but doesn't require auth
+pub async fn optional_auth_middleware(
+    State(app_state): State<AppState>,
+    mut req: Request,
+    next: Next,
+) -> Response {
+    // Try to extract token
+    if let Some(token) = extract_bearer_token(&req) {
+        // Try to get database connection
+        if let Ok(mut conn) = app_state.database.pool.acquire().await {
+            // Try to validate session
+            if let Ok(Some(user)) = services::validate_session_with_user(&mut conn, &token).await {
+                if user.is_active {
+                    // Add user info to request extensions
+                    req.extensions_mut().insert(AuthUser {
+                        id: user.id,
+                        username: user.username,
+                        email: user.email,
+                        role: user.role,
+                    });
+                }
+            }
+        }
+    }
+    
+    next.run(req).await
+}
+
+/// Admin-only middleware (requires auth_middleware to run first)
+pub async fn admin_middleware(
+    req: Request,
+    next: Next,
+) -> Result<Response, StatusCode> {
+    // Get authenticated user from request extensions
+    let auth_user = req.extensions()
+        .get::<AuthUser>()
+        .ok_or(StatusCode::UNAUTHORIZED)?;
+    
+    // Check if user is admin
+    if auth_user.role != "admin" {
+        tracing::debug!("User {} attempted to access admin endpoint", auth_user.id);
+        return Err(StatusCode::FORBIDDEN);
+    }
+    
+    Ok(next.run(req).await)
+}

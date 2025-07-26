@@ -1,13 +1,15 @@
 use crate::{
     api::health,
+    auth::{api as auth_api, middleware::{auth_middleware, admin_middleware}},
     error::Error,
     types::{AppState, Result},
     config::AppConfig,
     database::Database,
 };
 use axum::{
-    routing::get,
+    routing::{get, post},
     Router,
+    middleware,
 };
 use tokio::net::TcpListener;
 use tower::ServiceBuilder;
@@ -19,11 +21,32 @@ use tracing::info;
 
 /// Create the application router with all routes and middleware
 pub fn create_router(state: AppState) -> Router {
-    Router::new()
-        // Health endpoints
+    // Public routes (no authentication required)
+    let public_routes = Router::new()
         .route("/health", get(health::health_check))
         .route("/health/detailed", get(health::health_detailed))
-        // Add state and middleware
+        .route("/auth/login", post(auth_api::login))
+        .route("/auth/register", post(auth_api::register));
+
+    // Protected routes (authentication required)
+    let protected_routes = Router::new()
+        .route("/auth/logout", post(auth_api::logout))
+        .route("/auth/logout-all", post(auth_api::logout_all))
+        .route("/auth/me", get(auth_api::me))
+        .route("/auth/refresh", post(auth_api::refresh))
+        .layer(middleware::from_fn_with_state(state.clone(), auth_middleware));
+
+    // Admin routes (admin role required)
+    let admin_routes = Router::new()
+        .route("/admin/health", get(health::health_detailed))
+        .layer(middleware::from_fn(admin_middleware))
+        .layer(middleware::from_fn_with_state(state.clone(), auth_middleware));
+
+    // Combine all routes
+    Router::new()
+        .merge(public_routes)
+        .merge(protected_routes)
+        .merge(admin_routes)
         .with_state(state)
         .layer(
             ServiceBuilder::new()

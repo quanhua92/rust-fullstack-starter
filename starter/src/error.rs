@@ -35,6 +35,9 @@ pub enum Error {
     InvalidInput(String),
     
     // Business logic errors
+    #[error("Not found: {0}")]
+    NotFound(String),
+    
     #[error("User not found")]
     UserNotFound,
     
@@ -155,6 +158,11 @@ impl IntoResponse for Error {
                 StatusCode::BAD_REQUEST,
                 msg.clone(),
                 "INVALID_INPUT",
+            ),
+            Error::NotFound(msg) => (
+                StatusCode::NOT_FOUND,
+                msg.clone(),
+                "NOT_FOUND",
             ),
             Error::UserNotFound => (
                 StatusCode::NOT_FOUND,

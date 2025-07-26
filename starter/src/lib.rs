@@ -5,6 +5,8 @@ pub mod database;
 pub mod models;
 pub mod api;
 pub mod server;
+pub mod auth;
+pub mod users;
 
 // Re-export common types
 pub use config::AppConfig;
