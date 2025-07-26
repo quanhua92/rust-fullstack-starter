@@ -116,6 +116,25 @@ docker compose down -v
 
 ## Quick Commands Reference
 
+### Using Development Scripts (Recommended)
+```bash
+# Complete development setup
+./scripts/dev-server.sh [port]
+
+# Start server with auto-restart
+./scripts/server.sh [port]
+
+# Test server health
+./scripts/test-server.sh [port]
+
+# Stop server
+./scripts/stop-server.sh [port]
+
+# Infrastructure only
+./scripts/dev.sh
+```
+
+### Manual Commands
 ```bash
 # Start infrastructure
 docker compose up -d
@@ -132,3 +151,10 @@ cargo run -- worker
 # Stop everything
 docker compose down
 ```
+
+### Script Features
+- **Auto-kill existing processes** on port
+- **Background execution** with PID tracking
+- **Log management** with 50MB rotation in `/tmp/`
+- **Health endpoint testing** with timeout
+- **Graceful shutdown** with cleanup

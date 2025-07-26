@@ -6,11 +6,13 @@ This guide covers the development workflow, tools, and best practices for the Ru
 
 ### Quick Start
 ```bash
-# Start all development services
-./scripts/dev.sh
+# Complete development environment (recommended)
+./scripts/dev-server.sh 3000
 
-# In another terminal, start the application
-cargo run -- server
+# Or step by step
+./scripts/dev.sh                    # Start infrastructure
+./scripts/server.sh 3000            # Start server in background
+./scripts/test-server.sh 3000       # Verify it's working
 ```
 
 ### Manual Setup
@@ -36,7 +38,11 @@ rust-fullstack-starter/
 ├── docker-compose.yaml        # Database infrastructure
 ├── .env.example               # Environment template
 ├── scripts/
-│   └── dev.sh                 # Development startup script
+│   ├── dev.sh                 # Infrastructure startup
+│   ├── server.sh              # Start server with auto-restart
+│   ├── test-server.sh         # Test health endpoints
+│   ├── stop-server.sh         # Stop server processes
+│   └── dev-server.sh          # Complete development workflow
 ├── docs/                      # Documentation
 └── starter/                   # Main application
     ├── Cargo.toml             # Application dependencies
@@ -292,6 +298,12 @@ SELECT * FROM pg_stat_user_tables;
 
 ### Reset Everything
 ```bash
+# Using scripts (recommended)
+./scripts/stop-server.sh 3000
+docker compose down -v
+./scripts/dev-server.sh 3000
+
+# Manual approach
 docker compose down -v
 docker compose up -d postgres
 sqlx migrate run
@@ -300,10 +312,31 @@ cargo run -- server
 
 ### Quick Health Check
 ```bash
-# Check all components
+# Using scripts
+./scripts/test-server.sh 3000
+
+# Manual approach
 docker compose ps
 cargo check
 psql $DATABASE_URL -c "SELECT 1"
+```
+
+### Development Scripts Workflow
+```bash
+# Start development environment
+./scripts/dev-server.sh 3000
+
+# During development - restart server
+./scripts/server.sh 3000
+
+# Test changes
+./scripts/test-server.sh 3000
+
+# View logs
+tail -f /tmp/starter-server-3000.log
+
+# Stop when done
+./scripts/stop-server.sh 3000
 ```
 
 ### Add New Dependencies

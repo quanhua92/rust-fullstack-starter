@@ -1,4 +1,4 @@
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize, Deserializer};
 use secrecy::SecretString;
 use std::time::Duration;
 use crate::types::Result;
@@ -18,6 +18,7 @@ pub struct AppConfig {
 pub struct ServerConfig {
     pub host: String,
     pub port: u16,
+    #[serde(deserialize_with = "deserialize_cors_origins")]
     pub cors_origins: Vec<String>,
     pub request_timeout_secs: u64,
 }
@@ -224,6 +225,48 @@ impl Default for AppConfig {
     }
 }
 
+/// Custom deserializer for CORS origins that handles comma-separated strings
+fn deserialize_cors_origins<'de, D>(deserializer: D) -> std::result::Result<Vec<String>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    use serde::de::{self, Visitor};
+    use std::fmt;
+
+    struct CorsOriginsVisitor;
+
+    impl<'de> Visitor<'de> for CorsOriginsVisitor {
+        type Value = Vec<String>;
+
+        fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+            formatter.write_str("a string of comma-separated CORS origins or an array of strings")
+        }
+
+        fn visit_str<E>(self, value: &str) -> std::result::Result<Self::Value, E>
+        where
+            E: de::Error,
+        {
+            Ok(value
+                .split(',')
+                .map(|s| s.trim().to_string())
+                .filter(|s| !s.is_empty())
+                .collect())
+        }
+
+        fn visit_seq<A>(self, mut seq: A) -> std::result::Result<Self::Value, A::Error>
+        where
+            A: de::SeqAccess<'de>,
+        {
+            let mut vec = Vec::new();
+            while let Some(value) = seq.next_element()? {
+                vec.push(value);
+            }
+            Ok(vec)
+        }
+    }
+
+    deserializer.deserialize_any(CorsOriginsVisitor)
+}
 
 // Conversion from config::ConfigError to our Error type
 impl From<config::ConfigError> for Error {

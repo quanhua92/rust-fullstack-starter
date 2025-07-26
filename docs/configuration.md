@@ -20,7 +20,7 @@ Controls the HTTP server behavior.
 |----------|---------|-------------|
 | `STARTER__SERVER__HOST` | `127.0.0.1` | Server bind address |
 | `STARTER__SERVER__PORT` | `8080` | Server port (overridden by CLI) |
-| `STARTER__SERVER__CORS_ORIGINS` | `["http://localhost:5173"]` | Allowed CORS origins (JSON array) |
+| `STARTER__SERVER__CORS_ORIGINS` | `"http://localhost:5173"` | Allowed CORS origins (comma-separated) |
 | `STARTER__SERVER__REQUEST_TIMEOUT_SECS` | `30` | HTTP request timeout in seconds |
 
 **Examples:**
@@ -28,8 +28,8 @@ Controls the HTTP server behavior.
 # Bind to all interfaces
 STARTER__SERVER__HOST=0.0.0.0
 
-# Multiple CORS origins
-STARTER__SERVER__CORS_ORIGINS=["http://localhost:3000","http://localhost:5173"]
+# Multiple CORS origins (comma-separated)
+STARTER__SERVER__CORS_ORIGINS="http://localhost:3000,http://localhost:5173"
 
 # Longer timeout for slow requests
 STARTER__SERVER__REQUEST_TIMEOUT_SECS=60

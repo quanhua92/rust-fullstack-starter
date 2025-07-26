@@ -1,5 +1,5 @@
 use clap::{Parser, Subcommand};
-use starter::{AppConfig, Database};
+use starter::{AppConfig, Database, server};
 
 #[derive(Parser)]
 #[command(name = "starter")]
@@ -30,13 +30,17 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     
     match cli.command {
         Commands::Server { port } => {
-            let config = AppConfig::load()?;
+            let mut config = AppConfig::load()?;
+            // Override port from CLI if provided
+            if port != 8080 {
+                config.server.port = port;
+            }
+            
             let database = Database::connect(&config).await?;
             database.migrate().await?;
             database.ensure_initial_admin(&config).await?;
             
-            println!("Server starting on port {} (config: {})", port, config.server.host);
-            // Server implementation will be added in Phase 3
+            server::start_server(config, database).await?;
             Ok(())
         }
         Commands::Worker => {

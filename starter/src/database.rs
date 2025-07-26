@@ -1,6 +1,7 @@
 use sqlx::{PgPool, postgres::PgPoolOptions, migrate::MigrateDatabase, Postgres};
 use crate::{config::AppConfig, types::Result, error::Error};
 
+#[derive(Clone)]
 pub struct Database {
     pub pool: PgPool,
 }
