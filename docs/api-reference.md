@@ -592,29 +592,28 @@ curl -X POST http://localhost:3000/auth/logout \
 
 Use the provided test scripts to validate all endpoints:
 
-### Authentication Testing
+### Comprehensive Testing
 ```bash
-./scripts/test_auth.sh
+# Install faster test runner (recommended)
+cargo install cargo-nextest
+
+# Run all 38 integration tests (~10 seconds)
+cargo nextest run
+
+# Run specific test categories
+cargo nextest run auth::     # Authentication tests (6 tests)
+cargo nextest run tasks::    # Task system tests (11 tests)
+cargo nextest run api::      # API standards tests
+cargo nextest run health::   # Health check tests
 ```
 
-This script will:
-- ✅ Test user registration
-- ✅ Test user login
-- ✅ Test protected route access
-- ✅ Test unauthorized access blocking
-- ✅ Test logout functionality
-- ✅ Test invalid credentials
-
-### System Testing
-```bash
-./scripts/test_tasks_integration.sh
-```
-
-This script tests:
-- Authentication flow
-- Task creation and processing  
-- Background worker functionality
-- Basic statistics
+The integration test suite covers:
+- ✅ User registration and authentication (6 tests)
+- ✅ Task creation and processing (11 tests)
+- ✅ Background worker functionality
+- ✅ API standards and security headers
+- ✅ Health monitoring endpoints
+- ✅ Error handling and edge cases
 
 ### Manual Task Testing
 ```bash

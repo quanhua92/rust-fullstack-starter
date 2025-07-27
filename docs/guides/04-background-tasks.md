@@ -532,17 +532,20 @@ tail -f /tmp/starter-worker.log
 
 ### Testing End-to-End
 ```bash
-# Complete integration test
-./scripts/test_tasks_integration.sh
+# Run task system tests (11 comprehensive tests)
+cargo nextest run tasks::
+
+# Run all tests including background tasks
+cargo nextest run
 ```
 
-This script:
-1. Starts server and worker
-2. Creates user and logs in
-3. Creates various task types
-4. Waits for processing
-5. Verifies completion
-6. Checks statistics
+The task integration tests cover:
+1. Task creation via API
+2. Different task types and priorities
+3. Background worker processing
+4. Task status tracking and updates
+5. Statistics and monitoring
+6. Error handling and retry logic
 
 ### Manual Testing
 ```bash

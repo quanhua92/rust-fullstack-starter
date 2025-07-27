@@ -48,15 +48,16 @@ impl Database {
     pub async fn ensure_initial_admin(&self, config: &AppConfig) -> Result<()> {
         use secrecy::ExposeSecret;
         
-        // Only create admin if password is configured and no admin exists
+        // Check if any admin users exist
+        let admin_count: i64 = sqlx::query_scalar(
+            "SELECT COUNT(*) FROM users WHERE role = 'admin'"
+        )
+        .fetch_one(&self.pool)
+        .await
+        .map_err(Error::Database)?;
+
         if let Some(admin_password) = &config.initial_admin_password {
-            let admin_count: i64 = sqlx::query_scalar(
-                "SELECT COUNT(*) FROM users WHERE role = 'admin'"
-            )
-            .fetch_one(&self.pool)
-            .await
-            .map_err(Error::Database)?;
-            
+            // Admin password is configured
             if admin_count == 0 {
                 // Hash the password using Argon2
                 use argon2::{Argon2, PasswordHasher};
@@ -80,7 +81,23 @@ impl Database {
                 .await
                 .map_err(Error::Database)?;
                 
-                tracing::info!("Created initial admin user");
+                tracing::info!("✅ Created initial admin user (username: admin)");
+            } else {
+                tracing::info!("Admin user already exists, skipping creation");
+            }
+        } else {
+            // No admin password configured - warn only if no admin exists
+            if admin_count == 0 {
+                tracing::warn!("═══════════════════════════════════════════════════════════════");
+                tracing::warn!("⚠️  NO INITIAL ADMIN USER CREATED");
+                tracing::warn!("   No STARTER__INITIAL_ADMIN_PASSWORD environment variable set");
+                tracing::warn!("   To create an admin user:");
+                tracing::warn!("   1. Set STARTER__INITIAL_ADMIN_PASSWORD in .env");
+                tracing::warn!("   2. Restart the server");
+                tracing::warn!("   3. Remove the password from .env after first startup");
+                tracing::warn!("═══════════════════════════════════════════════════════════════");
+            } else {
+                tracing::info!("Admin user exists, no initial admin password needed");
             }
         }
         Ok(())

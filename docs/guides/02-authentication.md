@@ -292,17 +292,22 @@ pub async fn login_handler(
 
 ## Testing Authentication
 
-### Test Script
+### Authentication Tests
 ```bash
-./scripts/test_auth.sh
+# Run authentication tests (6 comprehensive tests)
+cargo nextest run auth::
+
+# Or run all tests including authentication
+cargo nextest run
 ```
 
-This script tests:
+The authentication test suite covers:
 - User registration with validation
 - Login with correct/incorrect credentials  
 - Protected route access with/without tokens
-- Token expiration and cleanup
-- Logout functionality
+- Token validation and security
+- Session management and logout
+- Error handling and edge cases
 
 ### Manual Testing
 ```bash

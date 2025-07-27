@@ -583,14 +583,15 @@ psql $DATABASE_URL -c "SELECT token, expires_at, is_active FROM sessions WHERE t
 
 1. **Clean test environment:**
    ```bash
-   ./scripts/reset-all.sh
-   ./scripts/test_tasks_integration.sh
+   ./scripts/reset-all.sh --reset-database
+   cargo nextest run
    ```
 
-2. **Run tests individually:**
+2. **Run tests by category:**
    ```bash
-   ./scripts/test_auth.sh
-   ./scripts/test-server.sh 3000
+   cargo nextest run auth::     # Authentication tests
+   cargo nextest run tasks::    # Task system tests
+   ./scripts/test-server.sh 3000  # Manual server health test
    ```
 
 3. **Check test dependencies:**
@@ -715,7 +716,7 @@ netstat -tlnp | grep :3000  # Network connections
 3. **Test Changes:**
    ```bash
    # Always test after changes
-   ./scripts/test_tasks_integration.sh
+   cargo nextest run
    ```
 
 4. **Keep Logs Rotated:**
@@ -725,4 +726,4 @@ netstat -tlnp | grep :3000  # Network connections
    ```
 
 ---
-*When in doubt, try the "reset everything" approach: `./scripts/reset-all.sh` followed by `./scripts/test_tasks_integration.sh`*
+*When in doubt, try the "reset everything" approach: `./scripts/reset-all.sh --reset-database` followed by `cargo nextest run`*

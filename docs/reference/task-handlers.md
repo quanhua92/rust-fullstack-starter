@@ -528,8 +528,8 @@ All handlers receive:
 
 ### Integration Test Script
 ```bash
-# Test all built-in handlers
-./scripts/test_tasks_integration.sh
+# Test all built-in handlers (11 task tests included)
+cargo nextest run tasks::
 ```
 
 ### Manual Testing

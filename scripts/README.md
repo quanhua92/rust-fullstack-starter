@@ -95,23 +95,27 @@ Gracefully stop background worker.
 
 ## 🧪 Testing & Integration
 
-### `test_auth.sh`
-Comprehensive authentication system testing - registration, login, sessions, security.
+### Rust Integration Tests (Recommended)
+Comprehensive test suite with 38 integration tests covering all functionality:
 ```bash
-./scripts/test_auth.sh
+# Install faster test runner (recommended)
+cargo install cargo-nextest
+
+# Run all tests (~10 seconds)
+cargo nextest run
+
+# Run specific test categories
+cargo nextest run auth::     # Authentication tests (6 tests)
+cargo nextest run tasks::    # Task system tests (11 tests)
+cargo nextest run health::   # Health check tests
+cargo nextest run api::      # API standards tests
 ```
 
-### `test_tasks_integration.sh`
-Complete end-to-end integration test for the entire system:
-- Server startup and health checks
-- User authentication flow
-- Task creation via API (email, data processing)
-- Background worker processing
-- Task status verification
-- Statistics reporting
-```bash
-./scripts/test_tasks_integration.sh
-```
+Benefits of the Rust test suite:
+- **Fast**: 10x speedup with database template pattern
+- **Isolated**: Each test gets its own database
+- **Comprehensive**: 38 tests covering all functionality
+- **Reliable**: Uses proper HTTP client and test harness
 
 ## 📊 Complete Workflow Examples
 
@@ -124,8 +128,8 @@ Complete end-to-end integration test for the entire system:
 ./scripts/dev-server.sh 3000              # Start everything with testing
 
 # Method 3: Full reset and test
-./scripts/reset-all.sh                    # Clean slate
-./scripts/test_tasks_integration.sh       # Complete system test
+./scripts/reset-all.sh --reset-database   # Clean slate
+cargo nextest run                         # Complete system test
 
 # Method 4: Manual step-by-step
 ./scripts/check-prereqs.sh                # Validate dependencies
@@ -147,7 +151,7 @@ tail -f /tmp/starter-server-3000.log
 tail -f /tmp/starter-worker.log
 
 # Test changes
-./scripts/test_auth.sh
+cargo nextest run
 curl -X POST http://localhost:3000/tasks \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
