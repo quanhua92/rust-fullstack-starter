@@ -53,10 +53,84 @@ rust-fullstack-starter/
     │   ├── database.rs         # Database connection and migrations
     │   ├── error.rs            # Error handling
     │   ├── types.rs            # Common type definitions
-    │   └── models.rs           # Database models
-    └── migrations/
-        └── 001_initial.sql     # Database schema
+    │   ├── models.rs           # Database models
+    │   ├── server.rs           # HTTP server and routing
+    │   ├── auth/               # Authentication module
+    │   ├── users/              # User management module
+    │   └── tasks/              # Background task system
+    ├── migrations/             # Database migrations
+    │   ├── 001_users.sql       # User tables
+    │   ├── 002_sessions.sql    # Session management
+    │   ├── 003_api_keys.sql    # API authentication
+    │   └── 004_tasks.sql       # Task system tables
+    └── tests/                  # Integration test suite
+        ├── helpers/            # Test utilities and factories
+        ├── auth/               # Authentication tests
+        ├── users/              # User management tests
+        ├── tasks/              # Task system tests
+        ├── health/             # Health check tests
+        └── api/                # API integration tests
 ```
+
+## Testing Framework
+
+This starter includes a comprehensive integration testing framework that helps you learn testing patterns while developing your application.
+
+### Testing Architecture
+- **TestApp Pattern**: Spawns real server instances for realistic testing
+- **Template Database**: 10x faster test setup using PostgreSQL templates
+- **Test Data Factories**: Consistent test data with authentication support
+- **Helper Utilities**: Common assertions and test utilities
+
+### Running Tests
+```bash
+# Install cargo-nextest for faster testing (optional but recommended)
+cargo install cargo-nextest
+
+# Run all tests
+cargo nextest run
+
+# Run without stopping on failures (see all results)
+cargo nextest run --no-fail-fast
+
+# Run specific test categories
+cargo nextest run auth::
+cargo nextest run tasks::
+cargo nextest run health::
+
+# Run with debug output
+TEST_LOG=1 cargo test -- --nocapture
+```
+
+### Test Coverage
+The testing framework covers:
+- **Authentication**: Registration, login, session management
+- **User Management**: Profile operations, authorization
+- **Task System**: Task creation, processing, status tracking
+- **Health Checks**: Basic and detailed health endpoints
+- **API Standards**: CORS, security headers, error formats
+
+### Database Isolation
+Each test gets its own isolated PostgreSQL database:
+- Template database created once with all migrations
+- Test databases cloned from template (fast)
+- Automatic cleanup after tests
+- No data contamination between tests
+
+### Test Utilities
+```rust
+// Test data factories
+let factory = TestDataFactory::new(app.clone());
+let user = factory.create_user("testuser").await;
+let (user, token) = factory.create_authenticated_user("testuser").await;
+
+// Common assertions
+assert_status(&response, StatusCode::OK);
+assert_json_field_exists(&json, "data");
+assert_eq!(json["data"]["status"], "healthy");
+```
+
+See `starter/tests/README.md` for detailed testing documentation.
 
 ## Development Workflow
 
@@ -96,6 +170,23 @@ sqlx migrate revert
 ```bash
 # Check compilation
 cargo check
+
+# Run the comprehensive test suite (recommended - faster)
+cargo nextest run
+
+# Run all tests without stopping on first failure
+cargo nextest run --no-fail-fast
+
+# Run tests with standard cargo
+cargo test
+
+# Run tests with output
+TEST_LOG=1 cargo test -- --nocapture
+
+# Run specific test modules
+cargo nextest run auth::
+cargo nextest run tasks::
+cargo nextest run health::
 
 # Run with different configurations
 STARTER__SERVER__PORT=3001 cargo run -- server

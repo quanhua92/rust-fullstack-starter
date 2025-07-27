@@ -173,3 +173,66 @@ docker compose down
 - **Log management** with 50MB rotation in `/tmp/`
 - **Health endpoint testing** with timeout
 - **Graceful shutdown** with cleanup
+
+## Testing Your Application
+
+This starter includes a comprehensive testing framework with 38 integration tests.
+
+### Running Tests
+```bash
+# Install faster test runner (recommended)
+cargo install cargo-nextest
+
+# Run all tests (38 integration tests)
+cargo nextest run
+
+# Run specific test categories
+cargo nextest run auth::     # Authentication tests
+cargo nextest run tasks::    # Background task tests
+cargo nextest run health::   # Health check tests
+cargo nextest run api::      # API standards tests
+
+# Run with debug output
+TEST_LOG=1 cargo test -- --nocapture
+```
+
+### Testing Features
+- **Database Isolation**: Each test gets its own PostgreSQL database
+- **10x Performance**: Template database pattern for fast test setup
+- **Real HTTP Testing**: TestApp spawns actual server instances
+- **Authentication Support**: Test data factories with auth tokens
+- **Comprehensive Coverage**: Authentication, tasks, health, API standards
+
+### Example Test
+```rust
+#[tokio::test]
+async fn test_user_registration() {
+    let app = spawn_app().await;
+    
+    let user_data = json!({
+        "username": "testuser",
+        "email": "test@example.com",
+        "password": "SecurePass123!"
+    });
+
+    let response = app.post_json("/auth/register", &user_data).await;
+    assert_status(&response, StatusCode::OK);
+}
+```
+
+See the **[Testing Guide](./guides/07-testing.md)** for detailed documentation on testing patterns and best practices.
+
+## Next Steps
+
+Start exploring the guides based on your interests:
+
+- **[Architecture Overview](./guides/01-architecture.md)** - Understand the overall system design
+- **[Authentication System](./guides/02-authentication.md)** - Learn the auth patterns
+- **[Reliability Patterns](./guides/03-patterns.md)** - Circuit breakers and retry strategies  
+- **[Background Tasks](./guides/04-background-tasks.md)** - Async job processing
+- **[Testing Guide](./guides/07-testing.md)** - Comprehensive testing strategies
+- **[Development Workflow](./development.md)** - Daily development practices
+
+---
+
+*This starter is designed for learning and development. While the patterns demonstrated here are production-worthy, you should adapt and extend them based on your specific requirements.*

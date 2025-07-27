@@ -52,8 +52,10 @@ Basic health check endpoint.
   "success": true,
   "data": {
     "status": "healthy",
-    "timestamp": "2024-01-01T00:00:00Z"
-  }
+    "version": "0.1.0",
+    "uptime": 1234.56
+  },
+  "message": null
 }
 ```
 
@@ -61,7 +63,7 @@ Basic health check endpoint.
 
 Detailed health check including database connectivity.
 
-**Authentication**: None required
+**Authentication**: Admin role required
 
 **Response**:
 ```json
@@ -698,6 +700,94 @@ Currently, the API does not use versioning. For future versions, consider:
 - URL path versioning: `/v1/auth/login`
 - Header versioning: `Accept: application/vnd.api+json;version=1`
 
+## Testing the API
+
+This starter includes comprehensive integration tests that demonstrate proper API usage patterns.
+
+### Running Integration Tests
+
+```bash
+# Install faster test runner (recommended)
+cargo install cargo-nextest
+
+# Run all API tests (38 integration tests)
+cargo nextest run
+
+# Run specific test categories
+cargo nextest run auth::
+cargo nextest run tasks::
+cargo nextest run health::
+cargo nextest run api::
+```
+
+### Testing Patterns
+
+The integration tests demonstrate:
+
+#### Authentication Flow Testing
+```bash
+# Test registration
+curl -X POST http://localhost:3000/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{
+    "username": "testuser",
+    "email": "test@example.com",
+    "password": "SecurePass123!"
+  }'
+
+# Test login and extract token
+TOKEN=$(curl -X POST http://localhost:3000/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"username_or_email": "testuser", "password": "SecurePass123!"}' \
+  | jq -r '.data.session_token')
+```
+
+#### Protected Endpoint Testing
+```bash
+# Test protected endpoint with authentication
+curl -X GET http://localhost:3000/auth/me \
+  -H "Authorization: Bearer $TOKEN"
+
+# Test task creation (requires auth)
+curl -X POST http://localhost:3000/tasks \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "task_type": "send_email",
+    "payload": {"to": "test@example.com", "subject": "Test", "body": "Hello"}
+  }'
+```
+
+#### Error Response Testing
+```bash
+# Test validation errors
+curl -X POST http://localhost:3000/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{"username": "", "email": "invalid", "password": "weak"}'
+
+# Test authentication errors
+curl -X GET http://localhost:3000/auth/me
+```
+
+### Test Database Isolation
+
+Each test runs in complete isolation:
+- **Template Database**: Fast setup using PostgreSQL templates (10x speedup)
+- **Per-Test Databases**: Each test gets its own database instance
+- **Automatic Cleanup**: Test databases are automatically cleaned up
+
+### API Standards Tested
+
+The integration tests verify:
+- **Response Format**: Consistent JSON structure across all endpoints
+- **Security Headers**: Proper security headers on all responses
+- **CORS Configuration**: Cross-origin request handling
+- **Error Handling**: Proper error codes and messages
+- **Authentication**: Token-based auth flow
+- **Authorization**: Role-based access control
+
+See `starter/tests/README.md` for detailed testing documentation.
+
 ## Security Considerations
 
 - All passwords are hashed with Argon2
@@ -705,4 +795,6 @@ Currently, the API does not use versioning. For future versions, consider:
 - Sessions expire after 24 hours
 - Use HTTPS in production
 - Implement rate limiting for production use
+- Security headers included: `X-Content-Type-Options`, `X-Frame-Options`
+- CORS configured for development (restrict for production)
 - Consider adding request logging and monitoring

@@ -637,4 +637,50 @@ Now that you understand how the background task system works, learn how to exten
 - **[Task Registry →](./06-task-registry.md)** - Organize and manage task handlers
 
 ---
+## Next Steps
+
+Now that you understand the background task system, explore related concepts:
+
+- **[Testing Guide →](./07-testing.md)** - Learn how to test your task handlers with the comprehensive testing framework
+- **[Reliability Patterns →](../reliability.md)** - Understand the circuit breakers and retry strategies used by the task system
+- **[Custom Task Types →](./05-task-types.md)** - Build your own task handlers for specific use cases
+
+## Testing Your Tasks
+
+The starter includes comprehensive integration tests for the task system. See how to test:
+
+```bash
+# Run task-related tests
+cargo nextest run tasks::
+
+# Test task creation
+cargo nextest run test_create_task
+
+# Test task authentication
+cargo nextest run test_task_retry_mechanism
+```
+
+Example task test pattern:
+```rust
+#[tokio::test]
+async fn test_my_custom_task() {
+    let app = spawn_app().await;
+    let factory = TestDataFactory::new(app.clone());
+    
+    // Create authenticated user (tasks require auth)
+    let (_user, token) = factory.create_authenticated_user("testuser").await;
+    
+    // Create task
+    let task_response = factory.create_task("my_task_type", json!({
+        "data": "test_payload"
+    })).await;
+    
+    // Verify task was created correctly
+    assert_eq!(task_response["data"]["task_type"], "my_task_type");
+    assert_eq!(task_response["data"]["status"], "Pending");
+}
+```
+
+---
+
 *This background task system demonstrates how to build reliable, scalable async processing using database queues and the reliability patterns you learned earlier.*
