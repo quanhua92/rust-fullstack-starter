@@ -2,10 +2,26 @@
 
 # Comprehensive API Testing Script
 # Tests all endpoints with curl to verify documentation accuracy
+#
+# Usage:
+#   ./test-with-curl.sh                    # Test localhost:3000 (default)
+#   ./test-with-curl.sh localhost 8080    # Test localhost:8080
+#   ./test-with-curl.sh example.com 443   # Test https://example.com:443
 
 set -e
 
-BASE_URL="http://localhost:3000"
+# Parse command line arguments
+HOST=${1:-localhost}
+PORT=${2:-3000}
+
+# Determine protocol based on port
+if [ "$PORT" = "443" ]; then
+    PROTOCOL="https"
+else
+    PROTOCOL="http"
+fi
+
+BASE_URL="${PROTOCOL}://${HOST}:${PORT}"
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
@@ -14,6 +30,7 @@ NC='\033[0m' # No Color
 
 echo -e "${BLUE}🧪 Comprehensive API Testing with curl${NC}"
 echo "=================================================="
+echo "Testing: ${HOST}:${PORT} (${PROTOCOL})"
 echo "Base URL: $BASE_URL"
 echo "Date: $(date)"
 echo ""
