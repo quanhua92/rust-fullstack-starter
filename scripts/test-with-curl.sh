@@ -185,6 +185,63 @@ if [ -n "$USER_TOKEN" ]; then
         TOTAL_TESTS=$((TOTAL_TESTS + 1))
     fi
     
+    echo ""
+    echo -e "${YELLOW}🗃️ Dead Letter Queue Management${NC}"
+    
+    # Test filtering tasks by status
+    test_api "GET /tasks?status=pending" "GET" "/tasks?status=pending" "200" "$USER_TOKEN"
+    test_api "GET /tasks?status=failed" "GET" "/tasks?status=failed" "200" "$USER_TOKEN"
+    
+    # Test dead letter queue endpoint
+    test_api "GET /tasks/dead-letter" "GET" "/tasks/dead-letter" "200" "$USER_TOKEN"
+    test_api "GET /tasks/dead-letter (paginated)" "GET" "/tasks/dead-letter?limit=5&offset=0" "200" "$USER_TOKEN"
+    
+    # Create a task that we can mark as failed for testing
+    FAILED_TASK='{"task_type": "email", "payload": {"to": "test@example.com", "subject": "Test Failed", "body": "fail"}, "priority": "normal"}'
+    FAILED_TASK_RESPONSE=$(curl -s -X POST "$BASE_URL/tasks" -H "Content-Type: application/json" -H "Authorization: Bearer $USER_TOKEN" -d "$FAILED_TASK")
+    if echo "$FAILED_TASK_RESPONSE" | grep -q '"success":true'; then
+        FAILED_TASK_ID=$(echo "$FAILED_TASK_RESPONSE" | python3 -c "import json,sys; print(json.load(sys.stdin)['data']['id'])" 2>/dev/null || echo "")
+        echo -e "${GREEN}✅ PASS${NC} POST /tasks (Failed task created: ${FAILED_TASK_ID:0:8}...)"
+        PASSED_TESTS=$((PASSED_TESTS + 1))
+    else
+        echo -e "${RED}❌ FAIL${NC} POST /tasks (Failed task creation failed)"
+        echo "    Response: $FAILED_TASK_RESPONSE"
+    fi
+    TOTAL_TESTS=$((TOTAL_TESTS + 1))
+    
+    # Test retry endpoint (on non-failed task - should fail)
+    if [ -n "$TASK_ID" ]; then
+        RETRY_RESPONSE=$(curl -s -w 'HTTP_STATUS:%{http_code}' -X POST "$BASE_URL/tasks/$TASK_ID/retry" -H "Authorization: Bearer $USER_TOKEN")
+        RETRY_STATUS=$(echo "$RETRY_RESPONSE" | grep -o 'HTTP_STATUS:[0-9]*' | cut -d: -f2)
+        if [ "$RETRY_STATUS" = "404" ]; then
+            echo -e "${GREEN}✅ PASS${NC} POST /tasks/{id}/retry (pending task) (Status: $RETRY_STATUS - expected 404)"
+            PASSED_TESTS=$((PASSED_TESTS + 1))
+        else
+            echo -e "${RED}❌ FAIL${NC} POST /tasks/{id}/retry (pending task) (Expected: 404, Got: $RETRY_STATUS)"
+        fi
+        TOTAL_TESTS=$((TOTAL_TESTS + 1))
+    fi
+    
+    # Test delete endpoint (task may be completed by worker, so expect 200 or 404)
+    if [ -n "$TASK_ID" ]; then
+        DELETE_RESPONSE=$(curl -s -w 'HTTP_STATUS:%{http_code}' -X DELETE "$BASE_URL/tasks/$TASK_ID" -H "Authorization: Bearer $USER_TOKEN")
+        DELETE_STATUS=$(echo "$DELETE_RESPONSE" | grep -o 'HTTP_STATUS:[0-9]*' | cut -d: -f2)
+        if [ "$DELETE_STATUS" = "200" ] || [ "$DELETE_STATUS" = "404" ]; then
+            echo -e "${GREEN}✅ PASS${NC} DELETE /tasks/{id} (task) (Status: $DELETE_STATUS - expected 200 or 404)"
+            PASSED_TESTS=$((PASSED_TESTS + 1))
+        else
+            echo -e "${RED}❌ FAIL${NC} DELETE /tasks/{id} (task) (Expected: 200 or 404, Got: $DELETE_STATUS)"
+        fi
+        TOTAL_TESTS=$((TOTAL_TESTS + 1))
+    fi
+    
+    # Test retry on nonexistent task
+    FAKE_TASK_ID="00000000-0000-0000-0000-000000000000"
+    test_api "POST /tasks/{id}/retry (nonexistent)" "POST" "/tasks/$FAKE_TASK_ID/retry" "404" "$USER_TOKEN"
+    
+    # Test delete on nonexistent task
+    test_api "DELETE /tasks/{id} (nonexistent)" "DELETE" "/tasks/$FAKE_TASK_ID" "404" "$USER_TOKEN"
+    
     # Test logout (single session) - test this last since it invalidates the token
     test_api "POST /auth/logout" "POST" "/auth/logout" "200" "$USER_TOKEN"
 fi

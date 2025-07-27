@@ -134,6 +134,17 @@ impl TestApp {
             .expect("Failed to execute POST request")
     }
 
+    // POST with auth token (no body)
+    pub async fn post_auth(&self, path: &str, token: &str) -> reqwest::Response {
+        let url = format!("{}{}", self.address, path);
+        self.client
+            .post(url)
+            .header("Authorization", format!("Bearer {token}"))
+            .send()
+            .await
+            .expect("Failed to execute POST request")
+    }
+
     // POST with JSON body and auth token
     pub async fn post_json_auth<T: serde::Serialize>(
         &self,

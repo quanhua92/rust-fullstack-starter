@@ -152,7 +152,6 @@ impl TaskProcessor {
     pub async fn list_tasks(&self, filter: TaskFilter) -> TaskResult2<Vec<Task>> {
         let mut conn = self.database.pool.acquire().await?;
 
-        // Simple implementation for now - in production use sqlx::query_builder
         let tasks = sqlx::query_as!(
             Task,
             r#"
@@ -164,10 +163,22 @@ impl TaskProcessor {
                 created_at, updated_at, scheduled_at, started_at, completed_at,
                 created_by, metadata
             FROM tasks 
+            WHERE ($1::TEXT IS NULL OR task_type = $1)
+              AND ($2::task_status IS NULL OR status = $2)
+              AND ($3::task_priority IS NULL OR priority = $3)
+              AND ($4::UUID IS NULL OR created_by = $4)
+              AND ($5::TIMESTAMPTZ IS NULL OR created_at >= $5)
+              AND ($6::TIMESTAMPTZ IS NULL OR created_at <= $6)
             ORDER BY priority DESC, created_at ASC
-            LIMIT $1
-            OFFSET $2
+            LIMIT $7
+            OFFSET $8
             "#,
+            filter.task_type,
+            filter.status as Option<TaskStatus>,
+            filter.priority as Option<TaskPriority>,
+            filter.created_by,
+            filter.created_after,
+            filter.created_before,
             filter.limit.unwrap_or(100),
             filter.offset.unwrap_or(0)
         )
@@ -528,5 +539,67 @@ impl TaskProcessor {
         .await?;
 
         Ok(())
+    }
+
+    /// Retry a failed task
+    pub async fn retry_task(&self, task_id: Uuid) -> TaskResult2<()> {
+        let mut conn = self.database.pool.acquire().await?;
+
+        // Reset task to pending and clear error state
+        let result = sqlx::query!(
+            r#"
+            UPDATE tasks 
+            SET status = $1, updated_at = $2, current_attempt = 0, last_error = NULL, 
+                scheduled_at = NULL, started_at = NULL, completed_at = NULL
+            WHERE id = $3 AND status = 'failed'
+            "#,
+            TaskStatus::Pending as TaskStatus,
+            Utc::now(),
+            task_id
+        )
+        .execute(&mut *conn)
+        .await?;
+
+        if result.rows_affected() == 0 {
+            return Err(TaskError::NotFound(task_id));
+        }
+
+        Ok(())
+    }
+
+    /// Delete a task permanently
+    pub async fn delete_task(&self, task_id: Uuid) -> TaskResult2<()> {
+        let mut conn = self.database.pool.acquire().await?;
+
+        let result = sqlx::query!(
+            r#"
+            DELETE FROM tasks 
+            WHERE id = $1 AND status IN ('completed', 'failed', 'cancelled')
+            "#,
+            task_id
+        )
+        .execute(&mut *conn)
+        .await?;
+
+        if result.rows_affected() == 0 {
+            return Err(TaskError::NotFound(task_id));
+        }
+
+        Ok(())
+    }
+
+    /// Get dead letter queue (failed tasks)
+    pub async fn get_dead_letter_queue(
+        &self,
+        limit: Option<i64>,
+        offset: Option<i64>,
+    ) -> TaskResult2<Vec<Task>> {
+        let filter = TaskFilter {
+            status: Some(TaskStatus::Failed),
+            limit,
+            offset,
+            ..Default::default()
+        };
+        self.list_tasks(filter).await
     }
 }

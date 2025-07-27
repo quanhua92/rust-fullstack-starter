@@ -9,7 +9,7 @@ use crate::{
     error::Error,
     tasks::{
         processor::TaskProcessor,
-        types::{CreateTaskRequest, TaskFilter, TaskResponse, TaskStats},
+        types::{CreateTaskRequest, TaskFilter, TaskResponse, TaskStats, TaskStatus},
     },
     types::{ApiResponse, AppState, ErrorResponse},
 };
@@ -129,10 +129,20 @@ pub async fn list_tasks(
     State(app_state): State<AppState>,
     Query(params): Query<TaskQueryParams>,
 ) -> Result<Json<ApiResponse<Vec<crate::tasks::types::TaskResponse>>>, Error> {
+    let status = match params.status.as_deref() {
+        Some("pending") => Some(TaskStatus::Pending),
+        Some("running") => Some(TaskStatus::Running),
+        Some("completed") => Some(TaskStatus::Completed),
+        Some("failed") => Some(TaskStatus::Failed),
+        Some("cancelled") => Some(TaskStatus::Cancelled),
+        Some("retrying") => Some(TaskStatus::Retrying),
+        _ => None,
+    };
+
     let filter = TaskFilter {
         task_type: params.task_type,
-        status: None,   // TODO: Parse status string
-        priority: None, // TODO: Parse priority string
+        status,
+        priority: None, // TODO: Parse priority string if needed
         created_by: None,
         created_after: None,
         created_before: None,
@@ -204,5 +214,115 @@ pub async fn cancel_task(
     Ok(Json(ApiResponse::success_with_message(
         "Task cancelled successfully".to_string(),
         format!("Task {task_id} has been cancelled"),
+    )))
+}
+
+/// Get dead letter queue (failed tasks)
+#[utoipa::path(
+    get,
+    path = "/tasks/dead-letter",
+    tag = "Tasks",
+    summary = "Get dead letter queue",
+    description = "Get all failed tasks in the dead letter queue",
+    params(
+        ("limit" = Option<i64>, Query, description = "Maximum number of tasks to return"),
+        ("offset" = Option<i64>, Query, description = "Number of tasks to skip")
+    ),
+    responses(
+        (status = 200, description = "Dead letter queue tasks", body = ApiResponse<Vec<TaskResponse>>)
+    )
+)]
+pub async fn get_dead_letter_queue(
+    State(app_state): State<AppState>,
+    Query(params): Query<TaskQueryParams>,
+) -> Result<Json<ApiResponse<Vec<crate::tasks::types::TaskResponse>>>, Error> {
+    let processor = TaskProcessor::new(
+        app_state.database.clone(),
+        crate::tasks::processor::ProcessorConfig::default(),
+    );
+
+    let tasks = processor
+        .get_dead_letter_queue(params.limit, params.offset)
+        .await
+        .map_err(|e| Error::Internal(format!("Failed to get dead letter queue: {e}")))?;
+
+    let task_responses: Vec<crate::tasks::types::TaskResponse> =
+        tasks.into_iter().map(|t| t.into()).collect();
+    Ok(Json(ApiResponse::success(task_responses)))
+}
+
+/// Retry a failed task
+#[utoipa::path(
+    post,
+    path = "/tasks/{id}/retry",
+    tag = "Tasks",
+    summary = "Retry failed task",
+    description = "Retry a failed task by resetting it to pending status",
+    params(
+        ("id" = Uuid, Path, description = "Task ID")
+    ),
+    responses(
+        (status = 200, description = "Task retried successfully", body = ApiResponse<String>),
+        (status = 404, description = "Task not found", body = ErrorResponse),
+        (status = 400, description = "Task is not in failed status", body = ErrorResponse)
+    )
+)]
+pub async fn retry_task(
+    State(app_state): State<AppState>,
+    Path(task_id): Path<Uuid>,
+) -> Result<Json<ApiResponse<String>>, Error> {
+    let processor = TaskProcessor::new(
+        app_state.database.clone(),
+        crate::tasks::processor::ProcessorConfig::default(),
+    );
+
+    processor.retry_task(task_id).await.map_err(|e| match e {
+        crate::tasks::types::TaskError::NotFound(_) => {
+            Error::NotFound("Task not found or not in failed status".to_string())
+        }
+        _ => Error::Internal(format!("Failed to retry task: {e}")),
+    })?;
+
+    Ok(Json(ApiResponse::success_with_message(
+        "Task retried successfully".to_string(),
+        format!("Task {task_id} has been reset to pending status"),
+    )))
+}
+
+/// Delete a task permanently
+#[utoipa::path(
+    delete,
+    path = "/tasks/{id}",
+    tag = "Tasks",
+    summary = "Delete task",
+    description = "Permanently delete a completed, failed, or cancelled task",
+    params(
+        ("id" = Uuid, Path, description = "Task ID")
+    ),
+    responses(
+        (status = 200, description = "Task deleted successfully", body = ApiResponse<String>),
+        (status = 404, description = "Task not found", body = ErrorResponse),
+        (status = 400, description = "Task is not in a deletable status", body = ErrorResponse)
+    )
+)]
+pub async fn delete_task(
+    State(app_state): State<AppState>,
+    Path(task_id): Path<Uuid>,
+) -> Result<Json<ApiResponse<String>>, Error> {
+    let processor = TaskProcessor::new(
+        app_state.database.clone(),
+        crate::tasks::processor::ProcessorConfig::default(),
+    );
+
+    processor.delete_task(task_id).await.map_err(|e| match e {
+        crate::tasks::types::TaskError::NotFound(_) => {
+            Error::NotFound("Task not found or not in deletable status".to_string())
+        }
+        _ => Error::Internal(format!("Failed to delete task: {e}")),
+    })?;
+
+    Ok(Json(ApiResponse::success_with_message(
+        "Task deleted successfully".to_string(),
+        format!("Task {task_id} has been permanently deleted"),
     )))
 }

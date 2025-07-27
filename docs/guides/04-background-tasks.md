@@ -404,6 +404,196 @@ async fn handle_task_failure(&self, task: Task, error: TaskError) -> Result<()> 
 }
 ```
 
+## Dead Letter Queue Management
+
+When tasks fail after exhausting all retry attempts, they're moved to the **dead letter queue**. These failed tasks require manual intervention.
+
+### Dead Letter Queue API
+
+#### 1. Get Dead Letter Queue
+```bash
+# Get all failed tasks
+curl -H "Authorization: Bearer $TOKEN" \
+  "http://localhost:3000/tasks/dead-letter"
+
+# Get failed tasks with pagination
+curl -H "Authorization: Bearer $TOKEN" \
+  "http://localhost:3000/tasks/dead-letter?limit=10&offset=0"
+```
+
+#### 2. Filter Tasks by Status
+```bash
+# Get all failed tasks using status filter
+curl -H "Authorization: Bearer $TOKEN" \
+  "http://localhost:3000/tasks?status=failed"
+
+# Other status filters
+curl -H "Authorization: Bearer $TOKEN" \
+  "http://localhost:3000/tasks?status=pending"
+curl -H "Authorization: Bearer $TOKEN" \
+  "http://localhost:3000/tasks?status=completed"
+```
+
+#### 3. Retry Failed Tasks
+```bash
+# Retry a specific failed task
+curl -X POST \
+  -H "Authorization: Bearer $TOKEN" \
+  "http://localhost:3000/tasks/{task-id}/retry"
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": "Task retried successfully",
+  "message": "Task {task-id} has been reset to pending status"
+}
+```
+
+#### 4. Delete Failed Tasks
+```bash
+# Permanently delete a failed task
+curl -X DELETE \
+  -H "Authorization: Bearer $TOKEN" \
+  "http://localhost:3000/tasks/{task-id}"
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": "Task deleted successfully", 
+  "message": "Task {task-id} has been permanently deleted"
+}
+```
+
+### Dead Letter Queue Operations
+
+#### Manual Retry Process
+```bash
+# 1. Get failed tasks
+FAILED_TASKS=$(curl -s -H "Authorization: Bearer $TOKEN" \
+  "http://localhost:3000/tasks/dead-letter")
+
+# 2. Identify tasks to retry
+echo "$FAILED_TASKS" | jq '.data[] | select(.last_error | contains("network"))'
+
+# 3. Retry specific tasks
+curl -X POST \
+  -H "Authorization: Bearer $TOKEN" \
+  "http://localhost:3000/tasks/specific-task-id/retry"
+```
+
+#### Cleanup Old Failed Tasks
+```bash
+# Get old failed tasks (from API response, filter by date)
+OLD_TASKS=$(curl -s -H "Authorization: Bearer $TOKEN" \
+  "http://localhost:3000/tasks?status=failed" | \
+  jq '.data[] | select(.created_at < "2024-01-01")')
+
+# Delete old failed tasks
+for task_id in $(echo "$OLD_TASKS" | jq -r '.id'); do
+  curl -X DELETE \
+    -H "Authorization: Bearer $TOKEN" \
+    "http://localhost:3000/tasks/$task_id"
+done
+```
+
+### Dead Letter Queue Monitoring
+
+#### Task Statistics
+```bash
+# Get task statistics including failed count
+curl -H "Authorization: Bearer $TOKEN" \
+  "http://localhost:3000/tasks/stats"
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "total": 150,
+    "pending": 5,
+    "running": 2,
+    "completed": 140,
+    "failed": 3,      // Dead letter queue size
+    "cancelled": 0,
+    "retrying": 0
+  }
+}
+```
+
+#### Error Analysis
+```bash
+# Get failed tasks with error details
+curl -H "Authorization: Bearer $TOKEN" \
+  "http://localhost:3000/tasks/dead-letter" | \
+  jq '.data[] | {id, task_type, last_error, current_attempt}'
+```
+
+### Best Practices
+
+#### 1. Regular Monitoring
+```bash
+#!/bin/bash
+# Monitor dead letter queue size
+DLQ_SIZE=$(curl -s -H "Authorization: Bearer $TOKEN" \
+  "http://localhost:3000/tasks/stats" | \
+  jq '.data.failed')
+
+if [ "$DLQ_SIZE" -gt 10 ]; then
+  echo "Warning: Dead letter queue has $DLQ_SIZE failed tasks"
+  # Send alert notification
+fi
+```
+
+#### 2. Automated Cleanup
+```bash
+#!/bin/bash
+# Weekly cleanup of old failed tasks
+WEEK_AGO=$(date -d '7 days ago' '+%Y-%m-%dT%H:%M:%SZ')
+
+# Get tasks older than a week
+OLD_FAILED=$(curl -s -H "Authorization: Bearer $TOKEN" \
+  "http://localhost:3000/tasks?status=failed" | \
+  jq --arg week_ago "$WEEK_AGO" \
+  '.data[] | select(.created_at < $week_ago) | .id' -r)
+
+# Delete old failed tasks
+for task_id in $OLD_FAILED; do
+  curl -X DELETE \
+    -H "Authorization: Bearer $TOKEN" \
+    "http://localhost:3000/tasks/$task_id"
+  echo "Deleted old failed task: $task_id"
+done
+```
+
+#### 3. Error Pattern Analysis
+```bash
+# Analyze common failure patterns
+curl -s -H "Authorization: Bearer $TOKEN" \
+  "http://localhost:3000/tasks/dead-letter" | \
+  jq '.data[] | .last_error' | \
+  sort | uniq -c | sort -nr
+```
+
+### Integration with Monitoring
+
+#### Metrics Collection
+```bash
+# Export dead letter queue metrics for monitoring
+echo "dlq_size $(curl -s -H "Authorization: Bearer $TOKEN" \
+  "http://localhost:3000/tasks/stats" | jq '.data.failed')"
+
+# Export by task type
+curl -s -H "Authorization: Bearer $TOKEN" \
+  "http://localhost:3000/tasks/dead-letter" | \
+  jq '.data | group_by(.task_type) | .[] | 
+     "dlq_by_type{type=\"\(.[0].task_type)\"} \(length)"' -r
+```
+
 ## Built-in Task Types
 
 ### 1. Email Tasks

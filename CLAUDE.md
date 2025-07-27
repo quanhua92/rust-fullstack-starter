@@ -10,8 +10,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Testing Commands
 
-- **Integration Tests**: `cd starter && cargo nextest run` (40 tests, ~10 seconds)
-- **API Testing**: `./scripts/test-with-curl.sh [host] [port]` (29 endpoint tests)
+- **Integration Tests**: `cd starter && cargo nextest run` (51 tests, ~12 seconds)
+- **API Testing**: `./scripts/test-with-curl.sh [host] [port]` (38 endpoint tests)
   - Default: `./scripts/test-with-curl.sh` (localhost:3000)
   - Custom: `./scripts/test-with-curl.sh localhost 8080`
   - HTTPS: `./scripts/test-with-curl.sh api.example.com 443`
@@ -62,6 +62,6 @@ This starter includes production-ready infrastructure:
 
 1. **Start Services**: `./scripts/dev-server.sh 3000` (complete environment)
    - Or manually: `./scripts/server.sh && ./scripts/worker.sh`
-2. **Run Tests**: `cargo nextest run` (40 integration tests)
-3. **API Testing**: `./scripts/test-with-curl.sh` (29 endpoint tests)
+2. **Run Tests**: `cargo nextest run` (51 integration tests)
+3. **API Testing**: `./scripts/test-with-curl.sh` (38 endpoint tests)
 4. **Stop Services**: `./scripts/stop-server.sh 3000`

@@ -15,7 +15,7 @@ use crate::{
 use axum::{
     Json, Router, middleware,
     response::IntoResponse,
-    routing::{get, post},
+    routing::{delete, get, post},
 };
 use tokio::net::TcpListener;
 use tower::ServiceBuilder;
@@ -89,7 +89,7 @@ async fn api_docs() -> impl IntoResponse {
                     <li><strong>Health:</strong> <code>GET /health</code> - Basic health check</li>
                     <li><strong>Auth:</strong> <code>POST /auth/register</code>, <code>POST /auth/login</code></li>
                     <li><strong>Users:</strong> <code>GET /users/{id}</code> - Get user by ID</li>
-                    <li><strong>Tasks:</strong> <code>POST /tasks</code>, <code>GET /tasks</code>, <code>GET /tasks/{id}</code></li>
+                    <li><strong>Tasks:</strong> <code>POST /tasks</code>, <code>GET /tasks</code>, <code>GET /tasks/{id}</code>, <code>GET /tasks/dead-letter</code>, <code>POST /tasks/{id}/retry</code>, <code>DELETE /tasks/{id}</code></li>
                 </ul>
 
                 <p><em>For complete API documentation, see the OpenAPI JSON schema above.</em></p>
@@ -127,8 +127,11 @@ pub fn create_router(state: AppState) -> Router {
         .route("/tasks", post(tasks_api::create_task))
         .route("/tasks", get(tasks_api::list_tasks))
         .route("/tasks/stats", get(tasks_api::get_stats))
+        .route("/tasks/dead-letter", get(tasks_api::get_dead_letter_queue))
         .route("/tasks/{id}", get(tasks_api::get_task))
+        .route("/tasks/{id}", delete(tasks_api::delete_task))
         .route("/tasks/{id}/cancel", post(tasks_api::cancel_task))
+        .route("/tasks/{id}/retry", post(tasks_api::retry_task))
         .layer(middleware::from_fn_with_state(
             state.clone(),
             auth_middleware,
