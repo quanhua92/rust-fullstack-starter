@@ -31,14 +31,18 @@ nano .env.prod
 ```bash
 # Run automated deployment
 ./scripts/deploy-prod.sh
+
+# Or manually with Docker Compose
+docker-compose -f docker-compose.prod.yaml --env-file .env.prod up -d
 ```
 
 The deployment script will:
 - ✅ Validate configuration and security settings
 - ✅ Create database backup (if updating existing deployment)
-- ✅ Build optimized Docker images
+- ✅ Build optimized Docker images with utoipa-swagger-ui support
 - ✅ Start all services with health checks
-- ✅ Verify deployment health
+- ✅ Run database migrations automatically on startup
+- ✅ Verify deployment health and API documentation endpoints
 
 ## Configuration
 
@@ -382,6 +386,17 @@ Built-in rate limiting:
 
 ### Common Issues
 
+#### Docker Compose Version Warning (FIXED)
+
+If you see warnings about obsolete `version` attribute, this has been resolved:
+
+```bash
+# This warning is now fixed:
+# "the attribute `version` is obsolete, it will be ignored"
+```
+
+**Solution**: The `version: '3.8'` line has been removed from all Docker Compose files as it's no longer needed in modern Docker Compose.
+
 #### Service Won't Start
 
 ```bash
@@ -393,6 +408,18 @@ docker compose -f docker-compose.prod.yaml --env-file .env.prod config
 ```
 
 #### Database Connection Errors
+
+**Symptom**: App shows "password authentication failed" errors
+
+**Solution**: This is automatically resolved on fresh startup. If persisting:
+
+```bash
+# Reset PostgreSQL password (if needed)
+docker-compose -f docker-compose.prod.yaml --env-file .env.prod exec postgres \
+  psql -U starter_user -d starter_prod -c "ALTER USER starter_user WITH PASSWORD 'your_password_here';"
+```
+
+#### Database Connection Errors (Legacy)
 
 ```bash
 # Check database health

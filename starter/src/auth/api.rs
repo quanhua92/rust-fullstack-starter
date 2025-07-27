@@ -1,14 +1,26 @@
-use crate::auth::{AuthUser, models::LoginRequest, services as auth_services};
-use crate::users::models::CreateUserRequest;
+use crate::auth::{AuthUser, models::{LoginRequest, RegisterRequest, LoginResponse}, services as auth_services};
+use crate::users::models::UserProfile;
 use crate::{
     error::Error,
-    types::{ApiResponse, AppState},
+    types::{ApiResponse, AppState, ErrorResponse},
 };
 use axum::{
     extract::{Extension, State},
     response::Json,
 };
 
+#[utoipa::path(
+    post,
+    path = "/auth/login",
+    tag = "Authentication",
+    summary = "User login",
+    description = "Authenticate user with username/email and password",
+    request_body = LoginRequest,
+    responses(
+        (status = 200, description = "Login successful", body = ApiResponse<LoginResponse>),
+        (status = 401, description = "Invalid credentials", body = ErrorResponse)
+    )
+)]
 pub async fn login(
     State(app_state): State<AppState>,
     Json(payload): Json<LoginRequest>,
@@ -23,9 +35,22 @@ pub async fn login(
     Ok(Json(ApiResponse::success(login_response)))
 }
 
+#[utoipa::path(
+    post,
+    path = "/auth/register",
+    tag = "Authentication",
+    summary = "User registration",
+    description = "Register a new user account",
+    request_body = RegisterRequest,
+    responses(
+        (status = 200, description = "Registration successful", body = ApiResponse<UserProfile>),
+        (status = 400, description = "Validation error", body = ErrorResponse),
+        (status = 409, description = "User already exists", body = ErrorResponse)
+    )
+)]
 pub async fn register(
     State(app_state): State<AppState>,
-    Json(payload): Json<CreateUserRequest>,
+    Json(payload): Json<RegisterRequest>,
 ) -> Result<Json<ApiResponse<crate::users::models::UserProfile>>, Error> {
     let mut conn = app_state
         .database
@@ -37,6 +62,20 @@ pub async fn register(
     Ok(Json(ApiResponse::success(user_profile)))
 }
 
+#[utoipa::path(
+    post,
+    path = "/auth/logout",
+    tag = "Authentication",
+    summary = "User logout",
+    description = "Logout current user and end all sessions",
+    responses(
+        (status = 200, description = "Logout successful", body = ApiResponse<String>),
+        (status = 401, description = "Unauthorized", body = ErrorResponse)
+    ),
+    security(
+        ("bearer_auth" = [])
+    )
+)]
 pub async fn logout(
     State(app_state): State<AppState>,
     Extension(auth_user): Extension<AuthUser>,
@@ -73,6 +112,20 @@ pub async fn logout_all(
     )))
 }
 
+#[utoipa::path(
+    get,
+    path = "/auth/me",
+    tag = "Authentication",
+    summary = "Get current user",
+    description = "Get current authenticated user information",
+    responses(
+        (status = 200, description = "Current user information", body = ApiResponse<AuthUser>),
+        (status = 401, description = "Unauthorized", body = ErrorResponse)
+    ),
+    security(
+        ("bearer_auth" = [])
+    )
+)]
 pub async fn me(Extension(auth_user): Extension<AuthUser>) -> Json<ApiResponse<AuthUser>> {
     Json(ApiResponse::success(auth_user))
 }

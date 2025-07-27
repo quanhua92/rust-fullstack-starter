@@ -23,11 +23,19 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Health Endpoints
 
 Available health check endpoints:
-- `/health` - Basic health check (status, version, uptime)
+- `/health` - Basic health check (status, version, uptime, includes documentation links)
 - `/health/detailed` - Detailed health with dependency checks
 - `/health/live` - Kubernetes liveness probe (minimal checks)
 - `/health/ready` - Kubernetes readiness probe (dependency validation)
 - `/health/startup` - Kubernetes startup probe (initialization checks)
+
+## API Documentation
+
+Comprehensive OpenAPI documentation is available:
+- **Interactive Docs**: `/api-docs` - HTML page with overview and Swagger UI links
+- **OpenAPI Schema**: `/api-docs/openapi.json` - Complete OpenAPI 3.0 specification
+- **Features**: All endpoints documented with request/response examples, authentication support, type definitions
+- **Client Generation**: Use schema to generate TypeScript, Python, or other language clients
 
 ## Project Scripts
 

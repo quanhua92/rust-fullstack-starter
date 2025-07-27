@@ -1,7 +1,6 @@
 # Production Docker Compose configuration
 # Optimized for reliability, security, and monitoring
 
-version: '3.8'
 
 services:
   app:
@@ -15,7 +14,7 @@ services:
       - STARTER__DATABASE__HOST=postgres
       - STARTER__DATABASE__PORT=5432
       - STARTER__DATABASE__DATABASE=${POSTGRES_DB:-starter_prod}
-      - STARTER__DATABASE__USERNAME=${POSTGRES_USER:-starter_user}
+      - STARTER__DATABASE__USER=${POSTGRES_USER:-starter_user}
       - STARTER__DATABASE__PASSWORD=${POSTGRES_PASSWORD}
       - DATABASE_URL=postgresql://${POSTGRES_USER:-starter_user}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-starter_prod}
       
@@ -59,7 +58,7 @@ services:
       - STARTER__DATABASE__HOST=postgres
       - STARTER__DATABASE__PORT=5432
       - STARTER__DATABASE__DATABASE=${POSTGRES_DB:-starter_prod}
-      - STARTER__DATABASE__USERNAME=${POSTGRES_USER:-starter_user}
+      - STARTER__DATABASE__USER=${POSTGRES_USER:-starter_user}
       - STARTER__DATABASE__PASSWORD=${POSTGRES_PASSWORD}
       - DATABASE_URL=postgresql://${POSTGRES_USER:-starter_user}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-starter_prod}
       
@@ -92,7 +91,7 @@ services:
       - app-network
 
   postgres:
-    image: postgres:16-alpine
+    image: postgres:17-alpine
     environment:
       - POSTGRES_DB=${POSTGRES_DB:-starter_prod}
       - POSTGRES_USER=${POSTGRES_USER:-starter_user}
@@ -142,10 +141,10 @@ services:
 
   # Redis for production caching/sessions (optional)
   redis:
-    image: redis:7-alpine
+    image: valkey/valkey:8-alpine
     restart: unless-stopped
     command: >
-      redis-server
+      valkey-server
       --appendonly yes
       --appendfsync everysec
       --maxmemory 256mb
@@ -153,7 +152,7 @@ services:
     volumes:
       - redis_data:/data
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ["CMD", "valkey-cli", "ping"]
       interval: 10s
       timeout: 5s
       start_period: 30s

@@ -17,7 +17,7 @@ This guide covers the development workflow, tools, and best practices for the Ru
 
 ### Manual Setup
 ```bash
-# Start database
+# Start database (no version warnings - fixed!)
 docker compose up -d postgres
 
 # Wait for database health check
@@ -36,7 +36,9 @@ cargo run -- server --port 3000
 rust-fullstack-starter/
 ├── Cargo.toml                 # Workspace configuration
 ├── docker-compose.yaml        # Database infrastructure
+├── docker-compose.prod.yaml   # Production Docker setup (version warnings fixed)
 ├── .env.example               # Environment template
+├── .env.prod.test             # Production test environment
 ├── scripts/
 │   ├── dev.sh                 # Infrastructure startup
 │   ├── server.sh              # Start server with auto-restart
@@ -55,6 +57,7 @@ rust-fullstack-starter/
     │   ├── types.rs            # Common type definitions
     │   ├── models.rs           # Database models
     │   ├── server.rs           # HTTP server and routing
+    │   ├── openapi.rs          # OpenAPI documentation and schema
     │   ├── auth/               # Authentication module
     │   ├── users/              # User management module
     │   └── tasks/              # Background task system
@@ -110,6 +113,10 @@ TEST_LOG=1 cargo test -- --nocapture
 # Test different server configurations
 ./scripts/test-with-curl.sh localhost 8080
 ./scripts/test-with-curl.sh api.example.com 443  # HTTPS auto-detected
+
+# Test production Docker setup (fixed: no version warnings)
+docker-compose -f docker-compose.prod.yaml --env-file .env.prod.test up -d
+curl http://localhost:8080/health
 
 # Combined workflow: integration + API tests
 cargo nextest run && ./scripts/test-with-curl.sh
@@ -357,6 +364,68 @@ docker compose down -v
 
 # Remove images
 docker compose down --rmi all
+```
+
+## API Documentation
+
+The starter includes comprehensive **OpenAPI documentation** for API development and testing.
+
+### Interactive Documentation
+```bash
+# Start the server
+./scripts/server.sh 3000
+
+# Access documentation
+open http://localhost:3000/api-docs
+```
+
+### Documentation Features
+- **OpenAPI 3.0 Schema**: Complete API specification at `/api-docs/openapi.json`
+- **Interactive Testing**: Built-in Swagger UI integration
+- **Request/Response Examples**: All endpoints documented with examples
+- **Authentication Testing**: Test protected endpoints with session tokens
+- **Type Definitions**: Full schema definitions for all models
+
+### Using the Documentation
+1. **View API Overview**: Visit `http://localhost:3000/api-docs`
+2. **Interactive Testing**: Click "🔧 Swagger UI (External)" for full API testing
+3. **Download Schema**: Use `/api-docs/openapi.json` with your preferred API client
+4. **Quick Reference**: Health endpoint includes documentation links
+
+### Development Workflow with API Docs
+```bash
+# 1. Start development server
+./scripts/server.sh 3000
+
+# 2. View API documentation
+curl http://localhost:3000/api-docs/openapi.json | jq '.paths | keys'
+
+# 3. Test specific endpoints
+curl http://localhost:3000/health
+
+# 4. Register test user and get documentation links
+curl -X POST http://localhost:3000/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{"username": "testuser", "email": "test@example.com", "password": "password123"}'
+```
+
+### Generating API Clients
+Use the OpenAPI schema to generate clients for different languages:
+```bash
+# Download the schema
+curl http://localhost:3000/api-docs/openapi.json > api-schema.json
+
+# Generate TypeScript client (example with openapi-generator)
+npx @openapitools/openapi-generator-cli generate \
+  -i api-schema.json \
+  -g typescript-axios \
+  -o ./clients/typescript
+
+# Generate Python client
+npx @openapitools/openapi-generator-cli generate \
+  -i api-schema.json \
+  -g python \
+  -o ./clients/python
 ```
 
 ## Debugging

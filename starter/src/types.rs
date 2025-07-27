@@ -45,7 +45,7 @@ pub struct PaginationInfo {
 }
 
 // API Response wrapper
-#[derive(Debug, serde::Serialize)]
+#[derive(Debug, serde::Serialize, utoipa::ToSchema)]
 pub struct ApiResponse<T> {
     pub success: bool,
     pub data: Option<T>,
@@ -71,16 +71,44 @@ impl<T> ApiResponse<T> {
 }
 
 // Health check types
-#[derive(Debug, serde::Serialize)]
+#[derive(Debug, serde::Serialize, utoipa::ToSchema)]
 pub struct HealthStatus {
     pub status: String,
     pub timestamp: DateTime<Utc>,
     pub checks: HashMap<String, ComponentHealth>,
 }
 
-#[derive(Debug, serde::Serialize)]
+#[derive(Debug, serde::Serialize, utoipa::ToSchema)]
 pub struct ComponentHealth {
     pub status: String,
     pub message: Option<String>,
     pub details: Option<serde_json::Value>,
+}
+
+// Basic health response
+#[derive(Debug, serde::Serialize, utoipa::ToSchema)]
+pub struct HealthResponse {
+    pub status: String,
+    pub version: String,
+    pub uptime: f64,
+}
+
+// Detailed health response
+#[derive(Debug, serde::Serialize, utoipa::ToSchema)]
+pub struct DetailedHealthResponse {
+    pub status: String,
+    pub timestamp: DateTime<Utc>,
+    pub checks: HashMap<String, ComponentHealth>,
+}
+
+// Error response structure
+#[derive(Debug, serde::Serialize, utoipa::ToSchema)]
+pub struct ErrorResponse {
+    pub error: ErrorDetail,
+}
+
+#[derive(Debug, serde::Serialize, utoipa::ToSchema)]
+pub struct ErrorDetail {
+    pub code: String,
+    pub message: String,
 }

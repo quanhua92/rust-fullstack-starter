@@ -224,6 +224,25 @@ cargo nextest run
 cargo nextest run && ./scripts/test-with-curl.sh
 ```
 
+### 📋 API Documentation
+```bash
+# Start server and access interactive documentation
+./scripts/server.sh 3000
+open http://localhost:3000/api-docs
+
+# View OpenAPI schema
+curl http://localhost:3000/api-docs/openapi.json | jq
+
+# Quick health check with docs links
+curl http://localhost:3000/health | jq '.data.documentation'
+```
+
+**Features:**
+- **Interactive Testing**: Full Swagger UI integration for testing endpoints
+- **Complete Schema**: OpenAPI 3.0 specification with all endpoints and models
+- **Authentication Support**: Test protected endpoints with session tokens
+- **Request Examples**: Copy-paste ready curl commands for all endpoints
+
 ### Manual Commands
 ```bash
 # Start infrastructure

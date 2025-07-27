@@ -1,4 +1,4 @@
-use crate::auth::models::{LoginRequest, LoginResponse, Session};
+use crate::auth::models::{LoginRequest, LoginResponse, RegisterRequest, Session};
 use crate::users::{models::UserProfile, services as user_services};
 use crate::{
     error::Error,
@@ -196,7 +196,17 @@ pub async fn get_current_user(conn: &mut DbConn, token: &str) -> Result<Option<U
 
 pub async fn register(
     conn: &mut DbConn,
-    req: crate::users::models::CreateUserRequest,
+    req: RegisterRequest,
 ) -> Result<UserProfile> {
-    user_services::create_user(conn, req).await
+    req.validate()?;
+    
+    // Convert RegisterRequest to CreateUserRequest
+    let create_req = crate::users::models::CreateUserRequest {
+        username: req.username,
+        email: req.email,
+        password: req.password,
+        role: None, // Default role
+    };
+    
+    user_services::create_user(conn, create_req).await
 }

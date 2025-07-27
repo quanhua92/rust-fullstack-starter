@@ -2,7 +2,7 @@ use crate::auth::AuthUser;
 use crate::users::{models::UserProfile, services as user_services};
 use crate::{
     error::Error,
-    types::{ApiResponse, AppState},
+    types::{ApiResponse, AppState, ErrorResponse},
 };
 use axum::{
     extract::{Extension, Path, State},
@@ -28,6 +28,24 @@ pub async fn get_profile(
     }
 }
 
+#[utoipa::path(
+    get,
+    path = "/users/{id}",
+    tag = "Users",
+    summary = "Get user by ID",
+    description = "Get user information by user ID",
+    params(
+        ("id" = Uuid, Path, description = "User ID")
+    ),
+    responses(
+        (status = 200, description = "User found", body = ApiResponse<UserProfile>),
+        (status = 404, description = "User not found", body = ErrorResponse),
+        (status = 401, description = "Unauthorized", body = ErrorResponse)
+    ),
+    security(
+        ("bearer_auth" = [])
+    )
+)]
 pub async fn get_user_by_id(
     State(app_state): State<AppState>,
     Extension(_auth_user): Extension<AuthUser>,

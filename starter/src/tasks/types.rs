@@ -5,7 +5,7 @@ use sqlx::FromRow;
 use std::collections::HashMap;
 use uuid::Uuid;
 
-#[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type)]
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type, utoipa::ToSchema)]
 #[sqlx(type_name = "task_status", rename_all = "lowercase")]
 pub enum TaskStatus {
     Pending,
@@ -16,7 +16,7 @@ pub enum TaskStatus {
     Retrying,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type)]
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type, utoipa::ToSchema)]
 #[sqlx(type_name = "task_priority", rename_all = "lowercase")]
 pub enum TaskPriority {
     Low,
@@ -88,7 +88,45 @@ impl Task {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+// API response type for tasks (excludes sensitive internal fields)
+#[derive(Debug, Clone, Serialize, Deserialize, utoipa::ToSchema)]
+pub struct TaskResponse {
+    pub id: Uuid,
+    pub task_type: String,
+    pub status: TaskStatus,
+    pub priority: TaskPriority,
+    pub max_attempts: i32,
+    pub current_attempt: i32,
+    pub last_error: Option<String>,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
+    pub scheduled_at: Option<DateTime<Utc>>,
+    pub started_at: Option<DateTime<Utc>>,
+    pub completed_at: Option<DateTime<Utc>>,
+    pub created_by: Option<Uuid>,
+}
+
+impl From<Task> for TaskResponse {
+    fn from(task: Task) -> Self {
+        Self {
+            id: task.id,
+            task_type: task.task_type,
+            status: task.status,
+            priority: task.priority,
+            max_attempts: task.max_attempts,
+            current_attempt: task.current_attempt,
+            last_error: task.last_error,
+            created_at: task.created_at,
+            updated_at: task.updated_at,
+            scheduled_at: task.scheduled_at,
+            started_at: task.started_at,
+            completed_at: task.completed_at,
+            created_by: task.created_by,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, utoipa::ToSchema)]
 pub struct CreateTaskRequest {
     pub task_type: String,
     pub payload: serde_json::Value,

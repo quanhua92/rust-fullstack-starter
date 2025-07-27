@@ -22,9 +22,11 @@ impl Session {
     }
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, utoipa::ToSchema)]
 pub struct LoginRequest {
+    #[schema(example = "johndoe")]
     pub username_or_email: String,
+    #[schema(example = "securepassword123")]
     pub password: String,
     pub user_agent: Option<String>,
 }
@@ -44,7 +46,26 @@ impl LoginRequest {
     }
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Deserialize, utoipa::ToSchema)]
+pub struct RegisterRequest {
+    #[schema(example = "johndoe")]
+    pub username: String,
+    #[schema(example = "john@example.com")]
+    pub email: String,
+    #[schema(example = "securepassword123")]
+    pub password: String,
+}
+
+impl RegisterRequest {
+    pub fn validate(&self) -> Result<()> {
+        crate::users::models::validate_username(&self.username)?;
+        crate::users::models::validate_email(&self.email)?;
+        crate::users::models::validate_password(&self.password)?;
+        Ok(())
+    }
+}
+
+#[derive(Debug, Serialize, utoipa::ToSchema)]
 pub struct LoginResponse {
     pub session_token: String,
     pub expires_at: DateTime<Utc>,

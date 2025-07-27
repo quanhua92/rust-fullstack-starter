@@ -8,7 +8,7 @@ use axum::{
 };
 use uuid::Uuid;
 
-#[derive(Debug, Clone, serde::Serialize)]
+#[derive(Debug, Clone, serde::Serialize, utoipa::ToSchema)]
 pub struct AuthUser {
     pub id: Uuid,
     pub username: String,

@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 use std::time::{Duration, Instant};
 use tokio::time::sleep;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, utoipa::ToSchema)]
 pub enum RetryStrategy {
     /// Exponential backoff: delay = base_delay * multiplier^attempt
     Exponential {

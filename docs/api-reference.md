@@ -2,6 +2,37 @@
 
 This document provides a comprehensive reference for all available API endpoints in the Rust Full-Stack Starter.
 
+## 📋 Interactive API Documentation
+
+The starter now includes **comprehensive OpenAPI documentation** with interactive features:
+
+### 🌐 Access Documentation
+- **API Documentation Hub**: `http://localhost:3000/api-docs`
+- **OpenAPI JSON Schema**: `http://localhost:3000/api-docs/openapi.json`
+- **External Swagger UI**: Use the link in the docs page for full interactive testing
+
+### ✨ Features
+- **Complete API Schema**: All endpoints, request/response models, and validation rules
+- **Interactive Testing**: Test endpoints directly from the documentation
+- **Code Examples**: Request/response examples for all endpoints
+- **Authentication Support**: Built-in authentication testing for protected endpoints
+- **Type Definitions**: Full TypeScript-style type definitions for all models
+
+### 🚀 Quick Access
+The health endpoint now includes documentation links:
+```bash
+curl http://localhost:3000/health
+# Returns documentation URLs in the response
+```
+
+### 📖 Using the Interactive Docs
+1. Start your server: `./scripts/server.sh 3000`
+2. Visit: `http://localhost:3000/api-docs`
+3. Click "🔧 Swagger UI (External)" for full interactive testing
+4. Or download the OpenAPI JSON for use with your preferred API client
+
+---
+
 ## Base URL
 
 **Development**: `http://localhost:3000`  
@@ -53,7 +84,11 @@ Basic health check endpoint.
   "data": {
     "status": "healthy",
     "version": "0.1.0",
-    "uptime": 1234.56
+    "uptime": 1234.56,
+    "documentation": {
+      "openapi_json": "/api-docs/openapi.json",
+      "api_docs": "/api-docs"
+    }
   },
   "message": null
 }

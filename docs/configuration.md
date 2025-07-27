@@ -124,6 +124,49 @@ STARTER__WORKER__RETRY_BACKOFF_BASE_SECS=5
 STARTER__INITIAL_ADMIN_PASSWORD=SecureAdminPassword123!
 ```
 
+### API Documentation Configuration
+
+The starter includes comprehensive OpenAPI documentation for all endpoints.
+
+| Endpoint | Description |
+|----------|-------------|
+| `/api-docs` | Interactive API documentation page with overview and links |
+| `/api-docs/openapi.json` | Complete OpenAPI 3.0 JSON schema specification |
+
+**Features:**
+- **Complete Schema**: All endpoints, request/response models, and validation rules
+- **Interactive Testing**: External Swagger UI integration for endpoint testing
+- **Authentication Support**: Test protected endpoints with session tokens
+- **Type Definitions**: Full schema definitions for TypeScript/Python client generation
+
+**Access Examples:**
+```bash
+# View interactive documentation
+curl http://localhost:3000/api-docs
+
+# Download OpenAPI schema
+curl http://localhost:3000/api-docs/openapi.json > api-schema.json
+
+# Health endpoint includes documentation links
+curl http://localhost:3000/health | jq '.data.documentation'
+```
+
+**Client Generation:**
+Use the OpenAPI schema to generate type-safe clients:
+```bash
+# TypeScript/JavaScript client
+npx @openapitools/openapi-generator-cli generate \
+  -i http://localhost:3000/api-docs/openapi.json \
+  -g typescript-axios \
+  -o ./clients/typescript
+
+# Python client
+npx @openapitools/openapi-generator-cli generate \
+  -i http://localhost:3000/api-docs/openapi.json \
+  -g python \
+  -o ./clients/python
+```
+
 ## Special Environment Variables
 
 ### DATABASE_URL (sqlx CLI only)

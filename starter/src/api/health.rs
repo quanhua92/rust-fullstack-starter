@@ -1,23 +1,49 @@
-use crate::types::{ApiResponse, AppState, ComponentHealth, HealthStatus};
+use crate::types::{ApiResponse, AppState, ComponentHealth, HealthResponse, DetailedHealthResponse, ErrorResponse};
 use axum::{Json, extract::State, http::StatusCode, response::IntoResponse};
 use chrono::Utc;
 use std::collections::HashMap;
 
 /// Basic health check endpoint
-pub async fn health_check() -> impl IntoResponse {
+#[utoipa::path(
+    get,
+    path = "/health",
+    tag = "Health",
+    summary = "Basic health check",
+    description = "Returns basic application health status with version and uptime",
+    responses(
+        (status = 200, description = "Application is healthy", body = ApiResponse<HealthResponse>),
+        (status = 503, description = "Application is unhealthy", body = ErrorResponse)
+    )
+)]
+pub async fn health() -> impl IntoResponse {
     let health_data = serde_json::json!({
         "status": "healthy",
         "version": env!("CARGO_PKG_VERSION"),
         "uptime": std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
             .unwrap()
-            .as_secs_f64()
+            .as_secs_f64(),
+        "documentation": {
+            "openapi_json": "/api-docs/openapi.json",
+            "api_docs": "/api-docs"
+        }
     });
     Json(ApiResponse::success(health_data))
 }
 
 /// Comprehensive health check with dependencies
-pub async fn health_detailed(State(state): State<AppState>) -> impl IntoResponse {
+#[utoipa::path(
+    get,
+    path = "/health/detailed",
+    tag = "Health",
+    summary = "Detailed health check",
+    description = "Returns comprehensive health status including database and dependencies",
+    responses(
+        (status = 200, description = "All services healthy", body = ApiResponse<DetailedHealthResponse>),
+        (status = 503, description = "One or more services unhealthy", body = ApiResponse<DetailedHealthResponse>)
+    )
+)]
+pub async fn detailed_health(State(state): State<AppState>) -> impl IntoResponse {
     let mut checks = HashMap::new();
 
     // Check database connection
@@ -28,7 +54,7 @@ pub async fn health_detailed(State(state): State<AppState>) -> impl IntoResponse
     let all_healthy = checks.values().all(|check| check.status == "healthy");
     let overall_status = if all_healthy { "healthy" } else { "unhealthy" };
 
-    let health_status = HealthStatus {
+    let health_status = DetailedHealthResponse {
         status: overall_status.to_string(),
         timestamp: Utc::now(),
         checks,
@@ -45,6 +71,16 @@ pub async fn health_detailed(State(state): State<AppState>) -> impl IntoResponse
 
 /// Kubernetes liveness probe - checks if the application is alive
 /// Returns 200 if the basic application is running (minimal checks)
+#[utoipa::path(
+    get,
+    path = "/health/live",
+    tag = "Health",
+    summary = "Liveness probe",
+    description = "Kubernetes liveness probe endpoint. Returns 200 if application is running.",
+    responses(
+        (status = 200, description = "Application is alive", body = ApiResponse<serde_json::Value>)
+    )
+)]
 pub async fn health_live() -> impl IntoResponse {
     // Basic liveness check - just confirm the application is running
     // This should be very lightweight and fast
@@ -57,6 +93,17 @@ pub async fn health_live() -> impl IntoResponse {
 
 /// Kubernetes readiness probe - checks if the application is ready to serve traffic
 /// Returns 200 only if all critical dependencies are available
+#[utoipa::path(
+    get,
+    path = "/health/ready",
+    tag = "Health",
+    summary = "Readiness probe",
+    description = "Kubernetes readiness probe endpoint. Returns 200 only if all dependencies are ready.",
+    responses(
+        (status = 200, description = "Application is ready", body = ApiResponse<serde_json::Value>),
+        (status = 503, description = "Application is not ready", body = ApiResponse<serde_json::Value>)
+    )
+)]
 pub async fn health_ready(State(state): State<AppState>) -> impl IntoResponse {
     let mut checks = HashMap::new();
     let mut all_ready = true;
@@ -91,6 +138,17 @@ pub async fn health_ready(State(state): State<AppState>) -> impl IntoResponse {
 
 /// Kubernetes startup probe - checks if the application has started successfully
 /// Returns 200 when the application has completed initialization
+#[utoipa::path(
+    get,
+    path = "/health/startup",
+    tag = "Health",
+    summary = "Startup probe",
+    description = "Kubernetes startup probe endpoint. Returns 200 when initialization is complete.",
+    responses(
+        (status = 200, description = "Application has started", body = ApiResponse<serde_json::Value>),
+        (status = 503, description = "Application is still starting", body = ApiResponse<serde_json::Value>)
+    )
+)]
 pub async fn health_startup(State(state): State<AppState>) -> impl IntoResponse {
     let mut checks = HashMap::new();
     let mut startup_complete = true;
