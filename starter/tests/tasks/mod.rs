@@ -330,7 +330,7 @@ async fn test_retry_failed_task() {
 
     // Retry the failed task
     let retry_response = app
-        .post_auth(&format!("/tasks/{}/retry", task_id), &token.token)
+        .post_auth(&format!("/tasks/{task_id}/retry"), &token.token)
         .await;
     assert_status(&retry_response, StatusCode::OK);
 
@@ -339,7 +339,7 @@ async fn test_retry_failed_task() {
 
     // Verify task is now pending again
     let task_response = app
-        .get_auth(&format!("/tasks/{}", task_id), &token.token)
+        .get_auth(&format!("/tasks/{task_id}"), &token.token)
         .await;
     assert_status(&task_response, StatusCode::OK);
     let task_json: serde_json::Value = task_response.json().await.unwrap();
@@ -362,7 +362,7 @@ async fn test_retry_nonexistent_task() {
 
     let fake_id = uuid::Uuid::new_v4();
     let response = app
-        .post_auth(&format!("/tasks/{}/retry", fake_id), &token.token)
+        .post_auth(&format!("/tasks/{fake_id}/retry"), &token.token)
         .await;
 
     assert_status(&response, StatusCode::NOT_FOUND);
@@ -394,7 +394,7 @@ async fn test_retry_non_failed_task() {
 
     // Try to retry a pending task (should fail)
     let retry_response = app
-        .post_auth(&format!("/tasks/{}/retry", task_id), &token.token)
+        .post_auth(&format!("/tasks/{task_id}/retry"), &token.token)
         .await;
     assert_status(&retry_response, StatusCode::NOT_FOUND);
 }
@@ -435,7 +435,7 @@ async fn test_delete_task() {
 
     // Delete the task
     let delete_response = app
-        .delete_auth(&format!("/tasks/{}", task_id), &token.token)
+        .delete_auth(&format!("/tasks/{task_id}"), &token.token)
         .await;
     assert_status(&delete_response, StatusCode::OK);
 
@@ -444,7 +444,7 @@ async fn test_delete_task() {
 
     // Verify task is deleted
     let task_response = app
-        .get_auth(&format!("/tasks/{}", task_id), &token.token)
+        .get_auth(&format!("/tasks/{task_id}"), &token.token)
         .await;
     assert_status(&task_response, StatusCode::OK);
     let task_json: serde_json::Value = task_response.json().await.unwrap();
@@ -462,7 +462,7 @@ async fn test_delete_nonexistent_task() {
 
     let fake_id = uuid::Uuid::new_v4();
     let response = app
-        .delete_auth(&format!("/tasks/{}", fake_id), &token.token)
+        .delete_auth(&format!("/tasks/{fake_id}"), &token.token)
         .await;
 
     assert_status(&response, StatusCode::NOT_FOUND);
@@ -494,7 +494,7 @@ async fn test_delete_pending_task() {
 
     // Try to delete a pending task (should fail)
     let delete_response = app
-        .delete_auth(&format!("/tasks/{}", task_id), &token.token)
+        .delete_auth(&format!("/tasks/{task_id}"), &token.token)
         .await;
     assert_status(&delete_response, StatusCode::NOT_FOUND);
 }
