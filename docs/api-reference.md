@@ -82,6 +82,144 @@ Detailed health check including database connectivity.
 }
 ```
 
+### GET /health/live
+
+Kubernetes liveness probe endpoint. Checks if the application process is alive and responding.
+
+**Authentication**: None required
+
+**Use Case**: Kubernetes liveness probes to detect if the container needs to be restarted.
+
+**Response**:
+```json
+{
+  "success": true,
+  "data": {
+    "status": "alive",
+    "probe": "liveness",
+    "timestamp": "2024-01-01T00:00:00Z"
+  },
+  "message": null
+}
+```
+
+### GET /health/ready
+
+Kubernetes readiness probe endpoint. Checks if the application is ready to serve traffic by validating all critical dependencies.
+
+**Authentication**: None required
+
+**Use Case**: Kubernetes readiness probes to determine if traffic should be routed to this pod.
+
+**Response**:
+```json
+{
+  "success": true,
+  "data": {
+    "status": "ready",
+    "probe": "readiness",
+    "timestamp": "2024-01-01T00:00:00Z",
+    "checks": {
+      "database": {
+        "status": "healthy",
+        "message": "Database connection successful",
+        "details": null
+      },
+      "application": {
+        "status": "healthy",
+        "message": "Application configuration is valid",
+        "details": {
+          "config_loaded": true,
+          "auth_configured": true
+        }
+      }
+    }
+  },
+  "message": null
+}
+```
+
+**Error Response** (503 Service Unavailable if not ready):
+```json
+{
+  "success": true,
+  "data": {
+    "status": "not_ready",
+    "probe": "readiness",
+    "timestamp": "2024-01-01T00:00:00Z",
+    "checks": {
+      "database": {
+        "status": "unhealthy",
+        "message": "Database connection failed",
+        "details": {
+          "error": "Connection refused"
+        }
+      }
+    }
+  },
+  "message": null
+}
+```
+
+### GET /health/startup
+
+Kubernetes startup probe endpoint. Checks if the application has completed initialization, including database schema validation.
+
+**Authentication**: None required
+
+**Use Case**: Kubernetes startup probes to determine when the application has finished starting up.
+
+**Response**:
+```json
+{
+  "success": true,
+  "data": {
+    "status": "started",
+    "probe": "startup",
+    "timestamp": "2024-01-01T00:00:00Z",
+    "checks": {
+      "database": {
+        "status": "healthy",
+        "message": "Database connection successful",
+        "details": null
+      },
+      "schema": {
+        "status": "healthy",
+        "message": "Database schema is initialized",
+        "details": {
+          "tables_exist": true,
+          "migrations_applied": true
+        }
+      }
+    }
+  },
+  "message": null
+}
+```
+
+**Error Response** (503 Service Unavailable if not started):
+```json
+{
+  "success": true,
+  "data": {
+    "status": "starting",
+    "probe": "startup",
+    "timestamp": "2024-01-01T00:00:00Z",
+    "checks": {
+      "schema": {
+        "status": "unhealthy",
+        "message": "Database schema not initialized",
+        "details": {
+          "error": "relation \"users\" does not exist",
+          "suggestion": "Ensure database migrations have been applied"
+        }
+      }
+    }
+  },
+  "message": null
+}
+```
+
 ## Authentication Endpoints
 
 ### POST /auth/register
@@ -598,14 +736,14 @@ Use the provided test scripts to validate all endpoints:
 # Install faster test runner (recommended)
 cargo install cargo-nextest
 
-# Run all 38 integration tests (~10 seconds)
+# Run all 40 integration tests (~10 seconds)
 cargo nextest run
 
 # Run specific test categories
 cargo nextest run auth::     # Authentication tests (6 tests)
 cargo nextest run tasks::    # Task system tests (11 tests)
-cargo nextest run api::      # API standards tests
-cargo nextest run health::   # Health check tests
+cargo nextest run api::      # API standards tests (13 tests)
+cargo nextest run health::   # Health check tests (8 tests)
 ```
 
 The integration test suite covers:
@@ -618,7 +756,7 @@ The integration test suite covers:
 
 ### API Endpoint Testing
 ```bash
-# Test all documented endpoints with curl (26 tests)
+# Test all documented endpoints with curl (29 tests)
 ./scripts/test-with-curl.sh
 
 # Test custom server configuration
@@ -630,7 +768,7 @@ cargo nextest run && ./scripts/test-with-curl.sh
 ```
 
 The curl test script validates:
-- ✅ All 15 documented API endpoints
+- ✅ All 18 documented API endpoints
 - ✅ Input/output formats match documentation exactly
 - ✅ Authentication flows and error handling
 - ✅ Custom server configurations
@@ -730,7 +868,7 @@ This starter includes comprehensive integration tests that demonstrate proper AP
 # Install faster test runner (recommended)
 cargo install cargo-nextest
 
-# Run all API tests (38 integration tests)
+# Run all API tests (40 integration tests)
 cargo nextest run
 
 # Run specific test categories

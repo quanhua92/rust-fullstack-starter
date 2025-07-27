@@ -1,17 +1,20 @@
+use chrono::Utc;
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::Duration;
-use chrono::Utc;
 use tokio::sync::{RwLock, Semaphore};
 use tokio::time::{interval, timeout};
-use tracing::{info, warn, error, debug};
+use tracing::{debug, error, info, warn};
 use uuid::Uuid;
 
 use crate::database::Database;
 use crate::tasks::{
-    types::{Task, TaskStatus, TaskPriority, TaskContext, TaskResult, TaskError, TaskResult2, CreateTaskRequest, TaskFilter, TaskStats},
-    retry::CircuitBreaker,
     handlers::TaskHandler,
+    retry::CircuitBreaker,
+    types::{
+        CreateTaskRequest, Task, TaskContext, TaskError, TaskFilter, TaskPriority, TaskResult,
+        TaskResult2, TaskStats, TaskStatus,
+    },
 };
 
 pub type TaskHandlerFn = Box<dyn TaskHandler + Send + Sync>;
@@ -64,24 +67,24 @@ impl TaskProcessor {
     {
         let mut handlers = self.handlers.write().await;
         handlers.insert(task_type.clone(), Box::new(handler));
-        
+
         if self.config.enable_circuit_breaker {
             let mut circuit_breakers = self.circuit_breakers.write().await;
             circuit_breakers.insert(task_type.clone(), CircuitBreaker::default());
         }
-        
+
         info!("Registered task handler for type: {}", task_type);
     }
 
     /// Create a new task
     pub async fn create_task(&self, request: CreateTaskRequest) -> TaskResult2<Task> {
         let mut conn = self.database.pool.acquire().await?;
-        
+
         let task_id = Uuid::new_v4();
         let retry_strategy_json = serde_json::to_value(&request.retry_strategy)?;
         let metadata_json = serde_json::to_value(&request.metadata)?;
         let max_attempts = request.retry_strategy.max_attempts() as i32;
-        
+
         let task = sqlx::query_as!(
             Task,
             r#"
@@ -123,7 +126,7 @@ impl TaskProcessor {
     /// Get task by ID
     pub async fn get_task(&self, task_id: Uuid) -> TaskResult2<Option<Task>> {
         let mut conn = self.database.pool.acquire().await?;
-        
+
         let task = sqlx::query_as!(
             Task,
             r#"
@@ -148,7 +151,7 @@ impl TaskProcessor {
     /// List tasks with filtering
     pub async fn list_tasks(&self, filter: TaskFilter) -> TaskResult2<Vec<Task>> {
         let mut conn = self.database.pool.acquire().await?;
-        
+
         // Simple implementation for now - in production use sqlx::query_builder
         let tasks = sqlx::query_as!(
             Task,
@@ -177,7 +180,7 @@ impl TaskProcessor {
     /// Get task statistics
     pub async fn get_stats(&self) -> TaskResult2<TaskStats> {
         let mut conn = self.database.pool.acquire().await?;
-        
+
         let stats = sqlx::query!(
             r#"
             SELECT 
@@ -207,13 +210,16 @@ impl TaskProcessor {
 
     /// Start the task processor worker loop
     pub async fn start_worker(&self) -> TaskResult2<()> {
-        info!("Starting task processor worker with config: {:?}", self.config);
-        
+        info!(
+            "Starting task processor worker with config: {:?}",
+            self.config
+        );
+
         let mut interval = interval(self.config.poll_interval);
-        
+
         loop {
             interval.tick().await;
-            
+
             if let Err(e) = self.process_batch().await {
                 error!("Error processing task batch: {}", e);
             }
@@ -223,15 +229,15 @@ impl TaskProcessor {
     /// Process a batch of ready tasks
     async fn process_batch(&self) -> TaskResult2<()> {
         let tasks = self.fetch_ready_tasks().await?;
-        
+
         if tasks.is_empty() {
             return Ok(());
         }
 
         info!("Processing {} ready tasks", tasks.len());
-        
+
         let mut handles = Vec::new();
-        
+
         for task in tasks {
             let processor = self.clone();
             let handle = tokio::spawn(async move {
@@ -241,21 +247,21 @@ impl TaskProcessor {
             });
             handles.push(handle);
         }
-        
+
         // Wait for all tasks to complete
         for handle in handles {
             if let Err(e) = handle.await {
                 error!("Task processing handle error: {}", e);
             }
         }
-        
+
         Ok(())
     }
 
     /// Fetch ready tasks from database
     async fn fetch_ready_tasks(&self) -> TaskResult2<Vec<Task>> {
         let mut conn = self.database.pool.acquire().await?;
-        
+
         let tasks = sqlx::query_as!(
             Task,
             r#"
@@ -284,17 +290,17 @@ impl TaskProcessor {
     async fn process_task(&self, mut task: Task) -> TaskResult2<()> {
         // Acquire semaphore permit to limit concurrency
         let _permit = self.semaphore.acquire().await.unwrap();
-        
+
         debug!("Processing task {} of type {}", task.id, task.task_type);
-        
+
         // Update task status to running
         if let Err(e) = self.update_task_status(task.id, TaskStatus::Running).await {
             error!("Failed to update task status to running: {}", e);
             return Err(e);
         }
-        
+
         let context = TaskContext::from(&task);
-        
+
         // Check circuit breaker if enabled
         if self.config.enable_circuit_breaker {
             let mut circuit_breakers = self.circuit_breakers.write().await;
@@ -307,7 +313,7 @@ impl TaskProcessor {
                 }
             }
         }
-        
+
         // Execute task with timeout
         let result = {
             let handlers = self.handlers.read().await;
@@ -324,7 +330,7 @@ impl TaskProcessor {
                 }
             }
         };
-        
+
         match result {
             Ok(Ok(task_result)) => {
                 // Task completed successfully
@@ -345,18 +351,24 @@ impl TaskProcessor {
                         cb.record_failure();
                     }
                 }
-                
+
                 task.current_attempt += 1;
                 let error_msg = e.to_string();
                 let task_id = task.id;
                 let current_attempt = task.current_attempt;
-                
+
                 if task.can_retry() {
                     self.schedule_retry(task, &error_msg).await?;
-                    warn!("Task {} failed, scheduled for retry (attempt {})", task_id, current_attempt);
+                    warn!(
+                        "Task {} failed, scheduled for retry (attempt {})",
+                        task_id, current_attempt
+                    );
                 } else {
                     self.mark_task_failed(task_id, &error_msg).await?;
-                    error!("Task {} failed permanently after {} attempts", task_id, current_attempt);
+                    error!(
+                        "Task {} failed permanently after {} attempts",
+                        task_id, current_attempt
+                    );
                 }
             }
             Err(_) => {
@@ -368,10 +380,10 @@ impl TaskProcessor {
                         cb.record_failure();
                     }
                 }
-                
+
                 task.current_attempt += 1;
                 let task_id = task.id;
-                
+
                 if task.can_retry() {
                     self.schedule_retry(task, error).await?;
                     warn!("Task {} timed out, scheduled for retry", task_id);
@@ -381,26 +393,29 @@ impl TaskProcessor {
                 }
             }
         }
-        
+
         Ok(())
     }
 
     /// Update task status
     async fn update_task_status(&self, task_id: Uuid, status: TaskStatus) -> TaskResult2<()> {
         let mut conn = self.database.pool.acquire().await?;
-        
+
         let started_at = if matches!(status, TaskStatus::Running) {
             Some(Utc::now())
         } else {
             None
         };
-        
-        let completed_at = if matches!(status, TaskStatus::Completed | TaskStatus::Failed | TaskStatus::Cancelled) {
+
+        let completed_at = if matches!(
+            status,
+            TaskStatus::Completed | TaskStatus::Failed | TaskStatus::Cancelled
+        ) {
             Some(Utc::now())
         } else {
             None
         };
-        
+
         sqlx::query!(
             r#"
             UPDATE tasks 
@@ -415,16 +430,16 @@ impl TaskProcessor {
         )
         .execute(&mut *conn)
         .await?;
-        
+
         Ok(())
     }
 
     /// Mark task as completed
     async fn mark_task_completed(&self, task_id: Uuid, result: TaskResult) -> TaskResult2<()> {
         let mut conn = self.database.pool.acquire().await?;
-        
+
         let metadata_json = serde_json::to_value(&result.metadata)?;
-        
+
         sqlx::query!(
             r#"
             UPDATE tasks 
@@ -439,14 +454,14 @@ impl TaskProcessor {
         )
         .execute(&mut *conn)
         .await?;
-        
+
         Ok(())
     }
 
     /// Mark task as failed
     async fn mark_task_failed(&self, task_id: Uuid, error: &str) -> TaskResult2<()> {
         let mut conn = self.database.pool.acquire().await?;
-        
+
         sqlx::query!(
             r#"
             UPDATE tasks 
@@ -461,23 +476,20 @@ impl TaskProcessor {
         )
         .execute(&mut *conn)
         .await?;
-        
+
         Ok(())
     }
 
     /// Schedule task for retry
     async fn schedule_retry(&self, task: Task, error: &str) -> TaskResult2<()> {
         let mut conn = self.database.pool.acquire().await?;
-        
+
         let retry_strategy = task.get_retry_strategy()?;
         let delay = retry_strategy.calculate_delay(task.current_attempt as u32);
-        
-        let scheduled_at = if let Some(delay) = delay {
-            Some(Utc::now() + chrono::Duration::from_std(delay).unwrap())
-        } else {
-            None
-        };
-        
+
+        let scheduled_at =
+            delay.map(|delay| Utc::now() + chrono::Duration::from_std(delay).unwrap());
+
         sqlx::query!(
             r#"
             UPDATE tasks 
@@ -493,14 +505,14 @@ impl TaskProcessor {
         )
         .execute(&mut *conn)
         .await?;
-        
+
         Ok(())
     }
 
     /// Cancel a task
     pub async fn cancel_task(&self, task_id: Uuid) -> TaskResult2<()> {
         let mut conn = self.database.pool.acquire().await?;
-        
+
         sqlx::query!(
             r#"
             UPDATE tasks 
@@ -514,7 +526,7 @@ impl TaskProcessor {
         )
         .execute(&mut *conn)
         .await?;
-        
+
         Ok(())
     }
 }

@@ -1,0 +1,199 @@
+#!/bin/bash
+# rename-project.sh - Rename the starter project to your custom name
+# Usage: ./scripts/rename-project.sh <new-project-name>
+
+set -e
+
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m' # No Color
+
+# Check if new name is provided
+if [ $# -eq 0 ]; then
+    echo -e "${RED}❌ Error: Project name is required${NC}"
+    echo ""
+    echo "Usage: $0 <new-project-name>"
+    echo "Example: $0 my_awesome_project"
+    echo ""
+    echo "Requirements:"
+    echo "- Name must contain only letters, numbers, and underscores"
+    echo "- Name must start with a letter or underscore"
+    echo "- Name should be in snake_case for Rust conventions"
+    exit 1
+fi
+
+NEW_NAME="$1"
+
+# Validate project name (Rust package naming conventions)
+if [[ ! "$NEW_NAME" =~ ^[a-zA-Z_][a-zA-Z0-9_]*$ ]]; then
+    echo -e "${RED}❌ Error: Invalid project name format${NC}"
+    echo ""
+    echo "Project name must:"
+    echo "- Start with a letter or underscore"
+    echo "- Contain only letters, numbers, and underscores"
+    echo "- Follow Rust package naming conventions"
+    echo ""
+    echo "Good examples: my_project, awesome_app, backend_service"
+    echo "Bad examples: 123project, my-project, project.name"
+    exit 1
+fi
+
+# Check if already renamed
+if [ ! -d "starter" ]; then
+    echo -e "${YELLOW}⚠️  Warning: 'starter' directory not found${NC}"
+    echo "This project may have already been renamed, or you're in the wrong directory."
+    echo ""
+    echo "Current directory: $(pwd)"
+    echo "Expected to find: starter/"
+    echo ""
+    read -p "Continue anyway? (y/N): " confirm
+    if [[ ! $confirm =~ ^[Yy]$ ]]; then
+        echo "Aborted."
+        exit 1
+    fi
+else
+    # Check if target directory already exists
+    if [ -d "$NEW_NAME" ]; then
+        echo -e "${RED}❌ Error: Directory '$NEW_NAME' already exists${NC}"
+        echo "Please choose a different name or remove the existing directory."
+        exit 1
+    fi
+fi
+
+echo -e "${BLUE}🚀 Renaming project from 'starter' to '$NEW_NAME'...${NC}"
+echo ""
+
+# Create backup timestamp
+BACKUP_TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+BACKUP_DIR="backup_${BACKUP_TIMESTAMP}"
+
+echo -e "${YELLOW}📦 Creating backup in $BACKUP_DIR/${NC}"
+mkdir -p "$BACKUP_DIR"
+if [ -d "starter" ]; then
+    cp -r starter/ "$BACKUP_DIR/"
+fi
+cp Cargo.toml "$BACKUP_DIR/" 2>/dev/null || true
+
+# 1. Rename the main directory
+if [ -d "starter" ]; then
+    echo -e "${BLUE}📁 Renaming starter/ directory to $NEW_NAME/${NC}"
+    mv starter/ "$NEW_NAME"/
+fi
+
+# 2. Update workspace member in root Cargo.toml
+echo -e "${BLUE}📝 Updating root Cargo.toml workspace members${NC}"
+if [ -f "Cargo.toml" ]; then
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+        # macOS version
+        sed -i '' "s/members = \[\"starter\"\]/members = [\"$NEW_NAME\"]/" Cargo.toml
+    else
+        # Linux version
+        sed -i "s/members = \[\"starter\"\]/members = [\"$NEW_NAME\"]/" Cargo.toml
+    fi
+fi
+
+# 3. Update package name in binary Cargo.toml
+if [ -f "$NEW_NAME/Cargo.toml" ]; then
+    echo -e "${BLUE}📝 Updating $NEW_NAME/Cargo.toml package name${NC}"
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+        # macOS version
+        sed -i '' "s/name = \"starter\"/name = \"$NEW_NAME\"/" "$NEW_NAME/Cargo.toml"
+    else
+        # Linux version
+        sed -i "s/name = \"starter\"/name = \"$NEW_NAME\"/" "$NEW_NAME/Cargo.toml"
+    fi
+fi
+
+# 4. Replace all occurrences of 'starter' with new name in source files
+echo -e "${BLUE}🔄 Replacing 'starter' with '$NEW_NAME' in source files...${NC}"
+
+# Find and replace in common file types, excluding certain directories
+find . -type f \( -name "*.rs" -o -name "*.toml" -o -name "*.md" -o -name "*.yaml" -o -name "*.yml" -o -name "*.dockerfile" -o -name "Dockerfile" -o -name "*.sh" \) \
+    -not -path "./target/*" \
+    -not -path "./.git/*" \
+    -not -path "./backup_*/*" \
+    -not -path "./$NEW_NAME/target/*" \
+    -exec grep -l "starter" {} \; | while read -r file; do
+    
+    echo "  Updating: $file"
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+        # macOS version - be more careful with replacements
+        sed -i '' "s/cargo run --bin starter/cargo run --bin $NEW_NAME/g" "$file"
+        sed -i '' "s/starter::/${NEW_NAME}::/g" "$file"
+        sed -i '' "s/starter_/${NEW_NAME}_/g" "$file"
+        sed -i '' "s/\"starter\"/\"$NEW_NAME\"/g" "$file"
+        sed -i '' "s/'starter'/'$NEW_NAME'/g" "$file"
+        sed -i '' "s/starter binary/$NEW_NAME binary/g" "$file"
+        sed -i '' "s/starter server/$NEW_NAME server/g" "$file"
+        sed -i '' "s/starter worker/$NEW_NAME worker/g" "$file"
+    else
+        # Linux version
+        sed -i "s/cargo run --bin starter/cargo run --bin $NEW_NAME/g" "$file"
+        sed -i "s/starter::/${NEW_NAME}::/g" "$file"
+        sed -i "s/starter_/${NEW_NAME}_/g" "$file"
+        sed -i "s/\"starter\"/\"$NEW_NAME\"/g" "$file"
+        sed -i "s/'starter'/'$NEW_NAME'/g" "$file"
+        sed -i "s/starter binary/$NEW_NAME binary/g" "$file"
+        sed -i "s/starter server/$NEW_NAME server/g" "$file"
+        sed -i "s/starter worker/$NEW_NAME worker/g" "$file"
+    fi
+done
+
+# 5. Update script references
+echo -e "${BLUE}🔄 Updating script references...${NC}"
+if [ -f "scripts/server.sh" ]; then
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+        sed -i '' "s/PROJECT_NAME=\"starter\"/PROJECT_NAME=\"$NEW_NAME\"/" scripts/server.sh
+    else
+        sed -i "s/PROJECT_NAME=\"starter\"/PROJECT_NAME=\"$NEW_NAME\"/" scripts/server.sh
+    fi
+fi
+
+# 6. Update log file references
+echo -e "${BLUE}🔄 Updating log file references...${NC}"
+for script in scripts/*.sh; do
+    if [ -f "$script" ]; then
+        if [[ "$OSTYPE" == "darwin"* ]]; then
+            sed -i '' "s/starter-server/\${NEW_NAME}-server/g" "$script"
+            sed -i '' "s/starter-worker/\${NEW_NAME}-worker/g" "$script"
+        else
+            sed -i "s/starter-server/\${NEW_NAME}-server/g" "$script"
+            sed -i "s/starter-worker/\${NEW_NAME}-worker/g" "$script"
+        fi
+    fi
+done
+
+# 7. Verification
+echo ""
+echo -e "${GREEN}✅ Renaming complete!${NC}"
+echo ""
+echo -e "${YELLOW}📋 Summary of changes:${NC}"
+echo "  • Renamed starter/ → $NEW_NAME/"
+echo "  • Updated Cargo.toml workspace members"
+echo "  • Updated package name in $NEW_NAME/Cargo.toml"
+echo "  • Replaced references in source files"
+echo "  • Updated script configurations"
+echo "  • Created backup in $BACKUP_DIR/"
+echo ""
+echo -e "${GREEN}🎉 Your project '$NEW_NAME' is ready!${NC}"
+echo ""
+echo -e "${YELLOW}Next steps:${NC}"
+echo "1. Test the renamed project:"
+echo "   ${BLUE}cargo run --bin $NEW_NAME -- --help${NC}"
+echo ""
+echo "2. Start development server:"
+echo "   ${BLUE}./scripts/server.sh 3000${NC}"
+echo ""
+echo "3. Run tests:"
+echo "   ${BLUE}cargo nextest run${NC}"
+echo ""
+echo "4. Update README.md with your project description"
+echo ""
+echo "5. Initialize git repository (if not already done):"
+echo "   ${BLUE}git add .${NC}"
+echo "   ${BLUE}git commit -m 'Initial project setup for $NEW_NAME'${NC}"
+echo ""
+echo -e "${GREEN}Happy coding! 🦀${NC}"

@@ -1,11 +1,11 @@
-use crate::{
-    types::{DbConn, Result},
-    error::Error,
-};
-use crate::auth::models::{Session, LoginRequest, LoginResponse};
+use crate::auth::models::{LoginRequest, LoginResponse, Session};
 use crate::users::{models::UserProfile, services as user_services};
+use crate::{
+    error::Error,
+    types::{DbConn, Result},
+};
+use chrono::{Duration, Utc};
 use uuid::Uuid;
-use chrono::{Utc, Duration};
 
 fn generate_session_token() -> String {
     use rand::Rng;
@@ -26,7 +26,7 @@ pub async fn create_session(
 ) -> Result<Session> {
     let token = generate_session_token();
     let expires_at = Utc::now() + Duration::hours(24);
-    
+
     let session = sqlx::query!(
         r#"
         INSERT INTO sessions (user_id, token, expires_at, user_agent)
@@ -42,7 +42,7 @@ pub async fn create_session(
     .fetch_one(&mut **conn)
     .await
     .map_err(Error::from_sqlx)?;
-    
+
     let session = Session {
         id: session.id,
         user_id: session.user_id,
@@ -54,14 +54,11 @@ pub async fn create_session(
         user_agent: session.user_agent,
         is_active: session.is_active,
     };
-    
+
     Ok(session)
 }
 
-pub async fn find_session_by_token(
-    conn: &mut DbConn,
-    token: &str,
-) -> Result<Option<Session>> {
+pub async fn find_session_by_token(conn: &mut DbConn, token: &str) -> Result<Option<Session>> {
     let session = sqlx::query!(
         r#"
         SELECT id, user_id, token, expires_at, created_at, updated_at,
@@ -74,7 +71,7 @@ pub async fn find_session_by_token(
     .fetch_optional(&mut **conn)
     .await
     .map_err(Error::from_sqlx)?;
-    
+
     let session = session.map(|s| Session {
         id: s.id,
         user_id: s.user_id,
@@ -86,14 +83,11 @@ pub async fn find_session_by_token(
         user_agent: s.user_agent,
         is_active: s.is_active,
     });
-    
+
     Ok(session)
 }
 
-pub async fn update_session_activity(
-    conn: &mut DbConn,
-    session_id: Uuid,
-) -> Result<()> {
+pub async fn update_session_activity(conn: &mut DbConn, session_id: Uuid) -> Result<()> {
     sqlx::query!(
         "UPDATE sessions SET last_activity_at = NOW() WHERE id = $1",
         session_id
@@ -101,14 +95,11 @@ pub async fn update_session_activity(
     .execute(&mut **conn)
     .await
     .map_err(Error::from_sqlx)?;
-    
+
     Ok(())
 }
 
-pub async fn delete_session(
-    conn: &mut DbConn,
-    token: &str,
-) -> Result<()> {
+pub async fn delete_session(conn: &mut DbConn, token: &str) -> Result<()> {
     sqlx::query!(
         "UPDATE sessions SET is_active = false WHERE token = $1",
         token
@@ -116,14 +107,11 @@ pub async fn delete_session(
     .execute(&mut **conn)
     .await
     .map_err(Error::from_sqlx)?;
-    
+
     Ok(())
 }
 
-pub async fn delete_all_user_sessions(
-    conn: &mut DbConn,
-    user_id: Uuid,
-) -> Result<u64> {
+pub async fn delete_all_user_sessions(conn: &mut DbConn, user_id: Uuid) -> Result<u64> {
     let result = sqlx::query!(
         "UPDATE sessions SET is_active = false WHERE user_id = $1 AND is_active = true",
         user_id
@@ -131,20 +119,18 @@ pub async fn delete_all_user_sessions(
     .execute(&mut **conn)
     .await
     .map_err(Error::from_sqlx)?;
-    
+
     Ok(result.rows_affected())
 }
 
-pub async fn cleanup_expired_sessions(
-    conn: &mut DbConn,
-) -> Result<u64> {
+pub async fn cleanup_expired_sessions(conn: &mut DbConn) -> Result<u64> {
     let result = sqlx::query!(
         "UPDATE sessions SET is_active = false WHERE expires_at < NOW() AND is_active = true"
     )
     .execute(&mut **conn)
     .await
     .map_err(Error::from_sqlx)?;
-    
+
     Ok(result.rows_affected())
 }
 
@@ -153,7 +139,7 @@ pub async fn validate_session_with_user(
     token: &str,
 ) -> Result<Option<crate::users::models::User>> {
     let session = find_session_by_token(conn, token).await?;
-    
+
     if let Some(session) = session {
         if !session.is_expired() {
             update_session_activity(conn, session.id).await?;
@@ -161,16 +147,13 @@ pub async fn validate_session_with_user(
             return Ok(user);
         }
     }
-    
+
     Ok(None)
 }
 
-pub async fn login(
-    conn: &mut DbConn,
-    req: LoginRequest,
-) -> Result<LoginResponse> {
+pub async fn login(conn: &mut DbConn, req: LoginRequest) -> Result<LoginResponse> {
     req.validate()?;
-    
+
     let user = if req.username_or_email.contains('@') {
         user_services::find_user_by_email(conn, &req.username_or_email).await?
     } else {
@@ -187,14 +170,10 @@ pub async fn login(
         return Err(Error::InvalidCredentials);
     }
 
-    let session = create_session(
-        conn,
-        user.id,
-        req.user_agent.as_deref(),
-    ).await?;
-    
+    let session = create_session(conn, user.id, req.user_agent.as_deref()).await?;
+
     user_services::update_last_login(conn, user.id).await?;
-    
+
     Ok(LoginResponse {
         session_token: session.token,
         expires_at: session.expires_at,
@@ -202,24 +181,15 @@ pub async fn login(
     })
 }
 
-pub async fn logout(
-    conn: &mut DbConn,
-    token: &str,
-) -> Result<()> {
+pub async fn logout(conn: &mut DbConn, token: &str) -> Result<()> {
     delete_session(conn, token).await
 }
 
-pub async fn logout_all(
-    conn: &mut DbConn,
-    user_id: Uuid,
-) -> Result<u64> {
+pub async fn logout_all(conn: &mut DbConn, user_id: Uuid) -> Result<u64> {
     delete_all_user_sessions(conn, user_id).await
 }
 
-pub async fn get_current_user(
-    conn: &mut DbConn,
-    token: &str,
-) -> Result<Option<UserProfile>> {
+pub async fn get_current_user(conn: &mut DbConn, token: &str) -> Result<Option<UserProfile>> {
     let user = validate_session_with_user(conn, token).await?;
     Ok(user.map(|u| u.to_profile()))
 }

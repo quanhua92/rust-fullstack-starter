@@ -1,7 +1,7 @@
 use once_cell::sync::Lazy;
 use reqwest::redirect::Policy;
-use starter::{server, AppConfig, Database};
 use sqlx::PgPool;
+use starter::{AppConfig, Database, server};
 use std::net::SocketAddr;
 use tokio::net::TcpListener;
 
@@ -39,10 +39,10 @@ pub async fn spawn_app() -> TestApp {
 
     // Load environment variables
     dotenvy::dotenv().ok();
-    
+
     // Create test configuration
     let mut config = AppConfig::load().expect("Failed to load config");
-    
+
     // Create isolated test database
     let test_db = super::db::create_test_db()
         .await
@@ -54,12 +54,14 @@ pub async fn spawn_app() -> TestApp {
     config.database.min_connections = 1;
 
     // Create database instance with test pool
-    let database = Database { pool: test_db.pool.clone() };
-    
+    let database = Database {
+        pool: test_db.pool.clone(),
+    };
+
     // Build application with state
-    let state = starter::types::AppState { 
-        config: config.clone(), 
-        database 
+    let state = starter::types::AppState {
+        config: config.clone(),
+        database,
     };
     let app = server::create_router(state);
 
@@ -68,7 +70,7 @@ pub async fn spawn_app() -> TestApp {
         .await
         .expect("Failed to bind random port");
     let port = listener.local_addr().unwrap().port();
-    let address = format!("http://127.0.0.1:{}", port);
+    let address = format!("http://127.0.0.1:{port}");
 
     // Start server in background
     tokio::spawn(async move {
@@ -115,18 +117,14 @@ impl TestApp {
         let url = format!("{}{}", self.address, path);
         self.client
             .get(url)
-            .header("Authorization", format!("Bearer {}", token))
+            .header("Authorization", format!("Bearer {token}"))
             .send()
             .await
             .expect("Failed to execute GET request")
     }
 
     // POST with JSON body
-    pub async fn post_json<T: serde::Serialize>(
-        &self,
-        path: &str,
-        json: &T,
-    ) -> reqwest::Response {
+    pub async fn post_json<T: serde::Serialize>(&self, path: &str, json: &T) -> reqwest::Response {
         let url = format!("{}{}", self.address, path);
         self.client
             .post(url)
@@ -146,7 +144,7 @@ impl TestApp {
         let url = format!("{}{}", self.address, path);
         self.client
             .post(url)
-            .header("Authorization", format!("Bearer {}", token))
+            .header("Authorization", format!("Bearer {token}"))
             .json(json)
             .send()
             .await
@@ -163,7 +161,7 @@ impl TestApp {
         let url = format!("{}{}", self.address, path);
         self.client
             .put(url)
-            .header("Authorization", format!("Bearer {}", token))
+            .header("Authorization", format!("Bearer {token}"))
             .json(json)
             .send()
             .await
@@ -175,7 +173,7 @@ impl TestApp {
         let url = format!("{}{}", self.address, path);
         self.client
             .delete(url)
-            .header("Authorization", format!("Bearer {}", token))
+            .header("Authorization", format!("Bearer {token}"))
             .send()
             .await
             .expect("Failed to execute DELETE request")
@@ -187,7 +185,7 @@ impl TestApp {
             .json()
             .await
             .expect("Failed to parse response as JSON");
-        
+
         // API response format: { "success": true, "data": { "session_token": "...", ... } }
         let token = json["data"]["session_token"]
             .as_str()
@@ -199,6 +197,9 @@ impl TestApp {
 
     // Helper to get database connection
     pub async fn db(&self) -> sqlx::pool::PoolConnection<sqlx::Postgres> {
-        self.db_pool.acquire().await.expect("Failed to acquire db connection")
+        self.db_pool
+            .acquire()
+            .await
+            .expect("Failed to acquire db connection")
     }
 }

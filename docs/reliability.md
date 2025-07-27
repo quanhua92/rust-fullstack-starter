@@ -208,7 +208,7 @@ Test 3: 0.3s (clone from template)
 Total: 3.4s for 3 tests (55% faster)
 ```
 
-For 38 tests, this saves significant development time.
+For 40 tests, this saves significant development time.
 
 #### Parallel Test Execution
 Tests run safely in parallel because:
@@ -236,7 +236,7 @@ GET /health
 }
 
 // Detailed health - includes dependencies
-GET /health/detailed  // Requires admin role
+GET /health/detailed
 {
   "success": true,
   "data": {
@@ -249,6 +249,11 @@ GET /health/detailed  // Requires admin role
     }
   }
 }
+
+// Kubernetes health probes for container orchestration
+GET /health/live         // Liveness probe - minimal checks
+GET /health/ready        // Readiness probe - dependency checks  
+GET /health/startup      // Startup probe - initialization checks
 ```
 
 ### Request Tracing

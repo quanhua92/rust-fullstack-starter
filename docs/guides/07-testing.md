@@ -327,6 +327,9 @@ Base URL: http://localhost:3000
 📊 Health Endpoints
 ✅ PASS GET /health (Status: 200)
 ✅ PASS GET /health/detailed (Status: 200)
+✅ PASS GET /health/live (Status: 200)
+✅ PASS GET /health/ready (Status: 200)
+✅ PASS GET /health/startup (Status: 200)
 
 🔐 Authentication Flow  
 ✅ PASS POST /auth/register (Status: 200)
@@ -393,7 +396,7 @@ Template approach:
 Total: 3.4s for 3 tests (55% faster)
 ```
 
-With 38 tests, this saves significant development time.
+With 40 tests, this saves significant development time.
 
 ### Parallel Execution
 
@@ -621,7 +624,7 @@ Consider adding:
 
 Now that you understand the testing framework:
 
-1. **Run the Tests**: `cargo nextest run` to see all 38 tests pass
+1. **Run the Tests**: `cargo nextest run` to see all 40 tests pass
 2. **Explore Test Code**: Read through `starter/tests/` to understand patterns
 3. **Write New Tests**: Add tests for any new features you build
 4. **Learn from Failures**: When tests fail, use them to understand the system

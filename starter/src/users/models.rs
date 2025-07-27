@@ -1,8 +1,8 @@
-use serde::{Deserialize, Serialize};
-use chrono::{DateTime, Utc};
-use uuid::Uuid;
-use crate::types::Result;
 use crate::error::Error;
+use crate::types::Result;
+use chrono::{DateTime, Utc};
+use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 
 #[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
 pub struct User {
@@ -79,20 +79,35 @@ pub fn validate_email(email: &str) -> Result<()> {
 
 pub fn validate_username(username: &str) -> Result<()> {
     if username.len() < 3 || username.len() > 50 {
-        return Err(Error::validation("username", "Username must be between 3 and 50 characters"));
+        return Err(Error::validation(
+            "username",
+            "Username must be between 3 and 50 characters",
+        ));
     }
-    if !username.chars().all(|c| c.is_alphanumeric() || c == '_' || c == '-') {
-        return Err(Error::validation("username", "Username can only contain letters, numbers, underscores, and hyphens"));
+    if !username
+        .chars()
+        .all(|c| c.is_alphanumeric() || c == '_' || c == '-')
+    {
+        return Err(Error::validation(
+            "username",
+            "Username can only contain letters, numbers, underscores, and hyphens",
+        ));
     }
     Ok(())
 }
 
 pub fn validate_password(password: &str) -> Result<()> {
     if password.len() < 8 {
-        return Err(Error::validation("password", "Password must be at least 8 characters long"));
+        return Err(Error::validation(
+            "password",
+            "Password must be at least 8 characters long",
+        ));
     }
     if password.len() > 128 {
-        return Err(Error::validation("password", "Password must be less than 128 characters"));
+        return Err(Error::validation(
+            "password",
+            "Password must be less than 128 characters",
+        ));
     }
     Ok(())
 }

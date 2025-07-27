@@ -1,9 +1,9 @@
+use crate::tasks::retry::RetryStrategy;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
 use std::collections::HashMap;
 use uuid::Uuid;
-use crate::tasks::retry::RetryStrategy;
 
 #[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type)]
 #[sqlx(type_name = "task_status", rename_all = "lowercase")]
@@ -84,10 +84,7 @@ impl Task {
     }
 
     pub fn is_terminal(&self) -> bool {
-        matches!(
-            self.status,
-            TaskStatus::Completed | TaskStatus::Cancelled
-        )
+        matches!(self.status, TaskStatus::Completed | TaskStatus::Cancelled)
     }
 }
 
@@ -162,7 +159,9 @@ impl From<&Task> for TaskContext {
             task_type: task.task_type.clone(),
             payload: task.payload.clone(),
             attempt: task.current_attempt,
-            metadata: task.metadata.as_object()
+            metadata: task
+                .metadata
+                .as_object()
                 .map(|obj| obj.iter().map(|(k, v)| (k.clone(), v.clone())).collect())
                 .unwrap_or_default(),
             created_by: task.created_by,

@@ -1,8 +1,8 @@
-use serde::{Deserialize, Serialize, Deserializer};
-use secrecy::SecretString;
-use std::time::Duration;
-use crate::types::Result;
 use crate::error::Error;
+use crate::types::Result;
+use secrecy::SecretString;
+use serde::{Deserialize, Deserializer, Serialize};
+use std::time::Duration;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AppConfig {
@@ -43,7 +43,7 @@ pub struct AuthConfig {
     pub cleanup_interval_secs: u64,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]  
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct WorkerConfig {
     pub concurrency: usize,
     pub poll_interval_secs: u64,
@@ -64,12 +64,13 @@ impl AppConfig {
             .add_source(
                 config::Environment::with_prefix("STARTER")
                     .separator("__")
-                    .try_parsing(true)
+                    .try_parsing(true),
             )
             .build()?;
 
-        let mut app_config: AppConfig = config.try_deserialize()
-            .map_err(|e| Error::ConfigurationError(format!("Failed to parse config: {}", e)))?;
+        let mut app_config: AppConfig = config
+            .try_deserialize()
+            .map_err(|e| Error::ConfigurationError(format!("Failed to parse config: {e}")))?;
 
         // Handle initial admin password separately since it's skipped in serde
         if let Ok(password) = std::env::var("STARTER__INITIAL_ADMIN_PASSWORD") {
@@ -84,35 +85,51 @@ impl AppConfig {
     pub fn validate(&self) -> Result<()> {
         // Validate database components
         if self.database.user.is_empty() {
-            return Err(Error::ConfigurationError("Database user cannot be empty".to_string()));
+            return Err(Error::ConfigurationError(
+                "Database user cannot be empty".to_string(),
+            ));
         }
         if self.database.password.is_empty() {
-            return Err(Error::ConfigurationError("Database password cannot be empty".to_string()));
+            return Err(Error::ConfigurationError(
+                "Database password cannot be empty".to_string(),
+            ));
         }
         if self.database.host.is_empty() {
-            return Err(Error::ConfigurationError("Database host cannot be empty".to_string()));
+            return Err(Error::ConfigurationError(
+                "Database host cannot be empty".to_string(),
+            ));
         }
         if self.database.database.is_empty() {
-            return Err(Error::ConfigurationError("Database name cannot be empty".to_string()));
+            return Err(Error::ConfigurationError(
+                "Database name cannot be empty".to_string(),
+            ));
         }
 
         // Validate server port
         if self.server.port == 0 {
-            return Err(Error::ConfigurationError("Server port must be specified".to_string()));
+            return Err(Error::ConfigurationError(
+                "Server port must be specified".to_string(),
+            ));
         }
 
         // Validate connection pool settings
         if self.database.max_connections < self.database.min_connections {
-            return Err(Error::ConfigurationError("max_connections must be >= min_connections".to_string()));
+            return Err(Error::ConfigurationError(
+                "max_connections must be >= min_connections".to_string(),
+            ));
         }
 
         if self.database.min_connections == 0 {
-            return Err(Error::ConfigurationError("min_connections must be > 0".to_string()));
+            return Err(Error::ConfigurationError(
+                "min_connections must be > 0".to_string(),
+            ));
         }
 
         // Validate worker settings
         if self.worker.concurrency == 0 {
-            return Err(Error::ConfigurationError("Worker concurrency must be > 0".to_string()));
+            return Err(Error::ConfigurationError(
+                "Worker concurrency must be > 0".to_string(),
+            ));
         }
 
         Ok(())
@@ -135,7 +152,7 @@ impl AppConfig {
         );
         SecretString::from(url)
     }
-    
+
     /// Get database URL as plain string (for internal use)
     pub fn database_url_string(&self) -> String {
         format!(

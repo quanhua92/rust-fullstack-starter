@@ -1,6 +1,6 @@
 use crate::helpers::test_app::{AuthToken, TestApp};
-use starter::models::{CreateUserRequest, User};
 use serde_json::json;
+use starter::models::{CreateUserRequest, User};
 
 pub struct TestDataFactory {
     pub app: TestApp,
@@ -15,14 +15,14 @@ impl TestDataFactory {
     pub async fn create_user(&self, username: &str) -> User {
         let user_data = CreateUserRequest {
             username: username.to_string(),
-            email: format!("{}@example.com", username),
+            email: format!("{username}@example.com"),
             password: "SecurePass123!".to_string(),
             role: None,
         };
 
         let response = self.app.post_json("/auth/register", &user_data).await;
         assert_eq!(response.status(), 200);
-        
+
         let json: serde_json::Value = response.json().await.unwrap();
         // The response has ApiResponse format: { "success": true, "data": UserProfile, "message": "..." }
         let user_data = &json["data"];
@@ -64,9 +64,7 @@ impl TestDataFactory {
         let mut users = Vec::new();
 
         for i in 0..count {
-            let user = self
-                .create_user(&format!("testuser{}", i))
-                .await;
+            let user = self.create_user(&format!("testuser{i}")).await;
             users.push(user);
         }
 
@@ -74,20 +72,27 @@ impl TestDataFactory {
     }
 
     /// Creates a test task (requires authentication)
-    pub async fn create_task(&self, task_type: &str, payload: serde_json::Value) -> serde_json::Value {
+    pub async fn create_task(
+        &self,
+        task_type: &str,
+        payload: serde_json::Value,
+    ) -> serde_json::Value {
         // Create an authenticated user with unique name
-        let unique_username = format!("taskuser_{}", uuid::Uuid::new_v4().to_string()[..8].to_string());
+        let unique_username = format!("taskuser_{}", &uuid::Uuid::new_v4().to_string()[..8]);
         let (_user, token) = self.create_authenticated_user(&unique_username).await;
-        
+
         let task_data = json!({
             "task_type": task_type,
             "payload": payload,
             "priority": "normal"
         });
 
-        let response = self.app.post_json_auth("/tasks", &task_data, &token.token).await;
+        let response = self
+            .app
+            .post_json_auth("/tasks", &task_data, &token.token)
+            .await;
         assert_eq!(response.status(), 200);
-        
+
         response.json().await.unwrap()
     }
 }

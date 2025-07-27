@@ -1,16 +1,16 @@
-pub mod config;
-pub mod error;
-pub mod types;
-pub mod database;
-pub mod models;
 pub mod api;
-pub mod server;
 pub mod auth;
-pub mod users;
+pub mod config;
+pub mod database;
+pub mod error;
+pub mod models;
+pub mod server;
 pub mod tasks;
+pub mod types;
+pub mod users;
 
 // Re-export common types
 pub use config::AppConfig;
-pub use error::Error;
-pub use types::{Result, DbPool, DbConn};
 pub use database::Database;
+pub use error::Error;
+pub use types::{DbConn, DbPool, Result};

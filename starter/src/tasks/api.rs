@@ -6,12 +6,12 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use crate::{
-    types::{AppState, ApiResponse},
     error::Error,
     tasks::{
-        types::{CreateTaskRequest, TaskFilter, TaskStats},
         processor::TaskProcessor,
+        types::{CreateTaskRequest, TaskFilter, TaskStats},
     },
+    types::{ApiResponse, AppState},
 };
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -39,7 +39,7 @@ pub async fn create_task(
     Json(payload): Json<CreateTaskApiRequest>,
 ) -> Result<Json<ApiResponse<crate::tasks::types::Task>>, Error> {
     use crate::tasks::types::TaskPriority;
-    
+
     let priority = match payload.priority.as_deref() {
         Some("low") => TaskPriority::Low,
         Some("high") => TaskPriority::High,
@@ -59,8 +59,10 @@ pub async fn create_task(
         crate::tasks::processor::ProcessorConfig::default(),
     );
 
-    let task = processor.create_task(request).await
-        .map_err(|e| Error::Internal(format!("Failed to create task: {}", e)))?;
+    let task = processor
+        .create_task(request)
+        .await
+        .map_err(|e| Error::Internal(format!("Failed to create task: {e}")))?;
 
     Ok(Json(ApiResponse::success(task)))
 }
@@ -75,8 +77,10 @@ pub async fn get_task(
         crate::tasks::processor::ProcessorConfig::default(),
     );
 
-    let task = processor.get_task(task_id).await
-        .map_err(|e| Error::Internal(format!("Failed to get task: {}", e)))?;
+    let task = processor
+        .get_task(task_id)
+        .await
+        .map_err(|e| Error::Internal(format!("Failed to get task: {e}")))?;
 
     Ok(Json(ApiResponse::success(task)))
 }
@@ -88,7 +92,7 @@ pub async fn list_tasks(
 ) -> Result<Json<ApiResponse<Vec<crate::tasks::types::Task>>>, Error> {
     let filter = TaskFilter {
         task_type: params.task_type,
-        status: None, // TODO: Parse status string
+        status: None,   // TODO: Parse status string
         priority: None, // TODO: Parse priority string
         created_by: None,
         created_after: None,
@@ -102,8 +106,10 @@ pub async fn list_tasks(
         crate::tasks::processor::ProcessorConfig::default(),
     );
 
-    let tasks = processor.list_tasks(filter).await
-        .map_err(|e| Error::Internal(format!("Failed to list tasks: {}", e)))?;
+    let tasks = processor
+        .list_tasks(filter)
+        .await
+        .map_err(|e| Error::Internal(format!("Failed to list tasks: {e}")))?;
 
     Ok(Json(ApiResponse::success(tasks)))
 }
@@ -117,8 +123,10 @@ pub async fn get_stats(
         crate::tasks::processor::ProcessorConfig::default(),
     );
 
-    let stats = processor.get_stats().await
-        .map_err(|e| Error::Internal(format!("Failed to get stats: {}", e)))?;
+    let stats = processor
+        .get_stats()
+        .await
+        .map_err(|e| Error::Internal(format!("Failed to get stats: {e}")))?;
 
     Ok(Json(ApiResponse::success(stats)))
 }
@@ -133,11 +141,13 @@ pub async fn cancel_task(
         crate::tasks::processor::ProcessorConfig::default(),
     );
 
-    processor.cancel_task(task_id).await
-        .map_err(|e| Error::Internal(format!("Failed to cancel task: {}", e)))?;
+    processor
+        .cancel_task(task_id)
+        .await
+        .map_err(|e| Error::Internal(format!("Failed to cancel task: {e}")))?;
 
     Ok(Json(ApiResponse::success_with_message(
         "Task cancelled successfully".to_string(),
-        format!("Task {} has been cancelled", task_id)
+        format!("Task {task_id} has been cancelled"),
     )))
 }

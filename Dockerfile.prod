@@ -1,0 +1,55 @@
+# Multi-stage production Docker build
+# Optimized for minimal size and security
+
+# Build stage
+FROM rust:1.83-slim as builder
+
+# Install system dependencies required for building
+RUN apt-get update && apt-get install -y \
+    pkg-config \
+    libssl-dev \
+    libpq-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create app user for security
+RUN addgroup --system --gid 1001 appgroup
+RUN adduser --system --uid 1001 --gid 1001 appuser
+
+# Set working directory
+WORKDIR /app
+
+# Copy workspace configuration
+COPY Cargo.toml ./
+COPY Cargo.lock ./
+
+# Copy source code
+COPY starter/ ./starter/
+
+# Build the application
+RUN cargo build --release --bin starter && \
+    cp target/release/starter /app/starter-bin
+
+# Runtime stage - use distroless for security
+FROM gcr.io/distroless/cc-debian12:nonroot
+
+# Copy the application binary
+COPY --from=builder /app/starter-bin /app/starter
+
+# Copy migration files
+COPY --from=builder /app/starter/migrations /app/migrations
+
+# Set working directory
+WORKDIR /app
+
+# Use non-root user
+USER nonroot:nonroot
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD ["/app/starter", "health-check"] || exit 1
+
+# Expose port
+EXPOSE 8080
+
+# Default command
+CMD ["/app/starter", "server", "--port", "8080"]

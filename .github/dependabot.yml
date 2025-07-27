@@ -1,0 +1,95 @@
+version: 2
+updates:
+  # Rust dependencies
+  - package-ecosystem: "cargo"
+    directory: "/starter"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+    open-pull-requests-limit: 10
+    reviewers:
+      - "@your-username"  # Replace with actual GitHub username
+    assignees:
+      - "@your-username"  # Replace with actual GitHub username
+    commit-message:
+      prefix: "deps"
+      include: "scope"
+    labels:
+      - "dependencies"
+      - "rust"
+    groups:
+      # Group major version updates
+      major-updates:
+        patterns:
+          - "*"
+        update-types:
+          - "version-update:semver-major"
+      # Group minor and patch updates for common dependencies
+      async-runtime:
+        patterns:
+          - "tokio*"
+          - "async-*"
+        update-types:
+          - "version-update:semver-minor"
+          - "version-update:semver-patch"
+      web-framework:
+        patterns:
+          - "axum*"
+          - "tower*"
+          - "hyper*"
+        update-types:
+          - "version-update:semver-minor"
+          - "version-update:semver-patch"
+      database:
+        patterns:
+          - "sqlx*"
+          - "sea-*"
+        update-types:
+          - "version-update:semver-minor"
+          - "version-update:semver-patch"
+      serialization:
+        patterns:
+          - "serde*"
+          - "serde_json"
+        update-types:
+          - "version-update:semver-minor"
+          - "version-update:semver-patch"
+
+  # GitHub Actions dependencies
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+    open-pull-requests-limit: 5
+    reviewers:
+      - "@your-username"  # Replace with actual GitHub username
+    assignees:
+      - "@your-username"  # Replace with actual GitHub username
+    commit-message:
+      prefix: "ci"
+      include: "scope"
+    labels:
+      - "dependencies"
+      - "github-actions"
+
+  # Docker dependencies (if you have any Dockerfiles that use specific tags)
+  - package-ecosystem: "docker"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+    open-pull-requests-limit: 5
+    reviewers:
+      - "@your-username"  # Replace with actual GitHub username
+    assignees:
+      - "@your-username"  # Replace with actual GitHub username
+    commit-message:
+      prefix: "docker"
+      include: "scope"
+    labels:
+      - "dependencies"
+      - "docker"

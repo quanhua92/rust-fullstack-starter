@@ -1,5 +1,5 @@
-use std::time::{Duration, Instant};
 use serde::{Deserialize, Serialize};
+use std::time::{Duration, Instant};
 use tokio::time::sleep;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -100,7 +100,7 @@ impl RetryStrategy {
         E: std::fmt::Debug,
     {
         let mut attempt = 0;
-        
+
         loop {
             match operation().await {
                 Ok(result) => return Ok(result),
@@ -130,9 +130,9 @@ impl RetryStrategy {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum CircuitState {
-    Closed,    // Normal operation
-    Open,      // Failing, reject requests
-    HalfOpen,  // Testing if service recovered
+    Closed,   // Normal operation
+    Open,     // Failing, reject requests
+    HalfOpen, // Testing if service recovered
 }
 
 #[derive(Debug, Clone)]
@@ -215,7 +215,7 @@ impl CircuitBreaker {
     /// Record a failed operation
     pub fn record_failure(&mut self) {
         self.last_failure = Some(Instant::now());
-        
+
         match self.state {
             CircuitState::Closed => {
                 self.failure_count += 1;
@@ -288,25 +288,34 @@ mod tests {
             max_attempts: 3,
         };
 
-        assert_eq!(strategy.calculate_delay(0), Some(Duration::from_millis(100)));
-        assert_eq!(strategy.calculate_delay(1), Some(Duration::from_millis(200)));
-        assert_eq!(strategy.calculate_delay(2), Some(Duration::from_millis(400)));
+        assert_eq!(
+            strategy.calculate_delay(0),
+            Some(Duration::from_millis(100))
+        );
+        assert_eq!(
+            strategy.calculate_delay(1),
+            Some(Duration::from_millis(200))
+        );
+        assert_eq!(
+            strategy.calculate_delay(2),
+            Some(Duration::from_millis(400))
+        );
         assert_eq!(strategy.calculate_delay(3), None);
     }
 
     #[tokio::test]
     async fn test_circuit_breaker_closed_to_open() {
         let mut cb = CircuitBreaker::new(2, 1, Duration::from_secs(1));
-        
+
         // Initially closed
         assert!(matches!(cb.state(), CircuitState::Closed));
         assert!(cb.should_allow_operation());
-        
+
         // First failure
         cb.record_failure();
         assert!(matches!(cb.state(), CircuitState::Closed));
         assert!(cb.should_allow_operation());
-        
+
         // Second failure - should open circuit
         cb.record_failure();
         assert!(matches!(cb.state(), CircuitState::Open));
@@ -320,22 +329,27 @@ mod tests {
             max_attempts: 3,
         };
 
-        use std::sync::{Arc, atomic::{AtomicUsize, Ordering}};
-        
+        use std::sync::{
+            Arc,
+            atomic::{AtomicUsize, Ordering},
+        };
+
         let call_count = Arc::new(AtomicUsize::new(0));
         let count_clone = call_count.clone();
-        
-        let result = strategy.execute(move || {
-            let count = count_clone.clone();
-            async move {
-                let current = count.fetch_add(1, Ordering::SeqCst) + 1;
-                if current < 3 {
-                    Err("temporary failure")
-                } else {
-                    Ok("success")
+
+        let result = strategy
+            .execute(move || {
+                let count = count_clone.clone();
+                async move {
+                    let current = count.fetch_add(1, Ordering::SeqCst) + 1;
+                    if current < 3 {
+                        Err("temporary failure")
+                    } else {
+                        Ok("success")
+                    }
                 }
-            }
-        }).await;
+            })
+            .await;
 
         assert_eq!(result, Ok("success"));
         assert_eq!(call_count.load(Ordering::SeqCst), 3);

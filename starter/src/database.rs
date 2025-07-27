@@ -1,5 +1,5 @@
-use sqlx::{PgPool, postgres::PgPoolOptions, migrate::MigrateDatabase, Postgres};
-use crate::{config::AppConfig, types::Result, error::Error};
+use crate::{config::AppConfig, error::Error, types::Result};
+use sqlx::{PgPool, Postgres, migrate::MigrateDatabase, postgres::PgPoolOptions};
 
 #[derive(Clone)]
 pub struct Database {
@@ -10,13 +10,18 @@ impl Database {
     /// Connect to PostgreSQL database with connection pooling
     pub async fn connect(config: &AppConfig) -> Result<Self> {
         let database_url = config.database_url_string();
-        
+
         // Create database if it doesn't exist
-        if !Postgres::database_exists(&database_url).await.map_err(Error::Database)? {
-            Postgres::create_database(&database_url).await.map_err(Error::Database)?;
+        if !Postgres::database_exists(&database_url)
+            .await
+            .map_err(Error::Database)?
+        {
+            Postgres::create_database(&database_url)
+                .await
+                .map_err(Error::Database)?;
             tracing::info!("Created database");
         }
-        
+
         // Create connection pool with configuration
         let pool = PgPoolOptions::new()
             .max_connections(config.database.max_connections)
@@ -27,13 +32,16 @@ impl Database {
             .connect(&database_url)
             .await
             .map_err(Error::Database)?;
-        
-        tracing::info!("Connected to database with pool size: {}-{}", 
-            config.database.min_connections, config.database.max_connections);
-        
+
+        tracing::info!(
+            "Connected to database with pool size: {}-{}",
+            config.database.min_connections,
+            config.database.max_connections
+        );
+
         Ok(Database { pool })
     }
-    
+
     /// Run database migrations from starter/migrations directory
     pub async fn migrate(&self) -> Result<()> {
         sqlx::migrate!("./migrations")
@@ -43,32 +51,32 @@ impl Database {
         tracing::info!("Database migrations completed");
         Ok(())
     }
-    
+
     /// Ensure initial admin user exists if configured
     pub async fn ensure_initial_admin(&self, config: &AppConfig) -> Result<()> {
         use secrecy::ExposeSecret;
-        
+
         // Check if any admin users exist
-        let admin_count: i64 = sqlx::query_scalar(
-            "SELECT COUNT(*) FROM users WHERE role = 'admin'"
-        )
-        .fetch_one(&self.pool)
-        .await
-        .map_err(Error::Database)?;
+        let admin_count: i64 =
+            sqlx::query_scalar("SELECT COUNT(*) FROM users WHERE role = 'admin'")
+                .fetch_one(&self.pool)
+                .await
+                .map_err(Error::Database)?;
 
         if let Some(admin_password) = &config.initial_admin_password {
             // Admin password is configured
             if admin_count == 0 {
                 // Hash the password using Argon2
+                use argon2::password_hash::{SaltString, rand_core::OsRng};
                 use argon2::{Argon2, PasswordHasher};
-                use argon2::password_hash::{rand_core::OsRng, SaltString};
-                
+
                 let salt = SaltString::generate(&mut OsRng);
                 let argon2 = Argon2::default();
-                let password_hash = argon2.hash_password(admin_password.expose_secret().as_bytes(), &salt)
-                    .map_err(|e| Error::internal(&format!("Password hashing failed: {}", e)))?
+                let password_hash = argon2
+                    .hash_password(admin_password.expose_secret().as_bytes(), &salt)
+                    .map_err(|e| Error::internal(&format!("Password hashing failed: {e}")))?
                     .to_string();
-                
+
                 // Create admin user
                 sqlx::query(
                     r#"
@@ -80,7 +88,7 @@ impl Database {
                 .execute(&self.pool)
                 .await
                 .map_err(Error::Database)?;
-                
+
                 tracing::info!("✅ Created initial admin user (username: admin)");
             } else {
                 tracing::info!("Admin user already exists, skipping creation");
@@ -102,7 +110,7 @@ impl Database {
         }
         Ok(())
     }
-    
+
     /// Health check for the database connection
     pub async fn health_check(&self) -> Result<()> {
         sqlx::query("SELECT 1")

@@ -1,69 +1,69 @@
-use thiserror::Error;
 use axum::{
+    Json,
     http::StatusCode,
     response::{IntoResponse, Response},
-    Json,
 };
 use serde_json::json;
+use thiserror::Error;
 
 #[derive(Error, Debug)]
 pub enum Error {
     #[error("Database error: {0}")]
     Database(#[from] sqlx::Error),
-    
+
     #[error("Migration error: {0}")]
     Migration(#[from] sqlx::migrate::MigrateError),
-    
+
     #[error("Configuration error: {0}")]
     ConfigurationError(String),
-    
+
     // Authentication errors
     #[error("Unauthorized access")]
     Unauthorized,
-    
+
     #[error("Invalid credentials")]
     InvalidCredentials,
-    
+
     #[error("Token has expired")]
     TokenExpired,
-    
+
     // Validation errors
     #[error("Validation failed for {field}: {message}")]
     ValidationError { field: String, message: String },
-    
+
     #[error("Invalid input: {0}")]
     InvalidInput(String),
-    
+
     // Business logic errors
     #[error("Not found: {0}")]
     NotFound(String),
-    
+
     #[error("User not found")]
     UserNotFound,
-    
+
     #[error("User already exists")]
     UserAlreadyExists,
-    
+
     #[error("Email already exists")]
     EmailAlreadyExists,
-    
+
     #[error("Username already exists")]
     UsernameAlreadyExists,
-    
+
     // System errors
     #[error("Internal error: {0}")]
     Internal(String),
-    
+
     #[error("Service unavailable")]
     ServiceUnavailable,
-    
+
     // Task/Worker errors
     #[error("Task not found")]
     TaskNotFound,
-    
+
     #[error("Task execution failed: {0}")]
     TaskExecutionFailed(String),
-    
+
     #[error("Worker error: {0}")]
     WorkerError(String),
 }
@@ -75,11 +75,11 @@ impl Error {
             message: message.to_string(),
         }
     }
-    
+
     pub fn conflict(_message: &str) -> Self {
         Self::UserAlreadyExists
     }
-    
+
     pub fn internal(message: &str) -> Self {
         Self::Internal(message.to_string())
     }
@@ -101,10 +101,11 @@ impl Error {
                 // Handle PostgreSQL specific constraint violations
                 if let Some(code) = db_err.code() {
                     match code.as_ref() {
-                        "23505" => {  // unique_violation
-                            if db_err.constraint().map_or(false, |c| c.contains("email")) {
+                        "23505" => {
+                            // unique_violation
+                            if db_err.constraint().is_some_and(|c| c.contains("email")) {
                                 return Error::EmailAlreadyExists;
-                            } else if db_err.constraint().map_or(false, |c| c.contains("username")) {
+                            } else if db_err.constraint().is_some_and(|c| c.contains("username")) {
                                 return Error::UsernameAlreadyExists;
                             }
                             Error::UserAlreadyExists
@@ -151,19 +152,11 @@ impl IntoResponse for Error {
             ),
             Error::ValidationError { field, message } => (
                 StatusCode::BAD_REQUEST,
-                format!("Validation failed for {}: {}", field, message),
+                format!("Validation failed for {field}: {message}"),
                 "VALIDATION_FAILED",
             ),
-            Error::InvalidInput(msg) => (
-                StatusCode::BAD_REQUEST,
-                msg.clone(),
-                "INVALID_INPUT",
-            ),
-            Error::NotFound(msg) => (
-                StatusCode::NOT_FOUND,
-                msg.clone(),
-                "NOT_FOUND",
-            ),
+            Error::InvalidInput(msg) => (StatusCode::BAD_REQUEST, msg.clone(), "INVALID_INPUT"),
+            Error::NotFound(msg) => (StatusCode::NOT_FOUND, msg.clone(), "NOT_FOUND"),
             Error::UserNotFound => (
                 StatusCode::NOT_FOUND,
                 "User not found".to_string(),
@@ -206,18 +199,21 @@ impl IntoResponse for Error {
             ),
             Error::TaskExecutionFailed(msg) => (
                 StatusCode::INTERNAL_SERVER_ERROR,
-                format!("Task execution failed: {}", msg),
+                format!("Task execution failed: {msg}"),
                 "TASK_EXECUTION_FAILED",
             ),
             Error::WorkerError(msg) => (
                 StatusCode::INTERNAL_SERVER_ERROR,
-                format!("Worker error: {}", msg),
+                format!("Worker error: {msg}"),
                 "WORKER_ERROR",
             ),
         };
 
         // Log internal errors for debugging
-        if matches!(self, Error::Database(_) | Error::Internal(_) | Error::ConfigurationError(_)) {
+        if matches!(
+            self,
+            Error::Database(_) | Error::Internal(_) | Error::ConfigurationError(_)
+        ) {
             tracing::error!("Internal error: {}", self);
         }
 

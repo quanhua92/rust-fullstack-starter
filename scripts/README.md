@@ -4,6 +4,18 @@ This directory contains comprehensive scripts for developing, testing, and manag
 
 ## 🎯 Quick Start Scripts
 
+### `rename-project.sh <name>`
+**Rename project from "starter" to your custom name (recommended first step).**
+```bash
+./scripts/rename-project.sh my_awesome_project
+```
+
+### `deploy-prod.sh`
+**Production deployment with Docker Compose.**
+```bash
+./scripts/deploy-prod.sh            # Deploy to production
+```
+
 ### `start-dev.sh`
 **Complete one-command setup for new developers.**
 ```bash

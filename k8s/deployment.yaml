@@ -1,0 +1,276 @@
+# Kubernetes deployment configuration for Rust Full-Stack Starter
+# This example shows how to deploy the application with proper health checks
+
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: starter-app
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: starter-config
+  namespace: starter-app
+data:
+  RUST_LOG: "info"
+  STARTER__SERVER__HOST: "0.0.0.0"
+  STARTER__SERVER__PORT: "8080"
+  STARTER__DATABASE__HOST: "postgres-service"
+  STARTER__DATABASE__PORT: "5432"
+  STARTER__DATABASE__DATABASE: "starter_prod"
+  STARTER__DATABASE__USERNAME: "starter_user"
+  STARTER__WORKER__MAX_CONCURRENT_TASKS: "4"
+  STARTER__WORKER__POLL_INTERVAL: "5000"
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: starter-secrets
+  namespace: starter-app
+type: Opaque
+data:
+  # Base64 encoded secrets - replace with actual values
+  # echo -n "your_database_password" | base64
+  STARTER__DATABASE__PASSWORD: cGFzc3dvcmRfaGVyZQ==  # password_here
+  # echo -n "your_64_character_session_secret" | base64
+  STARTER__AUTH__SESSION_SECRET: c2Vzc2lvbl9zZWNyZXRfNjRfY2hhcmFjdGVyc19oZXJl  # session_secret_64_characters_here
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: starter-app
+  namespace: starter-app
+  labels:
+    app: starter-app
+    component: backend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: starter-app
+      component: backend
+  template:
+    metadata:
+      labels:
+        app: starter-app
+        component: backend
+    spec:
+      containers:
+      - name: starter-app
+        image: starter-app:latest  # Replace with your image
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8080
+          name: http
+        env:
+        - name: DATABASE_URL
+          value: "postgresql://$(STARTER__DATABASE__USERNAME):$(STARTER__DATABASE__PASSWORD)@$(STARTER__DATABASE__HOST):$(STARTER__DATABASE__PORT)/$(STARTER__DATABASE__DATABASE)"
+        envFrom:
+        - configMapRef:
+            name: starter-config
+        - secretRef:
+            name: starter-secrets
+        
+        # Kubernetes Health Checks
+        livenessProbe:
+          httpGet:
+            path: /health/live
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+          successThreshold: 1
+        
+        readinessProbe:
+          httpGet:
+            path: /health/ready
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+          successThreshold: 1
+        
+        startupProbe:
+          httpGet:
+            path: /health/startup
+            port: 8080
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 30  # Allow up to 5 minutes for startup
+          successThreshold: 1
+        
+        # Resource limits
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        
+        # Security context
+        securityContext:
+          runAsNonRoot: true
+          runAsUser: 1001
+          runAsGroup: 1001
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: false
+          capabilities:
+            drop:
+            - ALL
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: starter-worker
+  namespace: starter-app
+  labels:
+    app: starter-app
+    component: worker
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: starter-app
+      component: worker
+  template:
+    metadata:
+      labels:
+        app: starter-app
+        component: worker
+    spec:
+      containers:
+      - name: starter-worker
+        image: starter-app:latest  # Same image, different command
+        imagePullPolicy: Always
+        command: ["/app/starter"]
+        args: ["worker"]
+        env:
+        - name: DATABASE_URL
+          value: "postgresql://$(STARTER__DATABASE__USERNAME):$(STARTER__DATABASE__PASSWORD)@$(STARTER__DATABASE__HOST):$(STARTER__DATABASE__PORT)/$(STARTER__DATABASE__DATABASE)"
+        envFrom:
+        - configMapRef:
+            name: starter-config
+        - secretRef:
+            name: starter-secrets
+        
+        # Worker health checks (process-based)
+        livenessProbe:
+          exec:
+            command:
+            - /bin/sh
+            - -c
+            - "pgrep -f 'starter.*worker' > /dev/null"
+          initialDelaySeconds: 30
+          periodSeconds: 30
+          timeoutSeconds: 5
+          failureThreshold: 3
+        
+        # Workers don't need readiness probes (they don't serve traffic)
+        # But we can check if they can connect to the database
+        readinessProbe:
+          exec:
+            command:
+            - /app/starter
+            - health-check
+          initialDelaySeconds: 10
+          periodSeconds: 30
+          timeoutSeconds: 10
+          failureThreshold: 3
+        
+        # Resource limits (workers typically use less memory)
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "250m"
+        
+        # Security context
+        securityContext:
+          runAsNonRoot: true
+          runAsUser: 1001
+          runAsGroup: 1001
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: false
+          capabilities:
+            drop:
+            - ALL
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: starter-app-service
+  namespace: starter-app
+  labels:
+    app: starter-app
+    component: backend
+spec:
+  selector:
+    app: starter-app
+    component: backend
+  ports:
+  - name: http
+    port: 80
+    targetPort: 8080
+    protocol: TCP
+  type: ClusterIP
+---
+# Optional: Ingress for external access
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: starter-app-ingress
+  namespace: starter-app
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"  # If using cert-manager
+    nginx.ingress.kubernetes.io/rate-limit: "100"
+    nginx.ingress.kubernetes.io/rate-limit-window: "1m"
+spec:
+  tls:
+  - hosts:
+    - your-domain.com
+    secretName: starter-app-tls
+  rules:
+  - host: your-domain.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: starter-app-service
+            port:
+              number: 80
+---
+# Optional: HorizontalPodAutoscaler
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: starter-app-hpa
+  namespace: starter-app
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: starter-app
+  minReplicas: 2
+  maxReplicas: 10
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80

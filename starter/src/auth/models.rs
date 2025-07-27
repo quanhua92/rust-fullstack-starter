@@ -1,7 +1,7 @@
+use crate::{error::Error, types::Result};
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
-use crate::{types::Result, error::Error};
 
 #[derive(Debug, Clone, sqlx::FromRow, Serialize)]
 pub struct Session {
@@ -32,7 +32,10 @@ pub struct LoginRequest {
 impl LoginRequest {
     pub fn validate(&self) -> Result<()> {
         if self.username_or_email.trim().is_empty() {
-            return Err(Error::validation("username_or_email", "Username or email cannot be empty"));
+            return Err(Error::validation(
+                "username_or_email",
+                "Username or email cannot be empty",
+            ));
         }
         if self.password.is_empty() {
             return Err(Error::validation("password", "Password cannot be empty"));

@@ -1,8 +1,8 @@
-use serde::{Deserialize, Serialize};
-use chrono::{DateTime, Utc};
-use uuid::Uuid;
-use crate::types::Result;
 use crate::error::Error;
+use crate::types::Result;
+use chrono::{DateTime, Utc};
+use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 
 // User models with proper validation
 #[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
@@ -10,7 +10,7 @@ pub struct User {
     pub id: Uuid,
     pub username: String,
     pub email: String,
-    #[serde(skip_serializing)]  // Never serialize password hash
+    #[serde(skip_serializing)] // Never serialize password hash
     pub password_hash: String,
     pub role: String,
     pub is_active: bool,
@@ -82,7 +82,7 @@ pub struct ApiKey {
     pub id: Uuid,
     pub name: String,
     pub description: Option<String>,
-    #[serde(skip_serializing)]  // Never serialize key hash
+    #[serde(skip_serializing)] // Never serialize key hash
     pub key_hash: String,
     pub key_prefix: String,
     pub created_by: Uuid,
@@ -122,8 +122,10 @@ impl Task {
     pub const STATUS_CANCELLED: &'static str = "cancelled";
 
     pub fn is_finished(&self) -> bool {
-        matches!(self.status.as_str(), 
-            Self::STATUS_COMPLETED | Self::STATUS_FAILED | Self::STATUS_CANCELLED)
+        matches!(
+            self.status.as_str(),
+            Self::STATUS_COMPLETED | Self::STATUS_FAILED | Self::STATUS_CANCELLED
+        )
     }
 }
 
@@ -155,7 +157,10 @@ pub struct LoginRequest {
 impl LoginRequest {
     pub fn validate(&self) -> Result<()> {
         if self.username_or_email.trim().is_empty() {
-            return Err(Error::validation("username_or_email", "Username or email cannot be empty"));
+            return Err(Error::validation(
+                "username_or_email",
+                "Username or email cannot be empty",
+            ));
         }
         if self.password.is_empty() {
             return Err(Error::validation("password", "Password cannot be empty"));
@@ -185,7 +190,10 @@ impl CreateTaskRequest {
             return Err(Error::validation("task_type", "Task type cannot be empty"));
         }
         if self.task_type.len() > 50 {
-            return Err(Error::validation("task_type", "Task type must be 50 characters or less"));
+            return Err(Error::validation(
+                "task_type",
+                "Task type must be 50 characters or less",
+            ));
         }
         Ok(())
     }
@@ -201,20 +209,35 @@ pub fn validate_email(email: &str) -> Result<()> {
 
 pub fn validate_username(username: &str) -> Result<()> {
     if username.len() < 3 || username.len() > 50 {
-        return Err(Error::validation("username", "Username must be between 3 and 50 characters"));
+        return Err(Error::validation(
+            "username",
+            "Username must be between 3 and 50 characters",
+        ));
     }
-    if !username.chars().all(|c| c.is_alphanumeric() || c == '_' || c == '-') {
-        return Err(Error::validation("username", "Username can only contain letters, numbers, underscores, and hyphens"));
+    if !username
+        .chars()
+        .all(|c| c.is_alphanumeric() || c == '_' || c == '-')
+    {
+        return Err(Error::validation(
+            "username",
+            "Username can only contain letters, numbers, underscores, and hyphens",
+        ));
     }
     Ok(())
 }
 
 pub fn validate_password(password: &str) -> Result<()> {
     if password.len() < 8 {
-        return Err(Error::validation("password", "Password must be at least 8 characters long"));
+        return Err(Error::validation(
+            "password",
+            "Password must be at least 8 characters long",
+        ));
     }
     if password.len() > 128 {
-        return Err(Error::validation("password", "Password must be less than 128 characters"));
+        return Err(Error::validation(
+            "password",
+            "Password must be less than 128 characters",
+        ));
     }
     Ok(())
 }

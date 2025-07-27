@@ -7,7 +7,6 @@ pub type Result<T> = std::result::Result<T, Error>;
 pub type DbPool = sqlx::PgPool;
 pub type DbConn = sqlx::pool::PoolConnection<sqlx::Postgres>;
 
-
 // Application state shared across handlers
 #[derive(Clone)]
 pub struct AppState {
@@ -61,7 +60,7 @@ impl<T> ApiResponse<T> {
             message: None,
         }
     }
-    
+
     pub fn success_with_message(data: T, message: String) -> Self {
         Self {
             success: true,

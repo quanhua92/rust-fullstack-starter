@@ -1,11 +1,11 @@
+use crate::auth::services;
+use crate::error::Error;
+use crate::types::AppState;
 use axum::{
     extract::{Request, State},
     middleware::Next,
     response::Response,
 };
-use crate::types::AppState;
-use crate::auth::services;
-use crate::error::Error;
 use uuid::Uuid;
 
 #[derive(Debug, Clone, serde::Serialize)]
@@ -22,11 +22,9 @@ fn extract_bearer_token(req: &Request) -> Option<String> {
         .get("authorization")
         .and_then(|header| header.to_str().ok())
         .and_then(|auth_header| {
-            if auth_header.starts_with("Bearer ") {
-                Some(auth_header[7..].to_string())
-            } else {
-                None
-            }
+            auth_header
+                .strip_prefix("Bearer ")
+                .map(|token| token.to_string())
         })
 }
 
@@ -41,7 +39,7 @@ pub async fn auth_middleware(
         Some(token) => token,
         None => return Err(Error::Unauthorized),
     };
-    
+
     // Get database connection
     let mut conn = match app_state.database.pool.acquire().await {
         Ok(conn) => conn,
@@ -50,7 +48,7 @@ pub async fn auth_middleware(
             return Err(Error::Internal("Database connection failed".to_string()));
         }
     };
-    
+
     // Validate session and get user
     let user = match services::validate_session_with_user(&mut conn, &token).await {
         Ok(Some(user)) => user,
@@ -63,13 +61,13 @@ pub async fn auth_middleware(
             return Err(Error::Internal("Session validation failed".to_string()));
         }
     };
-    
+
     // Check if user is active
     if !user.is_active {
         tracing::debug!("User {} is not active", user.id);
         return Err(Error::Unauthorized);
     }
-    
+
     // Add user info to request extensions
     req.extensions_mut().insert(AuthUser {
         id: user.id,
@@ -77,7 +75,7 @@ pub async fn auth_middleware(
         email: user.email,
         role: user.role,
     });
-    
+
     Ok(next.run(req).await)
 }
 
@@ -105,25 +103,23 @@ pub async fn optional_auth_middleware(
             }
         }
     }
-    
+
     next.run(req).await
 }
 
 /// Admin-only middleware (requires auth_middleware to run first)
-pub async fn admin_middleware(
-    req: Request,
-    next: Next,
-) -> Result<Response, Error> {
+pub async fn admin_middleware(req: Request, next: Next) -> Result<Response, Error> {
     // Get authenticated user from request extensions
-    let auth_user = req.extensions()
+    let auth_user = req
+        .extensions()
         .get::<AuthUser>()
         .ok_or(Error::Unauthorized)?;
-    
+
     // Check if user is admin
     if auth_user.role != "admin" {
         tracing::debug!("User {} attempted to access admin endpoint", auth_user.id);
         return Err(Error::Unauthorized);
     }
-    
+
     Ok(next.run(req).await)
 }

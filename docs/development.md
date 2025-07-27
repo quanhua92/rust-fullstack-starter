@@ -87,7 +87,7 @@ This starter includes a comprehensive integration testing framework that helps y
 # Install cargo-nextest for faster testing (optional but recommended)
 cargo install cargo-nextest
 
-# Run all integration tests (~10 seconds for 38 tests)
+# Run all integration tests (~10 seconds for 40 tests)
 cargo nextest run
 
 # Run without stopping on failures (see all results)
@@ -104,7 +104,7 @@ TEST_LOG=1 cargo test -- --nocapture
 
 ### API Endpoint Validation
 ```bash
-# Test all API endpoints with curl (26 tests)
+# Test all API endpoints with curl (29 tests)
 ./scripts/test-with-curl.sh
 
 # Test different server configurations

@@ -8,7 +8,7 @@ This guide will help you set up and run the Rust Full-Stack Starter project loca
 - **Docker 20.10+** and **Docker Compose 2.0+** - For database infrastructure
 - **PostgreSQL client tools** (optional) - For database inspection
 
-> **Performance Note**: Setup typically takes 2-3 seconds, test execution ~10 seconds for all 38 tests
+> **Performance Note**: Setup typically takes 2-3 seconds, test execution ~10 seconds for all 40 tests
 
 ## Quick Setup
 
@@ -18,7 +18,18 @@ This guide will help you set up and run the Rust Full-Stack Starter project loca
 > - **sqlx commands**: Auto-handled by scripts (or run from `starter/` directory)  
 > - **Tests**: Run from `starter/` directory (`cd starter && cargo test`)
 
-### Option A: One-Command Setup (Recommended)
+### Option A: Customize and Start (Recommended)
+
+```bash
+# 1. Rename project to your name (optional but recommended)
+./scripts/rename-project.sh my_awesome_project
+
+# 2. Check prerequisites and start everything
+./scripts/check-prereqs.sh
+./scripts/dev-server.sh 3000
+```
+
+### Option B: Use as "starter" (Quick Start)
 
 ```bash
 # Check prerequisites and start everything
@@ -26,7 +37,7 @@ This guide will help you set up and run the Rust Full-Stack Starter project loca
 ./scripts/dev-server.sh 3000
 ```
 
-### Option B: Manual Step-by-Step Setup
+### Option C: Manual Step-by-Step Setup
 
 For learning purposes, here's the manual process:
 
@@ -168,6 +179,8 @@ Now that you have the system running, follow these guides to understand and exte
 - **[Development Workflow](./development.md)** - Daily development process
 - **[Configuration Reference](./configuration.md)** - All environment variables
 - **[API Reference](./api-reference.md)** - Complete endpoint documentation
+- **[Production Deployment](./production-deployment.md)** - Docker production setup
+- **[CI/CD Guide](./cicd.md)** - GitHub Actions workflows and automation
 
 ### 🆘 When You Need Help
 - **[Troubleshooting](./reference/troubleshooting.md)** - Common issues and solutions
@@ -201,13 +214,13 @@ Now that you have the system running, follow these guides to understand and exte
 # Run all integration tests (~10 seconds)
 cargo nextest run
 
-# Test API endpoints (26 tests)
+# Test API endpoints (29 tests)
 ./scripts/test-with-curl.sh
 
 # Test custom server configuration
 ./scripts/test-with-curl.sh localhost 8080
 
-# Full validation workflow
+# Full validation workflow  
 cargo nextest run && ./scripts/test-with-curl.sh
 ```
 
@@ -238,14 +251,14 @@ docker compose down
 
 ## Testing Your Application
 
-This starter includes a comprehensive testing framework with 38 integration tests.
+This starter includes a comprehensive testing framework with 40 integration tests.
 
 ### Running Tests
 ```bash
 # Install faster test runner (recommended)
 cargo install cargo-nextest
 
-# Run all tests (38 integration tests) - takes ~10 seconds
+# Run all tests (40 integration tests) - takes ~10 seconds
 cargo nextest run
 
 # Run specific test categories
