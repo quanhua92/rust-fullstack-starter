@@ -87,7 +87,7 @@ This starter includes a comprehensive integration testing framework that helps y
 # Install cargo-nextest for faster testing (optional but recommended)
 cargo install cargo-nextest
 
-# Run all tests (~10 seconds for 38 tests)
+# Run all integration tests (~10 seconds for 38 tests)
 cargo nextest run
 
 # Run without stopping on failures (see all results)
@@ -100,6 +100,19 @@ cargo nextest run health::
 
 # Run with debug output
 TEST_LOG=1 cargo test -- --nocapture
+```
+
+### API Endpoint Validation
+```bash
+# Test all API endpoints with curl (26 tests)
+./scripts/test-with-curl.sh
+
+# Test different server configurations
+./scripts/test-with-curl.sh localhost 8080
+./scripts/test-with-curl.sh api.example.com 443  # HTTPS auto-detected
+
+# Combined workflow: integration + API tests
+cargo nextest run && ./scripts/test-with-curl.sh
 ```
 
 ### Test Coverage
@@ -178,6 +191,9 @@ cargo nextest run
 # Run all tests without stopping on first failure
 cargo nextest run --no-fail-fast
 
+# Test API endpoints with running server
+./scripts/test-with-curl.sh
+
 # Run tests with standard cargo (slower)
 cargo test
 
@@ -188,6 +204,9 @@ TEST_LOG=1 cargo test -- --nocapture
 cargo nextest run auth::
 cargo nextest run tasks::
 cargo nextest run health::
+
+# Full validation workflow
+cargo nextest run && ./scripts/test-with-curl.sh
 
 # Run with different configurations
 STARTER__SERVER__PORT=3001 cargo run -- server

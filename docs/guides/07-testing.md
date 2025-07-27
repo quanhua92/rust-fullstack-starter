@@ -193,14 +193,14 @@ async fn test_create_task() {
     let factory = TestDataFactory::new(app.clone());
     
     // Tasks require authentication
-    let task_response = factory.create_task("send_email", json!({
+    let task_response = factory.create_task("email", json!({
         "to": "test@example.com",
         "subject": "Test",
         "body": "Hello"
     })).await;
     
     assert_json_field_exists(&task_response, "data");
-    assert_eq!(task_response["data"]["task_type"], "send_email");
+    assert_eq!(task_response["data"]["task_type"], "email");
 }
 ```
 
@@ -305,6 +305,46 @@ cargo nextest run --no-fail-fast
 # Traditional cargo test (slower)
 cargo test
 ```
+
+### API Endpoint Testing
+
+The starter includes a comprehensive curl-based test script for API validation:
+
+```bash
+# Test default server (localhost:3000)
+./scripts/test-with-curl.sh
+
+# Test custom host and port
+./scripts/test-with-curl.sh localhost 8080
+./scripts/test-with-curl.sh api.example.com 443  # Auto-detects HTTPS
+
+# Example output
+🧪 Comprehensive API Testing with curl
+==================================================
+Testing: localhost:3000 (http)
+Base URL: http://localhost:3000
+
+📊 Health Endpoints
+✅ PASS GET /health (Status: 200)
+✅ PASS GET /health/detailed (Status: 200)
+
+🔐 Authentication Flow  
+✅ PASS POST /auth/register (Status: 200)
+✅ PASS POST /auth/login (Token obtained)
+...
+
+📊 Test Results Summary
+Total tests: 26
+Passed: 26
+Success rate: 100%
+```
+
+**Features**:
+- Tests all 15 documented API endpoints
+- Validates input/output formats against documentation
+- Tests authentication flows and error cases
+- Supports custom server configurations
+- Non-interactive automated execution
 
 ### Targeted Testing
 

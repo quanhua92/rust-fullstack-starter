@@ -191,6 +191,24 @@ Now that you have the system running, follow these guides to understand and exte
 
 # Infrastructure only
 ./scripts/dev.sh
+
+# Comprehensive API testing
+./scripts/test-with-curl.sh [host] [port]
+```
+
+### Testing Commands
+```bash
+# Run all integration tests (~10 seconds)
+cargo nextest run
+
+# Test API endpoints (26 tests)
+./scripts/test-with-curl.sh
+
+# Test custom server configuration
+./scripts/test-with-curl.sh localhost 8080
+
+# Full validation workflow
+cargo nextest run && ./scripts/test-with-curl.sh
 ```
 
 ### Manual Commands

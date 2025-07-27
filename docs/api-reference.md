@@ -616,6 +616,26 @@ The integration test suite covers:
 - ✅ Health monitoring endpoints
 - ✅ Error handling and edge cases
 
+### API Endpoint Testing
+```bash
+# Test all documented endpoints with curl (26 tests)
+./scripts/test-with-curl.sh
+
+# Test custom server configuration
+./scripts/test-with-curl.sh localhost 8080
+./scripts/test-with-curl.sh api.example.com 443  # HTTPS auto-detected
+
+# Full validation workflow
+cargo nextest run && ./scripts/test-with-curl.sh
+```
+
+The curl test script validates:
+- ✅ All 15 documented API endpoints
+- ✅ Input/output formats match documentation exactly
+- ✅ Authentication flows and error handling
+- ✅ Custom server configurations
+- ✅ HTTPS support and protocol detection
+
 ### Manual Task Testing
 ```bash
 # 1. Start services
