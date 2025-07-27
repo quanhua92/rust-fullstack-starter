@@ -24,7 +24,7 @@ A modern Rust web application starter template with authentication, background t
 
 ```bash
 # Clone and enter directory
-git clone <repository-url>
+git clone https://github.com/quanhua92/rust-fullstack-starter.git
 cd rust-fullstack-starter
 
 # Start development environment
@@ -177,8 +177,8 @@ sqlx migrate run
 
 ### Design Patterns
 
-- **Repository Pattern** - Database abstraction layers
-- **Service Layer** - Business logic separation
+- **Service Layer Pattern** - Function-based services for business logic and data access
+- **Domain Models** - Clean separation between database entities and API responses
 - **Background Jobs** - Async task processing with retry logic
 - **Circuit Breaker** - Fault tolerance for external services
 - **Health Checks** - Application and dependency monitoring
