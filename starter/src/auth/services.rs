@@ -194,12 +194,9 @@ pub async fn get_current_user(conn: &mut DbConn, token: &str) -> Result<Option<U
     Ok(user.map(|u| u.to_profile()))
 }
 
-pub async fn register(
-    conn: &mut DbConn,
-    req: RegisterRequest,
-) -> Result<UserProfile> {
+pub async fn register(conn: &mut DbConn, req: RegisterRequest) -> Result<UserProfile> {
     req.validate()?;
-    
+
     // Convert RegisterRequest to CreateUserRequest
     let create_req = crate::users::models::CreateUserRequest {
         username: req.username,
@@ -207,6 +204,6 @@ pub async fn register(
         password: req.password,
         role: None, // Default role
     };
-    
+
     user_services::create_user(conn, create_req).await
 }

@@ -9,7 +9,7 @@ use crate::{
     error::Error,
     tasks::{
         processor::TaskProcessor,
-        types::{CreateTaskRequest, TaskFilter, TaskStats, TaskResponse},
+        types::{CreateTaskRequest, TaskFilter, TaskResponse, TaskStats},
     },
     types::{ApiResponse, AppState, ErrorResponse},
 };
@@ -150,7 +150,8 @@ pub async fn list_tasks(
         .await
         .map_err(|e| Error::Internal(format!("Failed to list tasks: {e}")))?;
 
-    let task_responses: Vec<crate::tasks::types::TaskResponse> = tasks.into_iter().map(|t| t.into()).collect();
+    let task_responses: Vec<crate::tasks::types::TaskResponse> =
+        tasks.into_iter().map(|t| t.into()).collect();
     Ok(Json(ApiResponse::success(task_responses)))
 }
 

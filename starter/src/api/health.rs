@@ -1,4 +1,6 @@
-use crate::types::{ApiResponse, AppState, ComponentHealth, HealthResponse, DetailedHealthResponse, ErrorResponse};
+use crate::types::{
+    ApiResponse, AppState, ComponentHealth, DetailedHealthResponse, ErrorResponse, HealthResponse,
+};
 use axum::{Json, extract::State, http::StatusCode, response::IntoResponse};
 use chrono::Utc;
 use std::collections::HashMap;

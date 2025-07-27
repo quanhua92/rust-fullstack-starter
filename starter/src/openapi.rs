@@ -1,11 +1,14 @@
 use utoipa::OpenApi;
 use utoipa_swagger_ui::SwaggerUi;
 
-use crate::auth::{models::{LoginRequest, RegisterRequest, LoginResponse}, AuthUser};
-use crate::users::models::{User, UserProfile};
-use crate::tasks::types::{CreateTaskRequest, TaskResponse, TaskStatus};
+use crate::auth::{
+    AuthUser,
+    models::{LoginRequest, LoginResponse, RegisterRequest},
+};
 use crate::tasks::api::{CreateTaskApiRequest, TaskQueryParams};
-use crate::types::{ErrorResponse, HealthResponse, DetailedHealthResponse};
+use crate::tasks::types::{CreateTaskRequest, TaskResponse, TaskStatus};
+use crate::types::{DetailedHealthResponse, ErrorResponse, HealthResponse};
+use crate::users::models::{User, UserProfile};
 
 #[derive(OpenApi)]
 #[openapi(
@@ -30,16 +33,16 @@ use crate::types::{ErrorResponse, HealthResponse, DetailedHealthResponse};
         crate::api::health::health_live,
         crate::api::health::health_ready,
         crate::api::health::health_startup,
-        
+
         // Auth endpoints
         crate::auth::api::register,
         crate::auth::api::login,
         crate::auth::api::logout,
         crate::auth::api::me,
-        
+
         // User endpoints
         crate::users::api::get_user_by_id,
-        
+
         // Task endpoints
         crate::tasks::api::create_task,
         crate::tasks::api::list_tasks,
@@ -53,21 +56,21 @@ use crate::types::{ErrorResponse, HealthResponse, DetailedHealthResponse};
             RegisterRequest,
             LoginResponse,
             AuthUser,
-            
+
             // User models
             User,
             UserProfile,
-            
+
             // Task models
             CreateTaskRequest,
             CreateTaskApiRequest,
             TaskResponse,
             TaskStatus,
             TaskQueryParams,
-            
+
             // Common response types
             ErrorResponse,
-            
+
             // Health models
             HealthResponse,
             DetailedHealthResponse,
@@ -87,8 +90,7 @@ pub struct ApiDoc;
 
 /// Create Swagger UI service (to be added manually to server)
 pub fn create_swagger_ui() -> SwaggerUi {
-    SwaggerUi::new("/docs")
-        .url("/api-docs/openapi.json", ApiDoc::openapi())
+    SwaggerUi::new("/docs").url("/api-docs/openapi.json", ApiDoc::openapi())
 }
 
 /// Get OpenAPI specification as JSON
@@ -103,17 +105,17 @@ mod tests {
     #[test]
     fn test_openapi_generation() {
         let openapi = ApiDoc::openapi();
-        
+
         // Verify basic info
         assert_eq!(openapi.info.title, "Rust Full-Stack Starter API");
         assert_eq!(openapi.info.version, "0.1.0");
-        
+
         // Verify we have some paths
         assert!(!openapi.paths.paths.is_empty());
-        
+
         // Verify we have some components
         assert!(openapi.components.is_some());
-        
+
         // Verify JSON generation works
         let json = openapi_json();
         assert!(!json.is_empty());

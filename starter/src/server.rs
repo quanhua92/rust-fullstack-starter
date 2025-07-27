@@ -17,7 +17,6 @@ use axum::{
     response::IntoResponse,
     routing::{get, post},
 };
-use utoipa::OpenApi;
 use tokio::net::TcpListener;
 use tower::ServiceBuilder;
 use tower_http::{
@@ -25,6 +24,7 @@ use tower_http::{
     trace::TraceLayer,
 };
 use tracing::info;
+use utoipa::OpenApi;
 
 /// Handle 404 Not Found errors
 async fn not_found_handler() -> impl IntoResponse {
@@ -96,7 +96,7 @@ async fn api_docs() -> impl IntoResponse {
             </div>
         </body>
         </html>
-        "#
+        "#,
     )
 }
 

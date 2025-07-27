@@ -1,4 +1,8 @@
-use crate::auth::{AuthUser, models::{LoginRequest, RegisterRequest, LoginResponse}, services as auth_services};
+use crate::auth::{
+    AuthUser,
+    models::{LoginRequest, LoginResponse, RegisterRequest},
+    services as auth_services,
+};
 use crate::users::models::UserProfile;
 use crate::{
     error::Error,
