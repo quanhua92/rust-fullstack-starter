@@ -2,7 +2,7 @@
 # Optimized for minimal size and security
 
 # Build stage
-FROM rust:1.83-slim as builder
+FROM rust:1.88-slim as builder
 
 # Install system dependencies required for building
 RUN apt-get update && apt-get install -y \
@@ -26,8 +26,8 @@ COPY Cargo.lock ./
 COPY starter/ ./starter/
 
 # Build the application
-RUN cargo build --release --bin starter && \
-    cp target/release/starter /app/starter-bin
+RUN cd starter && cargo build --release --bin starter && \
+    cp ../target/release/starter /app/starter-bin
 
 # Runtime stage - use distroless for security
 FROM gcr.io/distroless/cc-debian12:nonroot
