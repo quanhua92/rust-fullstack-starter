@@ -277,7 +277,7 @@ pub enum CircuitBreakerError<E> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use tokio::time::{timeout, Duration as TokioDuration};
+    use std::time::Duration;
 
     #[tokio::test]
     async fn test_exponential_backoff() {
@@ -320,17 +320,24 @@ mod tests {
             max_attempts: 3,
         };
 
-        let mut call_count = 0;
-        let result = strategy.execute(|| async {
-            call_count += 1;
-            if call_count < 3 {
-                Err("temporary failure")
-            } else {
-                Ok("success")
+        use std::sync::{Arc, atomic::{AtomicUsize, Ordering}};
+        
+        let call_count = Arc::new(AtomicUsize::new(0));
+        let count_clone = call_count.clone();
+        
+        let result = strategy.execute(move || {
+            let count = count_clone.clone();
+            async move {
+                let current = count.fetch_add(1, Ordering::SeqCst) + 1;
+                if current < 3 {
+                    Err("temporary failure")
+                } else {
+                    Ok("success")
+                }
             }
         }).await;
 
         assert_eq!(result, Ok("success"));
-        assert_eq!(call_count, 3);
+        assert_eq!(call_count.load(Ordering::SeqCst), 3);
     }
 }

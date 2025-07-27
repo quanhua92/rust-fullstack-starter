@@ -1,12 +1,9 @@
 #[cfg(test)]
 mod tests {
-    use super::*;
     use crate::{
         config::AppConfig,
         database::Database,
         types::AppState,
-        auth::models::LoginRequest,
-        users::models::CreateUserRequest,
     };
     use axum::{
         body::Body,
@@ -19,8 +16,8 @@ mod tests {
     async fn setup_test_app() -> Router {
         // This would need proper test database setup
         // For now, just showing the structure
-        let config = AppConfig::from_env().expect("Failed to load config");
-        let database = Database::new(&config.database).await.expect("Failed to connect to database");
+        let config = AppConfig::load().expect("Failed to load config");
+        let database = Database::connect(&config).await.expect("Failed to connect to database");
         let state = AppState { config, database };
         
         crate::server::create_router(state)

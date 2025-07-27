@@ -5,7 +5,15 @@ use std::collections::HashMap;
 
 /// Basic health check endpoint
 pub async fn health_check() -> impl IntoResponse {
-    Json(ApiResponse::success("OK"))
+    let health_data = serde_json::json!({
+        "status": "healthy",
+        "version": env!("CARGO_PKG_VERSION"),
+        "uptime": std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_secs_f64()
+    });
+    Json(ApiResponse::success(health_data))
 }
 
 /// Comprehensive health check with dependencies

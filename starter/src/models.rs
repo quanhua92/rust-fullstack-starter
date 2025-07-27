@@ -128,7 +128,7 @@ impl Task {
 }
 
 // Request/Response models for API
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct CreateUserRequest {
     pub username: String,
     pub email: String,

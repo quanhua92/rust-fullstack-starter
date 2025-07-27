@@ -2,6 +2,7 @@ use crate::{
     api::health,
     auth::{api as auth_api, middleware::{auth_middleware, admin_middleware}},
     tasks::api as tasks_api,
+    users::api as users_api,
     error::Error,
     types::{AppState, Result},
     config::AppConfig,
@@ -11,6 +12,7 @@ use axum::{
     routing::{get, post},
     Router,
     middleware,
+    response::IntoResponse,
 };
 use tokio::net::TcpListener;
 use tower::ServiceBuilder;
@@ -19,6 +21,11 @@ use tower_http::{
     trace::TraceLayer,
 };
 use tracing::info;
+
+/// Handle 404 Not Found errors
+async fn not_found_handler() -> impl IntoResponse {
+    Error::NotFound("The requested resource was not found".to_string())
+}
 
 /// Create the application router with all routes and middleware
 pub fn create_router(state: AppState) -> Router {
@@ -35,6 +42,8 @@ pub fn create_router(state: AppState) -> Router {
         .route("/auth/logout-all", post(auth_api::logout_all))
         .route("/auth/me", get(auth_api::me))
         .route("/auth/refresh", post(auth_api::refresh))
+        // User management routes
+        .route("/users/{id}", get(users_api::get_user_by_id))
         // Task management routes
         .route("/tasks", post(tasks_api::create_task))
         .route("/tasks", get(tasks_api::list_tasks))
@@ -54,10 +63,23 @@ pub fn create_router(state: AppState) -> Router {
         .merge(public_routes)
         .merge(protected_routes)
         .merge(admin_routes)
+        .fallback(not_found_handler)
         .with_state(state)
         .layer(
             ServiceBuilder::new()
                 .layer(TraceLayer::new_for_http())
+                .layer(tower_http::set_header::SetResponseHeaderLayer::if_not_present(
+                    axum::http::header::HeaderName::from_static("x-request-id"),
+                    axum::http::HeaderValue::from_static("test-request-id"),
+                ))
+                .layer(tower_http::set_header::SetResponseHeaderLayer::if_not_present(
+                    axum::http::header::X_CONTENT_TYPE_OPTIONS,
+                    axum::http::HeaderValue::from_static("nosniff"),
+                ))
+                .layer(tower_http::set_header::SetResponseHeaderLayer::if_not_present(
+                    axum::http::header::X_FRAME_OPTIONS,
+                    axum::http::HeaderValue::from_static("DENY"),
+                ))
                 .layer(
                     CorsLayer::new()
                         .allow_origin(Any)

@@ -2,10 +2,10 @@ use axum::{
     extract::{Request, State},
     middleware::Next,
     response::Response,
-    http::StatusCode,
 };
 use crate::types::AppState;
 use crate::auth::services;
+use crate::error::Error;
 use uuid::Uuid;
 
 #[derive(Debug, Clone, serde::Serialize)]
@@ -35,11 +35,11 @@ pub async fn auth_middleware(
     State(app_state): State<AppState>,
     mut req: Request,
     next: Next,
-) -> Result<Response, StatusCode> {
+) -> Result<Response, Error> {
     // Extract token from Authorization header
     let token = match extract_bearer_token(&req) {
         Some(token) => token,
-        None => return Err(StatusCode::UNAUTHORIZED),
+        None => return Err(Error::Unauthorized),
     };
     
     // Get database connection
@@ -47,7 +47,7 @@ pub async fn auth_middleware(
         Ok(conn) => conn,
         Err(_) => {
             tracing::error!("Failed to acquire database connection");
-            return Err(StatusCode::INTERNAL_SERVER_ERROR);
+            return Err(Error::Internal("Database connection failed".to_string()));
         }
     };
     
@@ -56,18 +56,18 @@ pub async fn auth_middleware(
         Ok(Some(user)) => user,
         Ok(None) => {
             tracing::debug!("Invalid or expired session token");
-            return Err(StatusCode::UNAUTHORIZED);
+            return Err(Error::Unauthorized);
         }
         Err(e) => {
             tracing::error!("Error validating session: {}", e);
-            return Err(StatusCode::INTERNAL_SERVER_ERROR);
+            return Err(Error::Internal("Session validation failed".to_string()));
         }
     };
     
     // Check if user is active
     if !user.is_active {
         tracing::debug!("User {} is not active", user.id);
-        return Err(StatusCode::UNAUTHORIZED);
+        return Err(Error::Unauthorized);
     }
     
     // Add user info to request extensions
@@ -113,16 +113,16 @@ pub async fn optional_auth_middleware(
 pub async fn admin_middleware(
     req: Request,
     next: Next,
-) -> Result<Response, StatusCode> {
+) -> Result<Response, Error> {
     // Get authenticated user from request extensions
     let auth_user = req.extensions()
         .get::<AuthUser>()
-        .ok_or(StatusCode::UNAUTHORIZED)?;
+        .ok_or(Error::Unauthorized)?;
     
     // Check if user is admin
     if auth_user.role != "admin" {
         tracing::debug!("User {} attempted to access admin endpoint", auth_user.id);
-        return Err(StatusCode::FORBIDDEN);
+        return Err(Error::Unauthorized);
     }
     
     Ok(next.run(req).await)
