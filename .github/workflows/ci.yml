@@ -41,6 +41,8 @@ jobs:
           - 6379:6379
     
     env:
+      # SQLx database URL for compile-time query checking
+      DATABASE_URL: postgresql://test_user:test_password@localhost:5432/test_db
       # Test database configuration
       STARTER__DATABASE__HOST: localhost
       STARTER__DATABASE__PORT: 5432
