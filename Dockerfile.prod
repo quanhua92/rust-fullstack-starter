@@ -12,6 +12,9 @@ RUN apt-get update && apt-get install -y \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
+# Install Rust components for code quality checks
+RUN rustup component add rustfmt clippy
+
 # Create app user for security
 RUN addgroup --system --gid 1001 appgroup
 RUN adduser --system --uid 1001 --gid 1001 appuser
@@ -26,8 +29,14 @@ COPY Cargo.lock ./
 # Copy source code
 COPY starter/ ./starter/
 
-# Build the application
-RUN cd starter && cargo build --release --bin starter && \
+# Run code quality checks first
+RUN cd starter && \
+    echo "🔍 Running cargo fmt check..." && \
+    cargo fmt -- --check && \
+    echo "🔍 Running clippy..." && \
+    cargo clippy -- -D warnings && \
+    echo "🔨 Building release binary..." && \
+    cargo build --release --bin starter && \
     cp ../target/release/starter /app/starter-bin
 
 # Runtime stage - use distroless for security
