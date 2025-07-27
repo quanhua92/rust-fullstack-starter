@@ -1,0 +1,56 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            SELECT \n                COUNT(*) as total,\n                COUNT(*) FILTER (WHERE status = 'pending') as pending,\n                COUNT(*) FILTER (WHERE status = 'running') as running,\n                COUNT(*) FILTER (WHERE status = 'completed') as completed,\n                COUNT(*) FILTER (WHERE status = 'failed') as failed,\n                COUNT(*) FILTER (WHERE status = 'cancelled') as cancelled,\n                COUNT(*) FILTER (WHERE status = 'retrying') as retrying\n            FROM tasks\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "total",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 1,
+        "name": "pending",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 2,
+        "name": "running",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 3,
+        "name": "completed",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 4,
+        "name": "failed",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 5,
+        "name": "cancelled",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 6,
+        "name": "retrying",
+        "type_info": "Int8"
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null
+    ]
+  },
+  "hash": "66466f337f11892bf968c4dc3d0a5a683ecb90f493752a466908638c0e905160"
+}

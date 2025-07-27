@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE sessions SET is_active = false WHERE user_id = $1 AND is_active = true",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "656846a6db38646a461233b296926adcd5beea8c507d87933264809d5ec232f2"
+}
