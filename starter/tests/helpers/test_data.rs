@@ -11,6 +11,13 @@ impl TestDataFactory {
         Self { app }
     }
 
+    /// Create a new TestDataFactory with task types pre-registered
+    pub async fn new_with_task_types(app: TestApp) -> Self {
+        let factory = Self { app };
+        factory.register_task_types().await;
+        factory
+    }
+
     /// Creates a test user and returns the user data
     pub async fn create_user(&self, username: &str) -> User {
         let user_data = CreateUserRequest {
@@ -71,12 +78,47 @@ impl TestDataFactory {
         users
     }
 
+    /// Register standard task types for testing
+    pub async fn register_task_types(&self) {
+        let task_types = [
+            ("email", "Email notification tasks"),
+            ("data_processing", "Data processing and analysis tasks"),
+            ("file_cleanup", "File system cleanup tasks"),
+            ("report_generation", "Report generation tasks"),
+            ("webhook", "Webhook notification tasks"),
+            (
+                "delay_task",
+                "Delay/sleep tasks for testing and chaos scenarios",
+            ),
+        ];
+
+        for (task_type, description) in task_types.iter() {
+            let task_type_data = json!({
+                "task_type": task_type,
+                "description": description
+            });
+
+            let response = self.app.post_json("/tasks/types", &task_type_data).await;
+            // Don't assert - task type might already be registered
+            if response.status() != 200 {
+                eprintln!(
+                    "Warning: Failed to register task type '{}': {}",
+                    task_type,
+                    response.status()
+                );
+            }
+        }
+    }
+
     /// Creates a test task (requires authentication)
     pub async fn create_task(
         &self,
         task_type: &str,
         payload: serde_json::Value,
     ) -> serde_json::Value {
+        // Ensure task types are registered before creating tasks
+        self.register_task_types().await;
+
         // Create an authenticated user with unique name
         let unique_username = format!("taskuser_{}", &uuid::Uuid::new_v4().to_string()[..8]);
         let (_user, token) = self.create_authenticated_user(&unique_username).await;

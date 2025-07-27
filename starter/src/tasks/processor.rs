@@ -76,6 +76,12 @@ impl TaskProcessor {
         info!("Registered task handler for type: {}", task_type);
     }
 
+    /// Check if a task type has a registered handler
+    pub async fn has_handler(&self, task_type: &str) -> bool {
+        let handlers = self.handlers.read().await;
+        handlers.contains_key(task_type)
+    }
+
     /// Create a new task
     pub async fn create_task(&self, request: CreateTaskRequest) -> TaskResult2<Task> {
         let mut conn = self.database.pool.acquire().await?;

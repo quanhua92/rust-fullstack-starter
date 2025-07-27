@@ -33,6 +33,21 @@ pub struct TaskQueryParams {
     pub offset: Option<i64>,
 }
 
+#[derive(Debug, Serialize, Deserialize, utoipa::ToSchema)]
+pub struct RegisterTaskTypeRequest {
+    pub task_type: String,
+    pub description: String,
+}
+
+#[derive(Debug, Serialize, Deserialize, utoipa::ToSchema)]
+pub struct TaskTypeResponse {
+    pub task_type: String,
+    pub description: Option<String>,
+    pub is_active: bool,
+    pub created_at: chrono::DateTime<chrono::Utc>,
+    pub updated_at: chrono::DateTime<chrono::Utc>,
+}
+
 /// Create a new background task
 #[utoipa::path(
     post,
@@ -58,6 +73,32 @@ pub async fn create_task(
         Some("critical") => TaskPriority::Critical,
         _ => TaskPriority::Normal,
     };
+
+    // Validate that the task type is registered
+    let mut conn = app_state
+        .database
+        .pool
+        .acquire()
+        .await
+        .map_err(|e| Error::Internal(format!("Failed to acquire database connection: {e}")))?;
+
+    let task_type_exists = sqlx::query_scalar!(
+        "SELECT EXISTS(SELECT 1 FROM task_types WHERE task_type = $1 AND is_active = true)",
+        payload.task_type
+    )
+    .fetch_one(&mut *conn)
+    .await
+    .map_err(|e| Error::Internal(format!("Failed to validate task type: {e}")))?;
+
+    if !task_type_exists.unwrap_or(false) {
+        return Err(Error::validation(
+            "task_type",
+            &format!(
+                "Task type '{}' is not registered. Workers must register task types before tasks can be created.",
+                payload.task_type
+            ),
+        ));
+    }
 
     let request = CreateTaskRequest::new(payload.task_type, payload.payload)
         .with_priority(priority)
@@ -325,4 +366,86 @@ pub async fn delete_task(
         "Task deleted successfully".to_string(),
         format!("Task {task_id} has been permanently deleted"),
     )))
+}
+
+/// Register a new task type
+#[utoipa::path(
+    post,
+    path = "/tasks/types",
+    tag = "Tasks",
+    summary = "Register task type",
+    description = "Register a new task type that workers can handle",
+    request_body = RegisterTaskTypeRequest,
+    responses(
+        (status = 200, description = "Task type registered", body = ApiResponse<TaskTypeResponse>),
+        (status = 400, description = "Invalid request", body = ErrorResponse)
+    )
+)]
+pub async fn register_task_type(
+    State(app_state): State<AppState>,
+    Json(payload): Json<RegisterTaskTypeRequest>,
+) -> Result<Json<ApiResponse<TaskTypeResponse>>, Error> {
+    let mut conn = app_state
+        .database
+        .pool
+        .acquire()
+        .await
+        .map_err(|e| Error::Internal(format!("Failed to acquire database connection: {e}")))?;
+
+    // Insert or update task type
+    let task_type = sqlx::query_as!(
+        TaskTypeResponse,
+        r#"
+        INSERT INTO task_types (task_type, description)
+        VALUES ($1, $2)
+        ON CONFLICT (task_type) DO UPDATE SET
+            description = EXCLUDED.description,
+            updated_at = NOW()
+        RETURNING task_type, description, is_active, created_at, updated_at
+        "#,
+        payload.task_type,
+        payload.description
+    )
+    .fetch_one(&mut *conn)
+    .await
+    .map_err(|e| Error::Internal(format!("Failed to register task type: {e}")))?;
+
+    Ok(Json(ApiResponse::success(task_type)))
+}
+
+/// List registered task types
+#[utoipa::path(
+    get,
+    path = "/tasks/types",
+    tag = "Tasks",
+    summary = "List task types",
+    description = "List all registered task types",
+    responses(
+        (status = 200, description = "List of task types", body = ApiResponse<Vec<TaskTypeResponse>>)
+    )
+)]
+pub async fn list_task_types(
+    State(app_state): State<AppState>,
+) -> Result<Json<ApiResponse<Vec<TaskTypeResponse>>>, Error> {
+    let mut conn = app_state
+        .database
+        .pool
+        .acquire()
+        .await
+        .map_err(|e| Error::Internal(format!("Failed to acquire database connection: {e}")))?;
+
+    let task_types = sqlx::query_as!(
+        TaskTypeResponse,
+        r#"
+        SELECT task_type, description, is_active, created_at, updated_at
+        FROM task_types
+        WHERE is_active = true
+        ORDER BY task_type
+        "#
+    )
+    .fetch_all(&mut *conn)
+    .await
+    .map_err(|e| Error::Internal(format!("Failed to list task types: {e}")))?;
+
+    Ok(Json(ApiResponse::success(task_types)))
 }

@@ -75,6 +75,25 @@ This guide explains how to use the chaos testing framework to validate system re
 ./scripts/test-chaos.sh --difficulty 5
 ```
 
+### Level 6 - Catastrophic ⚠️ **DESIGNED TO FAIL**
+**Scenario:** Impossible workload testing failure handling
+- **Task Load:** 1000 tasks with 0.005s delay
+- **Chaos Duration:** 90 seconds
+- **Multi-Worker Only:** 50 tasks × 15s delays = 750s needed, only 60s allowed
+- **Worker Failures:** 30% permanent failures (workers don't restart)
+- **Use Case:** Testing system behavior under catastrophic failure
+- **Expected:** **MUST FAIL** - validates failure detection and handling
+
+```bash
+./scripts/test-chaos.sh --difficulty 6 --scenarios multi-worker-chaos
+```
+
+**⚠️ WARNING:** Level 6 is designed to overwhelm the system:
+- **Impossible math**: Tasks require more time than deadline allows
+- **Aggressive worker killing**: Very short intervals (3-8s)
+- **Permanent failures**: Some workers never restart
+- **Success criteria inverted**: Test passes only if system fails properly
+
 ## 🧪 Available Scenarios
 
 ### `baseline`
@@ -181,6 +200,44 @@ This guide explains how to use the chaos testing framework to validate system re
 ./scripts/test-chaos.sh --scenarios recovery
 ```
 
+### `multi-worker-chaos` ⭐ **NEW**
+**Purpose:** Test multi-worker resilience with delay tasks and deadlines
+**Duration:** ~120 seconds (varies by difficulty)
+**What it tests:**
+- Multiple worker coordination under failures
+- Task retry behavior when workers are killed mid-processing
+- Deadline enforcement with configurable task delays
+- Worker failure and recovery patterns
+- Queue persistence during worker restarts
+- Load distribution across multiple workers
+
+**Key Features:**
+- **2-5 workers** simultaneously processing tasks (difficulty-dependent)
+- **Random worker failures** every 10-25 seconds
+- **Delay tasks** with 3-8 second processing times
+- **45-90 second deadlines** for all tasks to complete
+- **Automatic retry validation** when workers drop tasks
+
+```bash
+# Basic multi-worker chaos testing
+./scripts/test-chaos.sh --scenarios multi-worker-chaos
+
+# Advanced testing with more workers and longer delays
+./scripts/test-chaos.sh --scenarios multi-worker-chaos --difficulty 4
+```
+
+**Difficulty Scaling:**
+- **Level 1:** 2 workers, 3s delays, 45s deadline, 15-25s failure intervals
+- **Level 2:** 3 workers, 4s delays, 50s deadline, 12-20s failure intervals  
+- **Level 3:** 3 workers, 5s delays, 60s deadline, 10-18s failure intervals
+- **Level 4:** 4 workers, 6s delays, 70s deadline, 8-15s failure intervals
+- **Level 5:** 5 workers, 8s delays, 90s deadline, 5-12s failure intervals
+- **Level 6:** 5 workers, 15s delays, 60s deadline, 3-8s intervals + 30% permanent failures ⚠️
+
+**Success Criteria:**
+- **Levels 1-5:** ≥80% task completion rate + evidence of retries + system responsive
+- **Level 6:** <50% completion rate + deadline missed (designed failure validation)
+
 ## 🛠️ Helper Scripts
 
 The chaos testing framework includes modular helper scripts:
@@ -226,6 +283,51 @@ Simulates various service failures.
 ./scripts/helpers/service-chaos.sh kill --service worker
 ```
 
+### `scripts/helpers/multi-worker-chaos.sh` ⭐ **NEW**
+Manages multiple workers and simulates random worker failures.
+
+```bash
+# Start 3 workers for chaos testing
+./scripts/helpers/multi-worker-chaos.sh start-multi --workers 3
+
+# Run full chaos scenario with random worker failures
+./scripts/helpers/multi-worker-chaos.sh chaos-run --workers 4 --duration 60
+
+# Check status of all managed workers
+./scripts/helpers/multi-worker-chaos.sh status
+
+# Stop all managed workers
+./scripts/helpers/multi-worker-chaos.sh stop-all
+
+# Clean up all worker processes and files
+./scripts/helpers/multi-worker-chaos.sh cleanup
+```
+
+### `scripts/helpers/delay-task-flood.sh` ⭐ **NEW**
+Creates delay tasks with configurable deadlines for testing worker resilience.
+
+```bash
+# Create 20 tasks with 5s delays and 60s deadline
+./scripts/helpers/delay-task-flood.sh --count 20 --delay 5 --deadline 60 --auth "$TOKEN"
+
+# Stress test with short deadline (will cause some tasks to miss deadline)
+./scripts/helpers/delay-task-flood.sh --count 30 --delay 3 --deadline 45 --auth "$TOKEN"
+
+# Custom prefix for task identification
+./scripts/helpers/delay-task-flood.sh --count 15 --prefix "loadtest" --auth "$TOKEN"
+```
+
+### `scripts/helpers/task-completion-monitor.sh` ⭐ **NEW**
+Monitors task completion and validates retry behavior.
+
+```bash
+# Monitor tasks with specific prefix until deadline
+./scripts/helpers/task-completion-monitor.sh --prefix "multiworker" --deadline 60 --auth "$TOKEN"
+
+# Verbose monitoring with detailed progress
+./scripts/helpers/task-completion-monitor.sh --prefix "chaos" --deadline 45 --verbose --auth "$TOKEN"
+```
+
 ## 📈 Progressive Testing Strategy
 
 ### Phase 1: Development Validation
@@ -258,10 +360,10 @@ Simulates various service failures.
 ### Phase 4: Resilience Testing
 ```bash
 # Pre-production validation
-./scripts/test-chaos.sh --difficulty 4 --scenarios "mixed-chaos,recovery"
+./scripts/test-chaos.sh --difficulty 4 --scenarios "mixed-chaos,recovery,multi-worker-chaos"
 
-# Should complete in ~12 minutes
-# Expected: 85%+ pass rate, recovery under 15s
+# Should complete in ~15 minutes  
+# Expected: 85%+ pass rate, recovery under 15s, worker resilience
 ```
 
 ### Phase 5: Production Readiness
@@ -277,13 +379,14 @@ Simulates various service failures.
 
 ### Success Criteria by Difficulty
 
-| Level | Min Success Rate | Max Recovery Time | Max Task Failures |
-|-------|------------------|-------------------|-------------------|
-| 1     | 100%            | 10s               | 0%                |
-| 2     | 95%             | 15s               | 5%                |
-| 3     | 90%             | 20s               | 10%               |
-| 4     | 85%             | 25s               | 15%               |
-| 5     | 80%             | 30s               | 20%               |
+| Level | Min Success Rate | Max Recovery Time | Max Task Failures | Notes |
+|-------|------------------|-------------------|-------------------|-------|
+| 1     | 100%            | 10s               | 0%                | Development |
+| 2     | 95%             | 15s               | 5%                | Integration |
+| 3     | 90%             | 20s               | 10%               | Load Testing |
+| 4     | 85%             | 25s               | 15%               | Pre-Production |
+| 5     | 80%             | 30s               | 20%               | Production |
+| 6     | **<50%** ⚠️     | N/A               | **>50%**          | **Designed to fail** |
 
 ### Key Metrics
 

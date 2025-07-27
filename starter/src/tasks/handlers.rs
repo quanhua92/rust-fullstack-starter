@@ -273,6 +273,115 @@ impl TaskHandler for WebhookTaskHandler {
     }
 }
 
+/// Example: Delay task handler for chaos testing
+pub struct DelayTaskHandler;
+
+#[async_trait]
+impl TaskHandler for DelayTaskHandler {
+    async fn handle(&self, context: TaskContext) -> Result<TaskResult, TaskError> {
+        let delay_seconds = context
+            .payload
+            .get("delay_seconds")
+            .and_then(|v| v.as_u64())
+            .unwrap_or(1);
+
+        let task_id = context
+            .payload
+            .get("task_id")
+            .and_then(|v| v.as_str())
+            .unwrap_or("unknown");
+
+        let test_scenario = context
+            .payload
+            .get("test_scenario")
+            .and_then(|v| v.as_str())
+            .unwrap_or("general");
+
+        // Check if deadline is specified in payload
+        let deadline_str = context.payload.get("deadline").and_then(|v| v.as_str());
+
+        tracing::info!(
+            "Processing delay task: {} (scenario: {}, delay: {}s, attempt: {})",
+            task_id,
+            test_scenario,
+            delay_seconds,
+            context.attempt
+        );
+
+        // Check deadline before starting work
+        if let Some(deadline) = deadline_str {
+            if let Ok(deadline_time) = chrono::DateTime::parse_from_rfc3339(deadline) {
+                let deadline_utc = deadline_time.with_timezone(&chrono::Utc);
+                let now = chrono::Utc::now();
+                if now >= deadline_utc {
+                    tracing::warn!(
+                        "Task {} already past deadline: {} vs {}",
+                        task_id,
+                        now,
+                        deadline_utc
+                    );
+                    return Err(TaskError::Execution(format!(
+                        "Task {task_id} missed deadline: {now} vs {deadline_utc}"
+                    )));
+                }
+
+                let time_remaining = (deadline_utc - now).num_seconds();
+                if time_remaining < delay_seconds as i64 {
+                    tracing::warn!(
+                        "Task {} cannot complete within deadline: {}s remaining, {}s needed",
+                        task_id,
+                        time_remaining,
+                        delay_seconds
+                    );
+                    return Err(TaskError::Execution(format!(
+                        "Task {task_id} insufficient time: {time_remaining}s remaining, {delay_seconds}s needed"
+                    )));
+                }
+            }
+        }
+
+        // Simulate the delay work
+        tracing::info!("Task {} starting {}s delay work...", task_id, delay_seconds);
+        tokio::time::sleep(std::time::Duration::from_secs(delay_seconds)).await;
+
+        // Check deadline again after work
+        if let Some(deadline) = deadline_str {
+            if let Ok(deadline_time) = chrono::DateTime::parse_from_rfc3339(deadline) {
+                let deadline_utc = deadline_time.with_timezone(&chrono::Utc);
+                let now = chrono::Utc::now();
+                if now >= deadline_utc {
+                    tracing::warn!(
+                        "Task {} completed but past deadline: {} vs {}",
+                        task_id,
+                        now,
+                        deadline_utc
+                    );
+                    return Err(TaskError::Execution(format!(
+                        "Task {task_id} completed past deadline: {now} vs {deadline_utc}"
+                    )));
+                }
+            }
+        }
+
+        tracing::info!(
+            "Task {} completed successfully after {}s",
+            task_id,
+            delay_seconds
+        );
+
+        let result = serde_json::json!({
+            "task_id": task_id,
+            "delay_seconds": delay_seconds,
+            "test_scenario": test_scenario,
+            "attempt": context.attempt,
+            "completed_at": chrono::Utc::now(),
+            "status": "completed"
+        });
+
+        Ok(TaskResult::success(result))
+    }
+}
+
 /// Helper function to register all example handlers
 pub async fn register_example_handlers(processor: &crate::tasks::processor::TaskProcessor) {
     processor
@@ -290,6 +399,9 @@ pub async fn register_example_handlers(processor: &crate::tasks::processor::Task
     processor
         .register_handler("webhook".to_string(), WebhookTaskHandler)
         .await;
+    processor
+        .register_handler("delay_task".to_string(), DelayTaskHandler)
+        .await;
 
-    tracing::info!("Registered all example task handlers");
+    tracing::info!("Registered all example task handlers including delay_task");
 }

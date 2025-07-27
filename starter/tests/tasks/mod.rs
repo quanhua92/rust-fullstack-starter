@@ -90,7 +90,7 @@ async fn test_list_tasks() {
 #[tokio::test]
 async fn test_create_task_with_priority() {
     let app = spawn_app().await;
-    let factory = TestDataFactory::new(app.clone());
+    let factory = TestDataFactory::new_with_task_types(app.clone()).await;
 
     // Need auth for protected routes
     let unique_username = format!("testuser_{}", &uuid::Uuid::new_v4().to_string()[..8]);
@@ -138,7 +138,7 @@ async fn test_get_nonexistent_task() {
 #[tokio::test]
 async fn test_task_retry_mechanism() {
     let app = spawn_app().await;
-    let factory = TestDataFactory::new(app.clone());
+    let factory = TestDataFactory::new_with_task_types(app.clone()).await;
 
     // Need auth for protected routes
     let unique_username = format!("testuser_{}", &uuid::Uuid::new_v4().to_string()[..8]);
@@ -230,7 +230,7 @@ async fn test_filter_tasks_by_status() {
 #[tokio::test]
 async fn test_dead_letter_queue() {
     let app = spawn_app().await;
-    let factory = TestDataFactory::new(app.clone());
+    let factory = TestDataFactory::new_with_task_types(app.clone()).await;
 
     // Need auth for protected routes
     let unique_username = format!("testuser_{}", &uuid::Uuid::new_v4().to_string()[..8]);
@@ -297,7 +297,7 @@ async fn test_dead_letter_queue() {
 #[tokio::test]
 async fn test_retry_failed_task() {
     let app = spawn_app().await;
-    let factory = TestDataFactory::new(app.clone());
+    let factory = TestDataFactory::new_with_task_types(app.clone()).await;
 
     // Need auth for protected routes
     let unique_username = format!("testuser_{}", &uuid::Uuid::new_v4().to_string()[..8]);
@@ -371,7 +371,7 @@ async fn test_retry_nonexistent_task() {
 #[tokio::test]
 async fn test_retry_non_failed_task() {
     let app = spawn_app().await;
-    let factory = TestDataFactory::new(app.clone());
+    let factory = TestDataFactory::new_with_task_types(app.clone()).await;
 
     // Need auth for protected routes
     let unique_username = format!("testuser_{}", &uuid::Uuid::new_v4().to_string()[..8]);
@@ -402,7 +402,7 @@ async fn test_retry_non_failed_task() {
 #[tokio::test]
 async fn test_delete_task() {
     let app = spawn_app().await;
-    let factory = TestDataFactory::new(app.clone());
+    let factory = TestDataFactory::new_with_task_types(app.clone()).await;
 
     // Need auth for protected routes
     let unique_username = format!("testuser_{}", &uuid::Uuid::new_v4().to_string()[..8]);
@@ -471,7 +471,7 @@ async fn test_delete_nonexistent_task() {
 #[tokio::test]
 async fn test_delete_pending_task() {
     let app = spawn_app().await;
-    let factory = TestDataFactory::new(app.clone());
+    let factory = TestDataFactory::new_with_task_types(app.clone()).await;
 
     // Need auth for protected routes
     let unique_username = format!("testuser_{}", &uuid::Uuid::new_v4().to_string()[..8]);

@@ -6,6 +6,7 @@ A modern Rust web application starter template with authentication, background t
 
 - **Authentication System** - User registration, login, and session management
 - **Background Tasks** - Async job processing with retry logic, dead letter queue, and circuit breakers
+- **Task Type Registry** - API validation ensures only workers can handle registered task types
 - **Database Integration** - PostgreSQL with migrations and connection pooling
 - **API Documentation** - Interactive OpenAPI/Swagger documentation
 - **Testing Framework** - Comprehensive integration tests with isolated databases
@@ -214,7 +215,7 @@ The starter includes comprehensive testing patterns:
 
 - **Authentication Tests** - Registration, login, session management
 - **API Standards Tests** - CORS, security headers, error handling
-- **Task Processing Tests** - Background job lifecycle and dead letter queue management
+- **Task Processing Tests** - Background job lifecycle, task type validation, and dead letter queue management
 - **Health Check Tests** - Application monitoring
 
 ## Documentation

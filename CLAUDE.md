@@ -15,10 +15,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
   - ~30-60 seconds for complete validation
   - Required for all commits to maintain code quality
 - **Integration Tests**: `cd starter && cargo nextest run` (51 tests, ~12 seconds)
-- **API Testing**: `./scripts/test-with-curl.sh [host] [port]` (38 endpoint tests)
+- **API Testing**: `./scripts/test-with-curl.sh [host] [port]` (40+ endpoint tests)
   - Default: `./scripts/test-with-curl.sh` (localhost:3000)
   - Custom: `./scripts/test-with-curl.sh localhost 8080`
   - HTTPS: `./scripts/test-with-curl.sh api.example.com 443`
+  - **NEW**: Includes task type registration testing (`POST/GET /tasks/types`)
 - **Chaos Testing**: `./scripts/test-chaos.sh [options]` (resilience testing with failure simulation)
   - Basic: `./scripts/test-chaos.sh` (difficulty 1, all scenarios)
   - Advanced: `./scripts/test-chaos.sh --difficulty 3 --scenarios "db-failure,task-flood"`
@@ -61,6 +62,9 @@ Key development scripts in `/scripts/`:
 ### Chaos Testing Helpers in `/scripts/helpers/`:
 - `auth-helper.sh` - Create test users and authentication tokens
 - `task-flood.sh` - Generate high task loads for performance testing
+- `delay-task-flood.sh` - **NEW**: Create delay tasks with configurable deadlines for worker chaos testing
+- `multi-worker-chaos.sh` - **NEW**: Manage multiple workers with random failure simulation
+- `task-completion-monitor.sh` - **NEW**: Monitor task completion against deadlines with statistics
 - `service-chaos.sh` - Simulate service failures (server, worker, database)
 
 ## Production Features
@@ -77,9 +81,10 @@ This starter includes production-ready infrastructure:
 
 1. **Start Services**: `./scripts/dev-server.sh 3000` (complete environment)
    - Or manually: `./scripts/server.sh && ./scripts/worker.sh`
+   - **IMPORTANT**: Workers must start to register task types before creating tasks
 2. **Quality Checks**: `./scripts/check.sh` (**MANDATORY before every commit**)
    - Validates: formatting, linting, compilation, SQLx, tests
-3. **API Testing**: `./scripts/test-with-curl.sh` (38 endpoint tests)
+3. **API Testing**: `./scripts/test-with-curl.sh` (40+ endpoint tests)
 4. **Chaos Testing**: `./scripts/test-chaos.sh` (resilience validation)
 5. **Stop Services**: `./scripts/stop-server.sh 3000`
 
@@ -107,3 +112,27 @@ Available chaos testing scenarios:
 - `circuit-breaker` - Circuit breaker activation/recovery
 - `mixed-chaos` - Multiple simultaneous failures
 - `recovery` - Recovery time measurement
+- `multi-worker-chaos` - **NEW**: Multiple workers with random failures and delay tasks with deadlines
+  - Tests worker resilience with configurable delays and task deadlines
+  - Simulates random worker failures during task processing
+  - Validates retry behavior and task completion under stress
+  - Configurable difficulty levels (1-6) affect worker count, task delays, and failure intervals
+  - **Level 6 (Catastrophic)**: Designed to fail - tests impossible workloads and failure handling
+
+## Task Type Registration System
+
+**BREAKING CHANGE**: As of recent updates, the system requires task type registration before tasks can be created.
+
+### Key Changes:
+- **API Validation**: `POST /tasks` now validates task types against registered handlers
+- **Worker Registration**: Workers automatically register task types on startup via `POST /tasks/types`
+- **New Endpoints**: 
+  - `GET /tasks/types` - List registered task types (public)
+  - `POST /tasks/types` - Register task type (public, used by workers)
+- **Test Updates**: Integration tests now use `TestDataFactory::new_with_task_types()` for automatic registration
+- **Error Handling**: Unregistered task types return 400 validation errors instead of 200/201
+
+### Impact on Development:
+- **Start workers before creating tasks** - API will reject tasks for unregistered types
+- **Tests updated** - All 51 integration tests pass with new validation
+- **Chaos testing improved** - Now catches task type mismatches that were previously silent failures

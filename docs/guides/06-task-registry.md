@@ -7,21 +7,27 @@
 As you add more task types, you need a systematic way to:
 - **Organize handlers** by domain or functionality
 - **Register handlers** with the processor at startup
+- **Register task types** with the API server for validation
 - **Discover available** task types
 - **Configure handlers** with different settings
 - **Test handlers** independently
 - **Version handlers** for backward compatibility
 
-## Basic Registry Pattern
+## 🚨 **Breaking Change: Task Type Registration Required**
 
-### Simple Handler Registration
+As of recent updates, the system now requires **explicit task type registration** before tasks can be created. This prevents API/worker mismatches that were previously only caught at runtime.
 
+## Two-Step Registration Process
+
+The new system requires **two registrations** for each task type:
+
+### Step 1: Register Handler with Worker
 ```rust
-// In your worker startup
+// In your worker startup (main.rs worker command)
 async fn setup_task_processor(database: Database) -> Result<TaskProcessor> {
     let mut processor = TaskProcessor::new(database, ProcessorConfig::default());
     
-    // Register handlers one by one
+    // Register handlers with the worker processor
     processor.register_handler("email".to_string(), EmailTaskHandler).await;
     processor.register_handler("webhook".to_string(), WebhookTaskHandler).await;
     processor.register_handler("data_processing".to_string(), DataProcessingTaskHandler).await;
@@ -31,6 +37,45 @@ async fn setup_task_processor(database: Database) -> Result<TaskProcessor> {
     Ok(processor)
 }
 ```
+
+### Step 2: Register Task Types with API Server
+```rust
+// Also in worker startup - after registering handlers
+async fn register_task_types_with_api() -> Result<()> {
+    let client = reqwest::Client::new();
+    let base_url = std::env::var("API_BASE_URL")
+        .unwrap_or_else(|_| "http://localhost:3000".to_string());
+    
+    let task_types = [
+        ("email", "Email notification tasks"),
+        ("webhook", "Webhook notification tasks"),
+        ("data_processing", "Data processing and analysis tasks"),
+        ("file_cleanup", "File system cleanup tasks"),
+        ("report_generation", "Report generation tasks"),
+    ];
+    
+    for (task_type, description) in task_types.iter() {
+        let response = client
+            .post(&format!("{}/tasks/types", base_url))
+            .json(&serde_json::json!({
+                "task_type": task_type,
+                "description": description
+            }))
+            .send()
+            .await?;
+            
+        if response.status().is_success() {
+            println!("✅ Registered task type: {}", task_type);
+        } else {
+            eprintln!("⚠️ Failed to register task type '{}': {}", 
+                     task_type, response.status());
+        }
+    }
+    Ok(())
+}
+```
+
+⚠️ **The current implementation automatically handles both steps** in the worker startup. You typically don't need to implement this manually.
 
 **Problems with this approach:**
 - Hard to maintain as handlers grow

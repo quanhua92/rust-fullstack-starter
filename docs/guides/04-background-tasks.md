@@ -33,6 +33,17 @@ Some operations shouldn't block HTTP requests:
 
 **Key Insight**: The HTTP API and the worker are **separate processes**. The database acts as the communication layer between them.
 
+## Task Type Registration
+
+⚠️ **Important**: As of recent updates, the system now requires **task type registration** before tasks can be created.
+
+### How It Works
+1. **Workers register their task types** on startup via `POST /tasks/types`
+2. **API validates task types** before accepting tasks
+3. **Only registered task types** can be used to create tasks
+
+This prevents the common issue where APIs accept tasks that no worker can handle.
+
 ## Task Lifecycle
 
 ### States and Transitions
@@ -654,11 +665,51 @@ curl -s -H "Authorization: Bearer $TOKEN" \
 }
 ```
 
+## Task Type Management
+
+### Registering Task Types
+Before creating tasks, the system must know which task types are supported:
+
+```bash
+# Register a new task type (done automatically by workers)
+curl -X POST http://localhost:3000/tasks/types \
+  -H "Content-Type: application/json" \
+  -d '{
+    "task_type": "email", 
+    "description": "Email notification tasks"
+  }'
+```
+
+### Listing Available Task Types
+```bash
+# Get all registered task types
+curl http://localhost:3000/tasks/types
+
+# Response:
+{
+  "success": true,
+  "data": [
+    {
+      "task_type": "email",
+      "description": "Email notification tasks", 
+      "is_active": true,
+      "created_at": "2025-01-01T00:00:00Z",
+      "updated_at": "2025-01-01T00:00:00Z"
+    }
+  ]
+}
+```
+
+⚠️ **Important Notes**: 
+- Workers automatically register their task types on startup
+- **Start workers before creating tasks** - the API will reject tasks for unregistered types  
+- Manual registration is typically not needed unless testing custom task types
+
 ## API Integration
 
 ### Creating Tasks via HTTP
 ```bash
-# Create an email task
+# Create an email task (task type must be registered first!)
 curl -X POST http://localhost:3000/tasks \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \

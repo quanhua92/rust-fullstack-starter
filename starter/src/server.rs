@@ -111,6 +111,9 @@ pub fn create_router(state: AppState) -> Router {
         .route("/health/startup", get(health::health_startup))
         .route("/auth/login", post(auth_api::login))
         .route("/auth/register", post(auth_api::register))
+        // Task type registration (public for workers)
+        .route("/tasks/types", post(tasks_api::register_task_type))
+        .route("/tasks/types", get(tasks_api::list_task_types))
         // OpenAPI documentation routes
         .route("/api-docs", get(api_docs))
         .route("/api-docs/openapi.json", get(openapi_json));
@@ -128,6 +131,7 @@ pub fn create_router(state: AppState) -> Router {
         .route("/tasks", get(tasks_api::list_tasks))
         .route("/tasks/stats", get(tasks_api::get_stats))
         .route("/tasks/dead-letter", get(tasks_api::get_dead_letter_queue))
+        // Individual task routes
         .route("/tasks/{id}", get(tasks_api::get_task))
         .route("/tasks/{id}", delete(tasks_api::delete_task))
         .route("/tasks/{id}/cancel", post(tasks_api::cancel_task))

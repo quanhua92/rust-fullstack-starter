@@ -48,6 +48,8 @@ use crate::users::models::{User, UserProfile};
         crate::tasks::api::list_tasks,
         crate::tasks::api::get_task,
         crate::tasks::api::cancel_task,
+        crate::tasks::api::register_task_type,
+        crate::tasks::api::list_task_types,
     ),
     components(
         schemas(

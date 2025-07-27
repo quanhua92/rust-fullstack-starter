@@ -28,9 +28,9 @@ tracing-subscriber.workspace = true
 async-trait.workspace = true
 utoipa.workspace = true
 utoipa-swagger-ui.workspace = true
+reqwest.workspace = true
 
 [dev-dependencies]
 tempfile.workspace = true
-reqwest.workspace = true
 tokio-test.workspace = true
 once_cell.workspace = true

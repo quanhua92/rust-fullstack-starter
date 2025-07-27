@@ -186,6 +186,23 @@ The framework provides progressive difficulty levels to match your testing needs
 ./scripts/test-chaos.sh --difficulty 5
 ```
 
+### Level 6: Catastrophic ⚠️ **DESIGNED TO FAIL**
+**Purpose**: Test system failure detection and handling
+- **Load**: 1000 tasks, 0.005s delay (multi-worker only)
+- **Multi-Worker**: 50 tasks × 15s delays = 750s needed, only 60s deadline
+- **Worker Chaos**: 30% permanent failures, 3-8s kill intervals
+- **Expected**: **SYSTEM MUST FAIL** - validates proper failure handling
+
+```bash
+./scripts/test-chaos.sh --difficulty 6 --scenarios multi-worker-chaos
+```
+
+**Use cases**:
+- Testing failure detection mechanisms
+- Validating system behavior under impossible loads
+- Confirming graceful degradation patterns
+- Training teams on failure scenarios
+
 ## Chaos Scenarios
 
 ### Baseline Testing
@@ -337,6 +354,39 @@ The framework provides progressive difficulty levels to match your testing needs
 - No degradation over multiple restarts
 - Time to first successful request
 
+### Multi-Worker Chaos Testing ⭐ **NEW**
+**Purpose**: Test multi-worker resilience with delay tasks and deadlines
+
+```bash
+./scripts/test-chaos.sh --scenarios multi-worker-chaos
+```
+
+**What happens**:
+1. Multiple workers (2-5) started simultaneously
+2. Delay tasks created with configurable processing times (3-8 seconds)
+3. Random worker failures introduced every 10-25 seconds
+4. Workers killed and restarted during active task processing
+5. Task completion monitored against strict deadlines (45-90 seconds)
+6. Retry behavior validated when workers drop tasks
+
+**What it validates**:
+- **Worker coordination**: Multiple workers processing tasks concurrently
+- **Failure resilience**: System continues operating when workers fail
+- **Task retry logic**: Failed tasks are retried by surviving workers
+- **Queue persistence**: Tasks survive worker crashes
+- **Deadline enforcement**: System meets timing requirements under stress
+- **Load distribution**: Work is distributed across available workers
+- **Recovery patterns**: Workers restart reliably after failures
+
+**Difficulty scaling**:
+- **Level 1**: 2 workers, 3s delays, 45s deadline, gentle failure intervals
+- **Level 5**: 5 workers, 8s delays, 90s deadline, aggressive failure patterns
+- **Level 6**: 5 workers, 15s delays, 60s deadline, catastrophic failure patterns ⚠️
+
+**Success criteria**:
+- **Levels 1-5**: ≥80% task completion rate + evidence of retries + system responsive
+- **Level 6**: <50% completion rate + deadline missed (designed failure validation) ⚠️
+
 ## Running Chaos Tests
 
 ### Quick Start
@@ -377,8 +427,8 @@ The framework provides progressive difficulty levels to match your testing needs
 
 **Phase 4: Resilience Testing**
 ```bash
-# Pre-production validation (12 minutes)
-./scripts/test-chaos.sh --difficulty 4 --scenarios "mixed-chaos,recovery"
+# Pre-production validation (15 minutes)
+./scripts/test-chaos.sh --difficulty 4 --scenarios "mixed-chaos,recovery,multi-worker-chaos"
 ```
 
 **Phase 5: Production Readiness**
@@ -445,11 +495,11 @@ The framework tracks several key metrics:
 ```
 📊 Chaos Testing Results
 =========================
-Total scenarios: 8
-Passed: 7
+Total scenarios: 9
+Passed: 8
 Failed: 1
-Success rate: 87%
-Total duration: 720s
+Success rate: 89%
+Total duration: 842s
 
 Scenario Results:
 ✅ baseline: PASS
@@ -460,6 +510,7 @@ Scenario Results:
 ✅ circuit-breaker: PASS
 ✅ mixed-chaos: PASS
 ✅ recovery: PASS (12s avg)
+✅ multi-worker-chaos: PASS (85.2%, 12 retries)
 ```
 
 **Analysis**: System shows good overall resilience (87% success) with concerning worker restart issues that need investigation.

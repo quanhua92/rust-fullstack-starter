@@ -143,6 +143,24 @@ if [ -n "$USER_TOKEN" ]; then
     # Get initial task stats
     test_api "GET /tasks/stats" "GET" "/tasks/stats" "200" "$USER_TOKEN"
     
+    # Test task type management (public endpoints)
+    echo ""
+    echo "🔧 Testing Task Type Management..."
+    
+    # Register a custom task type
+    CUSTOM_TASK_TYPE='{"task_type": "test_custom", "description": "Custom task type for testing"}'
+    test_api "POST /tasks/types (register)" "POST" "/tasks/types" "200" "" "$CUSTOM_TASK_TYPE"
+    
+    # List registered task types  
+    test_api "GET /tasks/types" "GET" "/tasks/types" "200" ""
+    
+    # Test creating task with unregistered type (should fail with 400)
+    UNREGISTERED_TASK='{"task_type": "absolutely_unknown_type_9999", "payload": {"test": "data"}, "priority": "normal"}'
+    test_api "POST /tasks (unregistered type)" "POST" "/tasks" "400" "$USER_TOKEN" "$UNREGISTERED_TASK"
+    
+    echo ""
+    echo "📋 Testing Task Creation..."
+    
     # Create email task
     EMAIL_TASK='{"task_type": "email", "payload": {"to": "test@example.com", "subject": "Test Email", "body": "Hello from API test"}, "priority": "normal"}'
     TASK_RESPONSE=$(curl -s -X POST "$BASE_URL/tasks" -H "Content-Type: application/json" -H "Authorization: Bearer $USER_TOKEN" -d "$EMAIL_TASK")
@@ -297,9 +315,9 @@ if [ -n "$USER_TOKEN" ]; then
         REPORT_TASK='{"task_type": "report_generation", "payload": {"report_type": "sales", "start_date": "2024-01-01", "end_date": "2024-01-31", "format": "pdf"}, "priority": "normal"}'
         test_api "POST /tasks (report_generation)" "POST" "/tasks" "200" "$NEW_TOKEN" "$REPORT_TASK"
         
-        # Test unknown task type (API accepts it, worker will reject during processing)
-        UNKNOWN_TASK='{"task_type": "nonexistent", "payload": {"test": "data"}, "priority": "normal"}'
-        test_api "POST /tasks (unknown type)" "POST" "/tasks" "200" "$NEW_TOKEN" "$UNKNOWN_TASK"
+        # Test unknown task type (should now be rejected by API)
+        UNKNOWN_TASK='{"task_type": "truly_unknown_type_12345", "payload": {"test": "data"}, "priority": "normal"}'
+        test_api "POST /tasks (unknown type)" "POST" "/tasks" "400" "$NEW_TOKEN" "$UNKNOWN_TASK"
         
         # Test admin endpoint with regular user (should get 401)
         test_api "GET /admin/health (non-admin)" "GET" "/admin/health" "401" "$NEW_TOKEN"
