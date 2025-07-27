@@ -36,10 +36,10 @@ jobs:
     - name: Run dependency audit
       run: |
         echo "🔍 Running cargo-audit..."
-        cargo audit --db-urls https://github.com/RustSec/advisory-db.git --format json > audit-report.json || true
+        cargo audit --db https://github.com/RustSec/advisory-db.git --format json > audit-report.json || true
         
         # Display human-readable output
-        cargo audit --db-urls https://github.com/RustSec/advisory-db.git
+        cargo audit --db https://github.com/RustSec/advisory-db.git
 
     - name: Upload audit results
       if: always()

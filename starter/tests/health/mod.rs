@@ -49,7 +49,7 @@ async fn test_readiness_probe() {
     assert_eq!(json["data"]["probe"], "readiness");
     assert_json_field_exists(&json["data"], "timestamp");
     assert_json_field_exists(&json["data"], "checks");
-    
+
     // Verify database and application checks are included
     let checks = json["data"]["checks"].as_object().unwrap();
     assert_json_field_exists(&serde_json::Value::Object(checks.clone()), "database");
@@ -70,7 +70,7 @@ async fn test_startup_probe() {
     assert_eq!(json["data"]["probe"], "startup");
     assert_json_field_exists(&json["data"], "timestamp");
     assert_json_field_exists(&json["data"], "checks");
-    
+
     // Verify database and schema checks are included
     let checks = json["data"]["checks"].as_object().unwrap();
     assert_json_field_exists(&serde_json::Value::Object(checks.clone()), "database");

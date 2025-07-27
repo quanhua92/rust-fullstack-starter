@@ -123,7 +123,7 @@ jobs:
       run: cargo install cargo-audit --locked
 
     - name: Run security audit
-      run: cargo audit --db-urls https://github.com/RustSec/advisory-db.git
+      run: cargo audit --db https://github.com/RustSec/advisory-db.git
 
     - name: Install cargo-deny
       run: cargo install cargo-deny --locked
