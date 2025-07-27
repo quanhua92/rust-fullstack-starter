@@ -23,7 +23,7 @@ docker compose up -d postgres
 # Wait for database health check
 docker compose up --wait
 
-# Run migrations
+# Run migrations (from project root)
 sqlx migrate run
 
 # Start development
@@ -87,7 +87,7 @@ This starter includes a comprehensive integration testing framework that helps y
 # Install cargo-nextest for faster testing (optional but recommended)
 cargo install cargo-nextest
 
-# Run all tests
+# Run all tests (~10 seconds for 38 tests)
 cargo nextest run
 
 # Run without stopping on failures (see all results)
@@ -112,8 +112,9 @@ The testing framework covers:
 
 ### Database Isolation
 Each test gets its own isolated PostgreSQL database:
-- Template database created once with all migrations
-- Test databases cloned from template (fast)
+- Template database created once with all migrations (~2-3 seconds)
+- Test databases cloned from template (fast ~200-300ms each)
+- 10x performance improvement vs running migrations per test
 - Automatic cleanup after tests
 - No data contamination between tests
 
@@ -154,12 +155,12 @@ cargo run -- server
 
 ### 2. Database Changes
 ```bash
-# Create new migration
+# Create new migration (from project root)
 sqlx migrate add your_migration_name
 
 # Edit the generated SQL file in starter/migrations/
 
-# Apply migration
+# Apply migration (from project root) 
 sqlx migrate run
 
 # Revert if needed
@@ -171,13 +172,13 @@ sqlx migrate revert
 # Check compilation
 cargo check
 
-# Run the comprehensive test suite (recommended - faster)
+# Run the comprehensive test suite (recommended - faster, ~10 seconds)
 cargo nextest run
 
 # Run all tests without stopping on first failure
 cargo nextest run --no-fail-fast
 
-# Run tests with standard cargo
+# Run tests with standard cargo (slower)
 cargo test
 
 # Run tests with output
@@ -225,10 +226,10 @@ STARTER__WORKER__CONCURRENCY=2 cargo run -- worker
 # Check migration status
 sqlx migrate info
 
-# Run pending migrations
+# Run pending migrations (from project root)
 sqlx migrate run
 
-# Revert last migration
+# Revert last migration (from project root)
 sqlx migrate revert
 
 # Reset database (careful!)

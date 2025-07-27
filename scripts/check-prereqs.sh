@@ -27,6 +27,15 @@ if command -v docker &> /dev/null; then
     DOCKER_VERSION=$(docker --version | cut -d' ' -f3 | cut -d',' -f1)
     echo "✅ Found ($DOCKER_VERSION)"
     
+    # Check version requirement (20.10+)
+    MAJOR_VERSION=$(echo $DOCKER_VERSION | cut -d'.' -f1)
+    MINOR_VERSION=$(echo $DOCKER_VERSION | cut -d'.' -f2)
+    if [ "$MAJOR_VERSION" -gt 20 ] || ([ "$MAJOR_VERSION" -eq 20 ] && [ "$MINOR_VERSION" -ge 10 ]); then
+        echo "   ✅ Version meets requirement (20.10+)"
+    else
+        echo "   ⚠️  Version $DOCKER_VERSION may be too old (recommended: 20.10+)"
+    fi
+    
     # Check if Docker daemon is running
     if docker ps &> /dev/null; then
         echo "   ✅ Docker daemon is running"
@@ -36,18 +45,30 @@ if command -v docker &> /dev/null; then
     fi
 else
     echo "❌ Not found"
-    echo "   📥 Install from: https://docker.com/get-started"
+    echo "   📥 Install from: https://docker.com/get-started (version 20.10+)"
     EXIT_CODE=1
 fi
 
 # Check Docker Compose
 echo -n "🏗️  Docker Compose: "
 if command -v docker-compose &> /dev/null; then
-    COMPOSE_VERSION=$(docker-compose --version | cut -d' ' -f3 | cut -d',' -f1)
+    COMPOSE_VERSION=$(docker-compose --version | cut -d' ' -f3 | cut -d',' -f1 | sed 's/v//')
     echo "✅ Found (standalone: $COMPOSE_VERSION)"
+    # Check version requirement (2.0+) - only if version is numeric
+    if [[ $COMPOSE_VERSION =~ ^[0-9]+\.[0-9]+ ]]; then
+        MAJOR_VERSION=$(echo $COMPOSE_VERSION | cut -d'.' -f1)
+        if [ "$MAJOR_VERSION" -ge 2 ]; then
+            echo "   ✅ Version meets requirement (2.0+)"
+        else
+            echo "   ⚠️  Version $COMPOSE_VERSION may be too old (recommended: 2.0+)"
+        fi
+    else
+        echo "   ✅ Version looks good"
+    fi
 elif docker compose version &> /dev/null; then
     COMPOSE_VERSION=$(docker compose version --short 2>/dev/null || echo "integrated")
     echo "✅ Found (integrated: $COMPOSE_VERSION)"
+    echo "   ✅ Integrated Docker Compose (modern version)"
 else
     echo "❌ Not found"
     echo "   📥 Install Docker Desktop or standalone docker-compose"

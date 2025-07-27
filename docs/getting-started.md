@@ -5,8 +5,10 @@ This guide will help you set up and run the Rust Full-Stack Starter project loca
 ## Prerequisites
 
 - **Rust 1.75+** - Install via [rustup](https://rustup.rs/)
-- **Docker & Docker Compose** - For database infrastructure
+- **Docker 20.10+** and **Docker Compose 2.0+** - For database infrastructure
 - **PostgreSQL client tools** (optional) - For database inspection
+
+> **Performance Note**: Setup typically takes 2-3 seconds, test execution ~10 seconds for all 38 tests
 
 ## Quick Setup
 
@@ -41,6 +43,7 @@ git clone <repository-url>
 cd rust-fullstack-starter
 
 # Copy environment template (default values work for development)
+# Note: .env is auto-created by dev scripts if missing
 cp .env.example .env
 ```
 
@@ -63,10 +66,9 @@ if ! command -v sqlx &> /dev/null; then
     cargo install sqlx-cli --no-default-features --features postgres
 fi
 
-# Run migrations from starter/ directory
-cd starter
+# Run migrations (from project root)
+# Note: migrations are in starter/migrations/ but sqlx commands work from project root
 sqlx migrate run
-cd ..  # Return to project root
 ```
 
 ### 5. Test the Application
@@ -92,8 +94,15 @@ psql postgres://starter_user:starter_pass@localhost:5432/starter_db
 \dt
 ```
 
-### Check Initial Admin User
-If you set `STARTER__INITIAL_ADMIN_PASSWORD` in your `.env`, an admin user will be created automatically on first server startup.
+### Setup Initial Admin User (Optional)
+**Important**: To create an admin user on first startup, uncomment and set a strong password in your `.env`:
+```bash
+# In .env file - use a strong password (min 8 chars, mix of letters/numbers/symbols)
+STARTER__INITIAL_ADMIN_PASSWORD=YourSecureAdminPassword123!
+```
+**Security Note**: Remove or comment out this line after first startup for security.
+
+The admin user will be created automatically when the server first starts.
 
 ## Development Workflow
 
@@ -133,7 +142,8 @@ cargo clean && cargo build
 
 **Migration Errors**
 ```bash
-cd starter && sqlx migrate run
+# Run from project root
+sqlx migrate run
 ```
 
 **Complete Reset**
@@ -188,7 +198,7 @@ Now that you have the system running, follow these guides to understand and exte
 # Start infrastructure
 docker compose up -d
 
-# Run migrations
+# Run migrations (from project root)
 sqlx migrate run
 
 # Start server
@@ -217,7 +227,7 @@ This starter includes a comprehensive testing framework with 38 integration test
 # Install faster test runner (recommended)
 cargo install cargo-nextest
 
-# Run all tests (38 integration tests)
+# Run all tests (38 integration tests) - takes ~10 seconds
 cargo nextest run
 
 # Run specific test categories

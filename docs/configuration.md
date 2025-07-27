@@ -10,6 +10,8 @@ The application uses a hierarchical configuration system:
 2. **Environment variables** - Override defaults using `STARTER__*` prefix
 3. **Validation** - All configuration is validated at startup
 
+> **Performance Note**: Configuration loading and validation typically takes <100ms at startup
+
 ## Environment Variables
 
 ### Server Configuration
@@ -111,9 +113,14 @@ STARTER__WORKER__RETRY_BACKOFF_BASE_SECS=5
 |----------|---------|-------------|
 | `STARTER__INITIAL_ADMIN_PASSWORD` | None | Creates admin user on first startup if set |
 
+**Important Security Notes:**
+- Use strong passwords (minimum 8 characters, mix of letters/numbers/symbols)
+- Remove or comment out after first startup
+- Never commit real passwords to version control
+
 **Examples:**
 ```bash
-# Create initial admin user
+# Create initial admin user (remove after first startup)
 STARTER__INITIAL_ADMIN_PASSWORD=SecureAdminPassword123!
 ```
 

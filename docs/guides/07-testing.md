@@ -83,9 +83,10 @@ CREATE DATABASE test_uuid_12345 WITH TEMPLATE starter_test_template;
 ```
 
 **Performance**: 
-- Template creation: ~2-3 seconds (one time)
+- Template creation: ~2-3 seconds (one time setup)
 - Test database clone: ~200-300ms (per test)
 - Traditional migrations: ~2-3 seconds per test
+- **Total speedup**: 10x faster test execution
 
 **Benefits**:
 - Complete test isolation
@@ -295,13 +296,13 @@ async fn test_get_user_profile_authenticated() {
 # Install faster test runner (recommended)
 cargo install cargo-nextest
 
-# Run all tests (38 integration tests)
+# Run all tests (38 integration tests, ~10 seconds)
 cargo nextest run
 
 # Run without stopping on first failure
 cargo nextest run --no-fail-fast
 
-# Traditional cargo test
+# Traditional cargo test (slower)
 cargo test
 ```
 
