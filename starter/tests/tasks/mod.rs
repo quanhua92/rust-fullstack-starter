@@ -8,14 +8,14 @@ async fn test_create_task() {
     let app = spawn_app().await;
     let factory = TestDataFactory::new(app.clone());
     
-    let task_response = factory.create_task("send_email", json!({
+    let task_response = factory.create_task("email", json!({
         "to": "test@example.com",
         "subject": "Test",
         "body": "Hello"
     })).await;
     
     assert_json_field_exists(&task_response, "data");
-    assert_eq!(task_response["data"]["task_type"], "send_email");
+    assert_eq!(task_response["data"]["task_type"], "email");
 }
 
 #[tokio::test]
@@ -24,7 +24,7 @@ async fn test_get_task_status() {
     let factory = TestDataFactory::new(app.clone());
     
     // Create task
-    let task_response = factory.create_task("send_email", json!({
+    let task_response = factory.create_task("email", json!({
         "to": "test@example.com",
         "subject": "Test",
         "body": "Hello"
@@ -52,9 +52,9 @@ async fn test_list_tasks() {
     let factory = TestDataFactory::new(app.clone());
     
     // Create multiple tasks
-    factory.create_task("send_email", json!({"to": "user1@example.com"})).await;
-    factory.create_task("send_webhook", json!({"url": "https://example.com/webhook"})).await;
-    factory.create_task("send_email", json!({"to": "user2@example.com"})).await;
+    factory.create_task("email", json!({"to": "user1@example.com"})).await;
+    factory.create_task("webhook", json!({"url": "https://example.com/webhook"})).await;
+    factory.create_task("email", json!({"to": "user2@example.com"})).await;
     
     // Need auth for protected routes
     let unique_username = format!("testuser_{}", uuid::Uuid::new_v4().to_string()[..8].to_string());
@@ -79,7 +79,7 @@ async fn test_create_task_with_priority() {
     let (_user, token) = factory.create_authenticated_user(&unique_username).await;
     
     let task_data = json!({
-        "task_type": "send_email",
+        "task_type": "email",
         "payload": {
             "to": "test@example.com",
             "subject": "High Priority",
@@ -123,7 +123,7 @@ async fn test_task_retry_mechanism() {
     let (_user, token) = factory.create_authenticated_user(&unique_username).await;
     
     let task_data = json!({
-        "task_type": "send_email",
+        "task_type": "email",
         "payload": {
             "to": "test@example.com",
             "subject": "Test Retry",
@@ -146,7 +146,7 @@ async fn test_tasks_pagination() {
     
     // Create many tasks
     for i in 0..15 {
-        factory.create_task("send_email", json!({
+        factory.create_task("email", json!({
             "to": format!("user{}@example.com", i),
             "subject": format!("Test {}", i),
             "body": "Test message"
@@ -174,8 +174,8 @@ async fn test_filter_tasks_by_status() {
     let factory = TestDataFactory::new(app.clone());
     
     // Create tasks
-    factory.create_task("send_email", json!({"to": "test1@example.com"})).await;
-    factory.create_task("send_email", json!({"to": "test2@example.com"})).await;
+    factory.create_task("email", json!({"to": "test1@example.com"})).await;
+    factory.create_task("email", json!({"to": "test2@example.com"})).await;
     
     // Need auth for protected routes
     let unique_username = format!("testuser_{}", uuid::Uuid::new_v4().to_string()[..8].to_string());

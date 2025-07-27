@@ -63,7 +63,7 @@ Basic health check endpoint.
 
 Detailed health check including database connectivity.
 
-**Authentication**: Admin role required
+**Authentication**: None required
 
 **Response**:
 ```json
@@ -100,7 +100,7 @@ Create a new user account.
 }
 ```
 
-**Response** (201 Created):
+**Response** (200 OK):
 ```json
 {
   "success": true,
@@ -246,28 +246,6 @@ Validate current session (refresh token).
 
 ## User Management Endpoints
 
-### GET /users/profile
-
-Get current user's detailed profile.
-
-**Authentication**: Required
-
-**Response** (200 OK):
-```json
-{
-  "success": true,
-  "data": {
-    "id": "uuid-here",
-    "username": "newuser",
-    "email": "user@example.com",
-    "role": "user",
-    "is_active": true,
-    "email_verified": false,
-    "created_at": "2024-01-01T00:00:00Z",
-    "last_login_at": "2024-01-01T12:00:00Z"
-  }
-}
-```
 
 ### GET /users/{user_id}
 
@@ -329,7 +307,7 @@ Create a background task for async processing.
 - `file_cleanup` - File management examples  
 - `report_generation` - Report creation examples
 
-**Response** (201 Created):
+**Response** (200 OK):
 ```json
 {
   "success": true,
@@ -337,22 +315,36 @@ Create a background task for async processing.
     "id": "uuid-here",
     "task_type": "email",
     "payload": { "to": "recipient@example.com", "subject": "...", "body": "..." },
-    "status": "pending",
-    "priority": "normal",
-    "max_attempts": 3,
+    "status": "Pending",
+    "priority": "Normal",
+    "retry_strategy": {
+      "Exponential": {
+        "base_delay": { "nanos": 0, "secs": 1 },
+        "max_attempts": 5,
+        "max_delay": { "nanos": 0, "secs": 300 },
+        "multiplier": 2.0
+      }
+    },
+    "max_attempts": 5,
     "current_attempt": 0,
+    "last_error": null,
     "created_at": "2024-01-01T00:00:00Z",
     "updated_at": "2024-01-01T00:00:00Z",
     "scheduled_at": "2024-01-01T12:00:00Z",
-    "created_by": "uuid-here",
-    "metadata": { "source": "api" }
-  }
+    "started_at": null,
+    "completed_at": null,
+    "created_by": null,
+    "metadata": { "api_created": true }
+  },
+  "message": null
 }
 ```
 
 **Error Responses**:
-- `400` - Invalid task type or payload
+- `400` - Invalid payload format
 - `401` - Authentication required
+
+**Note**: The API accepts any task type string. Unknown task types will be accepted but will fail during processing if no handler is registered for that type.
 
 ### GET /tasks
 
@@ -373,13 +365,14 @@ List your background tasks.
     {
       "id": "uuid-here",
       "task_type": "email",
-      "status": "completed",
-      "priority": "normal",
+      "status": "Completed",
+      "priority": "Normal",
       "current_attempt": 1,
       "created_at": "2024-01-01T00:00:00Z",
       "completed_at": "2024-01-01T00:01:00Z"
     }
-  ]
+  ],
+  "message": null
 }
 ```
 
@@ -400,18 +393,28 @@ Get details about a specific task.
     "id": "uuid-here",
     "task_type": "email",
     "payload": { "to": "recipient@example.com", "subject": "...", "body": "..." },
-    "status": "completed",
-    "priority": "normal",
-    "max_attempts": 3,
+    "status": "Completed",
+    "priority": "Normal",
+    "retry_strategy": {
+      "Exponential": {
+        "base_delay": { "nanos": 0, "secs": 1 },
+        "max_attempts": 5,
+        "max_delay": { "nanos": 0, "secs": 300 },
+        "multiplier": 2.0
+      }
+    },
+    "max_attempts": 5,
     "current_attempt": 1,
     "last_error": null,
     "created_at": "2024-01-01T00:00:00Z",
     "updated_at": "2024-01-01T00:01:00Z",
+    "scheduled_at": "2024-01-01T12:00:00Z",
     "started_at": "2024-01-01T00:00:30Z",
     "completed_at": "2024-01-01T00:01:00Z",
-    "created_by": "uuid-here",
-    "metadata": { "source": "api" }
-  }
+    "created_by": null,
+    "metadata": { "api_created": true }
+  },
+  "message": null
 }
 ```
 
@@ -522,16 +525,14 @@ Admin-only detailed health check.
 ```
 
 **Error Responses**:
-- `401` - Invalid or expired token
-- `403` - Insufficient permissions (non-admin user)
+- `401` - Invalid or expired token, or insufficient permissions (non-admin user)
 
 ## HTTP Status Codes
 
 The API uses standard HTTP status codes:
 
 ### Success Codes
-- `200 OK` - Request successful
-- `201 Created` - Resource created successfully
+- `200 OK` - Request successful (includes resource creation)
 
 ### Client Error Codes
 - `400 Bad Request` - Invalid request data
@@ -752,7 +753,7 @@ curl -X POST http://localhost:3000/tasks \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
-    "task_type": "send_email",
+    "task_type": "email",
     "payload": {"to": "test@example.com", "subject": "Test", "body": "Hello"}
   }'
 ```
