@@ -2,6 +2,9 @@
 resolver = "2"
 members = ["starter"]
 
+[workspace.package]
+license = "MIT"
+
 [workspace.dependencies]
 # Web framework
 axum = "0.8.4"

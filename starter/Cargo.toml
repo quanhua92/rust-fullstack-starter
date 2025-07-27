@@ -2,6 +2,7 @@
 name = "starter"  # Rename this to your project name
 version = "0.1.0"
 edition = "2024"
+license = "MIT"
 
 [dependencies]
 # Inherit from workspace
