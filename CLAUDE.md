@@ -10,6 +10,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Testing Commands
 
+- **Quality Checks**: `./scripts/check.sh` (**RUN BEFORE EVERY COMMIT** - comprehensive quality validation)
+  - Runs: cargo check, fmt, clippy, sqlx prepare, unit tests, integration tests
+  - ~30-60 seconds for complete validation
+  - Required for all commits to maintain code quality
 - **Integration Tests**: `cd starter && cargo nextest run` (51 tests, ~12 seconds)
 - **API Testing**: `./scripts/test-with-curl.sh [host] [port]` (38 endpoint tests)
   - Default: `./scripts/test-with-curl.sh` (localhost:3000)
@@ -44,6 +48,7 @@ Comprehensive OpenAPI documentation is available:
 ## Project Scripts
 
 Key development scripts in `/scripts/`:
+- `check.sh` - **Comprehensive quality checks (run before every commit)**
 - `server.sh` - Start development server with custom port
 - `worker.sh` - Start background task worker
 - `test-with-curl.sh` - Comprehensive API endpoint testing
@@ -72,10 +77,24 @@ This starter includes production-ready infrastructure:
 
 1. **Start Services**: `./scripts/dev-server.sh 3000` (complete environment)
    - Or manually: `./scripts/server.sh && ./scripts/worker.sh`
-2. **Run Tests**: `cargo nextest run` (51 integration tests)
+2. **Quality Checks**: `./scripts/check.sh` (**MANDATORY before every commit**)
+   - Validates: formatting, linting, compilation, SQLx, tests
 3. **API Testing**: `./scripts/test-with-curl.sh` (38 endpoint tests)
 4. **Chaos Testing**: `./scripts/test-chaos.sh` (resilience validation)
 5. **Stop Services**: `./scripts/stop-server.sh 3000`
+
+## Pre-Commit Requirements
+
+**ALWAYS run `./scripts/check.sh` before every commit.** This script:
+- Verifies code compilation (`cargo check`)
+- Validates formatting (`cargo fmt --check`)
+- Runs linting (`cargo clippy`)
+- Updates SQLx query cache (`cargo sqlx prepare`)
+- Executes unit tests (`cargo test --lib`)
+- Runs integration tests (`cargo nextest run`)
+- Performs additional quality checks
+
+The repository includes a pre-commit hook that automatically runs these checks.
 
 ## Chaos Testing Scenarios
 

@@ -91,7 +91,7 @@ jobs:
         sqlx migrate run --database-url postgresql://test_user:test_password@localhost:5432/test_db
 
     - name: Run Clippy
-      run: cargo clippy --manifest-path starter/Cargo.toml --all-targets --all-features -- -D warnings
+      run: SQLX_OFFLINE=true cargo clippy --manifest-path starter/Cargo.toml --all-targets --all-features -- -D warnings
 
     - name: Run unit tests
       run: cargo test --manifest-path starter/Cargo.toml --lib
