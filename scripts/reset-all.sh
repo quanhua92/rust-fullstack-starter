@@ -1,5 +1,13 @@
 #!/bin/bash
 
+# Validate we're in the right directory
+if [ ! -f "docker-compose.yaml" ] || [ ! -d "starter" ]; then
+    echo "❌ Please run this script from the project root directory"
+    echo "   Current directory: $(pwd)"
+    echo "   Expected files: docker-compose.yaml, starter/"
+    exit 1
+fi
+
 echo "🔄 Resetting all servers and workers..."
 
 # Stop all servers and workers

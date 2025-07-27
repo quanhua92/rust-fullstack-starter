@@ -6,6 +6,14 @@ LOG_FILE="/tmp/starter-worker.log"
 PID_FILE="/tmp/starter-worker.pid"
 MAX_LOG_SIZE_MB=50
 
+# Validate we're in the right directory
+if [ ! -f "docker-compose.yaml" ] || [ ! -d "starter" ]; then
+    echo "❌ Please run this script from the project root directory"
+    echo "   Current directory: $(pwd)"
+    echo "   Expected files: docker-compose.yaml, starter/"
+    exit 1
+fi
+
 echo "🔄 Starting $PROJECT_NAME background worker..."
 
 # Function to rotate log if it's too large

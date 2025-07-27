@@ -10,22 +10,44 @@ This guide will help you set up and run the Rust Full-Stack Starter project loca
 
 ## Quick Setup
 
-### 1. Clone and Setup Environment
+> 📁 **Working Directory Guide**  
+> - **Scripts**: Run from project root (`./scripts/dev-server.sh`)  
+> - **Cargo commands**: Run from project root (`cargo check`, `cargo run`)  
+> - **sqlx commands**: Auto-handled by scripts (or run from `starter/` directory)  
+> - **Tests**: Run from `starter/` directory (`cd starter && cargo test`)
+
+### Option A: One-Command Setup (Recommended)
+
+```bash
+# Check prerequisites and start everything
+./scripts/check-prereqs.sh
+./scripts/dev-server.sh 3000
+```
+
+### Option B: Manual Step-by-Step Setup
+
+For learning purposes, here's the manual process:
+
+### 1. Validate Prerequisites
+
+```bash
+./scripts/check-prereqs.sh
+```
+
+### 2. Clone and Setup Environment
 
 ```bash
 git clone <repository-url>
 cd rust-fullstack-starter
 
-# Copy environment template
+# Copy environment template (default values work for development)
 cp .env.example .env
-
-# Edit .env if needed (default values should work for development)
 ```
 
-### 2. Start Database Infrastructure
+### 3. Start Database Infrastructure
 
 ```bash
-# Start PostgreSQL with Docker Compose
+# Run from project root
 docker compose up -d postgres
 
 # Wait for database to be ready
@@ -33,32 +55,30 @@ docker compose logs -f postgres
 # Look for "database system is ready to accept connections"
 ```
 
-### 3. Run Database Migrations
+### 4. Run Database Migrations
 
 ```bash
-# Install sqlx CLI (if not already installed)
-cargo install sqlx-cli --no-default-features --features postgres
+# Install sqlx CLI if not already installed
+if ! command -v sqlx &> /dev/null; then
+    cargo install sqlx-cli --no-default-features --features postgres
+fi
 
-# Run migrations to create database schema
+# Run migrations from starter/ directory
+cd starter
 sqlx migrate run
+cd ..  # Return to project root
 ```
 
-### 4. Test the Application
+### 5. Test the Application
 
 ```bash
-# Check that everything compiles
+# Check compilation (from project root)
 cargo check
 
-# Test server mode
-cargo run -- server
-# Should output: "Server starting on port 8080 (config: 0.0.0.0)"
-
-# Test worker mode (in another terminal)
-cargo run -- worker  
-# Should output: "Worker starting with 4 concurrency"
-
-# View CLI help
-cargo run -- --help
+# Test server mode (from project root)
+./scripts/server.sh 3000
+./scripts/test-server.sh 3000
+./scripts/stop-server.sh 3000
 ```
 
 ## Verify Setup
@@ -79,7 +99,10 @@ If you set `STARTER__INITIAL_ADMIN_PASSWORD` in your `.env`, an admin user will 
 
 ### Start Development Environment
 ```bash
-# Use the development script
+# Complete development setup (recommended)
+./scripts/dev-server.sh 3000
+
+# Or just infrastructure
 ./scripts/dev.sh
 ```
 
@@ -94,19 +117,30 @@ docker compose down -v
 
 ## Common Issues
 
-### Database Connection Failed
-- Ensure Docker is running: `docker ps`
-- Check database logs: `docker compose logs postgres`
-- Verify .env DATABASE_URL matches docker-compose.yaml settings
+For detailed troubleshooting, see **[Troubleshooting Guide](./troubleshooting.md)**.
 
-### Compilation Errors
-- Update Rust: `rustup update`
-- Clean build: `cargo clean && cargo build`
+### Quick Fixes
 
-### Migration Errors
-- Ensure database is running before running migrations
-- Check DATABASE_URL environment variable
-- Reset database: `docker compose down -v && docker compose up -d`
+**Database Connection Failed**
+```bash
+./scripts/dev.sh  # Restart database
+```
+
+**Compilation Errors**
+```bash
+cargo clean && cargo build
+```
+
+**Migration Errors**
+```bash
+cd starter && sqlx migrate run
+```
+
+**Complete Reset**
+```bash
+./scripts/reset-all.sh
+./scripts/start-dev.sh 3000
+```
 
 ## Next Steps
 

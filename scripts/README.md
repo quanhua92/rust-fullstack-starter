@@ -2,6 +2,35 @@
 
 This directory contains comprehensive scripts for developing, testing, and managing the starter project with full background worker support.
 
+## 🎯 Quick Start Scripts
+
+### `start-dev.sh`
+**Complete one-command setup for new developers.**
+```bash
+./scripts/start-dev.sh         # Start on port 3000
+./scripts/start-dev.sh 8080     # Start on port 8080
+```
+
+### `dev-server.sh [port]`
+**Complete development environment with validation and testing.**
+- **Default port:** 3000
+- **Includes:** Infrastructure, migrations, server startup, health checks
+- **Auto-creates:** .env file if missing
+- **Validates:** Prerequisites and working directory
+```bash
+./scripts/dev-server.sh         # Start on port 3000
+./scripts/dev-server.sh 8080    # Start on port 8080
+```
+
+### `check-prereqs.sh`
+**Validate all required dependencies before starting development.**
+- **Checks:** Docker, Docker Compose, Rust, sqlx-cli
+- **Auto-installs:** sqlx-cli if missing
+- **Reports:** Optional tools status
+```bash
+./scripts/check-prereqs.sh      # Check all prerequisites
+```
+
 ## 🏗️ Infrastructure Management
 
 ### `dev.sh`
@@ -88,11 +117,18 @@ Complete end-to-end integration test for the entire system:
 
 ### Development Startup
 ```bash
-# Method 1: Full reset and test
+# Method 1: One-command setup (Recommended)
+./scripts/start-dev.sh 3000               # Complete setup for new developers
+
+# Method 2: Complete environment with validation
+./scripts/dev-server.sh 3000              # Start everything with testing
+
+# Method 3: Full reset and test
 ./scripts/reset-all.sh                    # Clean slate
 ./scripts/test_tasks_integration.sh       # Complete system test
 
-# Method 2: Manual step-by-step
+# Method 4: Manual step-by-step
+./scripts/check-prereqs.sh                # Validate dependencies
 ./scripts/dev.sh                          # Start infrastructure
 ./scripts/server.sh 3000                  # Start server
 ./scripts/worker.sh                       # Start worker
@@ -206,8 +242,19 @@ The background worker system processes tasks asynchronously:
 
 ## 🔗 Dependencies
 
-- **Docker Compose** - For PostgreSQL
-- **curl** - For HTTP testing
-- **jq** - For JSON parsing (fallback to python3)
-- **lsof** - For port checking
-- **python3** - For JSON parsing
+**Required:**
+- **Docker & Docker Compose** - For PostgreSQL database
+- **Rust 1.75+** - Install from https://rustup.rs
+- **curl** - For HTTP testing (usually pre-installed)
+- **lsof** - For port checking (usually pre-installed)
+
+**Auto-installed:**
+- **sqlx-cli** - Installed automatically by scripts when needed
+
+**Optional:**
+- **jq** - For JSON parsing (scripts fall back to python3)
+- **python3** - For JSON parsing fallback
+- **cargo-nextest** - For faster test execution
+
+**Validation:**
+Run `./scripts/check-prereqs.sh` to validate all dependencies.
