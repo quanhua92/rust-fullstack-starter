@@ -5,7 +5,7 @@ A modern Rust web application starter template with authentication, background t
 ## Features
 
 - **Authentication System** - User registration, login, and session management
-- **Background Tasks** - Async job processing with retry logic and circuit breakers
+- **Background Tasks** - Async job processing with retry logic, dead letter queue, and circuit breakers
 - **Database Integration** - PostgreSQL with migrations and connection pooling
 - **API Documentation** - Interactive OpenAPI/Swagger documentation
 - **Testing Framework** - Comprehensive integration tests with isolated databases
@@ -97,11 +97,14 @@ Key endpoints:
 - `POST /auth/login` - User authentication
 - `GET /users/{id}` - User profile
 - `POST /tasks` - Create background task
-- `GET /tasks` - List tasks
+- `GET /tasks` - List tasks with filtering
+- `GET /tasks/dead-letter` - Dead letter queue (failed tasks)
+- `POST /tasks/{id}/retry` - Retry failed task
+- `DELETE /tasks/{id}` - Delete completed/failed task
 
 ### Background Tasks
 
-Create and process async jobs:
+Create and process async jobs with dead letter queue management:
 
 ```bash
 # Start worker process
@@ -111,6 +114,15 @@ Create and process async jobs:
 curl -X POST http://localhost:3000/tasks \
   -H "Content-Type: application/json" \
   -d '{"task_type": "email", "payload": {"to": "user@example.com"}}'
+
+# Monitor failed tasks (dead letter queue)
+curl http://localhost:3000/tasks/dead-letter
+
+# Retry failed task
+curl -X POST http://localhost:3000/tasks/{task_id}/retry
+
+# Clean up completed/failed tasks
+curl -X DELETE http://localhost:3000/tasks/{task_id}
 ```
 
 ## Configuration
@@ -198,7 +210,7 @@ The starter includes comprehensive testing patterns:
 
 - **Authentication Tests** - Registration, login, session management
 - **API Standards Tests** - CORS, security headers, error handling
-- **Task Processing Tests** - Background job lifecycle
+- **Task Processing Tests** - Background job lifecycle and dead letter queue management
 - **Health Check Tests** - Application monitoring
 
 ## Documentation
@@ -229,7 +241,7 @@ This starter is designed for learning modern Rust web development:
 
 The codebase includes examples for:
 - User authentication and authorization
-- Background job processing with retries
+- Background job processing with retries and dead letter queue
 - Database transactions and error handling
 - API documentation with OpenAPI
 - Docker containerization
