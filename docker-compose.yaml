@@ -11,8 +11,8 @@ services:
       POSTGRES_USER: ${STARTER__DATABASE__USER}
       POSTGRES_PASSWORD: ${STARTER__DATABASE__PASSWORD}
       POSTGRES_DB: ${STARTER__DATABASE__DATABASE}
-      # Set PostgreSQL configuration via environment
-      POSTGRES_INITDB_ARGS: "--auth-host=scram-sha-256"
+      # Use default auth for development simplicity
+      # For production, consider using POSTGRES_INITDB_ARGS: "--auth-host=scram-sha-256"
     command: >
       postgres
       -c max_connections=1000

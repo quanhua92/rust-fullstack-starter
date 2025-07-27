@@ -37,6 +37,25 @@ docker compose up -d postgres
 docker compose logs postgres
 ```
 
+#### Error: "Password authentication failed"
+
+**For Development**:
+```bash
+# Development uses simplified auth - clean restart usually fixes it
+docker compose down -v
+docker compose up -d
+cd starter && sqlx migrate run
+```
+
+**For Production**:
+```bash
+# Production uses SCRAM-SHA-256 - clean restart required
+docker-compose -f docker-compose.prod.yaml --env-file .env.prod down -v
+docker-compose -f docker-compose.prod.yaml --env-file .env.prod up -d
+```
+
+**Note**: The application handles both authentication methods automatically. Authentication method differences are transparent to your Rust code.
+
 ### 2. Docker Issues
 
 #### Error: "Docker daemon not running"

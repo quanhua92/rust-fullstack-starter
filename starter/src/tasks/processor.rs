@@ -12,8 +12,8 @@ use crate::tasks::{
     handlers::TaskHandler,
     retry::CircuitBreaker,
     types::{
-        CreateTaskRequest, Task, TaskContext, TaskError, TaskFilter, TaskResult, TaskResult2,
-        TaskStats, TaskStatus,
+        CreateTaskRequest, Task, TaskContext, TaskError, TaskFilter, TaskPriority, TaskResult,
+        TaskResult2, TaskStats, TaskStatus,
     },
 };
 

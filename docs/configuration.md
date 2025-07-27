@@ -194,6 +194,13 @@ RUST_LOG=starter=debug,sqlx=info
 
 ## Configuration Examples
 
+### Development vs Production Authentication
+
+**Development**: Uses simplified PostgreSQL authentication for easy setup
+**Production**: Uses SCRAM-SHA-256 authentication for security
+
+The application code works identically with both methods - SQLx handles the differences automatically.
+
 ### Development Environment
 
 ```bash

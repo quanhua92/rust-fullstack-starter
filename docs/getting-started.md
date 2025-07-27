@@ -146,6 +146,14 @@ For detailed troubleshooting, see **[Troubleshooting Guide](./troubleshooting.md
 ./scripts/dev.sh  # Restart database
 ```
 
+**Password Authentication Failed**
+```bash
+# Clean restart fixes auth issues
+docker compose down -v
+docker compose up -d
+cd starter && sqlx migrate run
+```
+
 **Compilation Errors**
 ```bash
 cargo clean && cargo build
@@ -153,8 +161,8 @@ cargo clean && cargo build
 
 **Migration Errors**
 ```bash
-# Run from project root
-sqlx migrate run
+# Run from starter directory, not project root
+cd starter && sqlx migrate run
 ```
 
 **Complete Reset**

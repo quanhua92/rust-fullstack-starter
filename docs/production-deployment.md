@@ -358,10 +358,25 @@ docker compose -f docker-compose.prod.yaml --env-file .env.prod up -d --scale wo
 
 - ✅ **Non-root containers** - All services run as non-root users
 - ✅ **Distroless runtime** - Minimal attack surface
+- ✅ **SCRAM-SHA-256 authentication** - Secure password hashing for PostgreSQL
 - ✅ **Security headers** - Set via Nginx
 - ✅ **Network isolation** - Services on private network
 - ✅ **Resource limits** - Prevent resource exhaustion
 - ✅ **Health checks** - Automatic restart on failure
+
+### Database Authentication
+
+**Development vs Production**:
+
+| Environment | Authentication | Purpose |
+|-------------|---------------|---------|
+| Development | Default (md5) | Fast setup, no auth issues |
+| Production | SCRAM-SHA-256 | Secure password hashing |
+
+**Key Points**:
+- Application code works identically with both auth methods
+- SQLx automatically handles the authentication protocol
+- Production security without development complexity
 
 ### Security Headers (Nginx)
 
@@ -411,13 +426,17 @@ docker compose -f docker-compose.prod.yaml --env-file .env.prod config
 
 **Symptom**: App shows "password authentication failed" errors
 
-**Solution**: This is automatically resolved on fresh startup. If persisting:
+**Root Cause**: Production uses SCRAM-SHA-256 authentication for security
+
+**Solution**: Use fresh container startup (recommended):
 
 ```bash
-# Reset PostgreSQL password (if needed)
-docker-compose -f docker-compose.prod.yaml --env-file .env.prod exec postgres \
-  psql -U starter_user -d starter_prod -c "ALTER USER starter_user WITH PASSWORD 'your_password_here';"
+# Clean restart resolves authentication issues
+docker-compose -f docker-compose.prod.yaml --env-file .env.prod down -v
+docker-compose -f docker-compose.prod.yaml --env-file .env.prod up -d
 ```
+
+**Note**: Development uses simplified authentication, production uses SCRAM-SHA-256 for security. The application handles both transparently.
 
 #### Database Connection Errors (Legacy)
 

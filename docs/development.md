@@ -17,14 +17,14 @@ This guide covers the development workflow, tools, and best practices for the Ru
 
 ### Manual Setup
 ```bash
-# Start database (no version warnings - fixed!)
+# Start database (simplified authentication for development)
 docker compose up -d postgres
 
 # Wait for database health check
 docker compose up --wait
 
-# Run migrations (from project root)
-sqlx migrate run
+# Run migrations (from starter directory)
+cd starter && sqlx migrate run
 
 # Start development
 cargo run -- server --port 3000
@@ -114,7 +114,7 @@ TEST_LOG=1 cargo test -- --nocapture
 ./scripts/test-with-curl.sh localhost 8080
 ./scripts/test-with-curl.sh api.example.com 443  # HTTPS auto-detected
 
-# Test production Docker setup (fixed: no version warnings)
+# Test production Docker setup (with SCRAM-SHA-256 auth)
 docker-compose -f docker-compose.prod.yaml --env-file .env.prod.test up -d
 curl http://localhost:8080/health
 
