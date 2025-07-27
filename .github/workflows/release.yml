@@ -7,6 +7,19 @@ on:
 
 env:
   CARGO_TERM_COLOR: always
+  # Docker Hub Configuration (uncomment and configure to enable Docker image publishing)
+  # REGISTRY: docker.io
+  # IMAGE_NAME: your-dockerhub-username/rust-fullstack-starter
+  # 
+  # To enable Docker image publishing:
+  # 1. Replace 'your-dockerhub-username' with your actual Docker Hub username
+  # 2. Add these repository secrets in GitHub Settings > Secrets:
+  #    - DOCKER_USERNAME: Your Docker Hub username
+  #    - DOCKER_PASSWORD: Your Docker Hub access token
+  # 3. Uncomment the Docker Hub configuration above
+  # 4. Uncomment the "build-release" job below
+  
+  # Temporary: GitHub Container Registry (requires authentication)
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
 
@@ -141,61 +154,66 @@ jobs:
     - name: Run dependency checks
       run: cargo deny --manifest-path starter/Cargo.toml check
 
-  build-release:
-    name: Build Release Images
-    runs-on: ubuntu-latest
-    needs: [validate-tag, test, security]
-    
-    permissions:
-      contents: read
-      packages: write
-    
-    outputs:
-      image-digest: ${{ steps.build.outputs.digest }}
-      image-tags: ${{ steps.meta.outputs.tags }}
-    
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v3
-
-    - name: Log in to Container Registry
-      uses: docker/login-action@v3
-      with:
-        registry: ${{ env.REGISTRY }}
-        username: ${{ github.actor }}
-        password: ${{ secrets.GITHUB_TOKEN }}
-
-    - name: Extract metadata
-      id: meta
-      uses: docker/metadata-action@v5
-      with:
-        images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-        tags: |
-          type=semver,pattern={{version}}
-          type=semver,pattern={{major}}.{{minor}}
-          type=semver,pattern={{major}}
-          type=sha,prefix={{branch}}-
-
-    - name: Build and push release image
-      id: build
-      uses: docker/build-push-action@v5
-      with:
-        context: .
-        file: ./Dockerfile.prod
-        push: true
-        tags: ${{ steps.meta.outputs.tags }}
-        labels: ${{ steps.meta.outputs.labels }}
-        cache-from: type=gha
-        cache-to: type=gha,mode=max
-        platforms: linux/amd64,linux/arm64
+  # Docker Image Build and Push (commented out - uncomment to enable)
+  # 
+  # To enable Docker image publishing to Docker Hub:
+  # 1. Configure the environment variables at the top of this file
+  # 2. Add DOCKER_USERNAME and DOCKER_PASSWORD secrets to your repository
+  # 3. Uncomment this entire job
+  # 4. Update the create-release job to depend on this job
+  
+  # build-release:
+  #   name: Build Release Images
+  #   runs-on: ubuntu-latest
+  #   needs: [validate-tag, test, security]
+  #   
+  #   outputs:
+  #     image-digest: ${{ steps.build.outputs.digest }}
+  #     image-tags: ${{ steps.meta.outputs.tags }}
+  #   
+  #   steps:
+  #   - name: Checkout code
+  #     uses: actions/checkout@v4
+  #
+  #   - name: Set up Docker Buildx
+  #     uses: docker/setup-buildx-action@v3
+  #
+  #   - name: Log in to Docker Hub
+  #     uses: docker/login-action@v3
+  #     with:
+  #       registry: ${{ env.REGISTRY }}
+  #       username: ${{ secrets.DOCKER_USERNAME }}
+  #       password: ${{ secrets.DOCKER_PASSWORD }}
+  #
+  #   - name: Extract metadata
+  #     id: meta
+  #     uses: docker/metadata-action@v5
+  #     with:
+  #       images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+  #       tags: |
+  #         type=semver,pattern={{version}}
+  #         type=semver,pattern={{major}}.{{minor}}
+  #         type=semver,pattern={{major}}
+  #         type=sha,prefix={{branch}}-
+  #
+  #   - name: Build and push release image
+  #     id: build
+  #     uses: docker/build-push-action@v5
+  #     with:
+  #       context: .
+  #       file: ./Dockerfile.prod
+  #       push: true
+  #       tags: ${{ steps.meta.outputs.tags }}
+  #       labels: ${{ steps.meta.outputs.labels }}
+  #       cache-from: type=gha
+  #       cache-to: type=gha,mode=max
+  #       platforms: linux/amd64,linux/arm64
 
   create-release:
     name: Create GitHub Release
     runs-on: ubuntu-latest
-    needs: [validate-tag, test, security, build-release]
+    needs: [validate-tag, test, security]
+    # Note: Add build-release to needs array when Docker publishing is enabled
     
     permissions:
       contents: write
@@ -231,7 +249,10 @@ jobs:
           echo ""
           echo "## Container Images"
           echo ""
-          echo "- \`${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.validate-tag.outputs.version }}\`"
+          echo "Container images are not automatically published. To enable:"
+          echo "1. Configure Docker Hub credentials in repository secrets"
+          echo "2. Uncomment the build-release job in release.yml"
+          echo "3. See .github/workflows/release.yml for detailed instructions"
           echo ""
           echo "**Full Changelog**: https://github.com/${{ github.repository }}/compare/$PREVIOUS_TAG...$CURRENT_TAG"
           echo "EOF"
@@ -248,49 +269,60 @@ jobs:
         draft: false
         prerelease: ${{ needs.validate-tag.outputs.is_prerelease }}
 
-  deploy-production:
-    name: Deploy to Production
-    runs-on: ubuntu-latest
-    needs: [validate-tag, create-release]
-    if: needs.validate-tag.outputs.is_prerelease == 'false'
-    environment: 
-      name: production
-      url: https://your-domain.com
-    
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-
-    - name: Deploy to production
-      run: |
-        echo "🚀 Deploying version ${{ needs.validate-tag.outputs.version }} to production"
-        echo "Image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.validate-tag.outputs.version }}"
-        
-        # Example deployment commands:
-        # kubectl set image deployment/starter-app starter-app=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.validate-tag.outputs.version }}
-        # helm upgrade starter-app ./helm/starter --set image.tag=${{ needs.validate-tag.outputs.version }}
-        # docker-compose pull && docker-compose up -d
-        
-        echo "✅ Production deployment completed"
+  # Production Deployment (commented out - customize for your deployment)
+  #
+  # This is a starter template - customize deployment for your specific needs:
+  # - Kubernetes with kubectl or Helm
+  # - Docker Compose on VPS
+  # - Cloud platforms (AWS, GCP, Azure)
+  # - Serverless deployments
+  
+  # deploy-production:
+  #   name: Deploy to Production
+  #   runs-on: ubuntu-latest
+  #   needs: [validate-tag, create-release, build-release]  # Add build-release when Docker is enabled
+  #   if: needs.validate-tag.outputs.is_prerelease == 'false'
+  #   environment: 
+  #     name: production
+  #     url: https://your-domain.com
+  #   
+  #   steps:
+  #   - name: Checkout code
+  #     uses: actions/checkout@v4
+  #
+  #   - name: Deploy to production
+  #     run: |
+  #       echo "🚀 Deploying version ${{ needs.validate-tag.outputs.version }} to production"
+  #       echo "Image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.validate-tag.outputs.version }}"
+  #       
+  #       # Example deployment commands:
+  #       # kubectl set image deployment/starter-app starter-app=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.validate-tag.outputs.version }}
+  #       # helm upgrade starter-app ./helm/starter --set image.tag=${{ needs.validate-tag.outputs.version }}
+  #       # docker-compose pull && docker-compose up -d
+  #       
+  #       echo "✅ Production deployment completed"
 
   notify:
     name: Notify Release
     runs-on: ubuntu-latest
-    needs: [validate-tag, create-release, deploy-production]
+    needs: [validate-tag, create-release]
     if: always()
+    # Note: Add deploy-production to needs array when deployment is enabled
     
     steps:
     - name: Notify success
       if: needs.create-release.result == 'success'
       run: |
         echo "🎉 Release ${{ github.ref_name }} created successfully!"
-        echo "🐳 Container image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.validate-tag.outputs.version }}"
+        echo "📦 Source code and release notes available on GitHub"
         
         if [ "${{ needs.validate-tag.outputs.is_prerelease }}" == "false" ]; then
-          echo "🚀 Production deployment: ${{ needs.deploy-production.result }}"
+          echo "🚀 Production release ready for deployment"
         else
-          echo "🧪 Pre-release - no production deployment"
+          echo "🧪 Pre-release - test before production deployment"
         fi
+        
+        echo "🐳 To publish Docker images, configure Docker Hub credentials and uncomment build-release job"
         
         # Add your notification logic here:
         # - Slack webhook
@@ -299,10 +331,10 @@ jobs:
         # - Teams notification
 
     - name: Notify failure
-      if: needs.create-release.result == 'failure' || needs.deploy-production.result == 'failure'
+      if: needs.create-release.result == 'failure'
       run: |
         echo "❌ Release ${{ github.ref_name }} failed!"
         echo "Create Release: ${{ needs.create-release.result }}"
-        echo "Deploy Production: ${{ needs.deploy-production.result }}"
+        echo "Check workflow logs for detailed error information"
         
         # Add your failure notification logic here
