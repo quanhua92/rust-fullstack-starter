@@ -124,9 +124,9 @@ mod tests {
 
     #[test]
     fn test_swagger_ui_creation() {
-        let _swagger_ui = create_swagger_ui();
         // Just verify it creates without panicking
         // SwaggerUi doesn't implement Debug, so we just test creation
-        assert!(true);
+        let _swagger_ui = create_swagger_ui();
+        // Test passes if no panic occurs during creation
     }
 }
