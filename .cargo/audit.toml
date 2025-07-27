@@ -1,0 +1,10 @@
+[advisories]
+# Known security advisories that don't affect this application
+ignore = [
+    # RSA vulnerability in sqlx-mysql transitive dependency
+    # See docs/security.md for detailed explanation
+    # Issue: https://github.com/launchbadge/sqlx/issues/2911
+    # Advisory: https://rustsec.org/advisories/RUSTSEC-2023-0071
+    # This app only uses PostgreSQL, MySQL is compile-time only dependency
+    "RUSTSEC-2023-0071"
+]
