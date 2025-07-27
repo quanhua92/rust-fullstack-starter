@@ -824,19 +824,13 @@ STARTER__WORKER__CONCURRENCY=8 ./scripts/worker.sh
 
 ## Next Steps
 
-Now that you understand how the background task system works, learn how to extend it:
-
-- **[Custom Task Types →](./05-task-types.md)** - Create your own task handlers
-- **[Task Registry →](./06-task-registry.md)** - Organize and manage task handlers
-
----
-## Next Steps
-
 Now that you understand the background task system, explore related concepts:
 
+- **[Custom Task Types →](./05-task-types.md)** - Create your own task handlers for specific use cases
+- **[Task Registry →](./06-task-registry.md)** - Organize and manage task handlers
 - **[Testing Guide →](./07-testing.md)** - Learn how to test your task handlers with the comprehensive testing framework
+- **[Chaos Testing →](./08-chaos-testing.md)** - Test task system resilience under failure conditions
 - **[Reliability Patterns →](../reliability.md)** - Understand the circuit breakers and retry strategies used by the task system
-- **[Custom Task Types →](./05-task-types.md)** - Build your own task handlers for specific use cases
 
 ## Testing Your Tasks
 

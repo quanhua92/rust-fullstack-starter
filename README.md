@@ -9,6 +9,7 @@ A modern Rust web application starter template with authentication, background t
 - **Database Integration** - PostgreSQL with migrations and connection pooling
 - **API Documentation** - Interactive OpenAPI/Swagger documentation
 - **Testing Framework** - Comprehensive integration tests with isolated databases
+- **Chaos Testing** - Systematic resilience testing with failure simulation
 - **Development Tools** - Docker Compose, health checks, and development scripts
 - **Docker Support** - Development and production container configurations
 
@@ -82,6 +83,9 @@ cargo nextest run
 
 # Combined workflow
 cargo nextest run && ./scripts/test-with-curl.sh
+
+# Chaos testing for resilience validation
+./scripts/test-chaos.sh
 ```
 
 ### API Development
@@ -215,14 +219,35 @@ The starter includes comprehensive testing patterns:
 
 ## Documentation
 
-Comprehensive guides available in `docs/`:
-
+### Getting Started & Operations
 - **[Getting Started](docs/getting-started.md)** - Setup and first steps
 - **[Development Guide](docs/development.md)** - Daily development workflow
+- **[Configuration](docs/configuration.md)** - Environment variables and settings
+- **[Production Deployment](docs/production-deployment.md)** - Docker and deployment strategies
+- **[CI/CD Pipeline](docs/cicd.md)** - GitHub Actions and automated testing
+
+### API & Reference
 - **[API Reference](docs/api-reference.md)** - Complete endpoint documentation
-- **[Configuration](docs/configuration.md)** - Environment variables
-- **[Production Deployment](docs/production-deployment.md)** - Docker and deployment
-- **[Architecture Guides](docs/guides/)** - In-depth system documentation
+- **[Security](docs/security.md)** - Authentication and security patterns
+- **[Reliability](docs/reliability.md)** - Circuit breakers, retries, and resilience patterns
+- **[Troubleshooting](docs/troubleshooting.md)** - Common issues and solutions
+
+### Architecture Guides
+Comprehensive guides in **[`docs/guides/`](docs/guides/)**:
+
+- **[01 - Architecture](docs/guides/01-architecture.md)** - System design and component overview
+- **[02 - Authentication](docs/guides/02-authentication.md)** - User management and security
+- **[03 - Design Patterns](docs/guides/03-patterns.md)** - Service layer and architectural patterns
+- **[04 - Background Tasks](docs/guides/04-background-tasks.md)** - Async job processing system
+- **[05 - Task Types](docs/guides/05-task-types.md)** - Creating custom task handlers
+- **[06 - Task Registry](docs/guides/06-task-registry.md)** - Organizing and managing tasks
+- **[07 - Testing](docs/guides/07-testing.md)** - Comprehensive testing framework
+- **[08 - Chaos Testing](docs/guides/08-chaos-testing.md)** - Resilience testing and failure simulation
+
+### Reference Documentation
+- **[Task Handlers](docs/reference/task-handlers.md)** - Built-in task type reference
+- **[Project Customization](docs/project-customization.md)** - Adapting the starter for your needs
+- **[Docker Hub Setup](docs/docker-hub-setup.md)** - Container registry configuration
 
 ## Learning Resources
 
@@ -233,9 +258,10 @@ This starter is designed for learning modern Rust web development:
 - **Async Rust** - Tokio, async/await patterns
 - **Web Development** - Axum framework, HTTP handling
 - **Database Integration** - SQLx, migrations, connection pooling
-- **Testing Strategies** - Integration testing, test isolation
+- **Testing Strategies** - Integration testing, test isolation, chaos engineering
 - **Error Handling** - Result types, custom error types
 - **Security** - Authentication, session management
+- **Reliability Patterns** - Circuit breakers, retries, resilience testing
 
 ### Code Examples
 
@@ -246,6 +272,7 @@ The codebase includes examples for:
 - API documentation with OpenAPI
 - Docker containerization
 - Comprehensive testing patterns
+- Chaos engineering and failure simulation
 
 ## Contributing
 

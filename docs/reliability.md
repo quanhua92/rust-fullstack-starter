@@ -401,6 +401,7 @@ Consider adding:
 - **Load Balancing**: Multiple instance support
 - **Rate Limiting**: Request throttling
 - **Audit Logging**: Security event tracking
+- **Chaos Engineering**: See [Chaos Testing Guide](guides/08-chaos-testing.md) for systematic resilience testing
 
 ## Best Practices Demonstrated
 

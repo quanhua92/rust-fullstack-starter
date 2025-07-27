@@ -1,0 +1,542 @@
+#!/bin/bash
+
+# Comprehensive Chaos Testing Script
+# Tests system resilience under various failure scenarios
+
+set -e
+
+# Default values
+PORT="${PORT:-3000}"
+BASE_URL="http://localhost:$PORT"
+DIFFICULTY="${DIFFICULTY:-1}"
+SCENARIOS="${SCENARIOS:-all}"
+OUTPUT_DIR="${OUTPUT_DIR:-/tmp}"
+VERBOSE="${VERBOSE:-false}"
+
+# Color codes
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+PURPLE='\033[0;35m'
+NC='\033[0m'
+
+usage() {
+    echo "Usage: $0 [OPTIONS]"
+    echo ""
+    echo "Comprehensive chaos testing for the Rust starter application"
+    echo ""
+    echo "Options:"
+    echo "  -p, --port PORT        Server port (default: $PORT)"
+    echo "  -d, --difficulty LEVEL Difficulty level 1-5 (default: $DIFFICULTY)"
+    echo "  -s, --scenarios LIST   Scenarios to run (default: all)"
+    echo "  -o, --output DIR       Output directory (default: /tmp)"
+    echo "  -v, --verbose          Verbose output"
+    echo "  -h, --help             Show this help"
+    echo ""
+    echo "Difficulty Levels:"
+    echo "  1 - Basic: Simple restarts and database failures"
+    echo "  2 - Moderate: Service interruptions with load"
+    echo "  3 - Advanced: High load with circuit breaker triggers"
+    echo "  4 - Expert: Multiple concurrent failures"
+    echo "  5 - Extreme: Sustained chaos with recovery testing"
+    echo ""
+    echo "Available Scenarios:"
+    echo "  baseline         - Baseline functionality test"
+    echo "  db-failure       - Database connection failures"
+    echo "  server-restart   - Server process restarts"
+    echo "  worker-restart   - Worker process restarts"
+    echo "  task-flood       - High task load testing"
+    echo "  circuit-breaker  - Circuit breaker activation"
+    echo "  mixed-chaos      - Multiple simultaneous failures"
+    echo "  recovery         - Recovery time testing"
+    echo "  all              - Run all scenarios (default)"
+    echo ""
+    echo "Examples:"
+    echo "  $0                                     # Basic chaos testing"
+    echo "  $0 --difficulty 3 --port 8080         # Advanced testing on port 8080"
+    echo "  $0 --scenarios \"db-failure,task-flood\" # Specific scenarios only"
+    echo "  $0 --difficulty 5 --verbose           # Extreme testing with logs"
+}
+
+# Parse arguments
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        -p|--port)
+            PORT="$2"
+            BASE_URL="http://localhost:$PORT"
+            shift 2
+            ;;
+        -d|--difficulty)
+            DIFFICULTY="$2"
+            shift 2
+            ;;
+        -s|--scenarios)
+            SCENARIOS="$2"
+            shift 2
+            ;;
+        -o|--output)
+            OUTPUT_DIR="$2"
+            shift 2
+            ;;
+        -v|--verbose)
+            VERBOSE=true
+            shift
+            ;;
+        -h|--help)
+            usage
+            exit 0
+            ;;
+        *)
+            echo "Unknown option: $1" >&2
+            usage >&2
+            exit 1
+            ;;
+    esac
+done
+
+# Validate difficulty level
+if [[ ! "$DIFFICULTY" =~ ^[1-5]$ ]]; then
+    echo "Error: Difficulty must be 1-5" >&2
+    exit 1
+fi
+
+# Get project root and setup paths
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+HELPERS_DIR="$SCRIPT_DIR/helpers"
+
+# Ensure output directory exists
+mkdir -p "$OUTPUT_DIR"
+
+# Test results tracking
+TEST_RESULTS=()
+TOTAL_SCENARIOS=0
+PASSED_SCENARIOS=0
+START_TIME=$(date +%s)
+
+log() {
+    local level="$1"
+    local message="$2"
+    local timestamp=$(date '+%Y-%m-%d %H:%M:%S')
+    
+    case "$level" in
+        INFO) echo -e "${BLUE}[$timestamp] INFO:${NC} $message" ;;
+        WARN) echo -e "${YELLOW}[$timestamp] WARN:${NC} $message" ;;
+        ERROR) echo -e "${RED}[$timestamp] ERROR:${NC} $message" ;;
+        SUCCESS) echo -e "${GREEN}[$timestamp] SUCCESS:${NC} $message" ;;
+        *) echo "[$timestamp] $level: $message" ;;
+    esac
+    
+    if [ "$VERBOSE" = true ]; then
+        echo "[$timestamp] $level: $message" >> "$OUTPUT_DIR/chaos-test.log"
+    fi
+}
+
+run_api_test() {
+    local test_name="$1"
+    local expect_success="${2:-true}"
+    
+    log "INFO" "Running API test: $test_name"
+    
+    local result_file="$OUTPUT_DIR/api-test-$(echo "$test_name" | tr ' ' '-' | tr '[:upper:]' '[:lower:]').txt"
+    
+    if timeout 60 "$PROJECT_ROOT/scripts/test-with-curl.sh" localhost "$PORT" > "$result_file" 2>&1; then
+        local success_rate=$(grep "Success rate:" "$result_file" | awk '{print $3}' | tr -d '%')
+        if [ -n "$success_rate" ] && [ "$success_rate" -ge 80 ]; then
+            log "SUCCESS" "API test passed: $test_name (Success rate: $success_rate%)"
+            return 0
+        else
+            log "WARN" "API test degraded: $test_name (Success rate: $success_rate%)"
+            return 1
+        fi
+    else
+        if [ "$expect_success" = false ]; then
+            log "SUCCESS" "API test failed as expected: $test_name"
+            return 0
+        else
+            log "ERROR" "API test failed: $test_name"
+            return 1
+        fi
+    fi
+}
+
+get_difficulty_params() {
+    local level="$1"
+    
+    case "$level" in
+        1) echo "task_count=20 delay=0.5 chaos_duration=10" ;;
+        2) echo "task_count=50 delay=0.2 chaos_duration=20" ;;
+        3) echo "task_count=100 delay=0.1 chaos_duration=30" ;;
+        4) echo "task_count=200 delay=0.05 chaos_duration=45" ;;
+        5) echo "task_count=500 delay=0.01 chaos_duration=60" ;;
+    esac
+}
+
+run_scenario() {
+    local scenario="$1"
+    
+    TOTAL_SCENARIOS=$((TOTAL_SCENARIOS + 1))
+    
+    log "INFO" "=========================================="
+    log "INFO" "Starting scenario: $scenario (Difficulty: $DIFFICULTY)"
+    log "INFO" "=========================================="
+    
+    local scenario_start=$(date +%s)
+    local params=$(get_difficulty_params "$DIFFICULTY")
+    eval "$params"
+    
+    case "$scenario" in
+        baseline)
+            log "INFO" "Running baseline functionality test"
+            if run_api_test "Baseline Test"; then
+                log "SUCCESS" "Baseline test passed"
+                PASSED_SCENARIOS=$((PASSED_SCENARIOS + 1))
+                TEST_RESULTS+=("✅ baseline: PASS")
+            else
+                log "ERROR" "Baseline test failed"
+                TEST_RESULTS+=("❌ baseline: FAIL")
+            fi
+            ;;
+            
+        db-failure)
+            log "INFO" "Testing database failure resilience"
+            
+            # Stop database
+            "$HELPERS_DIR/service-chaos.sh" db-stop
+            sleep 2
+            
+            # Test API during failure
+            run_api_test "DB Failure Test" false
+            
+            # Restart database
+            "$HELPERS_DIR/service-chaos.sh" db-restart --delay 5
+            
+            # Test recovery
+            if run_api_test "DB Recovery Test"; then
+                log "SUCCESS" "Database failure scenario passed"
+                PASSED_SCENARIOS=$((PASSED_SCENARIOS + 1))
+                TEST_RESULTS+=("✅ db-failure: PASS")
+            else
+                log "ERROR" "Database failure scenario failed"
+                TEST_RESULTS+=("❌ db-failure: FAIL")
+            fi
+            ;;
+            
+        server-restart)
+            log "INFO" "Testing server restart resilience"
+            
+            # Kill and restart server
+            "$HELPERS_DIR/service-chaos.sh" restart --service server --port "$PORT" --delay "$chaos_duration"
+            
+            # Test recovery
+            if run_api_test "Server Restart Test"; then
+                log "SUCCESS" "Server restart scenario passed"
+                PASSED_SCENARIOS=$((PASSED_SCENARIOS + 1))
+                TEST_RESULTS+=("✅ server-restart: PASS")
+            else
+                log "ERROR" "Server restart scenario failed"
+                TEST_RESULTS+=("❌ server-restart: FAIL")
+            fi
+            ;;
+            
+        worker-restart)
+            log "INFO" "Testing worker restart resilience"
+            
+            # Create auth token
+            local auth_result=$(timeout 30 "$HELPERS_DIR/auth-helper.sh" --prefix "worker_test")
+            local token=$(echo "$auth_result" | python3 -c "import json,sys; print(json.load(sys.stdin)['token'])" 2>/dev/null || echo "")
+            
+            if [ -n "$token" ]; then
+                # Create some tasks before killing worker
+                "$HELPERS_DIR/task-flood.sh" --count 10 --auth "$token" --delay 0.1
+                
+                # Kill and restart worker
+                "$HELPERS_DIR/service-chaos.sh" restart --service worker --delay "$chaos_duration"
+                
+                # Test that API still works
+                if run_api_test "Worker Restart Test"; then
+                    log "SUCCESS" "Worker restart scenario passed"
+                    PASSED_SCENARIOS=$((PASSED_SCENARIOS + 1))
+                    TEST_RESULTS+=("✅ worker-restart: PASS")
+                else
+                    log "ERROR" "Worker restart scenario failed"
+                    TEST_RESULTS+=("❌ worker-restart: FAIL")
+                fi
+            else
+                log "ERROR" "Failed to get auth token for worker restart test"
+                TEST_RESULTS+=("❌ worker-restart: FAIL")
+            fi
+            ;;
+            
+        task-flood)
+            log "INFO" "Testing high task load (Count: $task_count, Delay: ${delay}s)"
+            
+            # Create auth token
+            local auth_result=$(timeout 30 "$HELPERS_DIR/auth-helper.sh" --prefix "flood_test")
+            local token=$(echo "$auth_result" | python3 -c "import json,sys; print(json.load(sys.stdin)['token'])" 2>/dev/null || echo "")
+            
+            if [ -n "$token" ]; then
+                # Create task flood
+                "$HELPERS_DIR/task-flood.sh" --count "$task_count" --delay "$delay" --auth "$token" --verbose
+                
+                # Test system stability under load
+                if run_api_test "Task Flood Test"; then
+                    log "SUCCESS" "Task flood scenario passed"
+                    PASSED_SCENARIOS=$((PASSED_SCENARIOS + 1))
+                    TEST_RESULTS+=("✅ task-flood: PASS")
+                else
+                    log "ERROR" "Task flood scenario failed"
+                    TEST_RESULTS+=("❌ task-flood: FAIL")
+                fi
+            else
+                log "ERROR" "Failed to get auth token for task flood test"
+                TEST_RESULTS+=("❌ task-flood: FAIL")
+            fi
+            ;;
+            
+        circuit-breaker)
+            log "INFO" "Testing circuit breaker activation"
+            
+            # Create auth token
+            local auth_result=$(timeout 30 "$HELPERS_DIR/auth-helper.sh" --prefix "cb_test")
+            local token=$(echo "$auth_result" | python3 -c "import json,sys; print(json.load(sys.stdin)['token'])" 2>/dev/null || echo "")
+            
+            if [ -n "$token" ]; then
+                # Create failing tasks to trigger circuit breaker
+                "$HELPERS_DIR/task-flood.sh" --count 20 --auth "$token" --fail --delay 0.1 --verbose
+                
+                # Test system stability with circuit breaker
+                if run_api_test "Circuit Breaker Test"; then
+                    log "SUCCESS" "Circuit breaker scenario passed"
+                    PASSED_SCENARIOS=$((PASSED_SCENARIOS + 1))
+                    TEST_RESULTS+=("✅ circuit-breaker: PASS")
+                else
+                    log "ERROR" "Circuit breaker scenario failed"
+                    TEST_RESULTS+=("❌ circuit-breaker: FAIL")
+                fi
+            else
+                log "ERROR" "Failed to get auth token for circuit breaker test"
+                TEST_RESULTS+=("❌ circuit-breaker: FAIL")
+            fi
+            ;;
+            
+        mixed-chaos)
+            log "INFO" "Testing multiple simultaneous failures"
+            
+            # Create auth token
+            local auth_result=$(timeout 30 "$HELPERS_DIR/auth-helper.sh" --prefix "mixed_test")
+            local token=$(echo "$auth_result" | python3 -c "import json,sys; print(json.load(sys.stdin)['token'])" 2>/dev/null || echo "")
+            
+            if [ -n "$token" ]; then
+                # Start task flood in background
+                "$HELPERS_DIR/task-flood.sh" --count "$task_count" --delay "$delay" --auth "$token" &
+                FLOOD_PID=$!
+                
+                sleep 5
+                
+                # Kill worker during flood
+                "$HELPERS_DIR/service-chaos.sh" kill --service worker
+                
+                sleep "$chaos_duration"
+                
+                # Restart worker
+                "$HELPERS_DIR/service-chaos.sh" restart --service worker
+                
+                # Wait for flood to complete
+                wait $FLOOD_PID || true
+                
+                # Test recovery
+                if run_api_test "Mixed Chaos Test"; then
+                    log "SUCCESS" "Mixed chaos scenario passed"
+                    PASSED_SCENARIOS=$((PASSED_SCENARIOS + 1))
+                    TEST_RESULTS+=("✅ mixed-chaos: PASS")
+                else
+                    log "ERROR" "Mixed chaos scenario failed"
+                    TEST_RESULTS+=("❌ mixed-chaos: FAIL")
+                fi
+            else
+                log "ERROR" "Failed to get auth token for mixed chaos test"
+                TEST_RESULTS+=("❌ mixed-chaos: FAIL")
+            fi
+            ;;
+            
+        recovery)
+            log "INFO" "Testing system recovery times"
+            
+            local recovery_times=()
+            
+            for i in {1..3}; do
+                log "INFO" "Recovery test iteration $i/3"
+                
+                # Kill server and measure recovery time
+                local kill_time=$(date +%s)
+                "$HELPERS_DIR/service-chaos.sh" kill --service server --port "$PORT"
+                
+                # Start server
+                "$HELPERS_DIR/service-chaos.sh" restart --service server --port "$PORT"
+                
+                # Measure time to first successful API call
+                local recovered=false
+                local timeout_count=0
+                while [ $timeout_count -lt 30 ]; do
+                    if curl -s -f "$BASE_URL/health" > /dev/null 2>&1; then
+                        local recovery_time=$(($(date +%s) - kill_time))
+                        recovery_times+=("$recovery_time")
+                        log "SUCCESS" "Recovery time iteration $i: ${recovery_time}s"
+                        recovered=true
+                        break
+                    fi
+                    sleep 1
+                    timeout_count=$((timeout_count + 1))
+                done
+                
+                if [ "$recovered" = false ]; then
+                    log "ERROR" "Recovery test iteration $i failed (timeout)"
+                    recovery_times+=("30")
+                fi
+            done
+            
+            # Calculate average recovery time
+            local total=0
+            for time in "${recovery_times[@]}"; do
+                total=$((total + time))
+            done
+            local avg_recovery=$((total / ${#recovery_times[@]}))
+            
+            log "INFO" "Average recovery time: ${avg_recovery}s"
+            
+            if [ "$avg_recovery" -le 15 ]; then
+                log "SUCCESS" "Recovery scenario passed"
+                PASSED_SCENARIOS=$((PASSED_SCENARIOS + 1))
+                TEST_RESULTS+=("✅ recovery: PASS (${avg_recovery}s avg)")
+            else
+                log "ERROR" "Recovery scenario failed"
+                TEST_RESULTS+=("❌ recovery: FAIL (${avg_recovery}s avg)")
+            fi
+            ;;
+            
+        *)
+            log "ERROR" "Unknown scenario: $scenario"
+            TEST_RESULTS+=("❌ $scenario: UNKNOWN")
+            ;;
+    esac
+    
+    local scenario_end=$(date +%s)
+    local scenario_duration=$((scenario_end - scenario_start))
+    log "INFO" "Scenario '$scenario' completed in ${scenario_duration}s"
+    log "INFO" ""
+}
+
+# Main execution
+echo -e "${PURPLE}🔥 Rust Starter Chaos Testing Framework${NC}"
+echo "================================================="
+echo "Port: $PORT"
+echo "Difficulty: $DIFFICULTY"
+echo "Scenarios: $SCENARIOS"
+echo "Output: $OUTPUT_DIR"
+echo ""
+
+# Validate environment
+log "INFO" "Validating environment..."
+
+if ! curl -s -f "$BASE_URL/health" > /dev/null; then
+    log "ERROR" "Server not responding on $BASE_URL"
+    log "INFO" "Please ensure server is running: ./scripts/server.sh $PORT"
+    exit 1
+fi
+
+log "SUCCESS" "Environment validation passed"
+
+# Parse scenarios to run
+if [ "$SCENARIOS" = "all" ]; then
+    SCENARIO_LIST="baseline db-failure server-restart worker-restart task-flood circuit-breaker mixed-chaos recovery"
+else
+    SCENARIO_LIST=$(echo "$SCENARIOS" | tr ',' ' ')
+fi
+
+log "INFO" "Will run scenarios: $SCENARIO_LIST"
+
+# Make helper scripts executable
+chmod +x "$HELPERS_DIR"/*.sh
+
+# Run scenarios
+for scenario in $SCENARIO_LIST; do
+    run_scenario "$scenario"
+done
+
+# Generate final report
+END_TIME=$(date +%s)
+TOTAL_DURATION=$((END_TIME - START_TIME))
+
+echo ""
+echo "================================================="
+echo -e "${PURPLE}🔥 Chaos Testing Results${NC}"
+echo "================================================="
+echo "Total scenarios: $TOTAL_SCENARIOS"
+echo "Passed: $PASSED_SCENARIOS"
+echo "Failed: $((TOTAL_SCENARIOS - PASSED_SCENARIOS))"
+echo "Success rate: $(( PASSED_SCENARIOS * 100 / TOTAL_SCENARIOS ))%"
+echo "Total duration: ${TOTAL_DURATION}s"
+echo ""
+
+echo "Scenario Results:"
+for result in "${TEST_RESULTS[@]}"; do
+    echo "  $result"
+done
+
+echo ""
+
+# Write detailed report
+REPORT_FILE="$OUTPUT_DIR/chaos-test-report.md"
+cat > "$REPORT_FILE" << EOF
+# Chaos Testing Report
+
+**Date:** $(date)
+**Difficulty Level:** $DIFFICULTY
+**Port:** $PORT
+**Total Duration:** ${TOTAL_DURATION}s
+
+## Summary
+
+- **Total Scenarios:** $TOTAL_SCENARIOS
+- **Passed:** $PASSED_SCENARIOS
+- **Failed:** $((TOTAL_SCENARIOS - PASSED_SCENARIOS))
+- **Success Rate:** $(( PASSED_SCENARIOS * 100 / TOTAL_SCENARIOS ))%
+
+## Scenario Results
+
+$(for result in "${TEST_RESULTS[@]}"; do echo "- $result"; done)
+
+## Test Configuration
+
+- **Difficulty:** $DIFFICULTY
+- **Scenarios:** $SCENARIOS
+- **Parameters:** $(get_difficulty_params "$DIFFICULTY")
+
+## Files Generated
+
+- \`chaos-test.log\` - Detailed execution log
+- \`api-test-*.txt\` - Individual API test results
+- \`chaos-test-report.md\` - This report
+
+## Recommendations
+
+$(if [ $PASSED_SCENARIOS -eq $TOTAL_SCENARIOS ]; then
+    echo "✅ All scenarios passed. System shows good resilience."
+else
+    echo "⚠️ Some scenarios failed. Review logs for improvements."
+fi)
+
+EOF
+
+log "SUCCESS" "Chaos testing completed!"
+log "INFO" "Report written to: $REPORT_FILE"
+
+if [ $PASSED_SCENARIOS -eq $TOTAL_SCENARIOS ]; then
+    echo -e "${GREEN}🎉 All chaos scenarios passed!${NC}"
+    exit 0
+else
+    echo -e "${YELLOW}⚠️ Some scenarios failed. Check logs for details.${NC}"
+    exit 1
+fi

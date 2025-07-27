@@ -15,6 +15,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
   - Default: `./scripts/test-with-curl.sh` (localhost:3000)
   - Custom: `./scripts/test-with-curl.sh localhost 8080`
   - HTTPS: `./scripts/test-with-curl.sh api.example.com 443`
+- **Chaos Testing**: `./scripts/test-chaos.sh [options]` (resilience testing with failure simulation)
+  - Basic: `./scripts/test-chaos.sh` (difficulty 1, all scenarios)
+  - Advanced: `./scripts/test-chaos.sh --difficulty 3 --scenarios "db-failure,task-flood"`
+  - Output: Results saved to `/tmp/chaos-test-report.md` and `/tmp/api-test-*.txt`
 - **Server Management**: 
   - Start: `./scripts/server.sh [port]` (default port 3000)
   - Stop: `./scripts/stop-server.sh [port]`
@@ -43,10 +47,16 @@ Key development scripts in `/scripts/`:
 - `server.sh` - Start development server with custom port
 - `worker.sh` - Start background task worker
 - `test-with-curl.sh` - Comprehensive API endpoint testing
+- `test-chaos.sh` - Chaos testing framework for resilience validation
 - `reset-all.sh` - Database reset (requires `--reset-database` flag)
 - `rename-project.sh` - Automated project renaming with validation
 - `deploy-prod.sh` - Production deployment with Docker
 - `dev-server.sh` - Complete development environment setup
+
+### Chaos Testing Helpers in `/scripts/helpers/`:
+- `auth-helper.sh` - Create test users and authentication tokens
+- `task-flood.sh` - Generate high task loads for performance testing
+- `service-chaos.sh` - Simulate service failures (server, worker, database)
 
 ## Production Features
 
@@ -64,4 +74,17 @@ This starter includes production-ready infrastructure:
    - Or manually: `./scripts/server.sh && ./scripts/worker.sh`
 2. **Run Tests**: `cargo nextest run` (51 integration tests)
 3. **API Testing**: `./scripts/test-with-curl.sh` (38 endpoint tests)
-4. **Stop Services**: `./scripts/stop-server.sh 3000`
+4. **Chaos Testing**: `./scripts/test-chaos.sh` (resilience validation)
+5. **Stop Services**: `./scripts/stop-server.sh 3000`
+
+## Chaos Testing Scenarios
+
+Available chaos testing scenarios:
+- `baseline` - Normal functionality validation
+- `db-failure` - Database connection failure resilience
+- `server-restart` - HTTP server restart recovery
+- `worker-restart` - Background worker restart handling
+- `task-flood` - High load performance testing
+- `circuit-breaker` - Circuit breaker activation/recovery
+- `mixed-chaos` - Multiple simultaneous failures
+- `recovery` - Recovery time measurement
