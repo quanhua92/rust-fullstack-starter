@@ -234,6 +234,10 @@ curl http://localhost:3000/api-docs/openapi.json | jq
 curl http://localhost:3000/health | jq '.data.documentation'
 ```
 
+**Full OpenAPI Documentation:**
+- 📋 **Interactive Swagger UI**: https://petstore.swagger.io/?url=https://raw.githubusercontent.com/quanhua92/rust-fullstack-starter/refs/heads/main/docs/openapi.json
+- 📄 **OpenAPI Schema**: [docs/openapi.json](../docs/openapi.json)
+
 **Features:**
 - **Interactive Testing**: Full Swagger UI integration for testing endpoints
 - **Complete Schema**: OpenAPI 3.0 specification with all endpoints and models

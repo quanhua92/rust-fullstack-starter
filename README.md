@@ -43,6 +43,10 @@ open http://localhost:3000/api-docs
 # Or visit: http://localhost:3000/api-docs
 ```
 
+**Full OpenAPI Documentation:**
+- 📋 **Interactive Swagger UI**: https://petstore.swagger.io/?url=https://raw.githubusercontent.com/quanhua92/rust-fullstack-starter/refs/heads/main/docs/openapi.json
+- 📄 **OpenAPI Schema**: [docs/openapi.json](docs/openapi.json)
+
 **Create a user and test authentication:**
 ```bash
 # Register a new user
