@@ -116,6 +116,7 @@ rust-fullstack-starter/
 └── starter/         # Main application
     ├── src/
     │   ├── auth/     # Authentication
+    │   ├── cli/      # Command-line interface
     │   ├── users/    # User management
     │   ├── tasks/    # Background jobs
     │   └── ...
@@ -161,7 +162,7 @@ cp .env.example .env
 
 ## Admin CLI Commands
 
-Direct database access for monitoring and maintenance (bypasses API authentication):
+The application includes a modular CLI system with direct database access for monitoring and maintenance (bypasses API authentication):
 
 ```bash
 # Task monitoring
@@ -176,6 +177,12 @@ cargo run -- admin list-tasks --verbose         # Detailed view
 cargo run -- admin clear-completed --dry-run    # Preview cleanup
 cargo run -- admin clear-completed              # Clean old tasks
 ```
+
+**CLI Architecture**: The CLI functionality is organized in `starter/src/cli/` with dedicated modules:
+- `api.rs` - Command execution and application entry point
+- `models.rs` - Command definitions and data structures (using Clap)
+- `services.rs` - Business logic and database operations
+- Comprehensive testing in `starter/tests/cli/` (19 tests: 11 unit + 8 integration)
 
 **Use cases**: Monitoring during chaos testing, debugging task processing, maintenance operations.
 

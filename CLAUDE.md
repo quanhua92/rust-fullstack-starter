@@ -89,6 +89,22 @@ This starter template includes comprehensive development infrastructure:
 4. **Chaos Testing**: `./scripts/test-chaos.sh` (Docker-based resilience validation)
 5. **Stop Services**: `./scripts/stop-server.sh 3000`
 
+## CLI Module Architecture
+
+The application uses a modular CLI structure located in `starter/src/cli/`:
+
+### Module Organization:
+- **`api.rs`** - Command execution and application entry point (`CliApp::run()`)
+- **`models.rs`** - CLI command definitions using Clap framework
+- **`services.rs`** - Business logic and database operations (`AdminService`)
+- **`mod.rs`** - Module organization and public exports
+- **`tests.rs`** - Unit tests for CLI functionality (11 tests)
+
+### Testing:
+- **Unit Tests**: `starter/src/cli/tests.rs` (11 tests)
+- **Integration Tests**: `starter/tests/cli/mod.rs` (8 tests)
+- **Total Coverage**: 19 CLI tests with 100% pass rate
+
 ## Admin CLI Commands
 
 For direct database access (useful during chaos testing and debugging):
@@ -97,8 +113,8 @@ For direct database access (useful during chaos testing and debugging):
 # Task statistics (bypasses API authentication)
 cargo run -- admin task-stats
 
-# Task statistics with prefix filter
-cargo run -- admin task-stats --prefix "multiworker"
+# Task statistics with tag filter
+cargo run -- admin task-stats --tag "baseline"
 
 # List recent tasks
 cargo run -- admin list-tasks --limit 10
@@ -112,6 +128,8 @@ cargo run -- admin clear-completed --dry-run
 # Clear completed tasks older than 7 days
 cargo run -- admin clear-completed
 ```
+
+**CLI Architecture**: The CLI functionality follows the same modular pattern as `auth/` and `users/` modules with dedicated `api.rs`, `models.rs`, and `services.rs` files. The main application entry point (`main.rs`) has been simplified to just 6 lines, delegating all CLI logic to the dedicated CLI module.
 
 **Note**: Admin commands access the database directly, bypassing API authentication. Useful for monitoring during chaos testing when API may be unreliable.
 

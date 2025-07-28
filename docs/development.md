@@ -97,7 +97,8 @@ rust-fullstack-starter/
 └── starter/                   # Main application
     ├── Cargo.toml             # Application dependencies
     ├── src/
-    │   ├── main.rs             # CLI entry point
+    │   ├── main.rs             # Application entry point (simplified)
+    │   ├── cli/                # CLI module (admin commands)
     │   ├── lib.rs              # Library exports
     │   ├── config.rs           # Configuration management
     │   ├── database.rs         # Database connection and migrations
@@ -272,7 +273,7 @@ cargo run -- worker
 
 ### Admin CLI Commands
 
-Direct database access for monitoring and maintenance (bypasses API authentication):
+The application features a modular CLI system located in `starter/src/cli/` with direct database access for monitoring and maintenance (bypasses API authentication):
 
 ```bash
 # Task monitoring and statistics
@@ -288,6 +289,13 @@ cargo run -- admin clear-completed --dry-run    # Preview cleanup
 cargo run -- admin clear-completed              # Clean tasks older than 7 days
 cargo run -- admin clear-completed --older-than-days 1  # Custom age
 ```
+
+**CLI Module Architecture**:
+- `starter/src/cli/api.rs` - Command execution and application entry point
+- `starter/src/cli/models.rs` - Command definitions using Clap framework
+- `starter/src/cli/services.rs` - Business logic and database operations
+- `starter/tests/cli/mod.rs` - Integration tests (8 tests)
+- Unit tests in `starter/src/cli/tests.rs` (11 tests)
 
 **Development use cases**:
 - Monitor task processing during feature development

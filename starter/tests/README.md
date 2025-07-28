@@ -25,6 +25,8 @@ tests/
 │   └── mod.rs          # User management integration tests
 ├── tasks/
 │   └── mod.rs          # Task processing integration tests
+├── cli/
+│   └── mod.rs          # CLI admin commands integration tests
 ├── health/
 │   └── mod.rs          # Health check integration tests
 ├── api/
@@ -107,6 +109,13 @@ Common test utilities include:
 - Task listing and filtering
 - Priority handling
 - Retry mechanisms
+
+### CLI Tests (`cli/mod.rs`)
+- Admin service database operations
+- Task statistics retrieval
+- Task listing and filtering
+- Task cleanup operations
+- CLI command validation (8 integration tests)
 
 ### Health Tests (`health/mod.rs`)
 - Basic health endpoint

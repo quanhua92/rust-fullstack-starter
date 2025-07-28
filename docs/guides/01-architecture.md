@@ -79,9 +79,10 @@ graph TD
 
 **Mode Selection:**
 ```bash
-cargo run -- server    # HTTP API server
-cargo run -- worker    # Background job processor  
-cargo run -- --help    # CLI interface
+cargo run -- server        # HTTP API server
+cargo run -- worker        # Background job processor
+cargo run -- admin --help  # CLI admin interface
+cargo run -- export-openapi # Export API documentation
 ```
 
 ## Architectural Layers
@@ -106,7 +107,7 @@ AppState {
 
 ### 2. Domain Layer
 **What:** Business logic organized by domain concepts
-**Files:** `auth/`, `users/`, `tasks/` modules
+**Files:** `auth/`, `users/`, `tasks/`, `cli/` modules
 
 ```rust
 // Each domain is self-contained
@@ -118,6 +119,11 @@ src/auth/           -- Authentication domain
 
 src/users/          -- User management
 src/tasks/          -- Background job processing
+src/cli/            -- Command-line interface
+├── api.rs          -- CLI application entry point
+├── models.rs       -- Command definitions (Clap)
+├── services.rs     -- Admin database operations
+└── tests.rs        -- Unit tests
 ```
 
 **Key Patterns:**
@@ -414,8 +420,16 @@ mod auth {
     pub mod middleware;  // Request guards
 }
 
+mod cli {
+    pub mod api;         // CLI application entry point
+    pub mod models;      // Command definitions (Clap)
+    pub mod services;    // Admin database operations
+    pub mod tests;       // Unit tests
+}
+
 // Each module is self-contained
 // Dependencies flow inward (no circular deps)
+// CLI module follows same pattern as auth/users/tasks
 ```
 
 ### Testing Strategy
