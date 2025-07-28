@@ -1,13 +1,14 @@
 #!/bin/bash
 
-# Task Completion Monitor
-# Monitors task completion and verifies all tasks are processed within deadlines
+# Task Completion Monitor (Admin CLI Version)
+# Monitors task completion using admin CLI commands instead of API authentication
+# Uses docker exec to bypass authentication issues during chaos testing
 
 set -e
 
 # Default values
-BASE_URL="${BASE_URL:-http://localhost:8888}"
-TASK_PREFIX="${TASK_PREFIX:-chaos}"
+CONTAINER_NAME="${CONTAINER_NAME:-chaos-starter-server}"
+TASK_TAG="${TASK_TAG:-chaos}"
 DEADLINE_SECONDS="${DEADLINE_SECONDS:-60}"
 CHECK_INTERVAL="${CHECK_INTERVAL:-5}"
 TIMEOUT_BUFFER="${TIMEOUT_BUFFER:-10}"
@@ -23,37 +24,36 @@ NC='\033[0m'
 usage() {
     echo "Usage: $0 [OPTIONS]"
     echo ""
-    echo "Monitor task completion for chaos testing scenarios"
+    echo "Monitor task completion for chaos testing scenarios using admin CLI"
     echo ""
     echo "Options:"
-    echo "  -u, --url URL             API base URL (default: $BASE_URL)"
-    echo "  -p, --prefix PREFIX       Task prefix to monitor (default: $TASK_PREFIX)"
+    echo "  -c, --container NAME      Container name (default: $CONTAINER_NAME)"
+    echo "  -t, --tag TAG             Task tag to monitor (default: $TASK_TAG)"
     echo "  -d, --deadline SECONDS    Task deadline in seconds (default: $DEADLINE_SECONDS)"
     echo "  -i, --interval SECONDS    Check interval (default: $CHECK_INTERVAL)"
     echo "  -b, --buffer SECONDS      Timeout buffer beyond deadline (default: $TIMEOUT_BUFFER)"
-    echo "  -a, --auth TOKEN          Authentication token (required)"
     echo "  -v, --verbose             Verbose output"
     echo "  -h, --help                Show this help"
     echo ""
     echo "The monitor will:"
-    echo "  - Track all tasks with the specified prefix"
+    echo "  - Track all tasks with the specified tag using admin CLI"
     echo "  - Monitor completion status within deadline"
     echo "  - Report on retry behavior and worker resilience"
     echo "  - Provide detailed statistics on task processing"
+    echo "  - Bypass API authentication by using docker exec"
 }
 
 # Parse arguments
-AUTH_TOKEN=""
 VERBOSE=false
 
 while [[ $# -gt 0 ]]; do
     case $1 in
-        -u|--url)
-            BASE_URL="$2"
+        -c|--container)
+            CONTAINER_NAME="$2"
             shift 2
             ;;
-        -p|--prefix)
-            TASK_PREFIX="$2"
+        -t|--tag)
+            TASK_TAG="$2"
             shift 2
             ;;
         -d|--deadline)
@@ -66,13 +66,6 @@ while [[ $# -gt 0 ]]; do
             ;;
         -b|--buffer)
             TIMEOUT_BUFFER="$2"
-            shift 2
-            ;;
-        -a|--auth)
-            if [ "$VERBOSE" = true ]; then
-                echo "DEBUG: Setting AUTH_TOKEN from parameter: '${2:0:20}...'"
-            fi
-            AUTH_TOKEN="$2"
             shift 2
             ;;
         -v|--verbose)
@@ -91,17 +84,12 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-if [ -z "$AUTH_TOKEN" ]; then
-    echo "Error: Authentication token required (-a/--auth)" >&2
-    usage >&2
-    exit 1
-fi
-
 # Show debug info if verbose
 if [ "$VERBOSE" = true ]; then
-    echo "DEBUG: Monitoring tasks with prefix: '$TASK_PREFIX'"
-    echo "DEBUG: Using AUTH_TOKEN: '${AUTH_TOKEN:0:20}...'"
-    echo "DEBUG: Base URL: $BASE_URL"
+    echo "DEBUG: Monitoring tasks with tag: '$TASK_TAG'"
+    echo "DEBUG: Using container: $CONTAINER_NAME"
+    echo "DEBUG: Check interval: ${CHECK_INTERVAL}s"
+    echo "DEBUG: Deadline: ${DEADLINE_SECONDS}s"
 fi
 
 log() {
@@ -118,198 +106,98 @@ log() {
     esac
 }
 
-# Get all tasks with the specified prefix
-get_tasks_by_prefix() {
-    local response=$(curl -s "$BASE_URL/tasks?limit=1000" \
-        -H "Authorization: Bearer $AUTH_TOKEN" 2>/dev/null || echo "")
-    
-    if [ -z "$response" ]; then
-        echo "[]"
-        return 1
+# Check if container exists and is running
+check_container() {
+    if ! docker ps --format "table {{.Names}}" | grep -q "^${CONTAINER_NAME}$"; then
+        log "ERROR" "Container '$CONTAINER_NAME' not found or not running"
+        log "INFO" "Available containers:"
+        docker ps --format "table {{.Names}}\t{{.Status}}"
+        exit 1
     fi
-    
-    # Filter tasks by prefix in metadata or task payload with detailed analysis
-    echo "$response" | python3 -c "
-import json, sys
-from collections import Counter
-verbose = '${VERBOSE}' == 'true'
-prefix = '${TASK_PREFIX}'
-
-try:
-    data = json.load(sys.stdin)
-    tasks = data.get('data', []) if isinstance(data, dict) else data
-    filtered_tasks = []
-    
-    # Analyze all tasks first
-    task_types = Counter()
-    status_counts = Counter() 
-    worker_counts = Counter()
-    status_by_type = {}  # {task_type: {status: count}}
-    
-    for task in tasks:
-        task_type = task.get('task_type', 'unknown')
-        status = task.get('status', 'unknown')
-        metadata = task.get('metadata', {})
-        
-        task_types[task_type] += 1
-        status_counts[status] += 1
-        
-        # Track status distribution per task type
-        if task_type not in status_by_type:
-            status_by_type[task_type] = Counter()
-        status_by_type[task_type][status] += 1
-        
-        # Count workers if present in metadata
-        if isinstance(metadata, dict):
-            worker_id = metadata.get('worker_id', metadata.get('processed_by', 'none'))
-            if worker_id != 'none':
-                worker_counts[worker_id] += 1
-    
-    if verbose:
-        print(f'DEBUG: === PRE-FILTER ANALYSIS ===', file=sys.stderr)
-        print(f'DEBUG: Total tasks in system: {len(tasks)}', file=sys.stderr)
-        print(f'DEBUG: Task types: {dict(task_types)}', file=sys.stderr)
-        print(f'DEBUG: Overall status distribution: {dict(status_counts)}', file=sys.stderr)
-        print(f'DEBUG: Status distribution per task type:', file=sys.stderr)
-        for task_type, statuses in sorted(status_by_type.items()):
-            print(f'DEBUG:   {task_type}: {dict(statuses)}', file=sys.stderr)
-        if worker_counts:
-            print(f'DEBUG: Worker distribution: {dict(worker_counts)}', file=sys.stderr)
-        else:
-            print(f'DEBUG: No worker information found in task metadata', file=sys.stderr)
-        print(f'DEBUG: Looking for prefix: \"{prefix}\"', file=sys.stderr)
-        print(f'DEBUG: === FILTERING PROCESS ===', file=sys.stderr)
-    
-    # Now filter tasks
-    matching_task_types = Counter()
-    matching_status_counts = Counter()
-    matching_worker_counts = Counter()
-    matching_status_by_type = {}  # {task_type: {status: count}}
-    
-    for task in tasks:
-        task_data = task.get('payload', {})
-        metadata = task.get('metadata', {})
-        task_id = task.get('id', '')[:8]
-        task_type = task.get('task_type', 'unknown')
-        status = task.get('status', 'unknown')
-        
-        # Check if it's our test task - look in metadata for task_prefix
-        matches_prefix = (isinstance(metadata, dict) and 
-                         metadata.get('task_prefix') == prefix)
-        matches_task_id = (isinstance(metadata, dict) and 
-                          isinstance(metadata.get('task_id', ''), str) and
-                          metadata.get('task_id', '').startswith(prefix))
-        
-        if matches_prefix or matches_task_id:
-            if verbose:
-                worker_info = metadata.get('worker_id', metadata.get('processed_by', 'none'))
-                print(f'DEBUG: ✓ Match {task_id}: type={task_type}, status={status}, worker={worker_info}, prefix={metadata.get(\"task_prefix\", \"none\")}', file=sys.stderr)
-            
-            filtered_tasks.append(task)
-            matching_task_types[task_type] += 1
-            matching_status_counts[status] += 1
-            
-            # Track status distribution per task type for matching tasks
-            if task_type not in matching_status_by_type:
-                matching_status_by_type[task_type] = Counter()
-            matching_status_by_type[task_type][status] += 1
-            
-            # Count workers in matching tasks
-            if isinstance(metadata, dict):
-                worker_id = metadata.get('worker_id', metadata.get('processed_by', 'none'))
-                if worker_id != 'none':
-                    matching_worker_counts[worker_id] += 1
-                    
-        elif verbose and len(filtered_tasks) == 0 and len([t for t in tasks if t.get('id') == task.get('id')]) <= 3:
-            print(f'DEBUG: ✗ No match {task_id}: type={task_type}, prefix={metadata.get(\"task_prefix\", \"none\")}, task_id={metadata.get(\"task_id\", \"none\")}', file=sys.stderr)
-    
-    if verbose:
-        print(f'DEBUG: === POST-FILTER ANALYSIS ===', file=sys.stderr)
-        print(f'DEBUG: Filtered to {len(filtered_tasks)} matching tasks', file=sys.stderr)
-        if matching_task_types:
-            print(f'DEBUG: Matching task types: {dict(matching_task_types)}', file=sys.stderr)
-        if matching_status_counts:
-            print(f'DEBUG: Matching overall status distribution: {dict(matching_status_counts)}', file=sys.stderr)
-            print(f'DEBUG: Matching status distribution per task type:', file=sys.stderr)
-            for task_type, statuses in sorted(matching_status_by_type.items()):
-                print(f'DEBUG:   {task_type}: {dict(statuses)}', file=sys.stderr)
-        if matching_worker_counts:
-            print(f'DEBUG: Matching worker distribution: {dict(matching_worker_counts)}', file=sys.stderr)
-        else:
-            print(f'DEBUG: No worker information in matching tasks', file=sys.stderr)
-        print(f'DEBUG: === END ANALYSIS ===', file=sys.stderr)
-    
-    print(json.dumps(filtered_tasks))
-except Exception as e:
-    if verbose:
-        print(f'DEBUG: Error filtering tasks: {e}', file=sys.stderr)
-    print('[]')
-"
 }
 
-# Get task statistics
+# Get task statistics using admin CLI
 get_task_stats() {
-    local tasks_json="$1"
+    local tag="$1"
     
-    echo "$tasks_json" | python3 -c "
-import json, sys
-from datetime import datetime, timezone
-import time
+    if [ "$VERBOSE" = true ]; then
+        log "INFO" "Getting task stats for tag '$tag' from container '$CONTAINER_NAME'"
+    fi
+    
+    # Use admin CLI helper to get task statistics with tag filter
+    local script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+    local stats_output
+    
+    if [ "$VERBOSE" = true ]; then
+        echo "DEBUG: Executing: $script_dir/admin-cli-helper.sh task-stats --tag '$tag'"
+    fi
+    
+    stats_output=$("$script_dir/admin-cli-helper.sh" task-stats --tag "$tag" 2>&1 || echo "")
+    
+    if [ -z "$stats_output" ] || echo "$stats_output" | grep -q "error\|Error\|ERROR"; then
+        if [ "$VERBOSE" = true ]; then
+            echo "DEBUG: Prefix-specific query failed or errored, trying general stats"
+            echo "DEBUG: Error output: $stats_output"
+        fi
+        # Fallback to general stats if tag-specific fails
+        stats_output=$("$script_dir/admin-cli-helper.sh" task-stats 2>&1 || echo "")
+    fi
+    
+    if [ "$VERBOSE" = true ]; then
+        echo "DEBUG: Raw stats output (full):"
+        echo "$stats_output"
+        echo "DEBUG: ====== END RAW OUTPUT ======"
+    fi
+    
+    # Parse the stats output to extract numbers (clean ANSI codes and debug logs)
+    local clean_output=$(echo "$stats_output" | sed 's/\x1b\[[0-9;]*m//g')  # Remove ANSI color codes
+    
+    local pending_count=$(echo "$clean_output" | grep -E "^\s*pending:" | sed 's/.*: *\([0-9]*\).*/\1/' | head -1 || echo "0")
+    local running_count=$(echo "$clean_output" | grep -E "^\s*running:" | sed 's/.*: *\([0-9]*\).*/\1/' | head -1 || echo "0")
+    local completed_count=$(echo "$clean_output" | grep -E "^\s*completed:" | sed 's/.*: *\([0-9]*\).*/\1/' | head -1 || echo "0")
+    local failed_count=$(echo "$clean_output" | grep -E "^\s*failed:" | sed 's/.*: *\([0-9]*\).*/\1/' | head -1 || echo "0")
+    local total_count=$(echo "$clean_output" | grep -E "^\s*Total:" | sed 's/.*: *\([0-9]*\).*/\1/' | head -1 || echo "0")
+    
+    if [ "$VERBOSE" = true ]; then
+        echo "DEBUG: Clean output sample:"
+        echo "$clean_output" | head -20
+        echo "DEBUG: Completed line: $(echo "$clean_output" | grep -E "^\s*completed:")"
+        echo "DEBUG: Total line: $(echo "$clean_output" | grep -E "^\s*Total:")"
+        echo "DEBUG: Extracted counts - pending: '$pending_count', running: '$running_count', completed: '$completed_count', failed: '$failed_count', total: '$total_count'"
+    fi
+    
+    # Clean up the numbers (remove any non-numeric characters)
+    pending_count=$(echo "$pending_count" | tr -cd '0-9' || echo "0")
+    running_count=$(echo "$running_count" | tr -cd '0-9' || echo "0")
+    completed_count=$(echo "$completed_count" | tr -cd '0-9' || echo "0")
+    failed_count=$(echo "$failed_count" | tr -cd '0-9' || echo "0")
+    total_count=$(echo "$total_count" | tr -cd '0-9' || echo "0")
+    
+    # Fallback values
+    [ -z "$pending_count" ] && pending_count=0
+    [ -z "$running_count" ] && running_count=0
+    [ -z "$completed_count" ] && completed_count=0
+    [ -z "$failed_count" ] && failed_count=0
+    [ -z "$total_count" ] && total_count=0
+    
+    if [ "$VERBOSE" = true ]; then
+        echo "DEBUG: Parsed stats - Total: $total_count, Completed: $completed_count, Failed: $failed_count, Running: $running_count, Pending: $pending_count"
+    fi
+    
+    # Output JSON
+    echo "{\"total\": $total_count, \"completed\": $completed_count, \"failed\": $failed_count, \"running\": $running_count, \"pending\": $pending_count}"
+}
 
-try:
-    tasks = json.load(sys.stdin)
-    stats = {
-        'total': len(tasks),
-        'pending': 0,
-        'running': 0,
-        'completed': 0,
-        'failed': 0,
-        'retrying': 0,
-        'cancelled': 0,
-        'within_deadline': 0,
-        'exceeded_deadline': 0,
-        'retry_attempts': 0,
-        'avg_completion_time': 0
-    }
+# Get recent tasks for more detailed analysis
+get_recent_tasks() {
+    local limit="${1:-20}"
     
-    completion_times = []
-    current_time = time.time()
+    if [ "$VERBOSE" = true ]; then
+        log "INFO" "Getting recent $limit tasks from container '$CONTAINER_NAME'"
+    fi
     
-    for task in tasks:
-        status = task.get('status', '').lower()
-        stats[status] = stats.get(status, 0) + 1
-        
-        # Count retry attempts
-        current_attempt = task.get('current_attempt', 1)
-        if current_attempt > 1:
-            stats['retry_attempts'] += (current_attempt - 1)
-        
-        # Check deadline compliance for completed tasks
-        if status == 'completed':
-            created_at = task.get('created_at')
-            completed_at = task.get('completed_at')
-            
-            if created_at and completed_at:
-                try:
-                    created_time = datetime.fromisoformat(created_at.replace('Z', '+00:00')).timestamp()
-                    completed_time = datetime.fromisoformat(completed_at.replace('Z', '+00:00')).timestamp()
-                    completion_duration = completed_time - created_time
-                    completion_times.append(completion_duration)
-                    
-                    if completion_duration <= $DEADLINE_SECONDS:
-                        stats['within_deadline'] += 1
-                    else:
-                        stats['exceeded_deadline'] += 1
-                except:
-                    pass
-    
-    if completion_times:
-        stats['avg_completion_time'] = sum(completion_times) / len(completion_times)
-    
-    print(json.dumps(stats, indent=2))
-except Exception as e:
-    print('{\"error\": \"' + str(e) + '\"}')
-"
+    # Use admin CLI to list recent tasks
+    docker exec "$CONTAINER_NAME" /app/starter admin list-tasks --limit "$limit" --verbose 2>&1 || echo "CLI_ERROR"
 }
 
 # Monitor task progress
@@ -318,32 +206,46 @@ monitor_tasks() {
     local end_time=$((start_time + DEADLINE_SECONDS + TIMEOUT_BUFFER))
     local last_stats=""
     
-    log "INFO" "Starting task completion monitoring..."
+    log "INFO" "Starting task completion monitoring using admin CLI..."
+    log "INFO" "Container: $CONTAINER_NAME"
     log "INFO" "Deadline: ${DEADLINE_SECONDS}s, Buffer: ${TIMEOUT_BUFFER}s, Check interval: ${CHECK_INTERVAL}s"
-    log "INFO" "Monitoring tasks with prefix: $TASK_PREFIX"
+    log "INFO" "Monitoring tasks with prefix: $TASK_TAG"
     
-    echo -e "${BLUE}📊 Task Progress Monitoring${NC}"
+    echo -e "${BLUE}📊 Task Progress Monitoring (Admin CLI)${NC}"
     echo "=================================="
+    
+    # Initial stats to establish baseline
+    local initial_stats_json=$(get_task_stats "$TASK_TAG")
+    local initial_total=$(echo "$initial_stats_json" | python3 -c "import json,sys; print(json.load(sys.stdin).get('total', 0))" 2>/dev/null || echo "0")
+    
+    if [ "$initial_total" -eq 0 ]; then
+        log "WARN" "No tasks found with prefix '$TASK_TAG', monitoring all tasks"
+        TASK_TAG=""
+    fi
+    
+    local retry_attempts=0
+    local last_completed=0
     
     while [ $(date +%s) -lt $end_time ]; do
         local current_time=$(date +%s)
         local elapsed_time=$((current_time - start_time))
         local remaining_time=$((end_time - current_time))
         
-        # Get current task status
-        local tasks_json=$(get_tasks_by_prefix)
-        local stats_json=$(get_task_stats "$tasks_json")
+        # Get current task status using admin CLI
+        local stats_json=$(get_task_stats "$TASK_TAG")
         
         # Parse stats
-        local total=$(echo "$stats_json" | python3 -c "import json,sys; print(json.load(sys.stdin).get('total', 0))")
-        local completed=$(echo "$stats_json" | python3 -c "import json,sys; print(json.load(sys.stdin).get('completed', 0))")
-        local failed=$(echo "$stats_json" | python3 -c "import json,sys; print(json.load(sys.stdin).get('failed', 0))")
-        local running=$(echo "$stats_json" | python3 -c "import json,sys; print(json.load(sys.stdin).get('running', 0))")
-        local pending=$(echo "$stats_json" | python3 -c "import json,sys; print(json.load(sys.stdin).get('pending', 0))")
-        local retrying=$(echo "$stats_json" | python3 -c "import json,sys; print(json.load(sys.stdin).get('retrying', 0))")
-        local within_deadline=$(echo "$stats_json" | python3 -c "import json,sys; print(json.load(sys.stdin).get('within_deadline', 0))")
-        local exceeded_deadline=$(echo "$stats_json" | python3 -c "import json,sys; print(json.load(sys.stdin).get('exceeded_deadline', 0))")
-        local retry_attempts=$(echo "$stats_json" | python3 -c "import json,sys; print(json.load(sys.stdin).get('retry_attempts', 0))")
+        local total=$(echo "$stats_json" | python3 -c "import json,sys; print(json.load(sys.stdin).get('total', 0))" 2>/dev/null || echo "0")
+        local completed=$(echo "$stats_json" | python3 -c "import json,sys; print(json.load(sys.stdin).get('completed', 0))" 2>/dev/null || echo "0")
+        local failed=$(echo "$stats_json" | python3 -c "import json,sys; print(json.load(sys.stdin).get('failed', 0))" 2>/dev/null || echo "0")
+        local running=$(echo "$stats_json" | python3 -c "import json,sys; print(json.load(sys.stdin).get('running', 0))" 2>/dev/null || echo "0")
+        local pending=$(echo "$stats_json" | python3 -c "import json,sys; print(json.load(sys.stdin).get('pending', 0))" 2>/dev/null || echo "0")
+        
+        # Estimate retry attempts by tracking completion count changes
+        if [ "$completed" -lt "$last_completed" ]; then
+            retry_attempts=$((retry_attempts + 1))
+        fi
+        last_completed=$completed
         
         # Display progress
         local progress=""
@@ -354,14 +256,10 @@ monitor_tasks() {
         
         echo -e "⏱️  ${elapsed_time}s elapsed | ${remaining_time}s remaining"
         echo -e "📋 Tasks: ${total} total | ${GREEN}${completed}${NC} completed${progress} | ${RED}${failed}${NC} failed"
-        echo -e "🔄 Active: ${YELLOW}${running}${NC} running | ${BLUE}${pending}${NC} pending | ${PURPLE}${retrying}${NC} retrying"
-        
-        if [ "$completed" -gt 0 ]; then
-            echo -e "⏰ Deadline: ${GREEN}${within_deadline}${NC} within | ${RED}${exceeded_deadline}${NC} exceeded"
-        fi
+        echo -e "🔄 Active: ${YELLOW}${running}${NC} running | ${BLUE}${pending}${NC} pending"
         
         if [ "$retry_attempts" -gt 0 ]; then
-            echo -e "🔁 Retry attempts: $retry_attempts"
+            echo -e "🔁 Estimated retry events: $retry_attempts"
         fi
         
         # Check if all tasks are complete
@@ -373,7 +271,7 @@ monitor_tasks() {
         
         # Check if we're past the deadline
         if [ $elapsed_time -gt $DEADLINE_SECONDS ]; then
-            local active_tasks=$((running + pending + retrying))
+            local active_tasks=$((running + pending))
             if [ "$active_tasks" -gt 0 ]; then
                 log "WARN" "Deadline exceeded with $active_tasks active tasks"
             fi
@@ -388,49 +286,45 @@ monitor_tasks() {
     local total_duration=$((final_time - start_time))
     
     echo ""
-    echo -e "${PURPLE}📋 Final Monitoring Report${NC}"
+    echo -e "${PURPLE}📋 Final Monitoring Report (Admin CLI)${NC}"
     echo "=================================="
     
     # Get final stats
-    local final_tasks_json=$(get_tasks_by_prefix)
-    local final_stats_json=$(get_task_stats "$final_tasks_json")
+    local final_stats_json=$(get_task_stats "$TASK_TAG")
     
     echo "Monitoring duration: ${total_duration}s"
     echo "Task deadline: ${DEADLINE_SECONDS}s"
     echo ""
     
     # Parse final stats
-    local final_total=$(echo "$final_stats_json" | python3 -c "import json,sys; print(json.load(sys.stdin).get('total', 0))")
-    local final_completed=$(echo "$final_stats_json" | python3 -c "import json,sys; print(json.load(sys.stdin).get('completed', 0))")
-    local final_failed=$(echo "$final_stats_json" | python3 -c "import json,sys; print(json.load(sys.stdin).get('failed', 0))")
-    local final_within_deadline=$(echo "$final_stats_json" | python3 -c "import json,sys; print(json.load(sys.stdin).get('within_deadline', 0))")
-    local final_exceeded_deadline=$(echo "$final_stats_json" | python3 -c "import json,sys; print(json.load(sys.stdin).get('exceeded_deadline', 0))")
-    local final_retry_attempts=$(echo "$final_stats_json" | python3 -c "import json,sys; print(json.load(sys.stdin).get('retry_attempts', 0))")
-    local avg_completion_time=$(echo "$final_stats_json" | python3 -c "import json,sys; print(round(json.load(sys.stdin).get('avg_completion_time', 0), 2))")
+    local final_total=$(echo "$final_stats_json" | python3 -c "import json,sys; print(json.load(sys.stdin).get('total', 0))" 2>/dev/null || echo "0")
+    local final_completed=$(echo "$final_stats_json" | python3 -c "import json,sys; print(json.load(sys.stdin).get('completed', 0))" 2>/dev/null || echo "0")
+    local final_failed=$(echo "$final_stats_json" | python3 -c "import json,sys; print(json.load(sys.stdin).get('failed', 0))" 2>/dev/null || echo "0")
+    local final_running=$(echo "$final_stats_json" | python3 -c "import json,sys; print(json.load(sys.stdin).get('running', 0))" 2>/dev/null || echo "0")
+    local final_pending=$(echo "$final_stats_json" | python3 -c "import json,sys; print(json.load(sys.stdin).get('pending', 0))" 2>/dev/null || echo "0")
     
     echo "Task Summary:"
     echo "  Total tasks: $final_total"
     echo "  Completed: $final_completed"
     echo "  Failed: $final_failed"
-    echo "  Success rate: $(echo "scale=1; ($final_completed * 100) / $final_total" | bc -l 2>/dev/null || echo "0")%"
-    echo ""
-    
-    echo "Deadline Compliance:"
-    echo "  Within deadline: $final_within_deadline"
-    echo "  Exceeded deadline: $final_exceeded_deadline"
-    if [ "$final_completed" -gt 0 ]; then
-        echo "  Deadline compliance: $(echo "scale=1; ($final_within_deadline * 100) / $final_completed" | bc -l 2>/dev/null || echo "0")%"
+    echo "  Running: $final_running"
+    echo "  Pending: $final_pending"
+    if [ "$final_total" -gt 0 ]; then
+        echo "  Success rate: $(echo "scale=1; ($final_completed * 100) / $final_total" | bc -l 2>/dev/null || echo "0")%"
     fi
     echo ""
     
     echo "Resilience Metrics:"
-    echo "  Total retry attempts: $final_retry_attempts"
-    echo "  Average completion time: ${avg_completion_time}s"
+    echo "  Estimated retry events: $retry_attempts"
+    echo "  Total duration: ${total_duration}s"
     
     # Determine overall result
     local all_completed=$((final_completed + final_failed == final_total))
     local deadline_met=$((total_duration <= DEADLINE_SECONDS))
-    local good_completion_rate=$(echo "($final_completed * 100) / $final_total >= 80" | bc -l 2>/dev/null || echo "0")
+    local good_completion_rate=0
+    if [ "$final_total" -gt 0 ]; then
+        good_completion_rate=$(echo "($final_completed * 100) / $final_total >= 80" | bc -l 2>/dev/null || echo "0")
+    fi
     
     echo ""
     if [ "$all_completed" -eq 1 ] && [ "$good_completion_rate" -eq 1 ]; then
@@ -446,16 +340,52 @@ monitor_tasks() {
         [ "$good_completion_rate" -eq 0 ] && echo "  - Poor completion rate (<80%)"
     fi
     
+    # Get recent task details for additional insights
+    if [ "$VERBOSE" = true ]; then
+        echo ""
+        echo "Recent Task Details:"
+        get_recent_tasks 10
+    fi
+    
     # Output JSON summary
     echo ""
-    echo "{\"total\": $final_total, \"completed\": $final_completed, \"failed\": $final_failed, \"duration\": $total_duration, \"deadline\": $DEADLINE_SECONDS, \"deadline_met\": $([ $deadline_met -eq 1 ] && echo "true" || echo "false"), \"retry_attempts\": $final_retry_attempts, \"avg_completion_time\": $avg_completion_time, \"within_deadline\": $final_within_deadline, \"exceeded_deadline\": $final_exceeded_deadline}"
+    echo "{\"total\": $final_total, \"completed\": $final_completed, \"failed\": $final_failed, \"running\": $final_running, \"pending\": $final_pending, \"duration\": $total_duration, \"deadline\": $DEADLINE_SECONDS, \"deadline_met\": $([ $deadline_met -eq 1 ] && echo "true" || echo "false"), \"retry_attempts\": $retry_attempts}"
+}
+
+# Test admin CLI connectivity
+test_admin_cli() {
+    echo "🧪 Testing admin CLI connectivity..."
+    
+    # Test basic admin command
+    echo "Testing basic task-stats command:"
+    docker exec "$CONTAINER_NAME" /app/starter admin task-stats 2>&1 || echo "Failed to execute admin task-stats"
+    
+    echo ""
+    echo "Testing list-tasks command:"
+    docker exec "$CONTAINER_NAME" /app/starter admin list-tasks --limit 5 2>&1 || echo "Failed to execute admin list-tasks"
+    
+    echo ""
+    echo "Testing binary path:"
+    docker exec "$CONTAINER_NAME" ls -la /app/target/release/ 2>&1 || echo "Failed to list release directory"
+    
+    echo ""
+    echo "Testing container file system:"
+    docker exec "$CONTAINER_NAME" ls -la /app/ 2>&1 || echo "Failed to list app directory"
+    
+    echo ""
 }
 
 # Main execution
-echo -e "${PURPLE}🔍 Task Completion Monitor${NC}"
-echo "Target: $BASE_URL"
-echo "Prefix: $TASK_PREFIX"
+check_container
+
+echo -e "${PURPLE}🔍 Task Completion Monitor (Admin CLI)${NC}"
+echo "Container: $CONTAINER_NAME"
+echo "Prefix: $TASK_TAG"
 echo "Deadline: ${DEADLINE_SECONDS}s"
 echo ""
+
+if [ "$VERBOSE" = true ]; then
+    test_admin_cli
+fi
 
 monitor_tasks

@@ -11,13 +11,15 @@ TASK_COUNT="${TASK_COUNT:-30}"
 DELAY_DURATION="${DELAY_DURATION:-5}"     # How long each task should delay (seconds)
 TASK_DEADLINE="${TASK_DEADLINE:-60}"      # Maximum time for all tasks to complete
 PRIORITY="${PRIORITY:-normal}"
-TASK_PREFIX="${TASK_PREFIX:-chaos}"
+TASK_TAG="${TASK_TAG:-chaos}"
 
 # Color codes
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
+PURPLE='\033[0;35m'
+BOLD_RED='\033[1;31m'
 NC='\033[0m'
 
 usage() {
@@ -32,7 +34,7 @@ usage() {
     echo "  -t, --deadline SECONDS Total deadline for all tasks (default: $TASK_DEADLINE)"
     echo "  -p, --priority PRIO    Task priority (default: $PRIORITY)"
     echo "  -a, --auth TOKEN       Authentication token (required)"
-    echo "  -x, --prefix PREFIX    Task identifier prefix (default: $TASK_PREFIX)"
+    echo "  -g, --tag TAG          Task identifier tag (default: $TASK_TAG)"
     echo "  -v, --verbose          Verbose output"
     echo "  -h, --help             Show this help"
     echo ""
@@ -81,8 +83,8 @@ while [[ $# -gt 0 ]]; do
             AUTH_TOKEN="$2"
             shift 2
             ;;
-        -x|--prefix)
-            TASK_PREFIX="$2"
+        -g|--tag)
+            TASK_TAG="$2"
             shift 2
             ;;
         -v|--verbose)
@@ -117,7 +119,7 @@ if [ "$TASK_COUNT" -le 0 ]; then
     exit 1
 fi
 
-if [ "$DELAY_DURATION" -le 0 ]; then
+if [ "$(echo "$DELAY_DURATION <= 0" | bc -l)" -eq 1 ]; then
     echo "Error: Delay duration must be positive" >&2
     exit 1
 fi
@@ -137,7 +139,7 @@ echo "Target: $BASE_URL"
 echo "Tasks: $TASK_COUNT"
 echo "Delay per task: ${DELAY_DURATION}s"
 echo "Total deadline: ${TASK_DEADLINE}s"
-echo "Task prefix: $TASK_PREFIX"
+echo "Task tag: $TASK_TAG"
 echo "Priority: $PRIORITY"
 echo ""
 echo -e "${YELLOW}📊 Theoretical Analysis:${NC}"
@@ -154,7 +156,7 @@ echo ""
 # Task payload template for delay tasks
 get_delay_task_payload() {
     local index="$1"
-    local task_id="${TASK_PREFIX}_delay_${index}"
+    local task_id="${TASK_TAG}_delay_${index}"
     local deadline_timestamp=$(date -u -v+${TASK_DEADLINE}S +"%Y-%m-%dT%H:%M:%SZ")
     
     echo "{
@@ -168,7 +170,7 @@ get_delay_task_payload() {
         \"priority\": \"$PRIORITY\",
         \"metadata\": {
             \"chaos_test\": true,
-            \"task_prefix\": \"$TASK_PREFIX\",
+            \"tag\": \"$TASK_TAG\",
             \"delay_duration\": $DELAY_DURATION,
             \"deadline_seconds\": $TASK_DEADLINE,
             \"created_for_worker_test\": true,
@@ -231,37 +233,79 @@ echo -e "${BLUE}⏳ Monitoring task completion (deadline: ${TASK_DEADLINE}s)...$
 DEADLINE_TIME=$((START_TIME + TASK_DEADLINE))
 COMPLETED_TASKS=0
 FAILED_TASKS=0
+SAMPLE_SIZE=$CREATED
 
 # Track completion statistics
 while [ $COMPLETED_TASKS -lt $CREATED ] && [ $(date +%s) -lt $DEADLINE_TIME ]; do
     REMAINING_TIME=$((DEADLINE_TIME - $(date +%s)))
     
-    # Check task status for a sample of tasks
-    SAMPLE_SIZE=5
-    SAMPLE_COMPLETED=0
-    SAMPLE_FAILED=0
+    # Use admin CLI helper to get task statistics
+    script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+    stats_output=$("$script_dir/admin-cli-helper.sh" task-stats --tag "$TASK_TAG" 2>/dev/null || echo "")
     
-    for i in $(seq 1 $SAMPLE_SIZE); do
-        if [ $i -le ${#TASK_IDS[@]} ]; then
-            TASK_ID="${TASK_IDS[$((i-1))]}"
-            STATUS_RESPONSE=$(curl -s "$BASE_URL/tasks/$TASK_ID" \
-                -H "Authorization: Bearer $AUTH_TOKEN" 2>/dev/null || echo "")
-            
-            if [ -n "$STATUS_RESPONSE" ]; then
-                TASK_STATUS=$(echo "$STATUS_RESPONSE" | python3 -c "import json,sys; print(json.load(sys.stdin)['status'])" 2>/dev/null || echo "unknown")
-                case "$TASK_STATUS" in
-                    "completed") SAMPLE_COMPLETED=$((SAMPLE_COMPLETED + 1)) ;;
-                    "failed"|"cancelled") SAMPLE_FAILED=$((SAMPLE_FAILED + 1)) ;;
-                esac
-            fi
-        fi
-    done
+    if [ -n "$stats_output" ]; then
+        SAMPLE_COMPLETED=$(echo "$stats_output" | grep "completed:" | awk '{print $2}' 2>/dev/null || echo "0")
+        SAMPLE_FAILED=$(echo "$stats_output" | grep -E "failed:|cancelled:" | awk '{sum += $2} END {print sum}' 2>/dev/null || echo "0")
+    else
+        SAMPLE_COMPLETED=0
+        SAMPLE_FAILED=0
+    fi
     
     # Estimate total completion based on sample
-    if [ $SAMPLE_SIZE -gt 0 ]; then
+    if [ "${SAMPLE_SIZE:-0}" -gt 0 ]; then
         COMPLETION_RATE=$(echo "scale=2; ($SAMPLE_COMPLETED * 100) / $SAMPLE_SIZE" | bc -l 2>/dev/null || echo "0")
         ESTIMATED_COMPLETED=$(echo "scale=0; ($COMPLETION_RATE * $CREATED) / 100" | bc -l 2>/dev/null || echo "0")
         echo -e "   ${YELLOW}📊${NC} Progress: ~${ESTIMATED_COMPLETED}/${CREATED} completed, ${REMAINING_TIME}s remaining"
+        
+        # Add diagnostic information if no progress after some time
+        ELAPSED_TIME=$(($(date +%s) - START_TIME))
+        
+        # FAIL FAST: If no progress after 30 seconds, system is likely broken
+        if [ $ELAPSED_TIME -gt 30 ] && [ $ESTIMATED_COMPLETED -eq 0 ]; then
+            echo -e "   ${BOLD_RED}⚡ FAIL FAST:${NC} No task progress after 30s - system appears broken, aborting to save time"
+            exit 1
+        fi
+        
+        if [ $ELAPSED_TIME -gt 20 ] && [ $ESTIMATED_COMPLETED -eq 0 ]; then
+            echo -e "   ${BOLD_RED}🔍 DIAGNOSTIC:${NC} No tasks completed after ${ELAPSED_TIME}s - checking task status..."
+            
+            # Check first few tasks for detailed status
+            for diag_i in $(seq 1 3); do
+                if [ $diag_i -le ${#TASK_IDS[@]} ]; then
+                    DIAG_TASK_ID="${TASK_IDS[$((diag_i-1))]}"
+                    DIAG_RESPONSE=$(curl -s "$BASE_URL/tasks/$DIAG_TASK_ID" \
+                        -H "Authorization: Bearer $AUTH_TOKEN" 2>/dev/null || echo "")
+                    
+                    if [ -n "$DIAG_RESPONSE" ]; then
+                        DIAG_STATUS=$(echo "$DIAG_RESPONSE" | python3 -c "import json,sys; print(json.load(sys.stdin)['status'])" 2>/dev/null || echo "unknown")
+                        DIAG_TYPE=$(echo "$DIAG_RESPONSE" | python3 -c "import json,sys; print(json.load(sys.stdin)['task_type'])" 2>/dev/null || echo "unknown")
+                        echo -e "   ${YELLOW}🔍${NC} Task $diag_i: ID=${DIAG_TASK_ID:0:8}..., Status=$DIAG_STATUS, Type=$DIAG_TYPE"
+                        
+                        # FAIL FAST: If multiple tasks show "unknown" status, this indicates API/system failure
+                        if [ "$DIAG_STATUS" = "unknown" ] && [ "$DIAG_TYPE" = "unknown" ]; then
+                            echo -e "   ${BOLD_RED}⚡ FAIL FAST:${NC} Task shows unknown status/type - API or system failure detected"
+                            echo -e "   ${BOLD_RED}⚡ FAIL FAST:${NC} Aborting monitoring to save time - system appears broken"
+                            exit 1
+                        fi
+                    else
+                        echo -e "   ${RED}🔍${NC} Task $diag_i: Failed to fetch status (auth/network issue?)"
+                        echo -e "   ${BOLD_RED}⚡ FAIL FAST:${NC} Cannot fetch task status - API communication failure"
+                        exit 1
+                    fi
+                fi
+            done
+            
+            # Check if workers are processing tasks at all
+            echo -e "   ${YELLOW}🔍${NC} Checking overall task queue status via API..."
+            QUEUE_RESPONSE=$(curl -s "$BASE_URL/tasks?limit=10" \
+                -H "Authorization: Bearer $AUTH_TOKEN" 2>/dev/null || echo "")
+            if [ -n "$QUEUE_RESPONSE" ]; then
+                QUEUE_COUNT=$(echo "$QUEUE_RESPONSE" | python3 -c "import json,sys; print(len(json.load(sys.stdin)['data']))" 2>/dev/null || echo "0")
+                echo -e "   ${YELLOW}🔍${NC} Recent tasks in queue: $QUEUE_COUNT"
+            else
+                echo -e "   ${RED}🔍${NC} Failed to check task queue (API issue?)"
+            fi
+        fi
     fi
     
     sleep 5

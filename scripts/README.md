@@ -133,6 +133,9 @@ Docker-based resilience testing with 6 difficulty levels and container isolation
 
 # Container scaling and worker resilience testing
 ./scripts/test-chaos.sh --scenarios "baseline,server-restart,worker-restart"
+
+# Dynamic worker scaling with 4-phase testing
+./scripts/test-chaos.sh --scenarios "dynamic-scaling"
 ```
 
 **API Endpoint Testing:**

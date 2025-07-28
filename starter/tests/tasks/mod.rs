@@ -43,7 +43,7 @@ async fn test_create_task_with_metadata() {
         "priority": "normal",
         "metadata": {
             "chaos_test": true,
-            "task_prefix": "multiworker",
+            "tag": "multiworker",
             "delay_duration": 1,
             "custom_field": "test_value",
             "task_id": "test_metadata_preservation"
@@ -70,7 +70,7 @@ async fn test_create_task_with_metadata() {
 
     let metadata = &get_task_response["data"]["metadata"];
     assert_eq!(metadata["chaos_test"], true);
-    assert_eq!(metadata["task_prefix"], "multiworker");
+    assert_eq!(metadata["tag"], "multiworker");
     assert_eq!(metadata["delay_duration"], 1);
     assert_eq!(metadata["custom_field"], "test_value");
     assert_eq!(metadata["task_id"], "test_metadata_preservation");
@@ -659,7 +659,7 @@ async fn test_dead_letter_queue_pagination() {
 }
 
 /// TDD Test: Comprehensive metadata persistence through ACTUAL task processing pipeline
-/// This test verifies that custom metadata (especially task_prefix used by chaos testing)
+/// This test verifies that custom metadata (especially tag used by chaos testing)
 /// is preserved when tasks are processed by the real worker system, not direct DB updates.
 /// THIS TEST SHOULD FAIL initially to expose the metadata persistence bug in task processing.
 #[tokio::test]
@@ -710,7 +710,7 @@ async fn test_metadata_persistence_through_all_state_transitions() {
 
     // Test metadata that should persist through all state transitions
     let test_metadata = json!({
-        "task_prefix": "multiworker",
+        "tag": "multiworker",
         "chaos_test": true,
         "test_run_id": "metadata_persistence_test",
         "custom_field": "test_value",
@@ -842,7 +842,7 @@ async fn test_metadata_persistence_through_all_state_transitions() {
         },
         "priority": "normal",
         "metadata": {
-            "task_prefix": "multiworker",  // This is what chaos testing looks for
+            "tag": "multiworker",  // This is what chaos testing looks for
             "chaos_test": true,
             "scenario": "tdd_verification"
         }
@@ -867,11 +867,11 @@ async fn test_metadata_persistence_through_all_state_transitions() {
         if chaos_check.status() == 200 {
             let chaos_data: serde_json::Value = chaos_check.json().await.unwrap();
             if chaos_data["data"]["status"] == "Completed" {
-                // Verify the chaos task still has its task_prefix after completion
+                // Verify the chaos task still has its tag after completion
                 let metadata = &chaos_data["data"]["metadata"];
                 assert_eq!(
-                    metadata["task_prefix"], "multiworker",
-                    "task_prefix metadata must be preserved for chaos testing to work"
+                    metadata["tag"], "multiworker",
+                    "tag metadata must be preserved for chaos testing to work"
                 );
                 assert_eq!(
                     metadata["chaos_test"], true,
@@ -918,8 +918,8 @@ fn assert_metadata_preserved(
 
     // Specifically verify the critical fields for chaos testing
     assert_eq!(
-        actual_map["task_prefix"], "multiworker",
-        "task_prefix metadata is critical for chaos testing and must be preserved"
+        actual_map["tag"], "multiworker",
+        "tag metadata is critical for chaos testing and must be preserved"
     );
     assert_eq!(
         actual_map["chaos_test"], true,

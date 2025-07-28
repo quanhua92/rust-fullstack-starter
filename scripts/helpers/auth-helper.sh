@@ -84,6 +84,12 @@ else
     EMAIL="${USERNAME_PREFIX}@${EMAIL_DOMAIN}"
 fi
 
+# Fail fast: Check API health before attempting registration
+if ! curl -s -f "$BASE_URL/health" > /dev/null 2>&1; then
+    echo "{\"error\": \"API unhealthy - failing fast to save time\", \"base_url\": \"$BASE_URL\"}" >&2
+    exit 1
+fi
+
 # Create user
 USER_DATA="{\"username\": \"$USERNAME\", \"email\": \"$EMAIL\", \"password\": \"$PASSWORD\"}"
 REGISTER_RESPONSE=$(curl -s -X POST "$BASE_URL/auth/register" \

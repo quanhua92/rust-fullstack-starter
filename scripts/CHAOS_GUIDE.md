@@ -238,6 +238,40 @@ This guide explains how to use the chaos testing framework to validate system re
 - **Levels 1-5:** ≥80% task completion rate + evidence of retries + system responsive
 - **Level 6:** <50% completion rate + deadline missed (designed failure validation)
 
+### `dynamic-scaling` ⭐ **NEW**
+**Purpose:** Test dynamic worker scaling with 4-phase resilience validation
+**Duration:** ~240 seconds (4 minutes, varies by difficulty)
+**What it tests:**
+- Worker scaling operations during live workload processing
+- Queue management during capacity reduction
+- Task completion guarantees despite scaling operations
+- System stability during infrastructure changes
+- Resource optimization with varying worker counts
+
+**4-Phase Process:**
+1. **Phase 1 (0-60s):** Optimal capacity with 5 workers
+2. **Phase 2 (60-120s):** Scale down to 2 workers (capacity pressure)
+3. **Phase 3 (120-150s):** Gradual scale-up (+1 worker every 10s)
+4. **Phase 4 (150-240s):** Completion monitoring with full capacity
+
+```bash
+# Basic dynamic scaling test
+./scripts/test-chaos.sh --scenarios "dynamic-scaling"
+
+# Advanced scaling with higher difficulty
+./scripts/test-chaos.sh --scenarios "dynamic-scaling" --difficulty 3
+```
+
+**Difficulty Scaling:**
+- **Level 1:** 75 tasks, 2s delays, 5min deadline (conservative)
+- **Level 3:** 120 tasks, 3s delays, 4min deadline (standard)
+- **Level 6:** 225 tasks, 4s delays, 3min deadline (extreme stress)
+
+**Success Criteria:**
+- **Primary:** 100% task completion within deadline
+- **Secondary:** 100% completion but deadline exceeded (partial pass)
+- **Failure:** <100% completion or system errors
+
 ## 🛠️ Helper Scripts
 
 The chaos testing framework includes modular helper scripts:
@@ -360,7 +394,7 @@ Monitors task completion and validates retry behavior.
 ### Phase 4: Resilience Testing
 ```bash
 # Pre-production validation
-./scripts/test-chaos.sh --difficulty 4 --scenarios "mixed-chaos,recovery,multi-worker-chaos"
+./scripts/test-chaos.sh --difficulty 4 --scenarios "mixed-chaos,recovery,multi-worker-chaos,dynamic-scaling"
 
 # Should complete in ~15 minutes  
 # Expected: 85%+ pass rate, recovery under 15s, worker resilience

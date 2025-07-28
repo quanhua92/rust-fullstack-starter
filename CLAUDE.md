@@ -89,6 +89,32 @@ This starter template includes comprehensive development infrastructure:
 4. **Chaos Testing**: `./scripts/test-chaos.sh` (Docker-based resilience validation)
 5. **Stop Services**: `./scripts/stop-server.sh 3000`
 
+## Admin CLI Commands
+
+For direct database access (useful during chaos testing and debugging):
+
+```bash
+# Task statistics (bypasses API authentication)
+cargo run -- admin task-stats
+
+# Task statistics with prefix filter
+cargo run -- admin task-stats --prefix "multiworker"
+
+# List recent tasks
+cargo run -- admin list-tasks --limit 10
+
+# List tasks with verbose details
+cargo run -- admin list-tasks --verbose
+
+# Clear old completed tasks (dry run)
+cargo run -- admin clear-completed --dry-run
+
+# Clear completed tasks older than 7 days
+cargo run -- admin clear-completed
+```
+
+**Note**: Admin commands access the database directly, bypassing API authentication. Useful for monitoring during chaos testing when API may be unreliable.
+
 ## Pre-Commit Requirements
 
 **ALWAYS run `./scripts/check.sh` before every commit.** This script:
@@ -126,7 +152,8 @@ Available chaos testing scenarios:
   - **Phase 4 (150-240s)**: Completion monitoring with full capacity
   - Tests system's ability to handle worker scaling operations while maintaining 100% task completion
   - Demonstrates resilience during resource constraints and validates scaling behavior
-  - Success criteria: 100% completion within 4 minutes total
+  - Success criteria: 100% completion within time limits (varies by difficulty: 300s→180s)
+  - **See detailed documentation**: `docs/guides/08-chaos-testing.md`
 
 ## Task Type Registration System
 

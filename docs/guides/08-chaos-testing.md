@@ -466,6 +466,39 @@ The framework provides 6 scientifically-designed difficulty levels with logical 
 - **Levels 1-5**: ≥80% task completion rate + evidence of retries + system responsive
 - **Level 6**: <50% completion rate + deadline missed (designed failure validation) ⚠️
 
+### Dynamic Worker Scaling Testing ⭐ **NEW**
+**Purpose**: Test dynamic worker scaling with 4-phase resilience validation
+
+```bash
+./scripts/test-chaos.sh --scenarios dynamic-scaling
+```
+
+**What happens**:
+1. **Phase 1 (0-60s)**: Start with 5 workers for optimal capacity
+2. **Phase 2 (60-120s)**: Scale down to 2 workers to create capacity pressure
+3. **Phase 3 (120-150s)**: Gradually scale up (+1 worker every 10s)
+4. **Phase 4 (150-240s)**: Monitor completion with full capacity restored
+
+**What it validates**:
+- **Worker scaling operations**: System handles dynamic scaling gracefully
+- **Queue management**: Tasks queue properly during capacity reduction
+- **Resource optimization**: Efficient work distribution across available workers
+- **Scaling responsiveness**: Fast adaptation to capacity changes
+- **Task completion guarantees**: 100% completion despite scaling operations
+- **System stability**: No crashes or data loss during scaling events
+
+**Difficulty scaling**:
+- **Level 1**: 75 total tasks, 2s delays, 5min deadline (conservative)
+- **Level 3**: 120 total tasks, 3s delays, 4min deadline (standard)
+- **Level 6**: 225 total tasks, 4s delays, 3min deadline (extreme stress)
+
+**Success criteria**:
+- **Primary**: 100% task completion within deadline
+- **Secondary**: 100% completion but deadline exceeded (partial pass)
+- **Failure**: <100% completion or system errors
+
+**Key insights**: This scenario demonstrates real-world scaling patterns where systems must maintain service quality during infrastructure changes.
+
 ## Running Chaos Tests
 
 ### Quick Start
@@ -488,6 +521,9 @@ The chaos testing framework uses Docker containers for realistic testing environ
 
 # Container scaling and multi-worker testing
 ./scripts/test-chaos.sh --scenarios "multi-worker-chaos"
+
+# Dynamic worker scaling testing
+./scripts/test-chaos.sh --scenarios "dynamic-scaling"
 ```
 
 **Docker Container Benefits:**
@@ -520,7 +556,7 @@ The chaos testing framework uses Docker containers for realistic testing environ
 **Phase 4: Resilience Testing**
 ```bash
 # Pre-production validation (15 minutes)
-./scripts/test-chaos.sh --difficulty 4 --scenarios "mixed-chaos,recovery,multi-worker-chaos"
+./scripts/test-chaos.sh --difficulty 4 --scenarios "mixed-chaos,recovery,multi-worker-chaos,dynamic-scaling"
 ```
 
 **Phase 5: Production Readiness**

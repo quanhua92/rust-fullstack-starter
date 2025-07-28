@@ -8,25 +8,23 @@ services:
       context: .
       dockerfile: Dockerfile.prod
     ports:
-      - "${CHAOS_APP_PORT:-8888}:8080"
+      - "8888:8080"
+    env_file:
+      - .env.example
     environment:
-      # Database configuration
+      # Database configuration for chaos testing
       - STARTER__DATABASE__HOST=postgres
       - STARTER__DATABASE__PORT=5432
-      - STARTER__DATABASE__DATABASE=${POSTGRES_DB:-starter_chaos}
-      - STARTER__DATABASE__USER=${POSTGRES_USER:-starter_user}
-      - STARTER__DATABASE__PASSWORD=${POSTGRES_PASSWORD:-starter_pass}
-      - DATABASE_URL=postgresql://${POSTGRES_USER:-starter_user}:${POSTGRES_PASSWORD:-starter_pass}@postgres:5432/${POSTGRES_DB:-starter_chaos}
+      - STARTER__DATABASE__DATABASE=starter_db
+      - DATABASE_URL=postgres://starter_user:starter_pass@postgres:5432/starter_db
       
       # Application configuration
       - STARTER__SERVER__HOST=0.0.0.0
       - STARTER__SERVER__PORT=8080
-      - STARTER__AUTH__SESSION_SECRET=${SESSION_SECRET:-chaos-test-secret-key}
-      - STARTER__AUTH__SESSION_DURATION=${SESSION_DURATION:-86400}
       
       # Chaos testing optimizations
-      - RUST_LOG=${RUST_LOG:-debug}
-      - RUST_BACKTRACE=${RUST_BACKTRACE:-1}
+      - RUST_LOG=debug
+      - RUST_BACKTRACE=1
     restart: unless-stopped
     depends_on:
       postgres:
@@ -40,8 +38,8 @@ services:
     deploy:
       resources:
         limits:
-          memory: ${CHAOS_APP_MEMORY_LIMIT:-256M}
-          cpus: ${CHAOS_APP_CPU_LIMIT:-0.5}
+          memory: 256M
+          cpus: '0.5'
         reservations:
           memory: 128M
           cpus: '0.25'
@@ -57,26 +55,24 @@ services:
       context: .
       dockerfile: Dockerfile.prod
     command: ["/app/starter", "worker"]
+    env_file:
+      - .env.example
     environment:
       # Database configuration (same as app)
       - STARTER__DATABASE__HOST=postgres
       - STARTER__DATABASE__PORT=5432
-      - STARTER__DATABASE__DATABASE=${POSTGRES_DB:-starter_chaos}
-      - STARTER__DATABASE__USER=${POSTGRES_USER:-starter_user}
-      - STARTER__DATABASE__PASSWORD=${POSTGRES_PASSWORD:-starter_pass}
-      - DATABASE_URL=postgresql://${POSTGRES_USER:-starter_user}:${POSTGRES_PASSWORD:-starter_pass}@postgres:5432/${POSTGRES_DB:-starter_chaos}
+      - STARTER__DATABASE__DATABASE=starter_db
+      - DATABASE_URL=postgres://starter_user:starter_pass@postgres:5432/starter_db
       
       # Worker configuration optimized for chaos testing
-      - STARTER__WORKER__MAX_CONCURRENT_TASKS=${WORKER_CONCURRENCY:-2}
-      - STARTER__WORKER__POLL_INTERVAL=${WORKER_POLL_INTERVAL:-1000}
-      - STARTER__WORKER__TASK_TIMEOUT=${WORKER_TASK_TIMEOUT:-30000}
+      - STARTER__WORKER__CONCURRENCY=2
       
       # API server connection for task type registration
       - API_BASE_URL=http://server:8080
       
       # Chaos testing optimizations
-      - RUST_LOG=${RUST_LOG:-debug}
-      - RUST_BACKTRACE=${RUST_BACKTRACE:-1}
+      - RUST_LOG=debug
+      - RUST_BACKTRACE=1
     restart: unless-stopped
     depends_on:
       postgres:
@@ -92,12 +88,12 @@ services:
     deploy:
       resources:
         limits:
-          memory: ${CHAOS_WORKER_MEMORY_LIMIT:-128M}
-          cpus: ${CHAOS_WORKER_CPU_LIMIT:-0.5}
+          memory: 128M
+          cpus: '0.5'
         reservations:
           memory: 64M
           cpus: '0.125'
-      replicas: ${CHAOS_WORKER_REPLICAS:-1}
+      replicas: 1
     networks:
       - chaos-network
     labels:
@@ -107,10 +103,12 @@ services:
   postgres:
     container_name: chaos-starter-postgres
     image: postgres:17-alpine
+    env_file:
+      - .env.example
     environment:
-      - POSTGRES_DB=${POSTGRES_DB:-starter_chaos}
-      - POSTGRES_USER=${POSTGRES_USER:-starter_user}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-starter_pass}
+      - POSTGRES_DB=starter_db
+      - POSTGRES_USER=starter_user
+      - POSTGRES_PASSWORD=starter_pass
       - POSTGRES_INITDB_ARGS=--auth-host=scram-sha-256
     volumes:
       - chaos_postgres_data:/var/lib/postgresql/data
@@ -118,7 +116,7 @@ services:
     # No ports exposed - internal network communication only
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-starter_user} -d ${POSTGRES_DB:-starter_chaos}"]
+      test: ["CMD-SHELL", "pg_isready -U starter_user -d starter_db"]
       interval: 2s
       timeout: 2s
       start_period: 10s
@@ -126,8 +124,8 @@ services:
     deploy:
       resources:
         limits:
-          memory: ${CHAOS_DB_MEMORY_LIMIT:-256M}
-          cpus: ${CHAOS_DB_CPU_LIMIT:-0.5}
+          memory: 256M
+          cpus: '0.5'
         reservations:
           memory: 128M
           cpus: '0.25'

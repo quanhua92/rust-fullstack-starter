@@ -111,7 +111,7 @@ kill_service() {
         worker)
             echo -e "${RED}💀 Killing Docker worker container...${NC}"
             log "   Stopping worker container"
-            docker-compose -f "$CHAOS_COMPOSE_FILE" stop worker || true
+            docker-compose -f "$CHAOS_COMPOSE_FILE" stop workers || true
             ;;
         *)
             echo "Unknown service type: $service_type" >&2
@@ -151,13 +151,13 @@ start_service() {
         worker)
             echo -e "${GREEN}🔄 Starting Docker worker container...${NC}"
             log "   Starting worker container"
-            docker-compose -f "$CHAOS_COMPOSE_FILE" up -d worker
+            docker-compose -f "$CHAOS_COMPOSE_FILE" up -d workers
             
             echo -e "${YELLOW}⏳ Waiting for worker to be ready...${NC}"
             sleep 5
             
             echo -e "${BLUE}🔍 Checking worker container...${NC}"
-            if docker-compose -f "$CHAOS_COMPOSE_FILE" ps worker | grep -q "Up"; then
+            if docker-compose -f "$CHAOS_COMPOSE_FILE" ps workers | grep -q "Up"; then
                 echo -e "${GREEN}✅ Worker is running${NC}"
             else
                 echo -e "${RED}❌ Worker health check failed${NC}"
