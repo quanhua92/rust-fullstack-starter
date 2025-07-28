@@ -8,6 +8,10 @@ This guide covers common issues and their solutions.
 # Check everything at once
 ./scripts/check-prereqs.sh
 ./scripts/status.sh
+
+# Admin CLI for direct database access (bypasses API)
+cargo run -- admin task-stats        # Check task processing
+cargo run -- admin list-tasks --limit 5  # Recent tasks
 ```
 
 ## Common Issues

@@ -270,6 +270,31 @@ STARTER__SERVER__PORT=3001 cargo run -- server
 cargo run -- worker
 ```
 
+### Admin CLI Commands
+
+Direct database access for monitoring and maintenance (bypasses API authentication):
+
+```bash
+# Task monitoring and statistics
+cargo run -- admin task-stats                    # Overall statistics
+cargo run -- admin task-stats --tag "dev"       # Filter by task tag
+
+# Task inspection
+cargo run -- admin list-tasks --limit 20        # Recent tasks
+cargo run -- admin list-tasks --verbose         # Detailed view with metadata
+
+# Maintenance operations
+cargo run -- admin clear-completed --dry-run    # Preview cleanup
+cargo run -- admin clear-completed              # Clean tasks older than 7 days
+cargo run -- admin clear-completed --older-than-days 1  # Custom age
+```
+
+**Development use cases**:
+- Monitor task processing during feature development
+- Debug task issues when API endpoints are unavailable
+- Clean up test data after development sessions
+- Validate task metadata during chaos testing
+
 ## CLI Commands
 
 ### Server Mode

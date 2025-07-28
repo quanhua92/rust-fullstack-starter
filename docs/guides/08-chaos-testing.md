@@ -157,10 +157,17 @@ Modular utilities for specific chaos operations:
 # Returns: {"token": "abc123...", "user_id": "uuid-here"}
 ```
 
-**`task-flood.sh`**: Generates high task loads
+**`delay-task-flood.sh`**: Generates high task loads with configurable delays
 ```bash
-# Create 100 tasks with 0.1s delay
-./scripts/helpers/task-flood.sh --count 100 --delay 0.1 --auth "$TOKEN"
+# Create 100 delay tasks with 2s processing time each
+./scripts/helpers/delay-task-flood.sh --count 100 --delay 2 --deadline 300 --auth "$TOKEN"
+```
+
+**`admin-cli-helper.sh`**: **NEW** - Direct database access for monitoring
+```bash
+# Get task statistics bypassing API authentication
+./scripts/helpers/admin-cli-helper.sh task-stats --tag "chaos_test"
+./scripts/helpers/admin-cli-helper.sh list-tasks --verbose
 ```
 
 **`service-chaos.sh`**: Simulates service failures
@@ -282,22 +289,72 @@ The framework provides 6 scientifically-designed difficulty levels with logical 
 
 > ⚠️ **Level 6 is intentionally designed with impossible workload to test partial completion patterns**
 
+## Admin CLI Integration
+
+### Direct Database Monitoring
+
+The enhanced chaos testing framework includes admin CLI capabilities for reliable monitoring during API disruptions:
+
+```bash
+# Task statistics (bypasses API authentication)
+cargo run -- admin task-stats
+cargo run -- admin task-stats --tag "multiworker"
+
+# Task inspection
+cargo run -- admin list-tasks --limit 20 --verbose
+
+# Maintenance operations
+cargo run -- admin clear-completed --dry-run
+```
+
+**Key benefits**:
+- **Fail-fast monitoring**: Detects issues early to save testing time
+- **ANSI-aware parsing**: Handles colored output correctly
+- **Authentication bypass**: Works when API is unreliable during chaos
+- **Comprehensive statistics**: Real-time task completion tracking
+
+### Foundation Checks
+
+Every chaos test now includes foundation validation:
+
+```bash
+🔍 FOUNDATION CHECK: Validating admin CLI for all scenarios...
+✅ All admin CLI tests passed - foundation is solid
+```
+
+This ensures the monitoring infrastructure is working before chaos begins.
+
 ## Chaos Scenarios
 
-### Baseline Testing
-**Purpose**: Establish normal system behavior
+### Baseline Testing ⭐ **ENHANCED**
+**Purpose**: Establish normal system behavior with comprehensive validation
 
 ```bash
 ./scripts/test-chaos.sh --scenarios baseline
 ```
 
-**What it validates**:
-- All API endpoints respond correctly
-- Authentication flow works
-- Task creation and processing
-- Database operations succeed
+**What happens**:
+1. **Foundation check**: Admin CLI validation before test begins
+2. **API validation**: Complete endpoint testing (44 tests)
+3. **Task processing**: 12 delay tasks with 0.5s processing time
+4. **Admin monitoring**: Real-time completion tracking via admin CLI
+5. **Success validation**: 100% completion rate verification
 
-**Success criteria**: 100% API success rate
+**What it validates**:
+- All API endpoints respond correctly (44/44 tests)
+- Authentication flow works reliably
+- Task creation and processing pipeline
+- Database operations succeed
+- Admin CLI monitoring works correctly
+- Foundation is solid for advanced chaos scenarios
+
+**Recent fixes**:
+- Fixed degradation from 100% to 58% success rate
+- Enhanced with proven delay-task-flood.sh script
+- Added ANSI color code parsing for admin CLI output
+- Implemented fail-fast patterns for time optimization
+
+**Success criteria**: 100% API success rate + 100% task completion
 
 ### Database Failure Testing
 **Purpose**: Test database resilience patterns
@@ -357,24 +414,34 @@ The framework provides 6 scientifically-designed difficulty levels with logical 
 - No duplicate task execution
 - Queue persistence works
 
-### Task Flood Testing
-**Purpose**: Test high load performance
+### Task Flood Testing ⭐ **ENHANCED**
+**Purpose**: Test high load performance with delay tasks
 
 ```bash
 ./scripts/test-chaos.sh --scenarios task-flood
 ```
 
 **What happens**:
-1. Authentication established
-2. Rapid task creation (rate varies by difficulty)
-3. System performance monitored
-4. Task processing throughput measured
+1. Authentication established with fail-fast health check
+2. Delay task creation (20 tasks with 0.5s processing time each)
+3. Admin CLI monitoring for real-time progress tracking
+4. Task processing throughput measured with 45s deadline
+5. Completion rate validation with fail-fast early exit
 
 **What it validates**:
-- System handles high task volumes
-- Database performance under load
-- Memory usage remains stable
-- Queue management efficiency
+- System handles high task volumes efficiently
+- Database performance under sustained load
+- Memory usage remains stable during processing
+- Queue management with delay task processing
+- Admin CLI monitoring works under load
+- Fail-fast patterns save time on early failures
+
+**Enhanced features**:
+- Uses delay tasks instead of simple tasks for realistic load
+- Admin CLI bypass for reliable monitoring during API stress
+- Fail-fast exits when no progress detected after 30s
+- ANSI color code parsing for accurate statistics
+- Bold warnings for critical failures
 
 ### Circuit Breaker Testing
 **Purpose**: Test fault isolation patterns
@@ -395,24 +462,34 @@ The framework provides 6 scientifically-designed difficulty levels with logical 
 - Circuit breaker reopens when service recovers
 - Fault isolation between task types
 
-### Mixed Chaos Testing
-**Purpose**: Test multiple concurrent failures
+### Mixed Chaos Testing ⭐ **ENHANCED**
+**Purpose**: Test multiple concurrent failures with admin CLI monitoring
 
 ```bash
 ./scripts/test-chaos.sh --scenarios mixed-chaos
 ```
 
 **What happens**:
-1. High task load started
-2. Worker process killed during load
-3. Service recovery under stress
-4. System stability verified
+1. High delay task load started (20 tasks, 0.5s each)
+2. Worker container killed during active processing
+3. Service recovery monitored via admin CLI
+4. System stability verified under compound stress
+5. Task completion tracked with 60s deadline
 
 **What it validates**:
-- Multiple failure handling
-- Resource contention management
-- Recovery coordination
+- Multiple failure handling with container isolation
+- Resource contention during worker restarts
+- Recovery coordination between services
+- Admin CLI reliability during API disruptions
+- Task retry mechanisms work correctly
 - System stability under compound stress
+
+**Enhanced features**:
+- Docker container isolation for realistic failures
+- Admin CLI monitoring bypasses API authentication issues
+- Enhanced fail-fast patterns detect stuck scenarios
+- Fixed worker service name mismatch (worker → workers)
+- Proper ANSI parsing for accurate progress tracking
 
 ### Recovery Time Testing
 **Purpose**: Measure and validate recovery times
@@ -474,10 +551,10 @@ The framework provides 6 scientifically-designed difficulty levels with logical 
 ```
 
 **What happens**:
-1. **Phase 1 (0-60s)**: Start with 5 workers for optimal capacity
-2. **Phase 2 (60-120s)**: Scale down to 2 workers to create capacity pressure
-3. **Phase 3 (120-150s)**: Gradually scale up (+1 worker every 10s)
-4. **Phase 4 (150-240s)**: Monitor completion with full capacity restored
+1. **Phase 1 (0-20s)**: Start with 5 workers for optimal capacity processing
+2. **Phase 2 (20-40s)**: Scale down to 2 workers to create capacity pressure  
+3. **Phase 3 (40-49s)**: Gradually scale up (+1 worker every 3s: 2→3→4→5)
+4. **Phase 4 (49s-deadline)**: Monitor completion with full capacity restored
 
 **What it validates**:
 - **Worker scaling operations**: System handles dynamic scaling gracefully
@@ -524,6 +601,9 @@ The chaos testing framework uses Docker containers for realistic testing environ
 
 # Dynamic worker scaling testing
 ./scripts/test-chaos.sh --scenarios "dynamic-scaling"
+
+# All scenarios with enhanced admin CLI monitoring
+./scripts/test-chaos.sh --scenarios all --difficulty 1
 ```
 
 **Docker Container Benefits:**
@@ -611,12 +691,16 @@ The framework tracks several key metrics:
 - Memory leaks during testing
 - Tasks stuck in processing state
 - Circuit breaker not recovering
+- Admin CLI monitoring failures
+- Foundation checks failing
 
 ⚠️ **Areas for Improvement**:
 - Success rate 70-85%
 - Container recovery time 20-30 seconds
 - High task failure rates
 - Slow container health checks
+- ANSI parsing errors in monitoring
+- Metadata field inconsistencies
 
 ### Example Results Analysis
 
@@ -634,7 +718,7 @@ Scenario Results:
 ✅ multi-worker-chaos: PASS (100.0%, 0 retries)
 ```
 
-**Analysis**: Perfect baseline performance with 100% task completion within the 30-second deadline, indicating healthy system foundation.
+**Analysis**: Perfect baseline performance with 100% task completion within deadline, enhanced admin CLI monitoring, and solid foundation for advanced chaos scenarios.
 
 **Level 6 (Catastrophic Load)**:
 ```
@@ -819,6 +903,10 @@ echo "✅ All chaos tests passed - ready for deployment"
 # Check individual components
 curl -X GET http://localhost:3000/health
 curl -X GET http://localhost:3000/tasks/stats
+
+# Admin CLI direct access (bypasses API authentication)
+cargo run -- admin task-stats --verbose
+cargo run -- admin list-tasks --limit 5 --verbose
 
 # Manual service testing
 ./scripts/test-server.sh 3000

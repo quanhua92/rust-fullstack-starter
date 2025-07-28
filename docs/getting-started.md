@@ -295,6 +295,30 @@ cargo nextest run api::      # API standards tests
 TEST_LOG=1 cargo test -- --nocapture
 ```
 
+### Admin CLI Commands
+
+Direct database access for monitoring and maintenance (bypasses API authentication):
+
+```bash
+# Task monitoring and statistics
+cargo run -- admin task-stats                    # Overall statistics
+cargo run -- admin task-stats --tag "test"      # Filter by task tag
+
+# Task inspection
+cargo run -- admin list-tasks --limit 10        # Recent tasks
+cargo run -- admin list-tasks --verbose         # Detailed view with metadata
+
+# Maintenance operations
+cargo run -- admin clear-completed --dry-run    # Preview cleanup
+cargo run -- admin clear-completed              # Clean tasks older than 7 days
+```
+
+**Use cases**:
+- **Development**: Monitor task processing during testing
+- **Debugging**: Inspect task details when API is unreliable
+- **Maintenance**: Clean up old completed tasks
+- **Chaos Testing**: Monitor system state during failure scenarios
+
 ### Testing Features
 - **Database Isolation**: Each test gets its own PostgreSQL database
 - **10x Performance**: Template database pattern for fast test setup

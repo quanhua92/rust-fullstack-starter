@@ -27,6 +27,8 @@ graph TD
         
         INTEGRATION[🔌 Integration Tests<br/><b>53 comprehensive tests</b><br/>✅ Main focus<br/>💡 Test real interactions]
         
+        CHAOS[🔥 Chaos Tests<br/><b>7 resilience scenarios</b><br/>🐳 Docker-based testing<br/>💡 Test failure handling]
+        
         UNIT[⚙️ Unit Tests<br/><i>Some in modules</i><br/>📝 Function-level<br/>💡 Fast feedback]
     end
     

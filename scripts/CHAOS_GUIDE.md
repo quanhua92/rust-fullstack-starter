@@ -249,10 +249,10 @@ This guide explains how to use the chaos testing framework to validate system re
 - Resource optimization with varying worker counts
 
 **4-Phase Process:**
-1. **Phase 1 (0-60s):** Optimal capacity with 5 workers
-2. **Phase 2 (60-120s):** Scale down to 2 workers (capacity pressure)
-3. **Phase 3 (120-150s):** Gradual scale-up (+1 worker every 10s)
-4. **Phase 4 (150-240s):** Completion monitoring with full capacity
+1. **Phase 1 (0-20s):** Optimal capacity with 5 workers
+2. **Phase 2 (20-40s):** Scale down to 2 workers (capacity pressure)  
+3. **Phase 3 (40-49s):** Gradual scale-up (+1 worker every 3s: 2→3→4→5)
+4. **Phase 4 (49s-deadline):** Completion monitoring with full capacity
 
 ```bash
 # Basic dynamic scaling test
