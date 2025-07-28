@@ -5,32 +5,32 @@ edition = "2024"
 license = "MIT"
 
 [dependencies]
+argon2.workspace = true
+async-trait.workspace = true
 # Inherit from workspace
 axum.workspace = true
+chrono.workspace = true
+clap.workspace = true
+config.workspace = true
+dotenvy.workspace = true
+password-hash.workspace = true
+rand.workspace = true
+reqwest.workspace = true
+secrecy.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+sqlx.workspace = true
+thiserror.workspace = true
 tokio.workspace = true
 tower.workspace = true
 tower-http.workspace = true
-sqlx.workspace = true
-serde.workspace = true
-serde_json.workspace = true
-thiserror.workspace = true
-argon2.workspace = true
-password-hash.workspace = true
-rand.workspace = true
-clap.workspace = true
-chrono.workspace = true
-uuid.workspace = true
-config.workspace = true
-dotenvy.workspace = true
-secrecy.workspace = true
 tracing.workspace = true
 tracing-subscriber.workspace = true
-async-trait.workspace = true
 utoipa.workspace = true
 utoipa-swagger-ui.workspace = true
-reqwest.workspace = true
+uuid.workspace = true
 
 [dev-dependencies]
+once_cell.workspace = true
 tempfile.workspace = true
 tokio-test.workspace = true
-once_cell.workspace = true

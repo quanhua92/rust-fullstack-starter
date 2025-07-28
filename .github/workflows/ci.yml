@@ -149,10 +149,12 @@ jobs:
       with:
         context: .
         file: ./Dockerfile.prod
-        # push: false  # CI only builds to verify, release.yml handles publishing
+        push: false  # CI only builds to verify, release.yml handles publishing
         cache-from: type=gha
         cache-to: type=gha,mode=max
-        platforms: linux/amd64,linux/arm64
+        platforms: linux/amd64  # Single platform for CI speed
+        build-args: |
+          TARGETPLATFORM=linux/amd64
 
   notify:
     name: Notify Status
