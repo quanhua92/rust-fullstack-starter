@@ -20,18 +20,45 @@ Integration tests verify that different parts of your system work together corre
 
 ### Testing Pyramid (Simplified)
 
+```mermaid
+graph TD
+    subgraph "🧪 Testing Strategy for Learning"
+        E2E[🌐 E2E Tests<br/><i>Manual Testing</i><br/>🚫 Not automated<br/>💡 Too complex for starter]
+        
+        INTEGRATION[🔌 Integration Tests<br/><b>51 comprehensive tests</b><br/>✅ Main focus<br/>💡 Test real interactions]
+        
+        UNIT[⚙️ Unit Tests<br/><i>Some in modules</i><br/>📝 Function-level<br/>💡 Fast feedback]
+    end
+    
+    subgraph "📊 Test Coverage Areas"
+        AUTH_T[🔐 Authentication<br/>Login, Sessions, Security]
+        API_T[🌐 API Standards<br/>CORS, Headers, Errors]
+        TASK_T[⚙️ Task Processing<br/>Jobs, Registry, Dead Letter]
+        HEALTH_T[💓 Health Checks<br/>Database, Services]
+    end
+    
+    E2E -.->|🎭 User Journeys| AUTH_T
+    INTEGRATION -->|📡 HTTP Testing| AUTH_T
+    INTEGRATION -->|📡 HTTP Testing| API_T
+    INTEGRATION -->|📡 HTTP Testing| TASK_T
+    INTEGRATION -->|📡 HTTP Testing| HEALTH_T
+    UNIT -->|⚡ Quick Validation| AUTH_T
+    UNIT -->|⚡ Quick Validation| TASK_T
+    
+    classDef focusBox fill:#e8f5e8,stroke:#1b5e20,stroke-width:3px
+    classDef supportBox fill:#e3f2fd,stroke:#0277bd,stroke-width:2px
+    classDef manualBox fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    
+    class INTEGRATION focusBox
+    class UNIT supportBox
+    class E2E manualBox
 ```
-    ┌─────────────┐
-    │   E2E Tests │ ← Not included (complex setup)
-    │   (Manual)  │
-    ├─────────────┤
-    │ Integration │ ← This starter focuses here
-    │   Tests     │   (53 comprehensive tests)
-    ├─────────────┤
-    │ Unit Tests  │ ← Some included in modules
-    │ (Functions) │
-    └─────────────┘
-```
+
+**Why Focus on Integration Tests?**
+- **🎯 Real World**: Test how components work together
+- **🚀 Fast Setup**: No complex browser automation
+- **💡 Educational**: See how HTTP, database, and business logic connect
+- **🔄 Reliable**: Isolated test databases prevent flaky tests
 
 This starter focuses on integration tests because they:
 - Catch real-world bugs

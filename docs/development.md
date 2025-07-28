@@ -4,6 +4,54 @@ This guide covers the development workflow, tools, and best practices for the Ru
 
 ## Development Environment Setup
 
+```mermaid
+graph TB
+    subgraph "🚀 Development Environment Options"
+        QUICK[⚡ Quick Start<br/>./scripts/dev-server.sh 3000]
+        MANUAL[🔧 Manual Setup<br/>Step by step control]
+    end
+    
+    subgraph "⚡ Quick Start Flow"
+        QUICK --> Q1[🐳 Start Docker Compose<br/>PostgreSQL + Redis]
+        Q1 --> Q2[⏳ Wait for Health Check<br/>Services ready]
+        Q2 --> Q3[📊 Run Migrations<br/>Schema setup]
+        Q3 --> Q4[🚀 Start Server<br/>Port 3000]
+        Q4 --> Q5[👷 Start Worker<br/>Background tasks]
+        Q5 --> Q6[✅ Environment Ready<br/>All services running]
+    end
+    
+    subgraph "🔧 Manual Setup Flow"
+        MANUAL --> M1[🗄️ docker compose up postgres]
+        M1 --> M2[⏳ Wait for database]
+        M2 --> M3[📊 sqlx migrate run]
+        M3 --> M4[🚀 cargo run -- server]
+        M4 --> M5[👷 cargo run -- worker]
+        M5 --> M6[✅ Manual Setup Complete]
+    end
+    
+    subgraph "🔍 Verification"
+        VERIFY[🧪 Verification Steps]
+        V1[💓 curl localhost:3000/health]
+        V2[📚 open localhost:3000/api-docs]
+        V3[🧪 ./scripts/test-with-curl.sh]
+        
+        VERIFY --> V1
+        VERIFY --> V2
+        VERIFY --> V3
+    end
+    
+    Q6 --> VERIFY
+    M6 --> VERIFY
+    
+    classDef quickBox fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
+    classDef manualBox fill:#e3f2fd,stroke:#0277bd,stroke-width:2px
+    classDef verifyBox fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    
+    class QUICK,Q1,Q2,Q3,Q4,Q5,Q6 quickBox
+    class MANUAL,M1,M2,M3,M4,M5,M6 manualBox
+    class VERIFY,V1,V2,V3 verifyBox
+```
+
 ### Quick Start
 ```bash
 # Complete development environment (recommended)

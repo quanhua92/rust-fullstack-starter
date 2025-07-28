@@ -4,6 +4,67 @@ This guide covers the continuous integration and deployment (CI/CD) setup for th
 
 ## Overview
 
+```mermaid
+graph TB
+    subgraph "🔄 CI/CD Pipeline Overview"
+        subgraph "🧪 Quality Gates"
+            TEST[🧪 Test Suite<br/>Unit + Integration<br/>51 tests]
+            SECURITY[🔒 Security Scan<br/>Dependencies + Secrets<br/>Container scan]
+            LINT[📝 Code Quality<br/>Format + Clippy<br/>SQLx prepare]
+        end
+        
+        subgraph "🏗️ Build & Package"
+            BUILD[🐳 Multi-platform Build<br/>amd64 + arm64<br/>Distroless images]
+            PUBLISH[📦 Publish Artifacts<br/>Container registry<br/>GitHub releases]
+        end
+        
+        subgraph "🚀 Deployment"
+            STAGING[🧪 Staging Deploy<br/>develop branch<br/>Auto deployment]
+            PROD[🎯 Production Deploy<br/>v* tags<br/>Manual approval]
+        end
+        
+        subgraph "📊 Automation"
+            DEPENDABOT[🤖 Dependabot<br/>Weekly updates<br/>Auto-merge safe]
+            NOTIFICATIONS[📢 Notifications<br/>Status updates<br/>Failure alerts]
+        end
+    end
+    
+    subgraph "⚡ Trigger Events"
+        PR[📝 Pull Request<br/>main/develop]
+        PUSH[📤 Push<br/>main/develop]
+        TAG[🏷️ Version Tag<br/>v1.2.3]
+    end
+    
+    PR --> TEST
+    PR --> SECURITY
+    PR --> LINT
+    
+    PUSH --> TEST
+    PUSH --> SECURITY
+    PUSH --> BUILD
+    BUILD --> STAGING
+    
+    TAG --> TEST
+    TAG --> SECURITY
+    TAG --> BUILD
+    BUILD --> PUBLISH
+    PUBLISH --> PROD
+    
+    DEPENDABOT -.->|Weekly| PR
+    TEST -.->|Results| NOTIFICATIONS
+    PROD -.->|Status| NOTIFICATIONS
+    
+    classDef qualityBox fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
+    classDef buildBox fill:#e3f2fd,stroke:#0277bd,stroke-width:2px
+    classDef deployBox fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    classDef autoBox fill:#f3e5f5,stroke:#4a148c,stroke-width:2px
+    
+    class TEST,SECURITY,LINT qualityBox
+    class BUILD,PUBLISH buildBox
+    class STAGING,PROD deployBox
+    class DEPENDABOT,NOTIFICATIONS autoBox
+```
+
 The CI/CD pipeline includes:
 
 - **🧪 Automated Testing** - Unit, integration, and security tests

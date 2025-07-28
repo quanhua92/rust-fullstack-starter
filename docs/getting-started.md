@@ -12,6 +12,49 @@ This guide will help you set up and run the Rust Full-Stack Starter project loca
 
 ## Quick Setup
 
+```mermaid
+graph TD
+    subgraph "🏁 Getting Started Journey"
+        START[📂 Clone Repository] --> CUSTOM{🎨 Customize Project?}
+        CUSTOM -->|Yes| RENAME[🏷️ ./scripts/rename-project.sh<br/>my_awesome_project]
+        CUSTOM -->|No| PREREQ[📋 ./scripts/check-prereqs.sh]
+        RENAME --> PREREQ
+        
+        PREREQ --> DEV[🚀 ./scripts/dev-server.sh 3000]
+        DEV --> VERIFY[✅ Verify Setup]
+        
+        subgraph "🔍 Verification Steps"
+            HEALTH[💓 Check Health<br/>curl localhost:3000/health]
+            DOCS[📚 View Docs<br/>localhost:3000/api-docs]
+            TESTS[🧪 Run Tests<br/>./scripts/test-with-curl.sh]
+        end
+        
+        VERIFY --> HEALTH
+        VERIFY --> DOCS
+        VERIFY --> TESTS
+        
+        TESTS --> READY[🎉 Ready to Code!]
+    end
+    
+    subgraph "📁 Working Directory Rules"
+        ROOT[📂 Project Root<br/>./scripts/*, cargo check]
+        STARTER[📂 starter/<br/>cargo test, sqlx commands]
+    end
+    
+    DEV -.->|Scripts run from| ROOT
+    TESTS -.->|Tests run from| STARTER
+    
+    classDef startBox fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
+    classDef processBox fill:#e3f2fd,stroke:#0277bd,stroke-width:2px
+    classDef verifyBox fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    classDef readyBox fill:#e8f5e8,stroke:#1b5e20,stroke-width:3px
+    
+    class START,CUSTOM startBox
+    class RENAME,PREREQ,DEV processBox
+    class HEALTH,DOCS,TESTS verifyBox
+    class READY readyBox
+```
+
 > 📁 **Working Directory Guide**  
 > - **Scripts**: Run from project root (`./scripts/dev-server.sh`)  
 > - **Cargo commands**: Run from project root (`cargo check`, `cargo run`)  

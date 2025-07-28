@@ -48,6 +48,50 @@ curl http://localhost:3000/health
 open http://localhost:3000/api-docs
 ```
 
+## System Overview
+
+```mermaid
+graph TB
+    subgraph "🚀 Rust Full-Stack Starter"
+        subgraph "🌐 HTTP Layer"
+            API[REST API Server<br/>📊 OpenAPI Docs<br/>🔒 Authentication]
+        end
+        
+        subgraph "💼 Business Logic"
+            AUTH[🔐 Auth Module<br/>Sessions & Users]
+            USERS[👥 User Management<br/>Profiles & Permissions]
+            TASKS[⚙️ Task System<br/>Background Jobs]
+        end
+        
+        subgraph "💾 Data Layer"
+            DB[(🗄️ PostgreSQL<br/>Users, Sessions, Tasks)]
+            QUEUE[📋 Task Queue<br/>Async Processing]
+        end
+        
+        subgraph "🧪 Quality Assurance"
+            TESTS[✅ 51 Integration Tests<br/>🌐 41 API Tests<br/>🔥 Chaos Testing]
+        end
+    end
+    
+    subgraph "🛠️ Development Tools"
+        DOCKER[🐳 Docker Compose<br/>Dev & Prod]
+        SCRIPTS[📜 Automation Scripts<br/>Testing & Deployment]
+        DOCS[📚 Comprehensive Docs<br/>Learning Guides]
+    end
+    
+    API --> AUTH
+    API --> USERS
+    API --> TASKS
+    AUTH --> DB
+    USERS --> DB
+    TASKS --> QUEUE
+    QUEUE --> DB
+    
+    TESTS --> API
+    DOCKER --> API
+    SCRIPTS --> TESTS
+```
+
 ## Project Structure
 
 ```
@@ -70,16 +114,54 @@ rust-fullstack-starter/
 
 ## Development Workflow
 
+```mermaid
+flowchart LR
+    subgraph "🏗️ Development Cycle"
+        A[📝 Write Code] --> B[🧪 Run Tests]
+        B --> C{✅ Tests Pass?}
+        C -->|No| D[🔧 Fix Issues]
+        C -->|Yes| E[📋 Quality Check]
+        D --> B
+        E --> F{🎯 All Checks Pass?}
+        F -->|No| D
+        F -->|Yes| G[🚀 Deploy/Commit]
+    end
+    
+    subgraph "🧪 Testing Layers"
+        T1[Unit Tests<br/>📝 Function Level]
+        T2[Integration Tests<br/>🔌 51 Tests]
+        T3[API Tests<br/>🌐 41 Endpoints]
+        T4[Chaos Tests<br/>🔥 Resilience]
+    end
+    
+    subgraph "📋 Quality Gates"
+        Q1[🎨 Code Format<br/>cargo fmt]
+        Q2[🔍 Linting<br/>cargo clippy]
+        Q3[🗄️ SQLx Prepare<br/>Query Cache]
+        Q4[🛡️ Security Audit<br/>Dependencies]
+    end
+    
+    B --> T1
+    B --> T2
+    B --> T3
+    B --> T4
+    
+    E --> Q1
+    E --> Q2
+    E --> Q3
+    E --> Q4
+```
+
 ### Running Tests
 
 ```bash
 # Install test runner (recommended)
 cargo install cargo-nextest
 
-# Run integration tests (53 tests, ~12 seconds)
+# Run integration tests (51 tests, ~12 seconds)
 cargo nextest run
 
-# Test API endpoints (38 endpoint tests)
+# Test API endpoints (41 endpoint tests)
 ./scripts/test-with-curl.sh
 
 # Combined workflow

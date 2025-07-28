@@ -19,6 +19,50 @@ As of recent updates, the system now requires **explicit task type registration*
 
 ## Two-Step Registration Process
 
+```mermaid
+sequenceDiagram
+    participant W as 👷 Worker Process
+    participant P as ⚙️ Task Processor
+    participant A as 🌐 API Server
+    participant D as 🗄️ Database
+    
+    Note over W,D: 🚀 Worker Startup Sequence
+    
+    W->>+P: 1. Create TaskProcessor
+    P-->>-W: Processor instance
+    
+    Note over W,P: 📝 Step 1: Register Handlers
+    W->>+P: register_handler("email", EmailHandler)
+    P->>P: Store in handler map
+    P-->>-W: ✅ Handler registered
+    
+    W->>+P: register_handler("webhook", WebhookHandler)
+    P->>P: Store in handler map
+    P-->>-W: ✅ Handler registered
+    
+    W->>P: register_handler("data_processing", ...)
+    W->>P: register_handler("file_cleanup", ...)
+    W->>P: register_handler("report_generation", ...)
+    
+    Note over W,D: 🌐 Step 2: Register with API
+    W->>+A: POST /tasks/types<br/>{"task_type": "email", "description": "..."}
+    A->>+D: INSERT INTO task_types
+    D-->>-A: ✅ Type registered
+    A-->>-W: 200 OK
+    
+    W->>A: POST /tasks/types (webhook)
+    W->>A: POST /tasks/types (data_processing)
+    W->>A: POST /tasks/types (file_cleanup)
+    W->>A: POST /tasks/types (report_generation)
+    
+    Note over W,D: ✅ Ready for Production
+    W->>P: start_worker() - Begin processing
+    
+    rect rgb(240, 248, 255)
+        Note over W,D: 💡 Learning Point:<br/>Two-step registration ensures API and Worker<br/>are always in sync - no orphaned tasks!
+    end
+```
+
 The new system requires **two registrations** for each task type:
 
 ### Step 1: Register Handler with Worker

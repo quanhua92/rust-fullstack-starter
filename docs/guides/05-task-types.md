@@ -6,6 +6,54 @@
 
 A **task type** is simply a string identifier that maps to a specific handler. When you create a task with `task_type: "my_custom_task"`, the worker system looks up the corresponding handler and executes it.
 
+```mermaid
+graph LR
+    subgraph "📝 Task Creation"
+        API[🌐 HTTP API<br/>POST /tasks]
+        TASK[📋 Task Record<br/>task_type: "email"<br/>payload: {...}]
+    end
+    
+    subgraph "⚙️ Worker Processing"
+        WORKER[👷 Task Worker<br/>Polls for tasks]
+        ROUTER[🔀 Handler Router<br/>Map type → handler]
+        
+        subgraph "🔧 Registered Handlers"
+            EMAIL[📧 EmailHandler<br/>type: "email"]
+            WEBHOOK[🔗 WebhookHandler<br/>type: "webhook"]
+            CUSTOM[⚡ CustomHandler<br/>type: "my_custom_task"]
+        end
+    end
+    
+    subgraph "💾 Database"
+        REGISTRY[(🏷️ Task Types Table<br/>Registered handlers)]
+        QUEUE[(📋 Tasks Table<br/>Pending work)]
+    end
+    
+    API -->|1. Validate type| REGISTRY
+    API -->|2. Store task| QUEUE
+    WORKER -->|3. Poll tasks| QUEUE
+    QUEUE -->|4. Return pending| WORKER
+    WORKER -->|5. Route by type| ROUTER
+    
+    ROUTER -->|"email"| EMAIL
+    ROUTER -->|"webhook"| WEBHOOK
+    ROUTER -->|"my_custom_task"| CUSTOM
+    
+    EMAIL -.->|Register on startup| REGISTRY
+    WEBHOOK -.->|Register on startup| REGISTRY
+    CUSTOM -.->|Register on startup| REGISTRY
+    
+    classDef apiBox fill:#e3f2fd,stroke:#0277bd,stroke-width:2px
+    classDef workerBox fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
+    classDef handlerBox fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    classDef dataBox fill:#f3e5f5,stroke:#4a148c,stroke-width:2px
+    
+    class API,TASK apiBox
+    class WORKER,ROUTER workerBox
+    class EMAIL,WEBHOOK,CUSTOM handlerBox
+    class REGISTRY,QUEUE dataBox
+```
+
 ```rust
 // Task creation
 Task {

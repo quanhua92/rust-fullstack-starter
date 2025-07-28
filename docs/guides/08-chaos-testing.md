@@ -26,6 +26,57 @@ Chaos engineering proactively introduces controlled failures to:
 - **Build confidence** in system resilience
 - **Improve monitoring** and alerting systems
 
+```mermaid
+graph TB
+    subgraph "🧪 Chaos Engineering Philosophy"
+        HYPOTHESIS[💭 Form Hypothesis<br/>System should handle X failure]
+        EXPERIMENT[🔬 Design Experiment<br/>Inject controlled failure]
+        OBSERVE[👁️ Observe Behavior<br/>Monitor system response]
+        LEARN[📚 Learn & Improve<br/>Fix discovered weaknesses]
+    end
+    
+    subgraph "🎯 Target Scenarios"
+        DB_FAIL[🗄️ Database Failures<br/>Connection drops, timeouts]
+        WORKER_FAIL[👷 Worker Crashes<br/>Process dies, restarts]
+        SERVER_FAIL[🚀 Server Restart<br/>HTTP service down]
+        LOAD_TEST[📊 Load Testing<br/>High task volume]
+        NETWORK_FAIL[🌐 Network Issues<br/>Timeouts, partitions]
+    end
+    
+    subgraph "📈 Difficulty Levels"
+        L1[📗 Level 1: Basic<br/>2 workers, 10 tasks<br/>≥90% completion]
+        L3[📙 Level 3: Load<br/>3 workers, 25 tasks<br/>≥80% completion]
+        L6[📕 Level 6: Chaos<br/>2 workers, 40 tasks<br/>20-50% completion]
+    end
+    
+    HYPOTHESIS --> EXPERIMENT
+    EXPERIMENT --> DB_FAIL
+    EXPERIMENT --> WORKER_FAIL
+    EXPERIMENT --> SERVER_FAIL
+    EXPERIMENT --> LOAD_TEST
+    EXPERIMENT --> NETWORK_FAIL
+    
+    DB_FAIL --> OBSERVE
+    WORKER_FAIL --> OBSERVE
+    SERVER_FAIL --> OBSERVE
+    LOAD_TEST --> OBSERVE
+    NETWORK_FAIL --> OBSERVE
+    
+    OBSERVE --> LEARN
+    LEARN -.->|🔄 Iterate| HYPOTHESIS
+    
+    L1 --> L3
+    L3 --> L6
+    
+    classDef processBox fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
+    classDef testBox fill:#e3f2fd,stroke:#0277bd,stroke-width:2px
+    classDef levelBox fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    
+    class HYPOTHESIS,EXPERIMENT,OBSERVE,LEARN processBox
+    class DB_FAIL,WORKER_FAIL,SERVER_FAIL,LOAD_TEST,NETWORK_FAIL testBox
+    class L1,L3,L6 levelBox
+```
+
 ## Chaos Engineering Principles
 
 ### 1. Build a Hypothesis Around Steady State

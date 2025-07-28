@@ -23,15 +23,51 @@ Task 3: Try email → Timeout (30 seconds)
 This wastes resources and creates cascading delays.
 
 ### The Solution: Circuit Breaker
-```
-Circuit States:
-┌─────────┐    failures    ┌─────────┐    timeout     ┌─────────┐
-│ CLOSED  │──────────────→ │  OPEN   │───────────────→│HALF_OPEN│
-│(normal) │                │(blocked)│                │ (test)  │
-└─────────┘                └─────────┘                └─────────┘
-     ↑                                                      │
-     │                     successes                        │
-     └──────────────────────────────────────────────────────┘
+
+```mermaid
+stateDiagram-v2
+    [*] --> Closed
+    
+    state "🟢 CLOSED" as Closed {
+        [*] --> Normal
+        Normal : 🔄 All requests allowed
+        Normal : 📊 Track failures
+    }
+    
+    state "🔴 OPEN" as Open {
+        [*] --> Blocked
+        Blocked : ❌ Block all requests
+        Blocked : ⚡ Fail fast (no delays)
+        Blocked : ⏱️ Wait for timeout
+    }
+    
+    state "🟡 HALF_OPEN" as HalfOpen {
+        [*] --> Testing
+        Testing : 🧪 Allow limited requests
+        Testing : 🎯 Test if service recovered
+    }
+    
+    Closed --> Open : ❌ failure_count >= threshold
+    Open --> HalfOpen : ⏰ timeout_duration elapsed
+    HalfOpen --> Closed : ✅ success_count >= threshold
+    HalfOpen --> Open : ❌ any failure detected
+    
+    note right of Closed
+        💡 Learning: Normal operation
+        Track success/failure rates
+    end note
+    
+    note right of Open
+        💡 Learning: Fail fast
+        Prevents cascade failures
+        Gives service time to recover
+    end note
+    
+    note right of HalfOpen
+        💡 Learning: Gradual recovery
+        Test with limited requests
+        Quick fallback if still failing
+    end note
 ```
 
 ### How It Works
@@ -142,14 +178,31 @@ CircuitBreaker::new(
 Networks are unreliable. Services have hiccups. Sometimes the first try fails, but the second succeeds. How do you retry intelligently?
 
 ### Strategy 1: Exponential Backoff
-**Concept**: Wait longer between each retry attempt.
+**Concept**: Wait longer between each retry attempt to avoid overwhelming failing services.
+
+```mermaid
+gantt
+    title 📈 Exponential Backoff Timeline
+    dateFormat X
+    axisFormat %Ss
+    
+    section Attempts
+    1st Try     :0, 1
+    Wait 1s     :1, 2
+    2nd Try     :2, 3
+    Wait 2s     :3, 5
+    3rd Try     :5, 6
+    Wait 4s     :6, 10
+    4th Try     :10, 11
+    Wait 8s     :11, 19
+    5th Try     :19, 20
 ```
-Attempt 1: Immediate
-Attempt 2: Wait 1 second → retry
-Attempt 3: Wait 2 seconds → retry  
-Attempt 4: Wait 4 seconds → retry
-Attempt 5: Wait 8 seconds → retry
-```
+
+**Why Exponential?**
+- **🎯 Reduces Load**: Gives failing service time to recover
+- **🔄 Self-Regulating**: Automatic backpressure
+- **⚡ Fast Initial Recovery**: Quick retry if it's just a hiccup
+- **🛡️ Prevents Thundering Herd**: Avoids all clients retrying simultaneously
 
 **Implementation**:
 ```rust

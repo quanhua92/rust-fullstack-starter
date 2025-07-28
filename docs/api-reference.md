@@ -25,6 +25,52 @@ curl http://localhost:3000/health
 # Returns documentation URLs in the response
 ```
 
+### 🗺️ API Endpoint Map
+
+```mermaid
+graph TB
+    subgraph "🔓 Public Endpoints"
+        HEALTH[💓 /health/*<br/>Health checks]
+        AUTH_PUB[🔐 /auth/register<br/>🔐 /auth/login]
+        TYPES_PUB[🏷️ /tasks/types<br/>GET: List types<br/>POST: Register type]
+        DOCS[📚 /api-docs/*<br/>OpenAPI documentation]
+    end
+    
+    subgraph "🔒 Protected Endpoints (Auth Required)"
+        AUTH_PROT[🚪 /auth/logout<br/>🚪 /auth/me<br/>🔄 /auth/refresh]
+        USERS[👤 /users/{id}<br/>User profiles]
+        TASKS[⚙️ /tasks<br/>📊 /tasks/stats<br/>💀 /tasks/dead-letter]
+        TASK_OPS[🔧 /tasks/{id}<br/>GET, DELETE<br/>🔄 /tasks/{id}/retry<br/>🛑 /tasks/{id}/cancel]
+    end
+    
+    subgraph "👑 Admin Only"
+        ADMIN[🔧 /admin/health<br/>Detailed system status]
+    end
+    
+    subgraph "🔑 Authentication Flow"
+        BEARER[📝 Authorization: Bearer {token}]
+        MIDDLEWARE[🛡️ Auth Middleware<br/>Session validation]
+    end
+    
+    AUTH_PUB --> BEARER
+    BEARER --> MIDDLEWARE
+    MIDDLEWARE --> AUTH_PROT
+    MIDDLEWARE --> USERS
+    MIDDLEWARE --> TASKS
+    MIDDLEWARE --> TASK_OPS
+    MIDDLEWARE --> ADMIN
+    
+    classDef publicBox fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
+    classDef protectedBox fill:#e3f2fd,stroke:#0277bd,stroke-width:2px
+    classDef adminBox fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    classDef authBox fill:#f3e5f5,stroke:#4a148c,stroke-width:2px
+    
+    class HEALTH,AUTH_PUB,TYPES_PUB,DOCS publicBox
+    class AUTH_PROT,USERS,TASKS,TASK_OPS protectedBox
+    class ADMIN adminBox
+    class BEARER,MIDDLEWARE authBox
+```
+
 ### 📖 Using the Interactive Docs
 1. Start your server: `./scripts/server.sh 3000`
 2. Visit: `http://localhost:3000/api-docs`

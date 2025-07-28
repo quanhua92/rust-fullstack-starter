@@ -36,6 +36,57 @@ nano .env.prod
 docker-compose -f docker-compose.prod.yaml --env-file .env.prod up -d
 ```
 
+```mermaid
+flowchart TD
+    START[🚀 Start Deployment] --> CHECK_ENV{📋 Environment Valid?}
+    CHECK_ENV -->|❌| FIX_ENV[🔧 Fix Configuration]
+    FIX_ENV --> CHECK_ENV
+    CHECK_ENV -->|✅| BACKUP[💾 Create DB Backup]
+    
+    BACKUP --> BUILD[🏗️ Build Docker Images]
+    BUILD --> DEPLOY[🐳 Deploy Services]
+    
+    subgraph "🏗️ Build Process"
+        BUILD_APP[📦 Build Rust Binary<br/>Optimized Release]
+        BUILD_IMG[🖼️ Create Docker Image<br/>Distroless Runtime]
+        BUILD_APP --> BUILD_IMG
+    end
+    
+    BUILD --> BUILD_APP
+    
+    subgraph "🐳 Service Deployment"
+        DB_START[🗄️ Start PostgreSQL<br/>With persistence]
+        MIGRATE[📊 Run Migrations<br/>Schema updates]
+        APP_START[🚀 Start Application<br/>Server + Worker]
+        NGINX_START[🌐 Start Nginx<br/>Reverse proxy]
+    end
+    
+    DEPLOY --> DB_START
+    DB_START --> MIGRATE
+    MIGRATE --> APP_START
+    APP_START --> NGINX_START
+    
+    NGINX_START --> HEALTH_CHECK[💓 Health Check]
+    HEALTH_CHECK --> VERIFY{✅ All Services OK?}
+    VERIFY -->|❌| ROLLBACK[🔄 Rollback Deployment]
+    VERIFY -->|✅| SUCCESS[🎉 Deployment Complete]
+    
+    ROLLBACK --> RESTORE[📦 Restore Previous Version]
+    RESTORE --> HEALTH_CHECK
+    
+    classDef processBox fill:#e3f2fd,stroke:#0277bd,stroke-width:2px
+    classDef buildBox fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
+    classDef deployBox fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    classDef successBox fill:#e8f5e8,stroke:#1b5e20,stroke-width:3px
+    classDef errorBox fill:#ffebee,stroke:#c62828,stroke-width:2px
+    
+    class START,CHECK_ENV,BACKUP,HEALTH_CHECK,VERIFY processBox
+    class BUILD_APP,BUILD_IMG buildBox
+    class DB_START,MIGRATE,APP_START,NGINX_START deployBox
+    class SUCCESS successBox
+    class FIX_ENV,ROLLBACK,RESTORE errorBox
+```
+
 The deployment script will:
 - ✅ Validate configuration and security settings
 - ✅ Create database backup (if updating existing deployment)

@@ -18,9 +18,44 @@ This starter uses **session-based authentication** because it's:
 - **Authorization**: "What can you do?" (role-based permissions)
 
 ### 2. Session Token Flow
-```
-User → Login Request → Server Validates → Creates Session → Returns Token
-User → API Request + Token → Server Validates Token → Processes Request
+
+```mermaid
+sequenceDiagram
+    participant U as 👤 User
+    participant A as 🔐 Auth API
+    participant D as 🗄️ Database
+    participant P as 🚀 Protected API
+    
+    Note over U,P: 🏁 Registration & Login
+    U->>+A: POST /auth/register<br/>{username, email, password}
+    A->>A: 🔒 Hash password (Argon2)
+    A->>+D: Store user with hashed password
+    D-->>-A: ✅ User created
+    A-->>-U: 📝 User profile (no password!)
+    
+    U->>+A: POST /auth/login<br/>{username_or_email, password}
+    A->>+D: Find user by username/email
+    D-->>-A: 👤 User record
+    A->>A: 🔍 Verify password vs hash
+    A->>A: 🎫 Generate 64-char session token
+    A->>+D: Store session (token, expires_at)
+    D-->>-A: ✅ Session created
+    A-->>-U: 🎫 {session_token, user_profile}
+    
+    Note over U,P: 🔄 API Usage
+    U->>+P: GET /protected-endpoint<br/>Authorization: Bearer <token>
+    P->>+A: Validate session token
+    A->>+D: Find active session by token
+    D-->>-A: 📋 Session + User data
+    A-->>-P: ✅ Valid user context
+    P->>P: 💼 Process business logic
+    P-->>-U: 📊 Protected data
+    
+    Note over U,P: 🚪 Logout
+    U->>+A: POST /auth/logout<br/>Authorization: Bearer <token>
+    A->>+D: Mark session as inactive
+    D-->>-A: ✅ Session deactivated
+    A-->>-U: 👋 Logged out successfully
 ```
 
 ### 3. Security Principles
@@ -71,21 +106,31 @@ sessions (
 ### 1. Password Security
 
 ```rust
-// When user registers or changes password
-pub async fn hash_password(password: &str) -> Result<String> {
+// Password hashing during user creation (inline approach)
+pub async fn create_user(conn: &mut DbConn, req: CreateUserRequest) -> Result<UserProfile> {
+    // Generate salt and hash password
     let salt = SaltString::generate(&mut OsRng);
     let argon2 = Argon2::default();
     let password_hash = argon2
-        .hash_password(password.as_bytes(), &salt)?
+        .hash_password(req.password.as_bytes(), &salt)?
         .to_string();
-    Ok(password_hash)
+    
+    // Store user with hashed password
+    let user = sqlx::query_as!(/* ... insert user query ... */)
+        .fetch_one(&mut **conn)
+        .await?;
+    
+    Ok(user.to_profile())
 }
 
-// When user logs in
-pub async fn verify_password(password: &str, hash: &str) -> Result<bool> {
-    let parsed_hash = PasswordHash::new(hash)?;
-    let argon2 = Argon2::default();
-    Ok(argon2.verify_password(password.as_bytes(), &parsed_hash).is_ok())
+// Password verification during login
+pub fn verify_password(password: &str, password_hash: &str) -> Result<bool> {
+    let parsed_hash = PasswordHash::new(password_hash)
+        .map_err(|_| Error::Internal("Invalid password hash".to_string()))?;
+
+    Ok(Argon2::default()
+        .verify_password(password.as_bytes(), &parsed_hash)
+        .is_ok())
 }
 ```
 
@@ -98,14 +143,15 @@ pub async fn verify_password(password: &str, hash: &str) -> Result<bool> {
 ### 2. Session Token Generation
 
 ```rust
-pub fn generate_session_token() -> String {
-    use rand::{distributions::Alphanumeric, Rng};
-    
-    // 64 characters from [A-Za-z0-9]
-    rand::thread_rng()
-        .sample_iter(&Alphanumeric)
-        .take(64)
-        .map(char::from)
+fn generate_session_token() -> String {
+    use rand::Rng;
+    const CHARSET: &[u8] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+    let mut rng = rand::rng();
+    (0..64)
+        .map(|_| {
+            let idx = rng.random_range(0..CHARSET.len());
+            CHARSET[idx] as char
+        })
         .collect()
 }
 ```
@@ -117,6 +163,49 @@ pub fn generate_session_token() -> String {
 - **Unpredictable**: Cryptographically secure random generation
 
 ### 3. Middleware Authentication
+
+```mermaid
+graph LR
+    subgraph "🌐 HTTP Request Flow"
+        REQ[📥 Incoming Request<br/>Authorization: Bearer token]
+        
+        subgraph "🔐 Auth Middleware"
+            CHECK{🔍 Has Token?}
+            VALIDATE[🎫 Validate Session]
+            USER[👤 Load User Context]
+            ERROR[❌ 401 Unauthorized]
+        end
+        
+        subgraph "🎯 Protected Handler"
+            HANDLER[💼 Business Logic<br/>User context available]
+            RESPONSE[📤 Response]
+        end
+        
+        REQ --> CHECK
+        CHECK -->|No| ERROR
+        CHECK -->|Yes| VALIDATE
+        VALIDATE -->|Invalid| ERROR
+        VALIDATE -->|Valid| USER
+        USER --> HANDLER
+        HANDLER --> RESPONSE
+    end
+    
+    subgraph "🗄️ Database"
+        SESSION[(Sessions Table<br/>token, user_id, expires_at)]
+        USERS[(Users Table<br/>id, username, role)]
+    end
+    
+    VALIDATE --> SESSION
+    USER --> USERS
+    
+    classDef errorBox fill:#ffebee,stroke:#c62828,stroke-width:2px
+    classDef successBox fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
+    classDef processBox fill:#e3f2fd,stroke:#0277bd,stroke-width:2px
+    
+    class ERROR errorBox
+    class HANDLER,RESPONSE successBox
+    class CHECK,VALIDATE,USER processBox
+```
 
 ```rust
 // Authentication middleware

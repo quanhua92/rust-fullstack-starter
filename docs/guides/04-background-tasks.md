@@ -14,21 +14,66 @@ Some operations shouldn't block HTTP requests:
 
 ## System Overview
 
-```
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   HTTP Request  │    │   Task Queue    │    │ Background      │
-│                 │    │   (Database)    │    │ Worker          │
-│ POST /tasks ────┼───▶│                 │◀───┼─ Processor      │
-│ "Send email"    │    │ ┌─────────────┐ │    │                 │
-│                 │    │ │   Tasks     │ │    │ ┌─────────────┐ │
-│ Response: 201   │◀───┤ │   Table     │ │    │ │  Handlers   │ │
-│ "Task created"  │    │ └─────────────┘ │    │ └─────────────┘ │
-└─────────────────┘    │                 │    │                 │
-                       │ ┌─────────────┐ │    │ ┌─────────────┐ │
-                       │ │Retry Logic  │ │    │ │Circuit      │ │
-                       │ └─────────────┘ │    │ │Breakers     │ │
-                       └─────────────────┘    │ └─────────────┘ │
-                                              └─────────────────┘
+```mermaid
+graph TB
+    subgraph "🌐 HTTP API Layer"
+        CLIENT[👤 Client Application]
+        API[🚀 REST API Server<br/>POST /tasks]
+    end
+    
+    subgraph "💾 Database Queue"
+        QUEUE[(📋 Tasks Table<br/>PostgreSQL)]
+        TYPES[(🏷️ Task Types Table<br/>Registration)]
+    end
+    
+    subgraph "⚙️ Background Worker"
+        WORKER[👷 Task Processor<br/>Polls for work]
+        
+        subgraph "🔧 Task Handlers"
+            EMAIL[📧 Email Handler]
+            WEBHOOK[🔗 Webhook Handler]
+            DATA[📊 Data Processing]
+            FILE[🗂️ File Cleanup]
+            CUSTOM[⚡ Custom Handlers]
+        end
+        
+        subgraph "🛡️ Reliability"
+            RETRY[🔄 Retry Logic<br/>Exponential Backoff]
+            CIRCUIT[⚡ Circuit Breaker<br/>Fault Tolerance]
+            DLQ[💀 Dead Letter Queue<br/>Failed Tasks]
+        end
+    end
+    
+    CLIENT -->|1. Create Task| API
+    API -->|2. Validate Type| TYPES
+    API -->|3. Store Task| QUEUE
+    API -->|4. Return ID| CLIENT
+    
+    WORKER -->|5. Poll for Tasks| QUEUE
+    QUEUE -->|6. Return Ready Tasks| WORKER
+    
+    WORKER -->|7. Route by Type| EMAIL
+    WORKER --> WEBHOOK
+    WORKER --> DATA
+    WORKER --> FILE
+    WORKER --> CUSTOM
+    
+    EMAIL -.->|On Failure| RETRY
+    WEBHOOK -.->|On Failure| RETRY
+    RETRY -.->|Max Attempts| DLQ
+    
+    WORKER -.->|Service Issues| CIRCUIT
+    CIRCUIT -.->|Failed Tasks| DLQ
+    
+    classDef apiBox fill:#e3f2fd,stroke:#0277bd,stroke-width:2px
+    classDef dataBox fill:#f3e5f5,stroke:#4a148c,stroke-width:2px
+    classDef workerBox fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
+    classDef reliabilityBox fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    
+    class CLIENT,API apiBox
+    class QUEUE,TYPES dataBox
+    class WORKER,EMAIL,WEBHOOK,DATA,FILE,CUSTOM workerBox
+    class RETRY,CIRCUIT,DLQ reliabilityBox
 ```
 
 **Key Insight**: The HTTP API and the worker are **separate processes**. The database acts as the communication layer between them.
@@ -47,12 +92,51 @@ This prevents the common issue where APIs accept tasks that no worker can handle
 ## Task Lifecycle
 
 ### States and Transitions
-```
-Create → [pending] → [running] → [completed]
-            ↓            ↓
-         [scheduled]  [failed] → [retrying] → [running]
-                         ↓           ↓
-                    [dead letter] [cancelled]
+
+```mermaid
+stateDiagram-v2
+    [*] --> pending : 📝 Task Created
+    
+    pending --> scheduled : ⏰ Future execution time
+    scheduled --> pending : ⏰ Time reached
+    
+    pending --> running : 👷 Worker picks up
+    running --> completed : ✅ Success
+    running --> failed : ❌ Error occurred
+    
+    failed --> retrying : 🔄 Retry attempt < max
+    failed --> dead_letter : 💀 Max retries exceeded
+    
+    retrying --> running : 🔄 Retry scheduled
+    retrying --> dead_letter : 💀 All retries failed
+    
+    pending --> cancelled : 🛑 User cancellation
+    running --> cancelled : 🛑 User cancellation
+    scheduled --> cancelled : 🛑 User cancellation
+    
+    completed --> [*] : 🗑️ Cleanup
+    dead_letter --> [*] : 🗑️ Manual cleanup
+    cancelled --> [*] : 🗑️ Cleanup
+    
+    note right of pending
+        💡 Ready for processing
+        Worker will pick up next
+    end note
+    
+    note right of running
+        💡 Currently executing
+        Worker has claimed task
+    end note
+    
+    note right of failed
+        💡 Temporary failure
+        Will retry with backoff
+    end note
+    
+    note right of dead_letter
+        💡 Permanent failure
+        Needs manual investigation
+    end note
 ```
 
 ### State Definitions
