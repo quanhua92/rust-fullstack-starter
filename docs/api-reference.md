@@ -10,7 +10,7 @@ The starter now includes **comprehensive OpenAPI documentation** with interactiv
 - **API Documentation Hub**: `http://localhost:3000/api-docs`
 - **OpenAPI JSON Schema**: `http://localhost:3000/api-docs/openapi.json`
 - **Local OpenAPI File**: [`docs/openapi.json`](openapi.json) (exported specification)
-- **External Swagger UI**: Use the link in the docs page for full interactive testing
+- **📋 [Interactive Swagger UI](https://petstore.swagger.io/?url=https://raw.githubusercontent.com/quanhua92/rust-fullstack-starter/refs/heads/main/docs/openapi.json)**
 
 ### ✨ Features
 - **Complete API Schema**: All endpoints, request/response models, and validation rules
@@ -39,9 +39,9 @@ graph TB
     
     subgraph "🔒 Protected Endpoints (Auth Required)"
         AUTH_PROT[🚪 /auth/logout<br/>🚪 /auth/me<br/>🔄 /auth/refresh]
-        USERS[👤 /users/{id}<br/>User profiles]
+        USERS["👤 /users/{id}<br/>User profiles"]
         TASKS[⚙️ /tasks<br/>📊 /tasks/stats<br/>💀 /tasks/dead-letter]
-        TASK_OPS[🔧 /tasks/{id}<br/>GET, DELETE<br/>🔄 /tasks/{id}/retry<br/>🛑 /tasks/{id}/cancel]
+        TASK_OPS["🔧 /tasks/{id}<br/>GET, DELETE<br/>🔄 /tasks/{id}/retry<br/>🛑 /tasks/{id}/cancel"]
     end
     
     subgraph "👑 Admin Only"
@@ -49,7 +49,7 @@ graph TB
     end
     
     subgraph "🔑 Authentication Flow"
-        BEARER[📝 Authorization: Bearer {token}]
+        BEARER["📝 Authorization: Bearer {token}"]
         MIDDLEWARE[🛡️ Auth Middleware<br/>Session validation]
     end
     

@@ -235,7 +235,7 @@ curl http://localhost:3000/health | jq '.data.documentation'
 ```
 
 **Full OpenAPI Documentation:**
-- 📋 **Interactive Swagger UI**: https://petstore.swagger.io/?url=https://raw.githubusercontent.com/quanhua92/rust-fullstack-starter/refs/heads/main/docs/openapi.json
+- 📋 **[Interactive Swagger UI](https://petstore.swagger.io/?url=https://raw.githubusercontent.com/quanhua92/rust-fullstack-starter/refs/heads/main/docs/openapi.json)**
 - 📄 **OpenAPI Schema**: [docs/openapi.json](../docs/openapi.json)
 
 **Features:**

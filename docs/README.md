@@ -122,6 +122,7 @@ The starter includes interactive API documentation:
 
 - **Documentation**: http://localhost:3000/api-docs
 - **OpenAPI Schema**: http://localhost:3000/api-docs/openapi.json
+- **[Interactive Swagger UI](https://petstore.swagger.io/?url=https://raw.githubusercontent.com/quanhua92/rust-fullstack-starter/refs/heads/main/docs/openapi.json)**
 - **Health Check**: http://localhost:3000/health
 
 Key endpoints:
