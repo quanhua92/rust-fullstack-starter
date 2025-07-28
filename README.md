@@ -1,6 +1,6 @@
 # Rust Full-Stack Starter
 
-A modern Rust web application starter template with authentication, background tasks, and comprehensive API documentation. Built with Axum, SQLx, and PostgreSQL for learning and rapid prototyping.
+A modern Rust web application starter template with authentication, background tasks, chaos testing, and comprehensive API documentation. Built with Axum, SQLx, and PostgreSQL for learning and rapid prototyping.
 
 ## Features
 

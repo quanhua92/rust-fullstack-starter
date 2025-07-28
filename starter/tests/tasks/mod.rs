@@ -740,15 +740,19 @@ async fn test_metadata_persistence_through_all_state_transitions() {
 
     let task_id = task_response["data"]["id"].as_str().unwrap();
 
-    // Verify metadata in PENDING state immediately after creation
+    // Verify metadata in initial state (could be Pending or Running due to worker timing)
     let get_response = app
         .get_auth(&format!("/tasks/{task_id}"), &token.token)
         .await;
     assert_eq!(get_response.status(), 200);
-    let pending_task: serde_json::Value = get_response.json().await.unwrap();
+    let initial_task: serde_json::Value = get_response.json().await.unwrap();
 
-    assert_eq!(pending_task["data"]["status"], "Pending");
-    assert_metadata_preserved(&pending_task["data"]["metadata"], &test_metadata);
+    let initial_status = initial_task["data"]["status"].as_str().unwrap();
+    assert!(
+        initial_status == "Pending" || initial_status == "Running",
+        "Expected Pending or Running, got: {initial_status}"
+    );
+    assert_metadata_preserved(&initial_task["data"]["metadata"], &test_metadata);
 
     // 2. Wait for task to be processed by the actual worker
     // This is the critical difference - we let the REAL task processor handle it
