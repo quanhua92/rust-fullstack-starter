@@ -111,8 +111,8 @@ The admin user will be created automatically when the server first starts.
 # Complete development setup (recommended)
 ./scripts/dev-server.sh 3000
 
-# Or just infrastructure
-./scripts/dev.sh
+# Or just infrastructure  
+docker compose up -d postgres && docker compose up --wait
 ```
 
 ### Stop Everything
@@ -132,7 +132,7 @@ For detailed troubleshooting, see **[Troubleshooting Guide](./troubleshooting.md
 
 **Database Connection Failed**
 ```bash
-./scripts/dev.sh  # Restart database
+docker compose up -d postgres && docker compose up --wait  # Restart database
 ```
 
 **Password Authentication Failed**
@@ -200,7 +200,7 @@ Now that you have the system running, follow these guides to understand and exte
 ./scripts/stop-server.sh [port]
 
 # Infrastructure only
-./scripts/dev.sh
+docker compose up -d postgres && docker compose up --wait
 
 # Comprehensive API testing
 ./scripts/test-with-curl.sh [host] [port]

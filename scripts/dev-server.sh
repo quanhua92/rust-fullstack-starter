@@ -20,7 +20,11 @@ fi
 
 # Start infrastructure
 echo "📦 Starting PostgreSQL..."
-./scripts/dev.sh
+docker compose up -d postgres
+
+# Wait for services to be healthy
+echo "⏳ Waiting for services to be ready..."
+docker compose up --wait
 
 # Copy .env if it doesn't exist
 if [ ! -f ".env" ]; then
@@ -49,20 +53,21 @@ sqlx migrate run || {
 }
 cd ..
 
-# Start server
-echo "🖥️  Starting server..."
-./scripts/server.sh $PORT
-
-# Test server
-echo "🧪 Testing server..."
-./scripts/test-server.sh $PORT
-
-echo ""
-echo "✅ Development environment ready!"
+# Start server in foreground
+echo "🖥️  Starting server in foreground..."
 echo "   Server: http://localhost:$PORT"
 echo "   Health: http://localhost:$PORT/health"
-echo "   API Docs: http://localhost:$PORT/health/detailed"
-echo "   Logs: tail -f /tmp/starter-server-$PORT.log"
+echo "   API Docs: http://localhost:$PORT/api-docs"
 echo ""
-echo "🛑 To stop: ./scripts/stop-server.sh $PORT"
+echo "🛑 To stop: Ctrl+C"
 echo "📚 Next: Check docs/guides/ for learning materials"
+echo ""
+
+# Kill any existing server on the port first
+echo "🛑 Stopping any existing server on port $PORT..."
+lsof -ti:$PORT | xargs kill -9 2>/dev/null || true
+sleep 1
+
+# Start server in foreground
+cd starter
+exec cargo run -- server --port $PORT

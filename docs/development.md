@@ -58,7 +58,7 @@ graph TB
 ./scripts/dev-server.sh 3000
 
 # Or step by step
-./scripts/dev.sh                    # Start infrastructure
+docker compose up -d postgres && docker compose up --wait  # Start infrastructure
 ./scripts/server.sh 3000            # Start server in background
 ./scripts/test-server.sh 3000       # Verify it's working
 ```
@@ -88,7 +88,7 @@ rust-fullstack-starter/
 ├── .env.example               # Environment template
 ├── .env.prod.test             # Production test environment
 ├── scripts/
-│   ├── dev.sh                 # Infrastructure startup
+│   ├── dev-server.sh          # Complete development workflow
 │   ├── server.sh              # Start server with auto-restart
 │   ├── test-server.sh         # Test health endpoints
 │   ├── stop-server.sh         # Stop server processes

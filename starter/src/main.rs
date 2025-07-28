@@ -22,6 +22,13 @@ enum Commands {
     /// Health check for Docker/Kubernetes
     #[command(name = "health-check")]
     HealthCheck,
+    /// Export OpenAPI specification to docs folder
+    #[command(name = "export-openapi")]
+    ExportOpenApi {
+        /// Output file path (default: docs/openapi.json)
+        #[arg(long, default_value = "docs/openapi.json")]
+        output: String,
+    },
 }
 
 #[tokio::main]
@@ -112,6 +119,22 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     std::process::exit(1);
                 }
             }
+        }
+        Commands::ExportOpenApi { output } => {
+            // Export OpenAPI specification to file
+            use starter::openapi;
+            use std::fs;
+
+            let json = openapi::openapi_json();
+
+            // Create parent directory if it doesn't exist
+            if let Some(parent) = std::path::Path::new(&output).parent() {
+                fs::create_dir_all(parent)?;
+            }
+
+            fs::write(&output, json)?;
+            println!("✅ OpenAPI specification exported to: {output}");
+            Ok(())
         }
     }
 }

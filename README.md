@@ -20,7 +20,7 @@ cd rust-fullstack-starter
 
 ```bash
 # Start database and HTTP server
-./scripts/dev-server.sh 3000
+./scripts/dev-server.sh
 ```
 
 ### 3. Start the Worker (New Terminal)

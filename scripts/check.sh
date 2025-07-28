@@ -27,7 +27,7 @@ cd "$PROJECT_ROOT"
 echo -e "${BLUE}📁 Working directory: $PROJECT_ROOT${NC}"
 
 # 1. Cargo check
-echo -e "\n${BLUE}🔍 Step 1/7: Running cargo check...${NC}"
+echo -e "\n${BLUE}🔍 Step 1/8: Running cargo check...${NC}"
 if ! cargo check --manifest-path starter/Cargo.toml --all-targets --all-features; then
     echo -e "${RED}❌ Cargo check failed!${NC}"
     exit 1
@@ -35,7 +35,7 @@ fi
 echo -e "${GREEN}✅ Cargo check passed${NC}"
 
 # 2. Format check
-echo -e "\n${BLUE}🎨 Step 2/7: Checking code formatting...${NC}"
+echo -e "\n${BLUE}🎨 Step 2/8: Checking code formatting...${NC}"
 if ! cargo fmt --manifest-path starter/Cargo.toml --all -- --check; then
     echo -e "${RED}❌ Code formatting issues found!${NC}"
     echo -e "${YELLOW}💡 Run 'cargo fmt --manifest-path starter/Cargo.toml --all' to fix${NC}"
@@ -44,7 +44,7 @@ fi
 echo -e "${GREEN}✅ Code formatting is correct${NC}"
 
 # 3. Clippy linting (offline mode)
-echo -e "\n${BLUE}📎 Step 3/7: Running Clippy lints...${NC}"
+echo -e "\n${BLUE}📎 Step 3/8: Running Clippy lints...${NC}"
 if ! SQLX_OFFLINE=true cargo clippy --manifest-path starter/Cargo.toml --all-targets --all-features -- -D warnings; then
     echo -e "${RED}❌ Clippy found issues!${NC}"
     echo -e "${YELLOW}💡 Fix the linting issues above${NC}"
@@ -53,7 +53,7 @@ fi
 echo -e "${GREEN}✅ Clippy checks passed${NC}"
 
 # 4. Check if database is available for SQLx prepare
-echo -e "\n${BLUE}🗄️  Step 4/7: Checking database availability for SQLx prepare...${NC}"
+echo -e "\n${BLUE}🗄️  Step 4/8: Checking database availability for SQLx prepare...${NC}"
 cd starter
 
 # Check if we can connect to database
@@ -75,7 +75,7 @@ fi
 cd "$PROJECT_ROOT"
 
 # 5. Unit tests
-echo -e "\n${BLUE}🧪 Step 5/7: Running unit tests...${NC}"
+echo -e "\n${BLUE}🧪 Step 5/8: Running unit tests...${NC}"
 if ! cargo test --manifest-path starter/Cargo.toml --lib; then
     echo -e "${RED}❌ Unit tests failed!${NC}"
     exit 1
@@ -83,7 +83,7 @@ fi
 echo -e "${GREEN}✅ Unit tests passed${NC}"
 
 # 6. Integration tests with nextest
-echo -e "\n${BLUE}🔬 Step 6/7: Running integration tests with nextest...${NC}"
+echo -e "\n${BLUE}🔬 Step 6/8: Running integration tests with nextest...${NC}"
 cd starter
 
 # Check if cargo-nextest is installed
@@ -100,8 +100,16 @@ echo -e "${GREEN}✅ Integration tests passed${NC}"
 
 cd "$PROJECT_ROOT"
 
-# 7. Additional quality checks
-echo -e "\n${BLUE}🔍 Step 7/7: Additional quality checks...${NC}"
+# 7. Export OpenAPI specification
+echo -e "\n${BLUE}📋 Step 7/8: Exporting OpenAPI specification...${NC}"
+if ! cargo run --quiet --manifest-path starter/Cargo.toml -- export-openapi; then
+    echo -e "${RED}❌ OpenAPI export failed!${NC}"
+    exit 1
+fi
+echo -e "${GREEN}✅ OpenAPI specification exported to docs/openapi.json${NC}"
+
+# 8. Additional quality checks
+echo -e "\n${BLUE}🔍 Step 8/8: Additional quality checks...${NC}"
 
 # Check for TODO/FIXME in source files (excluding this script)
 if find starter/src -name "*.rs" -exec grep -l "TODO\|FIXME" {} \; 2>/dev/null | head -5; then
@@ -143,4 +151,5 @@ echo -e "   ✅ Linting (cargo clippy)"
 echo -e "   ✅ SQLx query cache validation"
 echo -e "   ✅ Unit tests"
 echo -e "   ✅ Integration tests (cargo nextest)"
+echo -e "   ✅ OpenAPI specification export"
 echo -e "   ✅ Code quality analysis"

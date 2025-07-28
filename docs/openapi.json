@@ -1,0 +1,2253 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Rust Full-Stack Starter API",
+    "description": "A production-ready Rust web application starter with authentication, background tasks, and comprehensive API documentation.",
+    "contact": {
+      "name": "API Support",
+      "email": "support@example.com"
+    },
+    "license": {
+      "name": "MIT",
+      "url": "https://opensource.org/licenses/MIT"
+    },
+    "version": "0.1.0"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:3000",
+      "description": "Development server"
+    },
+    {
+      "url": "https://api.example.com",
+      "description": "Production server"
+    }
+  ],
+  "paths": {
+    "/auth/login": {
+      "post": {
+        "tags": [
+          "Authentication"
+        ],
+        "summary": "User login",
+        "description": "Authenticate user with username/email and password",
+        "operationId": "login",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Login successful",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse_LoginResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid credentials",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/logout": {
+      "post": {
+        "tags": [
+          "Authentication"
+        ],
+        "summary": "User logout",
+        "description": "Logout current user and end all sessions",
+        "operationId": "logout",
+        "responses": {
+          "200": {
+            "description": "Logout successful",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse_String"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/auth/logout-all": {
+      "post": {
+        "tags": [
+          "Authentication"
+        ],
+        "summary": "Logout from all devices",
+        "description": "Logout current user from all devices and end all sessions",
+        "operationId": "logout_all",
+        "responses": {
+          "200": {
+            "description": "Logout successful",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse_String"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/auth/me": {
+      "get": {
+        "tags": [
+          "Authentication"
+        ],
+        "summary": "Get current user",
+        "description": "Get current authenticated user information",
+        "operationId": "me",
+        "responses": {
+          "200": {
+            "description": "Current user information",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse_AuthUser"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/auth/refresh": {
+      "post": {
+        "tags": [
+          "Authentication"
+        ],
+        "summary": "Refresh token",
+        "description": "Validate current session token (refresh endpoint)",
+        "operationId": "refresh",
+        "responses": {
+          "200": {
+            "description": "Token is valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse_String"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/auth/register": {
+      "post": {
+        "tags": [
+          "Authentication"
+        ],
+        "summary": "User registration",
+        "description": "Register a new user account",
+        "operationId": "register",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegisterRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Registration successful",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse_UserProfile"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "User already exists",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/health": {
+      "get": {
+        "tags": [
+          "Health"
+        ],
+        "summary": "Basic health check",
+        "description": "Returns basic application health status with version and uptime",
+        "operationId": "health",
+        "responses": {
+          "200": {
+            "description": "Application is healthy",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse_HealthResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Application is unhealthy",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/health/detailed": {
+      "get": {
+        "tags": [
+          "Health"
+        ],
+        "summary": "Detailed health check",
+        "description": "Returns comprehensive health status including database and dependencies",
+        "operationId": "detailed_health",
+        "responses": {
+          "200": {
+            "description": "All services healthy",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse_DetailedHealthResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "One or more services unhealthy",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse_DetailedHealthResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/health/live": {
+      "get": {
+        "tags": [
+          "Health"
+        ],
+        "summary": "Liveness probe",
+        "description": "Kubernetes liveness probe endpoint. Returns 200 if application is running.",
+        "operationId": "health_live",
+        "responses": {
+          "200": {
+            "description": "Application is alive",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse_Value"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/health/ready": {
+      "get": {
+        "tags": [
+          "Health"
+        ],
+        "summary": "Readiness probe",
+        "description": "Kubernetes readiness probe endpoint. Returns 200 only if all dependencies are ready.",
+        "operationId": "health_ready",
+        "responses": {
+          "200": {
+            "description": "Application is ready",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse_Value"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Application is not ready",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse_Value"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/health/startup": {
+      "get": {
+        "tags": [
+          "Health"
+        ],
+        "summary": "Startup probe",
+        "description": "Kubernetes startup probe endpoint. Returns 200 when initialization is complete.",
+        "operationId": "health_startup",
+        "responses": {
+          "200": {
+            "description": "Application has started",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse_Value"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Application is still starting",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse_Value"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/tasks": {
+      "get": {
+        "tags": [
+          "Tasks"
+        ],
+        "summary": "List tasks",
+        "description": "List tasks with optional filtering",
+        "operationId": "list_tasks",
+        "parameters": [
+          {
+            "name": "task_type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "format": "int64"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of tasks",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse_Vec_TaskResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Tasks"
+        ],
+        "summary": "Create task",
+        "description": "Create a new background task",
+        "operationId": "create_task",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateTaskApiRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Task created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse_TaskResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/tasks/dead-letter": {
+      "get": {
+        "tags": [
+          "Tasks"
+        ],
+        "summary": "Get dead letter queue",
+        "description": "Get all failed tasks in the dead letter queue",
+        "operationId": "get_dead_letter_queue",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Maximum number of tasks to return",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "description": "Number of tasks to skip",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Dead letter queue tasks",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse_Vec_TaskResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/tasks/stats": {
+      "get": {
+        "tags": [
+          "Tasks"
+        ],
+        "summary": "Get task statistics",
+        "description": "Get statistics about tasks (total, pending, completed, failed, etc.)",
+        "operationId": "get_stats",
+        "responses": {
+          "200": {
+            "description": "Task statistics",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse_TaskStats"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/tasks/types": {
+      "get": {
+        "tags": [
+          "Tasks"
+        ],
+        "summary": "List task types",
+        "description": "List all registered task types",
+        "operationId": "list_task_types",
+        "responses": {
+          "200": {
+            "description": "List of task types",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse_Vec_TaskTypeResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Tasks"
+        ],
+        "summary": "Register task type",
+        "description": "Register a new task type that workers can handle",
+        "operationId": "register_task_type",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegisterTaskTypeRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Task type registered",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse_TaskTypeResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/tasks/{id}": {
+      "get": {
+        "tags": [
+          "Tasks"
+        ],
+        "summary": "Get task",
+        "description": "Get a task by its ID",
+        "operationId": "get_task",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Task ID",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Task found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse_TaskResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Task not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Tasks"
+        ],
+        "summary": "Delete task",
+        "description": "Permanently delete a completed, failed, or cancelled task",
+        "operationId": "delete_task",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Task ID",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Task deleted successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse_String"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Task is not in a deletable status",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Task not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/tasks/{id}/cancel": {
+      "post": {
+        "tags": [
+          "Tasks"
+        ],
+        "summary": "Cancel task",
+        "description": "Cancel a running or pending task",
+        "operationId": "cancel_task",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Task ID",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Task cancelled",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse_String"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Task not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/tasks/{id}/retry": {
+      "post": {
+        "tags": [
+          "Tasks"
+        ],
+        "summary": "Retry failed task",
+        "description": "Retry a failed task by resetting it to pending status",
+        "operationId": "retry_task",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Task ID",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Task retried successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse_String"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Task is not in failed status",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Task not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/users/{id}": {
+      "get": {
+        "tags": [
+          "Users"
+        ],
+        "summary": "Get user by ID",
+        "description": "Get user information by user ID",
+        "operationId": "get_user_by_id",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "User ID",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "User found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse_UserProfile"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "User not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ApiResponse_AuthUser": {
+        "type": "object",
+        "required": [
+          "success"
+        ],
+        "properties": {
+          "data": {
+            "type": "object",
+            "required": [
+              "id",
+              "username",
+              "email",
+              "role"
+            ],
+            "properties": {
+              "email": {
+                "type": "string"
+              },
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "role": {
+                "type": "string"
+              },
+              "username": {
+                "type": "string"
+              }
+            }
+          },
+          "message": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "success": {
+            "type": "boolean"
+          }
+        }
+      },
+      "ApiResponse_DetailedHealthResponse": {
+        "type": "object",
+        "required": [
+          "success"
+        ],
+        "properties": {
+          "data": {
+            "type": "object",
+            "required": [
+              "status",
+              "timestamp",
+              "checks"
+            ],
+            "properties": {
+              "checks": {
+                "type": "object",
+                "additionalProperties": {
+                  "$ref": "#/components/schemas/ComponentHealth"
+                },
+                "propertyNames": {
+                  "type": "string"
+                }
+              },
+              "status": {
+                "type": "string"
+              },
+              "timestamp": {
+                "type": "string",
+                "format": "date-time"
+              }
+            }
+          },
+          "message": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "success": {
+            "type": "boolean"
+          }
+        }
+      },
+      "ApiResponse_HealthResponse": {
+        "type": "object",
+        "required": [
+          "success"
+        ],
+        "properties": {
+          "data": {
+            "type": "object",
+            "required": [
+              "status",
+              "version",
+              "uptime"
+            ],
+            "properties": {
+              "status": {
+                "type": "string"
+              },
+              "uptime": {
+                "type": "number",
+                "format": "double"
+              },
+              "version": {
+                "type": "string"
+              }
+            }
+          },
+          "message": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "success": {
+            "type": "boolean"
+          }
+        }
+      },
+      "ApiResponse_LoginResponse": {
+        "type": "object",
+        "required": [
+          "success"
+        ],
+        "properties": {
+          "data": {
+            "type": "object",
+            "required": [
+              "session_token",
+              "expires_at",
+              "user"
+            ],
+            "properties": {
+              "expires_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "session_token": {
+                "type": "string"
+              },
+              "user": {
+                "$ref": "#/components/schemas/UserProfile"
+              }
+            }
+          },
+          "message": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "success": {
+            "type": "boolean"
+          }
+        }
+      },
+      "ApiResponse_String": {
+        "type": "object",
+        "required": [
+          "success"
+        ],
+        "properties": {
+          "data": {
+            "type": "string"
+          },
+          "message": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "success": {
+            "type": "boolean"
+          }
+        }
+      },
+      "ApiResponse_TaskResponse": {
+        "type": "object",
+        "required": [
+          "success"
+        ],
+        "properties": {
+          "data": {
+            "type": "object",
+            "required": [
+              "id",
+              "task_type",
+              "status",
+              "priority",
+              "max_attempts",
+              "current_attempt",
+              "created_at",
+              "updated_at"
+            ],
+            "properties": {
+              "completed_at": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "date-time"
+              },
+              "created_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "created_by": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "uuid"
+              },
+              "current_attempt": {
+                "type": "integer",
+                "format": "int32"
+              },
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "last_error": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "max_attempts": {
+                "type": "integer",
+                "format": "int32"
+              },
+              "metadata": {
+                "type": "object",
+                "additionalProperties": {},
+                "propertyNames": {
+                  "type": "string"
+                }
+              },
+              "priority": {
+                "$ref": "#/components/schemas/TaskPriority"
+              },
+              "scheduled_at": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "date-time"
+              },
+              "started_at": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "date-time"
+              },
+              "status": {
+                "$ref": "#/components/schemas/TaskStatus"
+              },
+              "task_type": {
+                "type": "string"
+              },
+              "updated_at": {
+                "type": "string",
+                "format": "date-time"
+              }
+            }
+          },
+          "message": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "success": {
+            "type": "boolean"
+          }
+        }
+      },
+      "ApiResponse_TaskStats": {
+        "type": "object",
+        "required": [
+          "success"
+        ],
+        "properties": {
+          "data": {
+            "type": "object",
+            "required": [
+              "total",
+              "pending",
+              "running",
+              "completed",
+              "failed",
+              "cancelled",
+              "retrying"
+            ],
+            "properties": {
+              "cancelled": {
+                "type": "integer",
+                "format": "int64"
+              },
+              "completed": {
+                "type": "integer",
+                "format": "int64"
+              },
+              "failed": {
+                "type": "integer",
+                "format": "int64"
+              },
+              "pending": {
+                "type": "integer",
+                "format": "int64"
+              },
+              "retrying": {
+                "type": "integer",
+                "format": "int64"
+              },
+              "running": {
+                "type": "integer",
+                "format": "int64"
+              },
+              "total": {
+                "type": "integer",
+                "format": "int64"
+              }
+            }
+          },
+          "message": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "success": {
+            "type": "boolean"
+          }
+        }
+      },
+      "ApiResponse_TaskTypeResponse": {
+        "type": "object",
+        "required": [
+          "success"
+        ],
+        "properties": {
+          "data": {
+            "type": "object",
+            "required": [
+              "task_type",
+              "is_active",
+              "created_at",
+              "updated_at"
+            ],
+            "properties": {
+              "created_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "description": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "is_active": {
+                "type": "boolean"
+              },
+              "task_type": {
+                "type": "string"
+              },
+              "updated_at": {
+                "type": "string",
+                "format": "date-time"
+              }
+            }
+          },
+          "message": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "success": {
+            "type": "boolean"
+          }
+        }
+      },
+      "ApiResponse_UserProfile": {
+        "type": "object",
+        "required": [
+          "success"
+        ],
+        "properties": {
+          "data": {
+            "type": "object",
+            "required": [
+              "id",
+              "username",
+              "email",
+              "role",
+              "is_active",
+              "email_verified",
+              "created_at"
+            ],
+            "properties": {
+              "created_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "email": {
+                "type": "string"
+              },
+              "email_verified": {
+                "type": "boolean"
+              },
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "is_active": {
+                "type": "boolean"
+              },
+              "last_login_at": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "date-time"
+              },
+              "role": {
+                "type": "string"
+              },
+              "username": {
+                "type": "string"
+              }
+            }
+          },
+          "message": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "success": {
+            "type": "boolean"
+          }
+        }
+      },
+      "ApiResponse_Value": {
+        "type": "object",
+        "required": [
+          "success"
+        ],
+        "properties": {
+          "data": {},
+          "message": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "success": {
+            "type": "boolean"
+          }
+        }
+      },
+      "ApiResponse_Vec_TaskResponse": {
+        "type": "object",
+        "required": [
+          "success"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "id",
+                "task_type",
+                "status",
+                "priority",
+                "max_attempts",
+                "current_attempt",
+                "created_at",
+                "updated_at"
+              ],
+              "properties": {
+                "completed_at": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "date-time"
+                },
+                "created_at": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "created_by": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "uuid"
+                },
+                "current_attempt": {
+                  "type": "integer",
+                  "format": "int32"
+                },
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "last_error": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "max_attempts": {
+                  "type": "integer",
+                  "format": "int32"
+                },
+                "metadata": {
+                  "type": "object",
+                  "additionalProperties": {},
+                  "propertyNames": {
+                    "type": "string"
+                  }
+                },
+                "priority": {
+                  "$ref": "#/components/schemas/TaskPriority"
+                },
+                "scheduled_at": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "date-time"
+                },
+                "started_at": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "date-time"
+                },
+                "status": {
+                  "$ref": "#/components/schemas/TaskStatus"
+                },
+                "task_type": {
+                  "type": "string"
+                },
+                "updated_at": {
+                  "type": "string",
+                  "format": "date-time"
+                }
+              }
+            }
+          },
+          "message": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "success": {
+            "type": "boolean"
+          }
+        }
+      },
+      "ApiResponse_Vec_TaskTypeResponse": {
+        "type": "object",
+        "required": [
+          "success"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "task_type",
+                "is_active",
+                "created_at",
+                "updated_at"
+              ],
+              "properties": {
+                "created_at": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "description": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "is_active": {
+                  "type": "boolean"
+                },
+                "task_type": {
+                  "type": "string"
+                },
+                "updated_at": {
+                  "type": "string",
+                  "format": "date-time"
+                }
+              }
+            }
+          },
+          "message": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "success": {
+            "type": "boolean"
+          }
+        }
+      },
+      "AuthUser": {
+        "type": "object",
+        "required": [
+          "id",
+          "username",
+          "email",
+          "role"
+        ],
+        "properties": {
+          "email": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "role": {
+            "type": "string"
+          },
+          "username": {
+            "type": "string"
+          }
+        }
+      },
+      "ComponentHealth": {
+        "type": "object",
+        "required": [
+          "status"
+        ],
+        "properties": {
+          "details": {},
+          "message": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "status": {
+            "type": "string"
+          }
+        }
+      },
+      "CreateTaskApiRequest": {
+        "type": "object",
+        "required": [
+          "task_type",
+          "payload"
+        ],
+        "properties": {
+          "metadata": {
+            "type": "object",
+            "additionalProperties": {},
+            "propertyNames": {
+              "type": "string"
+            }
+          },
+          "payload": {},
+          "priority": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "scheduled_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "task_type": {
+            "type": "string"
+          }
+        }
+      },
+      "CreateTaskRequest": {
+        "type": "object",
+        "required": [
+          "task_type",
+          "payload"
+        ],
+        "properties": {
+          "created_by": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          },
+          "metadata": {
+            "type": "object",
+            "additionalProperties": {},
+            "propertyNames": {
+              "type": "string"
+            }
+          },
+          "payload": {},
+          "priority": {
+            "$ref": "#/components/schemas/TaskPriority"
+          },
+          "retry_strategy": {
+            "$ref": "#/components/schemas/RetryStrategy"
+          },
+          "scheduled_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "task_type": {
+            "type": "string"
+          }
+        }
+      },
+      "DetailedHealthResponse": {
+        "type": "object",
+        "required": [
+          "status",
+          "timestamp",
+          "checks"
+        ],
+        "properties": {
+          "checks": {
+            "type": "object",
+            "additionalProperties": {
+              "$ref": "#/components/schemas/ComponentHealth"
+            },
+            "propertyNames": {
+              "type": "string"
+            }
+          },
+          "status": {
+            "type": "string"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "ErrorDetail": {
+        "type": "object",
+        "required": [
+          "code",
+          "message"
+        ],
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "required": [
+          "error"
+        ],
+        "properties": {
+          "error": {
+            "$ref": "#/components/schemas/ErrorDetail"
+          }
+        }
+      },
+      "HealthResponse": {
+        "type": "object",
+        "required": [
+          "status",
+          "version",
+          "uptime"
+        ],
+        "properties": {
+          "status": {
+            "type": "string"
+          },
+          "uptime": {
+            "type": "number",
+            "format": "double"
+          },
+          "version": {
+            "type": "string"
+          }
+        }
+      },
+      "LoginRequest": {
+        "type": "object",
+        "required": [
+          "username_or_email",
+          "password"
+        ],
+        "properties": {
+          "password": {
+            "type": "string",
+            "example": "securepassword123"
+          },
+          "user_agent": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "username_or_email": {
+            "type": "string",
+            "example": "johndoe"
+          }
+        }
+      },
+      "LoginResponse": {
+        "type": "object",
+        "required": [
+          "session_token",
+          "expires_at",
+          "user"
+        ],
+        "properties": {
+          "expires_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "session_token": {
+            "type": "string"
+          },
+          "user": {
+            "$ref": "#/components/schemas/UserProfile"
+          }
+        }
+      },
+      "RegisterRequest": {
+        "type": "object",
+        "required": [
+          "username",
+          "email",
+          "password"
+        ],
+        "properties": {
+          "email": {
+            "type": "string",
+            "example": "john@example.com"
+          },
+          "password": {
+            "type": "string",
+            "example": "securepassword123"
+          },
+          "username": {
+            "type": "string",
+            "example": "johndoe"
+          }
+        }
+      },
+      "RegisterTaskTypeRequest": {
+        "type": "object",
+        "required": [
+          "task_type",
+          "description"
+        ],
+        "properties": {
+          "description": {
+            "type": "string"
+          },
+          "task_type": {
+            "type": "string"
+          }
+        }
+      },
+      "RetryStrategy": {
+        "oneOf": [
+          {
+            "type": "object",
+            "description": "Exponential backoff: delay = base_delay * multiplier^attempt",
+            "required": [
+              "Exponential"
+            ],
+            "properties": {
+              "Exponential": {
+                "type": "object",
+                "description": "Exponential backoff: delay = base_delay * multiplier^attempt",
+                "required": [
+                  "base_delay",
+                  "multiplier",
+                  "max_delay",
+                  "max_attempts"
+                ],
+                "properties": {
+                  "base_delay": {
+                    "type": "string"
+                  },
+                  "max_attempts": {
+                    "type": "integer",
+                    "format": "int32",
+                    "minimum": 0
+                  },
+                  "max_delay": {
+                    "type": "string"
+                  },
+                  "multiplier": {
+                    "type": "number",
+                    "format": "double"
+                  }
+                }
+              }
+            }
+          },
+          {
+            "type": "object",
+            "description": "Linear backoff: delay = base_delay + (increment * attempt)",
+            "required": [
+              "Linear"
+            ],
+            "properties": {
+              "Linear": {
+                "type": "object",
+                "description": "Linear backoff: delay = base_delay + (increment * attempt)",
+                "required": [
+                  "base_delay",
+                  "increment",
+                  "max_delay",
+                  "max_attempts"
+                ],
+                "properties": {
+                  "base_delay": {
+                    "type": "string"
+                  },
+                  "increment": {
+                    "type": "string"
+                  },
+                  "max_attempts": {
+                    "type": "integer",
+                    "format": "int32",
+                    "minimum": 0
+                  },
+                  "max_delay": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          },
+          {
+            "type": "object",
+            "description": "Fixed interval: delay = interval for each retry",
+            "required": [
+              "Fixed"
+            ],
+            "properties": {
+              "Fixed": {
+                "type": "object",
+                "description": "Fixed interval: delay = interval for each retry",
+                "required": [
+                  "interval",
+                  "max_attempts"
+                ],
+                "properties": {
+                  "interval": {
+                    "type": "string"
+                  },
+                  "max_attempts": {
+                    "type": "integer",
+                    "format": "int32",
+                    "minimum": 0
+                  }
+                }
+              }
+            }
+          },
+          {
+            "type": "string",
+            "description": "No retry",
+            "enum": [
+              "None"
+            ]
+          }
+        ]
+      },
+      "TaskPriority": {
+        "type": "string",
+        "enum": [
+          "Low",
+          "Normal",
+          "High",
+          "Critical"
+        ]
+      },
+      "TaskQueryParams": {
+        "type": "object",
+        "properties": {
+          "limit": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64"
+          },
+          "offset": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64"
+          },
+          "status": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "task_type": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "TaskResponse": {
+        "type": "object",
+        "required": [
+          "id",
+          "task_type",
+          "status",
+          "priority",
+          "max_attempts",
+          "current_attempt",
+          "created_at",
+          "updated_at"
+        ],
+        "properties": {
+          "completed_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "created_by": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          },
+          "current_attempt": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "last_error": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "max_attempts": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "metadata": {
+            "type": "object",
+            "additionalProperties": {},
+            "propertyNames": {
+              "type": "string"
+            }
+          },
+          "priority": {
+            "$ref": "#/components/schemas/TaskPriority"
+          },
+          "scheduled_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "started_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "status": {
+            "$ref": "#/components/schemas/TaskStatus"
+          },
+          "task_type": {
+            "type": "string"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "TaskStats": {
+        "type": "object",
+        "required": [
+          "total",
+          "pending",
+          "running",
+          "completed",
+          "failed",
+          "cancelled",
+          "retrying"
+        ],
+        "properties": {
+          "cancelled": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "completed": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "failed": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "pending": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "retrying": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "running": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "total": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "TaskStatus": {
+        "type": "string",
+        "enum": [
+          "Pending",
+          "Running",
+          "Completed",
+          "Failed",
+          "Cancelled",
+          "Retrying"
+        ]
+      },
+      "TaskTypeResponse": {
+        "type": "object",
+        "required": [
+          "task_type",
+          "is_active",
+          "created_at",
+          "updated_at"
+        ],
+        "properties": {
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "is_active": {
+            "type": "boolean"
+          },
+          "task_type": {
+            "type": "string"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "User": {
+        "type": "object",
+        "required": [
+          "id",
+          "username",
+          "email",
+          "role",
+          "is_active",
+          "email_verified",
+          "created_at",
+          "updated_at"
+        ],
+        "properties": {
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "email": {
+            "type": "string"
+          },
+          "email_verified": {
+            "type": "boolean"
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "is_active": {
+            "type": "boolean"
+          },
+          "last_login_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "role": {
+            "type": "string"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "username": {
+            "type": "string"
+          }
+        }
+      },
+      "UserProfile": {
+        "type": "object",
+        "required": [
+          "id",
+          "username",
+          "email",
+          "role",
+          "is_active",
+          "email_verified",
+          "created_at"
+        ],
+        "properties": {
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "email": {
+            "type": "string"
+          },
+          "email_verified": {
+            "type": "boolean"
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "is_active": {
+            "type": "boolean"
+          },
+          "last_login_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "role": {
+            "type": "string"
+          },
+          "username": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  },
+  "security": [
+    {
+      "bearer_auth": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Health",
+      "description": "Health check and monitoring endpoints"
+    },
+    {
+      "name": "Authentication",
+      "description": "User authentication and session management"
+    },
+    {
+      "name": "Users",
+      "description": "User management operations"
+    },
+    {
+      "name": "Tasks",
+      "description": "Background task management"
+    }
+  ]
+}

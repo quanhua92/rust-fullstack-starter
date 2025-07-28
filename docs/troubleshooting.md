@@ -104,7 +104,7 @@ docker compose ps postgres
 
 # Reset database
 docker compose down -v
-./scripts/dev.sh
+docker compose up -d postgres && docker compose up --wait
 ```
 
 ### 5. Test Issues
@@ -130,7 +130,7 @@ When all else fails:
 # Nuclear option - reset everything
 ./scripts/reset-all.sh
 ./scripts/check-prereqs.sh
-./scripts/start-dev.sh 3000
+./scripts/dev-server.sh 3000
 ```
 
 ## Getting Help

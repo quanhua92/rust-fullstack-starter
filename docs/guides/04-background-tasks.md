@@ -842,7 +842,7 @@ curl -H "Authorization: Bearer $TOKEN" \
 ### Starting the System
 ```bash
 # 1. Start infrastructure
-./scripts/dev.sh
+./scripts/dev-server.sh 3000
 
 # 2. Start HTTP server (handles API requests)
 ./scripts/server.sh 3000

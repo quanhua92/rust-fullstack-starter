@@ -4,6 +4,17 @@ This directory contains comprehensive scripts for developing, testing, and manag
 
 ## 🎯 Quick Start Scripts
 
+### `dev-server.sh [port]`
+**Complete development environment with database, migrations, and server startup (recommended).**
+- **Default port:** 3000
+- **Includes:** PostgreSQL startup, migrations, server startup, health checks
+- **Auto-creates:** .env file if missing
+- **Validates:** Prerequisites and working directory
+```bash
+./scripts/dev-server.sh         # Start on port 3000
+./scripts/dev-server.sh 8080    # Start on port 8080
+```
+
 ### `rename-project.sh <name>`
 **Rename project from "starter" to your custom name (recommended first step).**
 ```bash
@@ -16,23 +27,6 @@ This directory contains comprehensive scripts for developing, testing, and manag
 ./scripts/deploy-prod.sh            # Deploy to production
 ```
 
-### `start-dev.sh`
-**Complete one-command setup for new developers.**
-```bash
-./scripts/start-dev.sh         # Start on port 3000
-./scripts/start-dev.sh 8080     # Start on port 8080
-```
-
-### `dev-server.sh [port]`
-**Complete development environment with validation and testing.**
-- **Default port:** 3000
-- **Includes:** Infrastructure, migrations, server startup, health checks
-- **Auto-creates:** .env file if missing
-- **Validates:** Prerequisites and working directory
-```bash
-./scripts/dev-server.sh         # Start on port 3000
-./scripts/dev-server.sh 8080    # Start on port 8080
-```
 
 ### `check-prereqs.sh`
 **Validate all required dependencies before starting development.**
@@ -44,12 +38,6 @@ This directory contains comprehensive scripts for developing, testing, and manag
 ```
 
 ## 🏗️ Infrastructure Management
-
-### `dev.sh`
-Start PostgreSQL database and wait for services to be ready.
-```bash
-./scripts/dev.sh
-```
 
 ### `reset-all.sh` 
 Complete environment reset - stops all processes, cleans ports, resets database.
@@ -179,19 +167,17 @@ Docker-based resilience testing with 6 difficulty levels and container isolation
 
 ### Development Startup
 ```bash
-# Method 1: One-command setup (Recommended)
-./scripts/start-dev.sh 3000               # Complete setup for new developers
+# Method 1: Complete environment (Recommended)
+./scripts/dev-server.sh                    # Complete setup with database and server
 
-# Method 2: Complete environment with validation
-./scripts/dev-server.sh 3000              # Start everything with testing
-
-# Method 3: Full reset and test
+# Method 2: Full reset and test
 ./scripts/reset-all.sh --reset-database   # Clean slate
 cargo nextest run                         # Complete system test
 
-# Method 4: Manual step-by-step
+# Method 3: Manual step-by-step
 ./scripts/check-prereqs.sh                # Validate dependencies
-./scripts/dev.sh                          # Start infrastructure
+docker compose up -d postgres             # Start database
+docker compose up --wait                  # Wait for services
 ./scripts/server.sh 3000                  # Start server
 ./scripts/worker.sh                       # Start worker
 ./scripts/test-server.sh 3000             # Test health
@@ -297,7 +283,7 @@ The background worker system processes tasks asynchronously:
 
 ## 🗄️ Database Notes
 
-- Scripts assume PostgreSQL is running (use `./scripts/dev.sh`)
+- Scripts assume PostgreSQL is running (use `docker compose up -d postgres`)
 - Database auto-resets in `reset-all.sh` and `test_tasks_integration.sh`
 - Migrations run automatically on server startup
 - Default connection: `postgres://starter_user:starter_pass@localhost:5432/starter_db`

@@ -9,6 +9,7 @@ The starter now includes **comprehensive OpenAPI documentation** with interactiv
 ### 🌐 Access Documentation
 - **API Documentation Hub**: `http://localhost:3000/api-docs`
 - **OpenAPI JSON Schema**: `http://localhost:3000/api-docs/openapi.json`
+- **Local OpenAPI File**: [`docs/openapi.json`](openapi.json) (exported specification)
 - **External Swagger UI**: Use the link in the docs page for full interactive testing
 
 ### ✨ Features

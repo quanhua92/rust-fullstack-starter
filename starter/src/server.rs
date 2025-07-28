@@ -67,7 +67,7 @@ async fn api_docs() -> impl IntoResponse {
                 <h2>📋 Available Documentation</h2>
                 <div class="links">
                     <a href="/api-docs/openapi.json" target="_blank">📄 OpenAPI JSON Schema</a>
-                    <a href="https://petstore.swagger.io/?url=http://localhost:3000/api-docs/openapi.json" target="_blank">🔧 Swagger UI (External)</a>
+                    <a href="https://petstore.swagger.io/?url=https://raw.githubusercontent.com/quanhua92/rust-fullstack-starter/refs/heads/main/docs/openapi.json" target="_blank">🔧 Swagger UI (External)</a>
                 </div>
 
                 <h2>🚀 Quick Start</h2>

@@ -43,6 +43,7 @@ Available health check endpoints:
 Comprehensive OpenAPI documentation is available:
 - **Interactive Docs**: `/api-docs` - HTML page with overview and Swagger UI links
 - **OpenAPI Schema**: `/api-docs/openapi.json` - Complete OpenAPI 3.0 specification
+- **Local Export**: `cargo run -- export-openapi` - Export to `docs/openapi.json` for versioning
 - **Features**: All endpoints documented with request/response examples, authentication support, type definitions
 - **Client Generation**: Use schema to generate TypeScript, Python, or other language clients
 
