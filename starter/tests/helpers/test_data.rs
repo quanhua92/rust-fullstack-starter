@@ -137,6 +137,44 @@ impl TestDataFactory {
 
         response.json().await.unwrap()
     }
+
+    /// Creates a test task with custom metadata (requires authentication)
+    pub async fn create_task_with_metadata(
+        &self,
+        task_type: &str,
+        payload: serde_json::Value,
+        metadata: serde_json::Value,
+    ) -> serde_json::Value {
+        // Ensure task types are registered before creating tasks
+        self.register_task_types().await;
+
+        // Create an authenticated user with unique name
+        let unique_username = format!("taskuser_{}", &uuid::Uuid::new_v4().to_string()[..8]);
+        let (_user, token) = self.create_authenticated_user(&unique_username).await;
+
+        // Convert metadata Value to HashMap for the API
+        let metadata_map: std::collections::HashMap<String, serde_json::Value> =
+            if let Some(obj) = metadata.as_object() {
+                obj.iter().map(|(k, v)| (k.clone(), v.clone())).collect()
+            } else {
+                std::collections::HashMap::new()
+            };
+
+        let task_data = json!({
+            "task_type": task_type,
+            "payload": payload,
+            "priority": "normal",
+            "metadata": metadata_map
+        });
+
+        let response = self
+            .app
+            .post_json_auth("/tasks", &task_data, &token.token)
+            .await;
+        assert_eq!(response.status(), 200);
+
+        response.json().await.unwrap()
+    }
 }
 
 /// Test data builders for creating custom requests  

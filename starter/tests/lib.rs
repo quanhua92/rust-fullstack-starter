@@ -8,6 +8,7 @@
 
 pub mod api;
 pub mod auth;
+pub mod cli;
 pub mod health;
 pub mod helpers;
 pub mod tasks;
