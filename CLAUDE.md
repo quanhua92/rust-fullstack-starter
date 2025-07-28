@@ -119,6 +119,14 @@ Available chaos testing scenarios:
   - Tests task completion under worker chaos with configurable delays and deadlines
   - Configurable difficulty levels (1-6) affect worker count, task delays, and failure intervals
   - **Level 6 (Catastrophic)**: Designed to fail - tests impossible workloads and container failure handling
+- `dynamic-scaling` - **NEW**: Dynamic worker scaling with 4-phase resilience testing
+  - **Phase 1 (0-60s)**: Optimal capacity test with 5 workers
+  - **Phase 2 (60-120s)**: Capacity reduction stress test with 2 workers
+  - **Phase 3 (120-150s)**: Gradual scale-up (+1 worker every 10s)
+  - **Phase 4 (150-240s)**: Completion monitoring with full capacity
+  - Tests system's ability to handle worker scaling operations while maintaining 100% task completion
+  - Demonstrates resilience during resource constraints and validates scaling behavior
+  - Success criteria: 100% completion within 4 minutes total
 
 ## Task Type Registration System
 

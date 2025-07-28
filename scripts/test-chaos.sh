@@ -53,6 +53,7 @@ usage() {
     echo "  mixed-chaos      - Multiple simultaneous failures"
     echo "  recovery         - Recovery time testing"
     echo "  multi-worker-chaos - Multiple workers with random failures and delay tasks"
+    echo "  dynamic-scaling  - Dynamic worker scaling with 4 phases: optimal→reduced→gradual scale-up→completion"
     echo "  all              - Run all scenarios (default)"
     echo ""
     echo "Examples:"
@@ -717,6 +718,211 @@ run_scenario() {
             run_api_test "Multi-Worker Post-Chaos Test" || true
             ;;
             
+        dynamic-scaling)
+            log "INFO" "Testing dynamic worker scaling with 4 phases: optimal→reduced→gradual scale-up→completion"
+            
+            # Calculate scenario parameters based on difficulty
+            local initial_workers=5
+            local reduced_workers=2
+            local task_delay=3
+            local phase1_tasks=80  # 5 workers * 60s / 3s per task ≈ 100 tasks, use 80 for buffer
+            local phase2_tasks=40  # Reduced workload for scaled-down phase
+            local total_deadline=240  # 4 minutes total
+            
+            # Adjust parameters based on difficulty level
+            case "$DIFFICULTY" in
+                1) # Basic - Conservative approach
+                   phase1_tasks=50; phase2_tasks=25; task_delay=2; total_deadline=300
+                   ;;
+                2) # Light - Slightly more aggressive
+                   phase1_tasks=60; phase2_tasks=30; task_delay=2; total_deadline=280
+                   ;;
+                3) # Load testing - Standard parameters
+                   phase1_tasks=80; phase2_tasks=40; task_delay=3; total_deadline=240
+                   ;;
+                4) # Resource pressure - More challenging
+                   phase1_tasks=100; phase2_tasks=50; task_delay=3; total_deadline=220
+                   ;;
+                5) # Extreme - High pressure
+                   phase1_tasks=120; phase2_tasks=60; task_delay=4; total_deadline=200
+                   ;;
+                6) # Catastrophic - Stress limits
+                   phase1_tasks=150; phase2_tasks=75; task_delay=4; total_deadline=180
+                   ;;
+            esac
+            
+            log "INFO" "Dynamic scaling parameters: ${initial_workers}→${reduced_workers} workers, delays: ${task_delay}s, deadline: ${total_deadline}s"
+            
+            # Create auth token for tasks
+            local auth_result=$(BASE_URL="$BASE_URL" timeout 30 "$HELPERS_DIR/auth-helper.sh" --prefix "dynamic_scaling_test")
+            local token=$(echo "$auth_result" | python3 -c "import json,sys; print(json.load(sys.stdin)['token'])" 2>/dev/null || echo "")
+            
+            if [ -z "$token" ]; then
+                log "ERROR" "Failed to get auth token for dynamic scaling test"
+                TEST_RESULTS+=("❌ dynamic-scaling: FAIL (auth)")
+                return
+            fi
+            
+            # Clean up any existing workers
+            "$HELPERS_DIR/multi-worker-chaos.sh" cleanup > /dev/null 2>&1 || true
+            sleep 2
+            
+            local scenario_start=$(date +%s)
+            
+            # Phase 1: Optimal Capacity (0-60s)
+            log "INFO" "🚀 Phase 1: Starting with $initial_workers workers for optimal capacity"
+            "$HELPERS_DIR/multi-worker-chaos.sh" start-multi --workers "$initial_workers" --verbose
+            sleep 5  # Wait for workers to be ready
+            
+            log "INFO" "Creating Phase 1 tasks: $phase1_tasks tasks with ${task_delay}s delay each"
+            "$HELPERS_DIR/delay-task-flood.sh" \
+                --count "$phase1_tasks" \
+                --delay "$task_delay" \
+                --deadline 60 \
+                --auth "$token" \
+                --prefix "dynamic_phase1" \
+                --verbose &
+            PHASE1_PID=$!
+            
+            # Wait for Phase 1 duration (60 seconds)
+            log "INFO" "Phase 1: Waiting 60s for optimal capacity processing..."
+            sleep 60
+            wait $PHASE1_PID || true
+            
+            local phase1_end=$(date +%s)
+            local phase1_duration=$((phase1_end - scenario_start))
+            log "INFO" "Phase 1 completed in ${phase1_duration}s"
+            
+            # Phase 2: Capacity Reduction (60-120s)
+            log "INFO" "⬇️  Phase 2: Scaling down to $reduced_workers workers to create capacity pressure"
+            "$HELPERS_DIR/multi-worker-chaos.sh" start-multi --workers "$reduced_workers" --verbose
+            sleep 3
+            
+            log "INFO" "Creating Phase 2 tasks: $phase2_tasks tasks with ${task_delay}s delay each"
+            "$HELPERS_DIR/delay-task-flood.sh" \
+                --count "$phase2_tasks" \
+                --delay "$task_delay" \
+                --deadline 120 \
+                --auth "$token" \
+                --prefix "dynamic_phase2" \
+                --verbose &
+            PHASE2_PID=$!
+            
+            # Wait for Phase 2 duration (60 seconds)
+            log "INFO" "Phase 2: Waiting 60s with reduced capacity..."
+            sleep 60
+            wait $PHASE2_PID || true
+            
+            local phase2_end=$(date +%s)
+            local phase2_duration=$((phase2_end - phase1_end))
+            log "INFO" "Phase 2 completed in ${phase2_duration}s"
+            
+            # Phase 3: Gradual Scale-Up (120-150s)
+            log "INFO" "⬆️  Phase 3: Gradually scaling up workers (+1 every 10s)"
+            
+            # Stop creating new tasks - focus on processing backlog
+            log "INFO" "No new tasks in Phase 3 - processing existing queue"
+            
+            # Scale up gradually: 3 workers at 120s
+            log "INFO" "Scaling to 3 workers..."
+            "$HELPERS_DIR/multi-worker-chaos.sh" start-multi --workers 3 --verbose
+            sleep 10
+            
+            # 4 workers at 130s
+            log "INFO" "Scaling to 4 workers..."
+            "$HELPERS_DIR/multi-worker-chaos.sh" start-multi --workers 4 --verbose
+            sleep 10
+            
+            # 5 workers at 140s
+            log "INFO" "Scaling back to $initial_workers workers..."
+            "$HELPERS_DIR/multi-worker-chaos.sh" start-multi --workers "$initial_workers" --verbose
+            sleep 10
+            
+            local phase3_end=$(date +%s)
+            local phase3_duration=$((phase3_end - phase2_end))
+            log "INFO" "Phase 3 completed in ${phase3_duration}s"
+            
+            # Phase 4: Completion Phase (150-240s)
+            log "INFO" "🎯 Phase 4: All workers active - monitoring completion"
+            
+            # Calculate remaining time for completion
+            local elapsed_time=$((phase3_end - scenario_start))
+            local remaining_time=$((total_deadline - elapsed_time))
+            
+            if [ $remaining_time -lt 30 ]; then
+                remaining_time=30  # Minimum 30s for completion monitoring
+            fi
+            
+            log "INFO" "Monitoring task completion for up to ${remaining_time}s..."
+            
+            # Start comprehensive monitoring
+            timeout $remaining_time "$HELPERS_DIR/task-completion-monitor.sh" \
+                --prefix "dynamic_phase" \
+                --deadline "$total_deadline" \
+                --auth "$token" \
+                --verbose > "$OUTPUT_DIR/dynamic-scaling-monitor.log" 2>&1 &
+            MONITOR_PID=$!
+            
+            # Wait for monitoring to complete or timeout
+            wait $MONITOR_PID || true
+            
+            local final_end=$(date +%s)
+            local total_duration=$((final_end - scenario_start))
+            
+            # Clean up workers
+            "$HELPERS_DIR/multi-worker-chaos.sh" stop-all > /dev/null 2>&1 || true
+            
+            # Parse monitoring results
+            local monitor_result=""
+            if [ -f "$OUTPUT_DIR/dynamic-scaling-monitor.log" ]; then
+                monitor_result=$(tail -1 "$OUTPUT_DIR/dynamic-scaling-monitor.log" | grep -o '{.*}' || echo "{}")
+            fi
+            
+            # Extract results
+            local completed_tasks=0
+            local total_tasks=0
+            local deadline_met=false
+            local retry_attempts=0
+            
+            if [ -n "$monitor_result" ] && [ "$monitor_result" != "{}" ]; then
+                completed_tasks=$(echo "$monitor_result" | python3 -c "import json,sys; print(json.load(sys.stdin).get('completed', 0))" 2>/dev/null || echo "0")
+                total_tasks=$(echo "$monitor_result" | python3 -c "import json,sys; print(json.load(sys.stdin).get('total', 0))" 2>/dev/null || echo "0")
+                deadline_met=$(echo "$monitor_result" | python3 -c "import json,sys; print(json.load(sys.stdin).get('deadline_met', False))" 2>/dev/null || echo "false")
+                retry_attempts=$(echo "$monitor_result" | python3 -c "import json,sys; print(json.load(sys.stdin).get('retry_attempts', 0))" 2>/dev/null || echo "0")
+            fi
+            
+            # Calculate success rate
+            local success_rate=0
+            if [ "$total_tasks" -gt 0 ]; then
+                success_rate=$(echo "scale=1; ($completed_tasks * 100) / $total_tasks" | bc -l 2>/dev/null || echo "0")
+            fi
+            
+            log "INFO" "Dynamic scaling results: $completed_tasks/$total_tasks tasks completed (${success_rate}%)"
+            log "INFO" "Total duration: ${total_duration}s (deadline: ${total_deadline}s)"
+            log "INFO" "Retry attempts: $retry_attempts, Deadline met: $deadline_met"
+            
+            # Determine success criteria
+            local deadline_ok=$((total_duration <= total_deadline))
+            local completion_ok=$(echo "$success_rate >= 100.0" | bc -l 2>/dev/null || echo "0")
+            
+            # Success criteria: 100% completion within 4 minutes
+            if [ "$completion_ok" -eq 1 ] && [ "$deadline_ok" -eq 1 ]; then
+                log "SUCCESS" "Dynamic scaling scenario passed - 100% completion within deadline"
+                PASSED_SCENARIOS=$((PASSED_SCENARIOS + 1))
+                TEST_RESULTS+=("✅ dynamic-scaling: PASS (${success_rate}%, ${total_duration}s, $retry_attempts retries)")
+            elif [ "$completion_ok" -eq 1 ]; then
+                log "SUCCESS" "Dynamic scaling scenario partially passed - 100% completion but exceeded deadline"
+                PASSED_SCENARIOS=$((PASSED_SCENARIOS + 1))
+                TEST_RESULTS+=("✅ dynamic-scaling: PASS* (${success_rate}%, ${total_duration}s, $retry_attempts retries)")
+            else
+                log "ERROR" "Dynamic scaling scenario failed - incomplete tasks or deadline exceeded"
+                TEST_RESULTS+=("❌ dynamic-scaling: FAIL (${success_rate}%, ${total_duration}s, $retry_attempts retries)")
+            fi
+            
+            # Final API test to ensure system is still healthy
+            run_api_test "Dynamic Scaling Post-Test" || true
+            ;;
+            
         *)
             log "ERROR" "Unknown scenario: $scenario"
             TEST_RESULTS+=("❌ $scenario: UNKNOWN")
@@ -847,7 +1053,7 @@ fi
 
 # Parse scenarios to run
 if [ "$SCENARIOS" = "all" ]; then
-    SCENARIO_LIST="baseline db-failure server-restart worker-restart task-flood circuit-breaker mixed-chaos recovery multi-worker-chaos"
+    SCENARIO_LIST="baseline db-failure server-restart worker-restart task-flood circuit-breaker mixed-chaos recovery multi-worker-chaos dynamic-scaling"
 else
     SCENARIO_LIST=$(echo "$SCENARIOS" | tr ',' ' ')
 fi
