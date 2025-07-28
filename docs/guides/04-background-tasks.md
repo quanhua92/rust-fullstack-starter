@@ -78,6 +78,16 @@ graph TB
 
 **Key Insight**: The HTTP API and the worker are **separate processes**. The database acts as the communication layer between them.
 
+### 💡 Why This Architecture Works
+
+**Separation of Concerns**: Your web server stays responsive while heavy work happens in the background. Users get instant feedback ("Task queued!") instead of waiting for slow operations.
+
+**Scalability**: Need more processing power? Just start more workers. Need to handle more API requests? Scale the web servers independently.
+
+**Reliability**: If a worker crashes, tasks remain safely stored in the database. When workers restart, they pick up where they left off.
+
+**Development Simplicity**: You can test the API and workers separately. Start just the API for frontend development, or just workers for testing task logic.
+
 ## Task Type Registration
 
 ⚠️ **Important**: As of recent updates, the system now requires **task type registration** before tasks can be created.
@@ -87,7 +97,19 @@ graph TB
 2. **API validates task types** before accepting tasks
 3. **Only registered task types** can be used to create tasks
 
-This prevents the common issue where APIs accept tasks that no worker can handle.
+### 🎯 Why Registration Matters
+
+**The Old Problem**: Imagine your API accepts a "send_sms" task, but no worker knows how to send SMS. The task sits in the queue forever, users never get their messages, and you have no idea why.
+
+**The Solution**: Registration creates a contract. Workers say "I can handle email tasks" and the API only accepts email tasks when that worker is available.
+
+**Real-World Benefits**:
+- **Early Validation**: API rejects invalid task types immediately with clear error messages
+- **Service Discovery**: See what tasks your system can actually process
+- **Deployment Safety**: Deploy new task types only when workers are ready
+- **Debugging**: Quickly identify if missing workers are causing task backlogs
+
+**Pro Tip**: In production, monitor registered task types. If you suddenly lose a task type registration, it means that worker type crashed and tasks will start failing.
 
 ## Task Lifecycle
 
@@ -215,6 +237,28 @@ pub enum TaskPriority {
 
 ## Worker Architecture
 
+### 🏗️ Design Philosophy
+
+The worker follows a **polling-based** approach rather than push notifications. Here's why this works well:
+
+**Simplicity**: No complex message broker setup. The database is your queue - reliable, transactional, and familiar.
+
+**Back-pressure**: Workers naturally slow down when overwhelmed. They won't fetch new tasks until they finish current ones.
+
+**Fault Tolerance**: If workers crash, tasks remain safely in the database. No lost messages, no complex recovery.
+
+**Observability**: You can query the database directly to see queue depth, task states, and processing history.
+
+### ⚡ Performance Considerations
+
+**Concurrency Control**: The worker uses a semaphore to limit concurrent tasks. This prevents resource exhaustion while maximizing throughput.
+
+**Batch Processing**: Instead of fetching one task at a time, the worker grabs multiple tasks per poll. This reduces database round-trips.
+
+**Connection Pooling**: Each task gets its own database connection from a pool, preventing blocking.
+
+**Poll Interval Tuning**: Too frequent polling wastes CPU. Too infrequent polling adds latency. The default 5 seconds balances both.
+
 ### Main Processing Loop
 ```rust
 pub async fn start_worker(&self) -> Result<()> {
@@ -270,69 +314,95 @@ async fn process_batch(&self) -> Result<()> {
 }
 ```
 
+### 🧠 Key Processing Insights
+
+**Error Isolation**: Notice how individual task failures don't crash the entire worker. This is crucial for reliability - one bad task shouldn't stop processing of other tasks.
+
+**Graceful Concurrency**: The semaphore pattern ensures you never overwhelm your system, but you also don't waste resources by processing tasks one at a time.
+
+**Monitoring Hooks**: Every step is logged, making it easy to monitor performance and debug issues in production.
+
 ### Task Processing Pipeline
+
+Each task goes through a 4-step pipeline designed for reliability:
+
+**1. Claim the Task**: Mark it as "running" so other workers don't pick it up
+**2. Find the Handler**: Look up which code should process this task type  
+**3. Execute Safely**: Run the handler with timeout and circuit breaker protection
+**4. Handle Results**: Mark as completed or schedule retry on failure
+
 ```rust
+// Simplified processing pipeline
 async fn process_single_task(&self, task: Task) -> Result<()> {
-    let task_id = task.id;
+    // 1. Claim ownership (prevents duplicate processing)
+    self.mark_task_running(task.id).await?;
     
-    // 1. Mark as running
-    self.mark_task_running(task_id).await?;
-    
-    // 2. Find handler for task type
+    // 2. Find the right handler for this task type
     let handler = self.get_handler(&task.task_type)?;
     
-    // 3. Execute with timeout and circuit breaker protection
-    let result = tokio::time::timeout(
-        self.config.task_timeout,
-        self.execute_with_circuit_breaker(&task, handler)
-    ).await;
+    // 3. Execute with safety nets (timeout + circuit breaker)
+    let result = self.execute_safely(&task, handler).await;
     
-    // 4. Handle the result
+    // 4. Update task status based on result
     match result {
-        Ok(Ok(task_result)) => {
-            self.mark_task_completed(task_id, task_result).await?;
-            info!("Task {} completed successfully", task_id);
-        }
-        Ok(Err(task_error)) => {
-            self.handle_task_failure(task, task_error).await?;
-        }
-        Err(_timeout) => {
-            let error = TaskError::Timeout(self.config.task_timeout);
-            self.handle_task_failure(task, error).await?;
-        }
+        Success => self.mark_completed(task.id).await?,
+        Failure(error) => self.handle_failure(task, error).await?,
     }
-    
-    Ok(())
 }
 ```
+
+### 🛡️ Safety Mechanisms Explained
+
+**Timeouts**: Prevent hung tasks from blocking workers forever. If a task takes too long, it's automatically failed and can be retried.
+
+**Circuit Breakers**: If a particular task type keeps failing (e.g., email service is down), the circuit breaker stops trying and fails tasks immediately instead of wasting time.
+
+**Ownership Claims**: Marking tasks as "running" prevents multiple workers from processing the same task simultaneously.
 
 ### Circuit Breaker Integration
+
+Circuit breakers protect your system from cascading failures. When a task type starts failing repeatedly, the circuit breaker "opens" and fails new tasks immediately instead of trying (and waiting for timeouts).
+
+**How Circuit Breakers Help**:
+- **Email service down?** After 5 failures, circuit opens. New email tasks fail instantly instead of timing out after 30 seconds each.
+- **Database connection issues?** Circuit breaker prevents hundreds of tasks from piling up waiting for timeouts.
+- **External API rate limiting?** Circuit breaker gives the API time to recover instead of hammering it.
+
+**Configuration per Task Type**:
 ```rust
-async fn execute_with_circuit_breaker(
-    &self,
-    task: &Task,
-    handler: &dyn TaskHandler,
-) -> Result<TaskResult, TaskError> {
-    // Get or create circuit breaker for this task type
-    let mut breakers = self.circuit_breakers.write().await;
-    let breaker = breakers.entry(task.task_type.clone())
-        .or_insert_with(|| CircuitBreaker::new(5, 3, Duration::from_secs(60)));
-    
-    // Execute through circuit breaker
-    match breaker.call(|| async {
-        let context = TaskContext::from_task(task);
-        handler.handle(context).await
-    }).await {
-        Ok(result) => Ok(result),
-        Err(CircuitBreakerError::Open) => {
-            Err(TaskError::CircuitBreaker("Circuit breaker is open".to_string()))
-        }
-        Err(CircuitBreakerError::Inner(error)) => Err(error),
-    }
-}
+// Different task types have different circuit breaker settings
+EmailTasks: CircuitBreaker::new(
+    failure_threshold: 5,     // Open after 5 failures
+    timeout: 60_seconds       // Stay open for 1 minute
+)
+
+WebhookTasks: CircuitBreaker::new(
+    failure_threshold: 3,     // More sensitive to failures
+    timeout: 30_seconds       // Recover faster
+)
 ```
 
+### 🔄 Circuit Breaker States
+
+**Closed (Normal)**: All tasks are processed normally. Failures are counted.
+
+**Open (Protecting)**: All new tasks for this type fail immediately. Gives the external service time to recover.
+
+**Half-Open (Testing)**: After the timeout, try a few tasks to see if the service recovered. If they succeed, go back to Closed. If they fail, go back to Open.
+
 ## Task Handlers
+
+Task handlers are where the actual work happens. Each handler is responsible for one type of task (email, webhook, data processing, etc.).
+
+### 🎯 Handler Design Principles
+
+**Single Responsibility**: Each handler does one thing well. Don't mix email sending with file processing.
+
+**Idempotent Operations**: Handlers should be safe to run multiple times. If a task gets retried, running it again shouldn't cause problems.
+
+**Clear Error Handling**: Distinguish between temporary failures (network timeout - can retry) and permanent failures (invalid email address - don't retry).
+
+**Fast Validation**: Check inputs early and fail fast if the task data is invalid. Don't wait until the end to discover bad data.
 
 ### Handler Trait
 ```rust
@@ -922,40 +992,84 @@ impl Default for RetryStrategy {
 
 ## Troubleshooting
 
-### Common Issues
+### 🚨 Production Debugging Guide
 
-**Tasks stay in pending status**
+**Tasks Stay Pending Forever**
+
+*Symptoms*: Tasks get created but never complete. Status remains "pending" for hours.
+
+*Root Causes*:
+- Worker process crashed and isn't running
+- Worker can't register task types (database connection issues)
+- Task type not registered (worker doesn't know how to handle this task type)
+
+*Quick Fixes*:
 ```bash
 # Check if worker is running
-./scripts/status.sh
+ps aux | grep starter-worker
 
-# Check worker logs
+# Check worker logs for startup errors
 tail -f /tmp/starter-worker.log
 
-# Restart worker
-./scripts/stop-worker.sh
-./scripts/worker.sh
+# Verify task types are registered
+curl http://localhost:3000/tasks/types
 ```
 
-**High failure rate**
-```bash
-# Check failed tasks
-curl -H "Authorization: Bearer $TOKEN" \
-  "http://localhost:3000/tasks?status=failed&limit=5"
+**High Failure Rate**
 
-# Look for patterns in errors
-grep "ERROR" /tmp/starter-worker.log
+*Symptoms*: Most tasks end up in failed status or dead letter queue.
+
+*Root Causes*:
+- External service is down (email server, webhook endpoints)
+- Invalid task payloads (bad email addresses, malformed JSON)
+- Timeout too short for task complexity
+- Circuit breaker stuck open
+
+*Debugging Strategy*:
+```bash
+# Get error patterns
+curl -H "Authorization: Bearer $TOKEN" \
+  "http://localhost:3000/tasks/dead-letter" | \
+  jq '.data[].last_error' | sort | uniq -c
+
+# Check circuit breaker status in logs
+grep "Circuit breaker" /tmp/starter-worker.log
+
+# Test external services manually
+curl -X POST webhook-endpoint-that-keeps-failing.com
 ```
 
-**Performance issues**
-```bash
-# Check task queue depth
-curl -H "Authorization: Bearer $TOKEN" \
-  http://localhost:3000/tasks/stats
+**Performance Bottlenecks**
 
-# Adjust worker concurrency
+*Symptoms*: Tasks process slowly, queue keeps growing.
+
+*Performance Tuning*:
+```bash
+# Monitor queue depth over time
+watch 'curl -s -H "Authorization: Bearer $TOKEN" \
+  http://localhost:3000/tasks/stats | jq .data'
+
+# Increase worker concurrency (carefully!)
 STARTER__WORKER__CONCURRENCY=8 ./scripts/worker.sh
+
+# Reduce poll interval for faster pickup
+STARTER__WORKER__POLL_INTERVAL_SECS=2 ./scripts/worker.sh
 ```
+
+### 🎯 Production Monitoring Tips
+
+**Set Up Alerts For**:
+- Dead letter queue size > 10 tasks
+- Average task completion time > 5 minutes  
+- Worker process not running
+- High retry rate (> 20% of tasks need retries)
+
+**Key Metrics to Track**:
+- Tasks created per minute
+- Tasks completed per minute
+- Average processing time by task type
+- Circuit breaker state changes
+- Worker CPU and memory usage
 
 ## Next Steps
 

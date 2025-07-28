@@ -374,18 +374,24 @@ Some tasks will always fail, no matter how many times you retry:
 These tasks shouldn't retry forever, but you also shouldn't lose them completely.
 
 ### The Solution: Dead Letter Queue
-```
-┌─────────────┐    process    ┌─────────────┐    retry     ┌─────────────┐
-│   Pending   │──────────────→│   Failed    │─────────────→│  Retrying   │
-│   Tasks     │               │   Tasks     │              │   Tasks     │
-└─────────────┘               └─────────────┘              └─────────────┘
-                                     │                             │
-                                     │ max retries exceeded        │
-                                     ▼                             │
-                               ┌─────────────┐                     │
-                               │ Dead Letter │◀────────────────────┘
-                               │   Queue     │
-                               └─────────────┘
+
+```mermaid
+flowchart LR
+    A[📥 Pending Tasks] --> B[⚙️ Process Task]
+    B --> C{🎯 Success?}
+    C -->|✅ Yes| D[✅ Completed]
+    C -->|❌ No| E[❌ Failed]
+    E --> F{🔄 Can Retry?}
+    F -->|✅ Yes| G[⏳ Schedule Retry]
+    G --> H[🔄 Retrying Tasks]
+    H --> B
+    F -->|❌ Max Attempts| I[💀 Dead Letter Queue]
+    
+    style A fill:#e1f5fe
+    style D fill:#e8f5e8
+    style I fill:#ffebee
+    style G fill:#fff3e0
+    style H fill:#f3e5f5
 ```
 
 ### Implementation Concept
