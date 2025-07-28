@@ -35,9 +35,9 @@ graph LR
     QUEUE -->|4. Return pending| WORKER
     WORKER -->|5. Route by type| ROUTER
     
-    ROUTER -->|"email"| EMAIL
-    ROUTER -->|"webhook"| WEBHOOK
-    ROUTER -->|"my_custom_task"| CUSTOM
+    ROUTER -->|email| EMAIL
+    ROUTER -->|webhook| WEBHOOK
+    ROUTER -->|my_custom_task| CUSTOM
     
     EMAIL -.->|Register on startup| REGISTRY
     WEBHOOK -.->|Register on startup| REGISTRY

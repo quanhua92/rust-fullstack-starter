@@ -12,67 +12,13 @@ This guide will help you set up and run the Rust Full-Stack Starter project loca
 
 ## Quick Setup
 
-```mermaid
-graph TD
-    subgraph "🏁 Getting Started Journey"
-        START[📂 Clone Repository] --> CUSTOM{🎨 Customize Project?}
-        CUSTOM -->|Yes| RENAME[🏷️ ./scripts/rename-project.sh<br/>my_awesome_project]
-        CUSTOM -->|No| PREREQ[📋 ./scripts/check-prereqs.sh]
-        RENAME --> PREREQ
-        
-        PREREQ --> DEV[🚀 ./scripts/dev-server.sh 3000]
-        DEV --> VERIFY[✅ Verify Setup]
-        
-        subgraph "🔍 Verification Steps"
-            HEALTH[💓 Check Health<br/>curl localhost:3000/health]
-            DOCS[📚 View Docs<br/>localhost:3000/api-docs]
-            TESTS[🧪 Run Tests<br/>./scripts/test-with-curl.sh]
-        end
-        
-        VERIFY --> HEALTH
-        VERIFY --> DOCS
-        VERIFY --> TESTS
-        
-        TESTS --> READY[🎉 Ready to Code!]
-    end
-    
-    subgraph "📁 Working Directory Rules"
-        ROOT[📂 Project Root<br/>./scripts/*, cargo check]
-        STARTER[📂 starter/<br/>cargo test, sqlx commands]
-    end
-    
-    DEV -.->|Scripts run from| ROOT
-    TESTS -.->|Tests run from| STARTER
-    
-    classDef startBox fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
-    classDef processBox fill:#e3f2fd,stroke:#0277bd,stroke-width:2px
-    classDef verifyBox fill:#fff3e0,stroke:#e65100,stroke-width:2px
-    classDef readyBox fill:#e8f5e8,stroke:#1b5e20,stroke-width:3px
-    
-    class START,CUSTOM startBox
-    class RENAME,PREREQ,DEV processBox
-    class HEALTH,DOCS,TESTS verifyBox
-    class READY readyBox
-```
-
 > 📁 **Working Directory Guide**  
 > - **Scripts**: Run from project root (`./scripts/dev-server.sh`)  
 > - **Cargo commands**: Run from project root (`cargo check`, `cargo run`)  
 > - **sqlx commands**: Auto-handled by scripts (or run from `starter/` directory)  
 > - **Tests**: Run from `starter/` directory (`cd starter && cargo test`)
 
-### Option A: Customize and Start (Recommended)
-
-```bash
-# 1. Rename project to your name (optional but recommended)
-./scripts/rename-project.sh my_awesome_project
-
-# 2. Check prerequisites and start everything
-./scripts/check-prereqs.sh
-./scripts/dev-server.sh 3000
-```
-
-### Option B: Use as "starter" (Quick Start)
+### Quick Start (Recommended)
 
 ```bash
 # Check prerequisites and start everything
@@ -80,7 +26,7 @@ graph TD
 ./scripts/dev-server.sh 3000
 ```
 
-### Option C: Manual Step-by-Step Setup
+### Manual Step-by-Step Setup
 
 For learning purposes, here's the manual process:
 
@@ -93,7 +39,7 @@ For learning purposes, here's the manual process:
 ### 2. Clone and Setup Environment
 
 ```bash
-git clone <repository-url>
+git clone https://github.com/quanhua92/rust-fullstack-starter
 cd rust-fullstack-starter
 
 # Copy environment template (default values work for development)
@@ -116,13 +62,10 @@ docker compose logs -f postgres
 
 ```bash
 # Install sqlx CLI if not already installed
-if ! command -v sqlx &> /dev/null; then
-    cargo install sqlx-cli --no-default-features --features postgres
-fi
+cargo install sqlx-cli --no-default-features --features postgres
 
-# Run migrations (from project root)
-# Note: migrations are in starter/migrations/ but sqlx commands work from project root
-sqlx migrate run
+# Run migrations from starter directory
+cd starter && sqlx migrate run
 ```
 
 ### 5. Test the Application
@@ -148,12 +91,15 @@ psql postgres://starter_user:starter_pass@localhost:5432/starter_db
 \dt
 ```
 
-### Setup Initial Admin User (Optional)
-**Important**: To create an admin user on first startup, uncomment and set a strong password in your `.env`:
+### Setup Initial Admin User
+
+After copying `.env.example` to `.env`, set a strong password for the initial admin user:
+
 ```bash
 # In .env file - use a strong password (min 8 chars, mix of letters/numbers/symbols)
 STARTER__INITIAL_ADMIN_PASSWORD=YourSecureAdminPassword123!
 ```
+
 **Security Note**: Remove or comment out this line after first startup for security.
 
 The admin user will be created automatically when the server first starts.
@@ -210,8 +156,8 @@ cd starter && sqlx migrate run
 
 **Complete Reset**
 ```bash
-./scripts/reset-all.sh
-./scripts/start-dev.sh 3000
+./scripts/reset-all.sh --reset-database
+./scripts/dev-server.sh 3000
 ```
 
 ## Next Steps
@@ -234,7 +180,7 @@ Now that you have the system running, follow these guides to understand and exte
 - **[CI/CD Guide](./cicd.md)** - GitHub Actions workflows and automation
 
 ### 🆘 When You Need Help
-- **[Troubleshooting](./reference/troubleshooting.md)** - Common issues and solutions
+- **[Troubleshooting](./troubleshooting.md)** - Common issues and solutions
 - **[Built-in Handlers](./reference/task-handlers.md)** - Reference for included task types
 
 ## Quick Commands Reference
@@ -377,6 +323,10 @@ Start exploring the guides based on your interests:
 - **[Background Tasks](./guides/04-background-tasks.md)** - Async job processing
 - **[Testing Guide](./guides/07-testing.md)** - Comprehensive testing strategies
 - **[Development Workflow](./development.md)** - Daily development practices
+
+## Project Customization
+
+If you want to customize the project name and branding, see the **[Project Customization Guide](./project-customization.md)** for automated renaming tools and customization options.
 
 ---
 

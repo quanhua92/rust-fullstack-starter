@@ -437,7 +437,7 @@ A: The `user.role` field is already in place. Add authorization checks in your A
 Now that you understand authentication, learn about the reliability patterns:
 
 - **[Foundation Patterns →](./03-patterns.md)** - Circuit breakers, retry strategies, and error handling
-- **[Background Jobs →](./04-background-jobs.md)** - How async tasks use authentication
+- **[Background Tasks →](./04-background-tasks.md)** - How async tasks use authentication
 
 ---
 *This authentication system provides a secure foundation that's easy to understand and extend for your learning needs.*

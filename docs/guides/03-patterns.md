@@ -630,7 +630,7 @@ async fn test_exponential_backoff_delays() {
 
 Now that you understand these reliability patterns, see how they're used in practice:
 
-- **[Background Jobs →](./04-background-jobs.md)** - How the task system uses these patterns
+- **[Background Tasks →](./04-background-tasks.md)** - How the task system uses these patterns
 - **[Custom Task Types →](./05-task-types.md)** - Applying patterns to your own tasks
 
 ---

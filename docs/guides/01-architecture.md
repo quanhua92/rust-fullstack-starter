@@ -381,7 +381,7 @@ Now that you understand the overall architecture, dive into specific systems:
 
 - **[Authentication System →](./02-authentication.md)** - How secure sessions work
 - **[Foundation Patterns →](./03-patterns.md)** - Reliability patterns used throughout
-- **[Background Jobs →](./04-background-jobs.md)** - Async task processing system
+- **[Background Tasks →](./04-background-tasks.md)** - Async task processing system
 
 ---
 *This architecture provides a foundation for learning modern Rust web development. Each design decision prioritizes understanding and educational value.*

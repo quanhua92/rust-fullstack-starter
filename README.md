@@ -1,18 +1,6 @@
 # Rust Full-Stack Starter
 
-A modern Rust web application starter template with authentication, background tasks, chaos testing, and comprehensive API documentation. Built with Axum, SQLx, and PostgreSQL for learning and rapid prototyping.
-
-## Features
-
-- **Authentication System** - User registration, login, and session management
-- **Background Tasks** - Async job processing with retry logic, dead letter queue, and circuit breakers
-- **Task Type Registry** - API validation ensures only workers can handle registered task types
-- **Database Integration** - PostgreSQL with migrations and connection pooling
-- **API Documentation** - Interactive OpenAPI/Swagger documentation
-- **Testing Framework** - Comprehensive integration tests with isolated databases
-- **Chaos Testing** - Docker-based resilience testing with container isolation and failure simulation
-- **Development Tools** - Docker Compose, health checks, and development scripts
-- **Docker Support** - Development and production container configurations
+A modern Rust web application starter template with authentication, background tasks, and comprehensive testing. Built with Axum, SQLx, and PostgreSQL for learning and rapid prototyping.
 
 ## Quick Start
 
@@ -20,362 +8,161 @@ A modern Rust web application starter template with authentication, background t
 
 - Rust 1.75+ ([rustup.rs](https://rustup.rs/))
 - Docker and Docker Compose
-- PostgreSQL client tools (optional)
 
-### Setup
+### 1. Clone and Setup
 
 ```bash
-# Clone and enter directory
 git clone https://github.com/quanhua92/rust-fullstack-starter.git
 cd rust-fullstack-starter
-
-# Start development environment
-./scripts/dev-server.sh 3000
-
-# Or step by step
-./scripts/dev.sh                    # Start database
-./scripts/server.sh 3000            # Start server
-./scripts/test-server.sh 3000       # Verify setup
 ```
 
-### Verify Installation
+### 2. Start the Server
 
 ```bash
-# Check health
-curl http://localhost:3000/health
-
-# View API documentation
-open http://localhost:3000/api-docs
+# Start database and HTTP server
+./scripts/dev-server.sh 3000
 ```
 
-## System Overview
+### 3. Start the Worker (New Terminal)
 
-```mermaid
-graph TB
-    subgraph "🚀 Rust Full-Stack Starter"
-        subgraph "🌐 HTTP Layer"
-            API[REST API Server<br/>📊 OpenAPI Docs<br/>🔒 Authentication]
-        end
-        
-        subgraph "💼 Business Logic"
-            AUTH[🔐 Auth Module<br/>Sessions & Users]
-            USERS[👥 User Management<br/>Profiles & Permissions]
-            TASKS[⚙️ Task System<br/>Background Jobs]
-        end
-        
-        subgraph "💾 Data Layer"
-            DB[(🗄️ PostgreSQL<br/>Users, Sessions, Tasks)]
-            QUEUE[📋 Task Queue<br/>Async Processing]
-        end
-        
-        subgraph "🧪 Quality Assurance"
-            TESTS[✅ 53 Integration Tests<br/>🌐 41 API Tests<br/>🔥 Chaos Testing]
-        end
-    end
-    
-    subgraph "🛠️ Development Tools"
-        DOCKER[🐳 Docker Compose<br/>Dev & Prod]
-        SCRIPTS[📜 Automation Scripts<br/>Testing & Deployment]
-        DOCS[📚 Comprehensive Docs<br/>Learning Guides]
-    end
-    
-    API --> AUTH
-    API --> USERS
-    API --> TASKS
-    AUTH --> DB
-    USERS --> DB
-    TASKS --> QUEUE
-    QUEUE --> DB
-    
-    TESTS --> API
-    DOCKER --> API
-    SCRIPTS --> TESTS
+```bash
+# Start background task worker
+./scripts/worker.sh
+```
+
+### 4. Try It Out
+
+**Check health:**
+```bash
+curl http://localhost:3000/health
+```
+
+**Explore API documentation:**
+```bash
+open http://localhost:3000/api-docs
+# Or visit: http://localhost:3000/api-docs
+```
+
+**Create a user and test authentication:**
+```bash
+# Register a new user
+curl -X POST http://localhost:3000/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{"username": "testuser", "email": "test@example.com", "password": "password123"}'
+
+# Login to get a session token
+curl -X POST http://localhost:3000/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"username_or_email": "testuser", "password": "password123"}'
+```
+
+**Create and monitor a background task:**
+```bash
+# Create a task (replace TOKEN with your session token from login)
+curl -X POST http://localhost:3000/tasks \
+  -H "Authorization: Bearer TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"task_type": "email", "payload": {"to": "user@example.com", "subject": "Hello", "body": "Test email"}}'
+
+# Check task status
+curl -H "Authorization: Bearer TOKEN" http://localhost:3000/tasks
+```
+
+### 5. Explore More
+
+- **API Docs**: http://localhost:3000/api-docs (Interactive Swagger UI)
+- **Health Check**: http://localhost:3000/health (System status)
+- **Worker Logs**: Check `/tmp/starter-worker.log` for task processing
+
+## Key Features
+
+- **🔐 Authentication System** - Registration, login, session management
+- **⚙️ Background Tasks** - Async job processing with retry logic and dead letter queue
+- **📊 API Documentation** - Interactive OpenAPI/Swagger docs
+- **🧪 Testing Framework** - 53 integration tests + API endpoint testing
+- **🔥 Chaos Testing** - Docker-based resilience testing
+- **🐳 Docker Support** - Development and production containers
+
+## Development Commands
+
+```bash
+# Run tests
+cargo nextest run                    # Integration tests (53 tests)
+./scripts/test-with-curl.sh         # API endpoint tests (41 tests)
+./scripts/test-chaos.sh             # Chaos testing
+
+# Quality checks
+./scripts/check.sh                  # Format, lint, test (run before commits)
+
+# Background tasks
+./scripts/worker.sh                 # Start task worker
 ```
 
 ## Project Structure
 
 ```
 rust-fullstack-starter/
-├── Cargo.toml                 # Workspace configuration
-├── docker-compose.yaml        # Development infrastructure
-├── docker-compose.prod.yaml   # Production deployment
-├── scripts/                   # Development automation
-├── docs/                      # Comprehensive documentation
-└── starter/                   # Main application
+├── scripts/          # Development automation
+├── docs/            # Comprehensive documentation
+└── starter/         # Main application
     ├── src/
-    │   ├── auth/               # Authentication module
-    │   ├── users/              # User management
-    │   ├── tasks/              # Background job system
-    │   ├── openapi.rs          # API documentation
+    │   ├── auth/     # Authentication
+    │   ├── users/    # User management
+    │   ├── tasks/    # Background jobs
     │   └── ...
-    ├── migrations/             # Database schema
-    └── tests/                  # Integration tests
+    ├── migrations/   # Database schema
+    └── tests/        # Integration tests
 ```
-
-## Development Workflow
-
-```mermaid
-flowchart LR
-    subgraph "🏗️ Development Cycle"
-        A[📝 Write Code] --> B[🧪 Run Tests]
-        B --> C{✅ Tests Pass?}
-        C -->|No| D[🔧 Fix Issues]
-        C -->|Yes| E[📋 Quality Check]
-        D --> B
-        E --> F{🎯 All Checks Pass?}
-        F -->|No| D
-        F -->|Yes| G[🚀 Deploy/Commit]
-    end
-    
-    subgraph "🧪 Testing Layers"
-        T1[Unit Tests<br/>📝 Function Level]
-        T2[Integration Tests<br/>🔌 53 Tests]
-        T3[API Tests<br/>🌐 41 Endpoints]
-        T4[Chaos Tests<br/>🔥 Resilience]
-    end
-    
-    subgraph "📋 Quality Gates"
-        Q1[🎨 Code Format<br/>cargo fmt]
-        Q2[🔍 Linting<br/>cargo clippy]
-        Q3[🗄️ SQLx Prepare<br/>Query Cache]
-        Q4[🛡️ Security Audit<br/>Dependencies]
-    end
-    
-    B --> T1
-    B --> T2
-    B --> T3
-    B --> T4
-    
-    E --> Q1
-    E --> Q2
-    E --> Q3
-    E --> Q4
-```
-
-### Running Tests
-
-```bash
-# Install test runner (recommended)
-cargo install cargo-nextest
-
-# Run integration tests (53 tests, ~12 seconds)
-cargo nextest run
-
-# Test API endpoints (41 endpoint tests)
-./scripts/test-with-curl.sh
-
-# Combined workflow
-cargo nextest run && ./scripts/test-with-curl.sh
-
-# Docker-based chaos testing for resilience validation
-./scripts/test-chaos.sh
-```
-
-### API Development
-
-The starter includes interactive API documentation:
-
-- **Documentation**: http://localhost:3000/api-docs
-- **OpenAPI Schema**: http://localhost:3000/api-docs/openapi.json
-- **Health Check**: http://localhost:3000/health
-
-Key endpoints:
-- `POST /auth/register` - User registration
-- `POST /auth/login` - User authentication
-- `GET /users/{id}` - User profile
-- `POST /tasks` - Create background task
-- `GET /tasks` - List tasks with filtering
-- `GET /tasks/dead-letter` - Dead letter queue (failed tasks)
-- `POST /tasks/{id}/retry` - Retry failed task
-- `DELETE /tasks/{id}` - Delete completed/failed task
-
-### Background Tasks
-
-Create and process async jobs with dead letter queue management:
-
-```bash
-# Start worker process
-./scripts/worker.sh
-
-# Create task via API
-curl -X POST http://localhost:3000/tasks \
-  -H "Content-Type: application/json" \
-  -d '{"task_type": "email", "payload": {"to": "user@example.com"}}'
-
-# Monitor failed tasks (dead letter queue)
-curl http://localhost:3000/tasks/dead-letter
-
-# Retry failed task
-curl -X POST http://localhost:3000/tasks/{task_id}/retry
-
-# Clean up completed/failed tasks
-curl -X DELETE http://localhost:3000/tasks/{task_id}
-```
-
-## Configuration
-
-### Environment Variables
-
-Copy `.env.example` to `.env` and customize:
-
-```bash
-# Database
-STARTER__DATABASE__USER=starter_user
-STARTER__DATABASE__PASSWORD=starter_pass
-STARTER__DATABASE__HOST=localhost
-STARTER__DATABASE__DATABASE=starter_db
-
-# Server
-STARTER__SERVER__HOST=127.0.0.1
-STARTER__SERVER__PORT=8080
-
-# Initial admin user (remove after first startup)
-STARTER__INITIAL_ADMIN_PASSWORD=SecurePassword123!
-```
-
-See `docs/configuration.md` for all options.
-
-## Production Deployment
-
-### Docker Deployment
-
-```bash
-# Copy production environment
-cp .env.prod.example .env.prod
-
-# Edit secrets and passwords
-nano .env.prod
-
-# Deploy with Docker Compose
-docker-compose -f docker-compose.prod.yaml --env-file .env.prod up -d
-```
-
-### Manual Deployment
-
-```bash
-# Build optimized binary
-cargo build --release
-
-# Run migrations
-sqlx migrate run
-
-# Start services
-./target/release/starter server --port 8080
-./target/release/starter worker
-```
-
-## Architecture
-
-### Core Components
-
-- **Axum Web Framework** - HTTP server and routing
-- **SQLx** - Database integration with compile-time checked queries
-- **PostgreSQL** - Primary database with JSONB support
-- **Tokio** - Async runtime for concurrent processing
-- **utoipa** - OpenAPI documentation generation
-
-### Design Patterns
-
-- **Service Layer Pattern** - Function-based services for business logic and data access
-- **Domain Models** - Clean separation between database entities and API responses
-- **Background Jobs** - Async task processing with retry logic
-- **Circuit Breaker** - Fault tolerance for external services
-- **Health Checks** - Application and dependency monitoring
-
-## Testing
-
-The starter includes comprehensive testing patterns:
-
-### Test Architecture
-
-- **TestApp Pattern** - Spawns real server instances
-- **Database Isolation** - Each test gets its own PostgreSQL database
-- **Test Factories** - Consistent test data generation
-- **Helper Utilities** - Common assertions and test setup
-
-### Test Categories
-
-- **Authentication Tests** - Registration, login, session management
-- **API Standards Tests** - CORS, security headers, error handling
-- **Task Processing Tests** - Background job lifecycle, task type validation, and dead letter queue management
-- **Health Check Tests** - Application monitoring
 
 ## Documentation
 
-### Getting Started & Operations
-- **[Getting Started](docs/getting-started.md)** - Setup and first steps
-- **[Development Guide](docs/development.md)** - Daily development workflow
-- **[Configuration](docs/configuration.md)** - Environment variables and settings
-- **[Production Deployment](docs/production-deployment.md)** - Docker and deployment strategies
-- **[CI/CD Pipeline](docs/cicd.md)** - GitHub Actions and automated testing
+**📚 Complete documentation available in [`docs/`](docs/)**
 
-### API & Reference
-- **[API Reference](docs/api-reference.md)** - Complete endpoint documentation
-- **[Security](docs/security.md)** - Authentication and security patterns
-- **[Reliability](docs/reliability.md)** - Circuit breakers, retries, and resilience patterns
-- **[Troubleshooting](docs/troubleshooting.md)** - Common issues and solutions
+### Quick Links
+- **[Getting Started](docs/getting-started.md)** - Detailed setup guide
+- **[Development Guide](docs/development.md)** - Daily workflow
+- **[Architecture Guides](docs/guides/)** - System design and patterns
+- **[API Reference](docs/api-reference.md)** - Complete endpoint docs
+- **[Production Deployment](docs/production-deployment.md)** - Docker deployment
 
-### Architecture Guides
-Comprehensive guides in **[`docs/guides/`](docs/guides/)**:
+### Learning Guides
+- [Authentication System](docs/guides/02-authentication.md)
+- [Background Tasks](docs/guides/04-background-tasks.md)
+- [Testing Framework](docs/guides/07-testing.md)
+- [Chaos Testing](docs/guides/08-chaos-testing.md)
 
-- **[01 - Architecture](docs/guides/01-architecture.md)** - System design and component overview
-- **[02 - Authentication](docs/guides/02-authentication.md)** - User management and security
-- **[03 - Design Patterns](docs/guides/03-patterns.md)** - Service layer and architectural patterns
-- **[04 - Background Tasks](docs/guides/04-background-tasks.md)** - Async job processing system
-- **[05 - Task Types](docs/guides/05-task-types.md)** - Creating custom task handlers
-- **[06 - Task Registry](docs/guides/06-task-registry.md)** - Organizing and managing tasks
-- **[07 - Testing](docs/guides/07-testing.md)** - Comprehensive testing framework
-- **[08 - Chaos Testing](docs/guides/08-chaos-testing.md)** - Resilience testing and failure simulation
+## API Endpoints
 
-### Reference Documentation
-- **[Task Handlers](docs/reference/task-handlers.md)** - Built-in task type reference
-- **[Project Customization](docs/project-customization.md)** - Adapting the starter for your needs
-- **[Docker Hub Setup](docs/docker-hub-setup.md)** - Container registry configuration
+Key endpoints (see [full API docs](http://localhost:3000/api-docs)):
 
-## Learning Resources
+- `POST /auth/register` - User registration
+- `POST /auth/login` - Authentication
+- `POST /tasks` - Create background task
+- `GET /tasks/dead-letter` - Failed task queue
+- `GET /health` - Health check
 
-This starter is designed for learning modern Rust web development:
+## Configuration
 
-### Key Learning Areas
+Copy `.env.example` to `.env` and set your admin password:
 
-- **Async Rust** - Tokio, async/await patterns
-- **Web Development** - Axum framework, HTTP handling
-- **Database Integration** - SQLx, migrations, connection pooling
-- **Testing Strategies** - Integration testing, test isolation, Docker-based chaos testing
-- **Error Handling** - Result types, custom error types
-- **Security** - Authentication, session management
-- **Reliability Patterns** - Circuit breakers, retries, resilience testing
+```bash
+cp .env.example .env
+# Edit .env and set STARTER__INITIAL_ADMIN_PASSWORD
+```
 
-### Code Examples
+## Production Deployment
 
-The codebase includes examples for:
-- User authentication and authorization
-- Background job processing with retries and dead letter queue
-- Database transactions and error handling
-- API documentation with OpenAPI
-- Docker containerization
-- Comprehensive testing patterns
-- Docker-based chaos testing and failure simulation
-
-## Contributing
-
-This is a starter template for learning and development. When using this starter:
-
-1. **Customize for your needs** - Remove unused features, add your own
-2. **Update dependencies** - Keep dependencies current for your project
-3. **Adapt patterns** - Modify architectural patterns to fit your use case
-4. **Extend documentation** - Document your specific business logic
+```bash
+# Docker deployment
+cp .env.prod.example .env.prod
+# Edit .env.prod with production settings
+docker-compose -f docker-compose.prod.yaml --env-file .env.prod up -d
+```
 
 ## License
 
 MIT License - see LICENSE file for details.
 
-## Support
-
-- **Issues**: Report problems or ask questions via GitHub issues
-- **Documentation**: Comprehensive guides in the `docs/` directory
-- **Examples**: Study the test suite for usage patterns
-
 ---
 
-*This starter template demonstrates modern Rust web development patterns and is intended for learning and rapid prototyping. Adapt and extend it based on your specific requirements.*
+*Ready to build? Start with the [Getting Started Guide](docs/getting-started.md) for detailed setup instructions.*
