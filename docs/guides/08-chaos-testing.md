@@ -62,14 +62,14 @@ Start small and gradually increase scope:
 
 ## Framework Architecture
 
-### Deployment Options
+### Docker-Based Architecture
 
-The chaos testing framework supports two deployment modes:
+The chaos testing framework uses Docker containers for realistic testing environments:
 
-1. **Binary-Based Testing** (Traditional): Direct process management for rapid development
-2. **Docker-Based Testing** (Enhanced): Container isolation with resource limits
-
-For Docker-based chaos testing, see the [Docker Chaos Testing Guide](09-docker-chaos-testing.md).
+- **Container Isolation**: Each service runs in isolated Docker containers
+- **Resource Constraints**: CPU and memory limits simulate real constraints
+- **Horizontal Scaling**: Easy scaling of worker containers for load testing
+- **Realistic Failures**: Container crashes and restarts mirror real deployment issues
 
 ### Core Components
 
@@ -419,10 +419,11 @@ The framework provides 6 scientifically-designed difficulty levels with logical 
 
 ### Quick Start
 
-### Binary-Based Testing (Traditional)
+The chaos testing framework uses Docker containers for realistic testing environments:
 
 ```bash
 # Basic chaos testing (recommended for daily use)
+# Automatically builds and runs containers with latest code
 ./scripts/test-chaos.sh
 
 # Advanced testing with higher difficulty
@@ -433,30 +434,17 @@ The framework provides 6 scientifically-designed difficulty levels with logical 
 
 # Verbose output with detailed logs
 ./scripts/test-chaos.sh --difficulty 5 --verbose
+
+# Container scaling and multi-worker testing
+./scripts/test-chaos.sh --scenarios "multi-worker-chaos"
 ```
 
-### Docker-Based Testing (Enhanced)
-
-The chaos testing framework now automatically uses Docker containers for improved realism:
-
-```bash
-# Docker chaos testing with resource limits (unified framework)
-# Note: Automatically builds containers with latest code before testing
-./scripts/test-chaos.sh --difficulty 1
-
-# Test with container resource constraints
-./scripts/test-chaos.sh --difficulty 3
-
-# All scenarios now run in Docker containers automatically
-./scripts/test-chaos.sh --scenarios "baseline,multi-worker-chaos"
-```
-
-**Docker Benefits:**
-- **Container Isolation**: Each service runs in isolated Docker containers
-- **Resource Limits**: CPU and memory constraints for realistic testing
-- **Production Alignment**: Same runtime environment as production
-- **Scalable Testing**: Easy horizontal scaling of workers
-- **Always Fresh**: Automatically rebuilds images with latest code changes
+**Docker Container Benefits:**
+- **Container Isolation**: Each service runs in isolated Docker containers for realistic testing
+- **Resource Constraints**: CPU and memory limits simulate real deployment constraints
+- **Horizontal Scaling**: Easy scaling of worker containers with Docker Compose
+- **Realistic Failures**: Container crashes and restarts mirror actual deployment issues
+- **Fresh Code**: Automatically rebuilds images ensuring tests use latest changes
 
 ### Progressive Testing Strategy
 
@@ -516,9 +504,9 @@ The framework tracks several key metrics:
 - Level 3-4: Should be 85-95%
 - Level 5: Should be 80%+
 
-**Recovery Time**: Time from failure to first successful API call
-- Target: < 15 seconds for most scenarios
-- Warning: > 30 seconds indicates issues
+**Recovery Time**: Time from container failure to first successful API call
+- Target: < 20 seconds for Docker-based scenarios
+- Warning: > 30 seconds indicates container issues
 
 **Task Processing**: Tasks completed vs. tasks created
 - Should maintain processing throughput
@@ -539,9 +527,9 @@ The framework tracks several key metrics:
 
 ⚠️ **Areas for Improvement**:
 - Success rate 70-85%
-- Recovery time 15-30 seconds
+- Container recovery time 20-30 seconds
 - High task failure rates
-- Slow database recovery
+- Slow container health checks
 
 ### Example Results Analysis
 

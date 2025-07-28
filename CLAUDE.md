@@ -63,19 +63,19 @@ Key development scripts in `/scripts/`:
 - `auth-helper.sh` - Create test users and authentication tokens
 - `task-flood.sh` - Generate high task loads for performance testing
 - `delay-task-flood.sh` - **NEW**: Create delay tasks with configurable deadlines for worker chaos testing
-- `multi-worker-chaos.sh` - **NEW**: Manage multiple workers with random failure simulation
+- `multi-worker-chaos.sh` - **NEW**: Docker Compose scaling for multi-worker chaos testing
 - `task-completion-monitor.sh` - **NEW**: Monitor task completion against deadlines with statistics
 - `service-chaos.sh` - Simulate service failures (server, worker, database)
 
-## Production Features
+## Starter Features
 
-This starter includes production-ready infrastructure:
-- **Docker Configuration**: Multi-stage builds with distroless runtime (`Dockerfile.prod`, `docker-compose.prod.yaml`)
-- **Kubernetes Support**: Health probes, deployment manifests, and persistent storage (`k8s/`)
-- **CI/CD Pipelines**: GitHub Actions workflows for testing, security, building, and deployment (`.github/workflows/`)
-- **Security Scanning**: Automated dependency audits, secret detection, and vulnerability scanning
-- **Automated Deployment**: Production deployment scripts with validation and backups
-- **Project Customization**: Automated project renaming with comprehensive validation
+This starter template includes comprehensive development infrastructure:
+- **Docker Configuration**: Multi-stage builds with development and testing setups (`Dockerfile.prod`, `docker-compose.yaml`, `docker-compose.chaos.yaml`)
+- **Container Testing**: Docker-based chaos testing with container isolation and resource limits
+- **CI/CD Examples**: GitHub Actions workflows demonstrating testing, security, and deployment patterns (`.github/workflows/`)
+- **Development Tools**: Automated scripts for testing, quality checks, and development workflow
+- **Testing Framework**: Integration testing with database isolation and Docker-based resilience testing
+- **Project Customization**: Automated project renaming and adaptation tools
 
 ## Development Workflow
 
@@ -85,7 +85,7 @@ This starter includes production-ready infrastructure:
 2. **Quality Checks**: `./scripts/check.sh` (**MANDATORY before every commit**)
    - Validates: formatting, linting, compilation, SQLx, tests
 3. **API Testing**: `./scripts/test-with-curl.sh` (40+ endpoint tests)
-4. **Chaos Testing**: `./scripts/test-chaos.sh` (resilience validation)
+4. **Chaos Testing**: `./scripts/test-chaos.sh` (Docker-based resilience validation)
 5. **Stop Services**: `./scripts/stop-server.sh 3000`
 
 ## Pre-Commit Requirements
@@ -112,12 +112,12 @@ Available chaos testing scenarios:
 - `circuit-breaker` - Circuit breaker activation/recovery
 - `mixed-chaos` - Multiple simultaneous failures
 - `recovery` - Recovery time measurement
-- `multi-worker-chaos` - **NEW**: Multiple workers with random failures and delay tasks with deadlines
-  - Tests worker resilience with configurable delays and task deadlines
-  - Simulates random worker failures during task processing
-  - Validates retry behavior and task completion under stress
+- `multi-worker-chaos` - **NEW**: Docker-based multi-worker testing with container scaling and failures
+  - Uses Docker Compose scaling to manage multiple worker containers
+  - Simulates random container failures and automatic restarts
+  - Tests task completion under worker chaos with configurable delays and deadlines
   - Configurable difficulty levels (1-6) affect worker count, task delays, and failure intervals
-  - **Level 6 (Catastrophic)**: Designed to fail - tests impossible workloads and failure handling
+  - **Level 6 (Catastrophic)**: Designed to fail - tests impossible workloads and container failure handling
 
 ## Task Type Registration System
 
@@ -135,4 +135,4 @@ Available chaos testing scenarios:
 ### Impact on Development:
 - **Start workers before creating tasks** - API will reject tasks for unregistered types
 - **Tests updated** - All 51 integration tests pass with new validation
-- **Chaos testing improved** - Now catches task type mismatches that were previously silent failures
+- **Docker-based chaos testing** - All scenarios now run in isolated containers with proper resource limits

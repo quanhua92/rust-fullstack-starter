@@ -108,7 +108,7 @@ Gracefully stop background worker.
 ## 🧪 Testing & Integration
 
 ### Rust Integration Tests (Recommended)
-Comprehensive test suite with 51 integration tests covering all functionality:
+Comprehensive test suite with 53 integration tests covering all functionality:
 ```bash
 # Install faster test runner (recommended)
 cargo install cargo-nextest
@@ -126,40 +126,30 @@ cargo nextest run api::      # API standards tests
 Benefits of the Rust test suite:
 - **Fast**: 10x speedup with database template pattern
 - **Isolated**: Each test gets its own database
-- **Comprehensive**: 51 tests covering all functionality including metadata persistence
+- **Comprehensive**: 53 tests covering all functionality including metadata persistence
 - **Reliable**: Uses proper HTTP client and test harness
 - **TDD**: Includes Test-Driven Development tests for critical system behaviors
 
 ### Chaos Testing Framework (Advanced)
-Comprehensive resilience testing with 6 difficulty levels and realistic failure scenarios:
+Docker-based resilience testing with 6 difficulty levels and container isolation:
 
-**Binary-Based Testing (Traditional):**
 ```bash
-# Basic resilience testing
+# Basic resilience testing with Docker containers
 ./scripts/test-chaos.sh --difficulty 1
 
-# Advanced chaos scenarios  
+# Advanced chaos scenarios with resource constraints
 ./scripts/test-chaos.sh --difficulty 6 --verbose
 
-# Specific scenarios only
-./scripts/test-chaos.sh --scenarios "multi-worker-chaos"
-```
+# Specific container-based scenarios
+./scripts/test-chaos.sh --scenarios "multi-worker-chaos,db-failure"
 
-**Docker-Based Testing (Enhanced):** ⭐ **NEW**
-```bash
-# Docker chaos testing with resource limits (now unified)
-./scripts/test-chaos.sh --difficulty 1
-
-# Container resource constraints testing
-./scripts/test-chaos.sh --difficulty 3
-
-# Docker-specific scenarios (automatically uses Docker containers)
-./scripts/test-chaos.sh --scenarios "container-restart,resource-pressure"
+# Container scaling and worker resilience testing
+./scripts/test-chaos.sh --scenarios "baseline,server-restart,worker-restart"
 ```
 
 **API Endpoint Testing:**
 ```bash
-./scripts/test-with-curl.sh             # 38 endpoint tests (~5 seconds)
+./scripts/test-with-curl.sh             # 40+ endpoint tests (~5 seconds)
 ./scripts/test-with-curl.sh localhost 8080  # Custom host/port
 ```
 
@@ -172,18 +162,18 @@ Comprehensive resilience testing with 6 difficulty levels and realistic failure 
 - **Level 6** - Catastrophic Load: 2 workers, 40 tasks, 20-50% completion (stress test limits)
 
 **Chaos Testing Features:**
-- **Multi-worker resilience**: Tests worker failures, restarts, and recovery
-- **Task completion monitoring**: Real-time progress tracking with metadata validation
-- **Deadline enforcement**: Validates system performance under time pressure
-- **Failure injection**: Systematic worker cycling and service disruption
-- **Comprehensive reporting**: Detailed logs, statistics, and failure analysis
+- **Multi-worker Resilience**: Docker Compose scaling with container failure simulation
+- **Task Completion Monitoring**: Real-time progress tracking with metadata validation
+- **Deadline Enforcement**: Validates system performance under time pressure
+- **Container Failure Injection**: Systematic container kills and automatic restarts
+- **Comprehensive Reporting**: Detailed logs, statistics, and failure analysis
 
-**Docker Chaos Features:** ⭐ **NEW**
-- **Container isolation**: Tests run in isolated Docker containers
-- **Resource constraints**: CPU and memory limits for realistic testing
-- **Container failures**: Docker kill/restart scenarios
-- **Horizontal scaling**: Multi-container worker testing
-- **Production alignment**: Same runtime environment as production
+**Docker Container Features:**
+- **Container Isolation**: Each service runs in isolated Docker containers for realistic testing
+- **Resource Constraints**: CPU and memory limits simulate deployment constraints
+- **Container Failures**: Docker kill/restart scenarios mirror real deployment issues
+- **Horizontal Scaling**: Multi-container worker testing with Docker Compose scaling
+- **Fresh Code Testing**: Automatically rebuilds containers ensuring tests use latest changes
 
 ## 📊 Complete Workflow Examples
 

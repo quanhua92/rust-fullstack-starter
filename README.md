@@ -10,7 +10,7 @@ A modern Rust web application starter template with authentication, background t
 - **Database Integration** - PostgreSQL with migrations and connection pooling
 - **API Documentation** - Interactive OpenAPI/Swagger documentation
 - **Testing Framework** - Comprehensive integration tests with isolated databases
-- **Chaos Testing** - Systematic resilience testing with failure simulation
+- **Chaos Testing** - Docker-based resilience testing with container isolation and failure simulation
 - **Development Tools** - Docker Compose, health checks, and development scripts
 - **Docker Support** - Development and production container configurations
 
@@ -85,7 +85,7 @@ cargo nextest run
 # Combined workflow
 cargo nextest run && ./scripts/test-with-curl.sh
 
-# Chaos testing for resilience validation
+# Docker-based chaos testing for resilience validation
 ./scripts/test-chaos.sh
 ```
 
@@ -259,7 +259,7 @@ This starter is designed for learning modern Rust web development:
 - **Async Rust** - Tokio, async/await patterns
 - **Web Development** - Axum framework, HTTP handling
 - **Database Integration** - SQLx, migrations, connection pooling
-- **Testing Strategies** - Integration testing, test isolation, chaos engineering
+- **Testing Strategies** - Integration testing, test isolation, Docker-based chaos testing
 - **Error Handling** - Result types, custom error types
 - **Security** - Authentication, session management
 - **Reliability Patterns** - Circuit breakers, retries, resilience testing
@@ -273,7 +273,7 @@ The codebase includes examples for:
 - API documentation with OpenAPI
 - Docker containerization
 - Comprehensive testing patterns
-- Chaos engineering and failure simulation
+- Docker-based chaos testing and failure simulation
 
 ## Contributing
 
