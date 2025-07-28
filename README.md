@@ -76,10 +76,10 @@ rust-fullstack-starter/
 # Install test runner (recommended)
 cargo install cargo-nextest
 
-# Run integration tests (40 tests, ~10 seconds)
+# Run integration tests (53 tests, ~12 seconds)
 cargo nextest run
 
-# Test API endpoints (29 endpoint tests)
+# Test API endpoints (38 endpoint tests)
 ./scripts/test-with-curl.sh
 
 # Combined workflow

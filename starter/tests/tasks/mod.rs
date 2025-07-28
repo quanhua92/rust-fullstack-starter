@@ -24,6 +24,60 @@ async fn test_create_task() {
 }
 
 #[tokio::test]
+async fn test_create_task_with_metadata() {
+    let app = spawn_app().await;
+    let factory = TestDataFactory::new_with_task_types(app.clone()).await;
+
+    // Create authenticated user for task creation
+    let unique_username = format!("testuser_{}", &uuid::Uuid::new_v4().to_string()[..8]);
+    let (_user, token) = factory.create_authenticated_user(&unique_username).await;
+
+    // Create task with custom metadata
+    let task_payload = json!({
+        "task_type": "delay_task",
+        "payload": {
+            "delay_seconds": 1,
+            "task_id": "test_metadata_preservation",
+            "test_scenario": "metadata_test"
+        },
+        "priority": "normal",
+        "metadata": {
+            "chaos_test": true,
+            "task_prefix": "multiworker",
+            "delay_duration": 1,
+            "custom_field": "test_value",
+            "task_id": "test_metadata_preservation"
+        }
+    });
+
+    let response = app
+        .post_json_auth("/tasks", &task_payload, &token.token)
+        .await;
+
+    assert_eq!(response.status(), 200);
+    let task_response: serde_json::Value = response.json().await.unwrap();
+    assert_json_field_exists(&task_response, "data");
+
+    let task_id = task_response["data"]["id"].as_str().unwrap();
+
+    // Get the task and verify metadata is preserved
+    let get_response = app
+        .get_auth(&format!("/tasks/{task_id}"), &token.token)
+        .await;
+
+    assert_eq!(get_response.status(), 200);
+    let get_task_response: serde_json::Value = get_response.json().await.unwrap();
+
+    let metadata = &get_task_response["data"]["metadata"];
+    assert_eq!(metadata["chaos_test"], true);
+    assert_eq!(metadata["task_prefix"], "multiworker");
+    assert_eq!(metadata["delay_duration"], 1);
+    assert_eq!(metadata["custom_field"], "test_value");
+    assert_eq!(metadata["task_id"], "test_metadata_preservation");
+    assert_eq!(metadata["api_created"], true); // Should be added by API
+}
+
+#[tokio::test]
 async fn test_get_task_status() {
     let app = spawn_app().await;
     let factory = TestDataFactory::new(app.clone());
@@ -602,4 +656,269 @@ async fn test_dead_letter_queue_pagination() {
     for task in tasks {
         assert_eq!(task["status"], "Failed");
     }
+}
+
+/// TDD Test: Comprehensive metadata persistence through ACTUAL task processing pipeline
+/// This test verifies that custom metadata (especially task_prefix used by chaos testing)
+/// is preserved when tasks are processed by the real worker system, not direct DB updates.
+/// THIS TEST SHOULD FAIL initially to expose the metadata persistence bug in task processing.
+#[tokio::test]
+async fn test_metadata_persistence_through_all_state_transitions() {
+    let app = spawn_app().await;
+    let factory = TestDataFactory::new_with_task_types(app.clone()).await;
+
+    // Start a task processor for this test (simulates the worker)
+    use starter::database::Database;
+    use starter::tasks::processor::{ProcessorConfig, TaskProcessor};
+    use std::time::Duration;
+
+    let database = Database {
+        pool: app.db_pool.clone(),
+    };
+    let config = ProcessorConfig {
+        poll_interval: Duration::from_millis(100), // Fast polling for tests
+        task_timeout: Duration::from_secs(30),
+        max_concurrent_tasks: 2,
+        ..Default::default()
+    };
+
+    let processor = TaskProcessor::new(database, config);
+
+    // Register the delay_task handler
+    use starter::tasks::handlers::DelayTaskHandler;
+    processor
+        .register_handler("delay_task".to_string(), DelayTaskHandler)
+        .await;
+
+    // Start the processor in background
+    let processor_handle = {
+        let processor_clone = processor.clone();
+        tokio::spawn(async move {
+            processor_clone
+                .start_worker()
+                .await
+                .expect("Processor should start");
+        })
+    };
+
+    // Give the processor a moment to start
+    tokio::time::sleep(Duration::from_millis(100)).await;
+
+    // Create authenticated user for task operations
+    let unique_username = format!("testuser_{}", &uuid::Uuid::new_v4().to_string()[..8]);
+    let (_user, token) = factory.create_authenticated_user(&unique_username).await;
+
+    // Test metadata that should persist through all state transitions
+    let test_metadata = json!({
+        "task_prefix": "multiworker",
+        "chaos_test": true,
+        "test_run_id": "metadata_persistence_test",
+        "custom_field": "test_value",
+        "priority_override": "high",
+        "created_by_test": true
+    });
+
+    // 1. CREATE task with custom metadata (Pending state)
+    let task_payload = json!({
+        "task_type": "delay_task",
+        "payload": {
+            "delay_seconds": 1,  // Short delay so test completes quickly
+            "task_id": "metadata_persistence_test",
+            "test_scenario": "worker_processing"
+        },
+        "priority": "normal",
+        "metadata": test_metadata
+    });
+
+    let response = app
+        .post_json_auth("/tasks", &task_payload, &token.token)
+        .await;
+
+    assert_eq!(response.status(), 200);
+    let task_response: serde_json::Value = response.json().await.unwrap();
+    assert_json_field_exists(&task_response, "data");
+
+    let task_id = task_response["data"]["id"].as_str().unwrap();
+
+    // Verify metadata in PENDING state immediately after creation
+    let get_response = app
+        .get_auth(&format!("/tasks/{task_id}"), &token.token)
+        .await;
+    assert_eq!(get_response.status(), 200);
+    let pending_task: serde_json::Value = get_response.json().await.unwrap();
+
+    assert_eq!(pending_task["data"]["status"], "Pending");
+    assert_metadata_preserved(&pending_task["data"]["metadata"], &test_metadata);
+
+    // 2. Wait for task to be processed by the actual worker
+    // This is the critical difference - we let the REAL task processor handle it
+    let mut attempts = 0;
+    let max_attempts = 15; // 15 seconds max wait
+    let mut final_task: Option<serde_json::Value> = None;
+
+    while attempts < max_attempts {
+        tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
+
+        let check_response = app
+            .get_auth(&format!("/tasks/{task_id}"), &token.token)
+            .await;
+
+        if check_response.status() == 200 {
+            let task_data: serde_json::Value = check_response.json().await.unwrap();
+            let status = task_data["data"]["status"].as_str().unwrap_or("Unknown");
+
+            // Log the current state for debugging
+            println!(
+                "Attempt {}: Task status = {}, metadata = {}",
+                attempts + 1,
+                status,
+                task_data["data"]["metadata"]
+            );
+
+            match status {
+                "Completed" => {
+                    final_task = Some(task_data);
+                    break;
+                }
+                "Failed" => {
+                    panic!(
+                        "Task failed during processing: {}",
+                        task_data["data"]["last_error"]
+                            .as_str()
+                            .unwrap_or("Unknown error")
+                    );
+                }
+                "Running" => {
+                    // Verify metadata is preserved during RUNNING state
+                    assert_metadata_preserved(&task_data["data"]["metadata"], &test_metadata);
+                }
+                "Pending" => {
+                    // Still waiting
+                }
+                _ => {
+                    println!("Unexpected status: {status}");
+                }
+            }
+        }
+
+        attempts += 1;
+    }
+
+    // 3. Verify the task completed and check metadata preservation
+    let completed_task = final_task.unwrap_or_else(|| panic!("Task {task_id} did not complete within {max_attempts} seconds. This might indicate the worker is not running or the task is stuck."));
+
+    assert_eq!(completed_task["data"]["status"], "Completed");
+
+    // THIS IS THE CRITICAL TEST - metadata should be preserved after worker processing
+    // This assertion should FAIL initially, exposing the bug
+    assert_metadata_preserved(&completed_task["data"]["metadata"], &test_metadata);
+
+    // 4. Also verify in task listings (as chaos testing uses this)
+    let list_response = app.get_auth("/tasks?limit=100", &token.token).await;
+    assert_eq!(list_response.status(), 200);
+    let list_result: serde_json::Value = list_response.json().await.unwrap();
+    let tasks_list = list_result["data"].as_array().unwrap();
+
+    // Find our test task in the list
+    let test_task = tasks_list
+        .iter()
+        .find(|task| task["id"].as_str() == Some(task_id))
+        .expect("Test task should be in task list");
+
+    // Verify metadata is preserved in task listings (critical for chaos testing)
+    assert_metadata_preserved(&test_task["metadata"], &test_metadata);
+
+    // 5. Additional test: Create a task that would be used by chaos testing
+    // and verify it can be found by the monitoring script's filtering logic
+    let chaos_task_payload = json!({
+        "task_type": "delay_task",
+        "payload": {
+            "delay_seconds": 1,
+            "task_id": "chaos_multiworker_test"
+        },
+        "priority": "normal",
+        "metadata": {
+            "task_prefix": "multiworker",  // This is what chaos testing looks for
+            "chaos_test": true,
+            "scenario": "tdd_verification"
+        }
+    });
+
+    let chaos_response = app
+        .post_json_auth("/tasks", &chaos_task_payload, &token.token)
+        .await;
+
+    let chaos_task_data: serde_json::Value = chaos_response.json().await.unwrap();
+    let chaos_task_id = chaos_task_data["data"]["id"].as_str().unwrap();
+
+    // Wait for chaos task to complete
+    attempts = 0;
+    while attempts < max_attempts {
+        tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
+
+        let chaos_check = app
+            .get_auth(&format!("/tasks/{chaos_task_id}"), &token.token)
+            .await;
+
+        if chaos_check.status() == 200 {
+            let chaos_data: serde_json::Value = chaos_check.json().await.unwrap();
+            if chaos_data["data"]["status"] == "Completed" {
+                // Verify the chaos task still has its task_prefix after completion
+                let metadata = &chaos_data["data"]["metadata"];
+                assert_eq!(
+                    metadata["task_prefix"], "multiworker",
+                    "task_prefix metadata must be preserved for chaos testing to work"
+                );
+                assert_eq!(
+                    metadata["chaos_test"], true,
+                    "chaos_test metadata must be preserved"
+                );
+                break;
+            }
+        }
+        attempts += 1;
+    }
+
+    if attempts >= max_attempts {
+        panic!("Chaos task did not complete within {max_attempts} seconds");
+    }
+
+    // Clean up: stop the processor
+    processor_handle.abort();
+}
+
+/// Helper function to assert that all expected metadata fields are preserved
+fn assert_metadata_preserved(
+    actual_metadata: &serde_json::Value,
+    expected_metadata: &serde_json::Value,
+) {
+    let actual_map = actual_metadata
+        .as_object()
+        .expect("Metadata should be an object");
+    let expected_map = expected_metadata
+        .as_object()
+        .expect("Expected metadata should be an object");
+
+    for (key, expected_value) in expected_map.iter() {
+        assert!(
+            actual_map.contains_key(key),
+            "Metadata should contain key '{key}'. Actual metadata: {actual_metadata:?}"
+        );
+
+        assert_eq!(
+            actual_map[key], *expected_value,
+            "Metadata value for key '{key}' should be preserved. Expected: {expected_value:?}, Actual: {:?}",
+            actual_map[key]
+        );
+    }
+
+    // Specifically verify the critical fields for chaos testing
+    assert_eq!(
+        actual_map["task_prefix"], "multiworker",
+        "task_prefix metadata is critical for chaos testing and must be preserved"
+    );
+    assert_eq!(
+        actual_map["chaos_test"], true,
+        "chaos_test metadata must be preserved"
+    );
 }

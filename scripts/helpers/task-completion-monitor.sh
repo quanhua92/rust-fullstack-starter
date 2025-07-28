@@ -46,9 +46,6 @@ usage() {
 AUTH_TOKEN=""
 VERBOSE=false
 
-# DEBUG: Show all received arguments
-echo "DEBUG: task-completion-monitor.sh received $# arguments: $@"
-
 while [[ $# -gt 0 ]]; do
     case $1 in
         -u|--url)
@@ -72,7 +69,9 @@ while [[ $# -gt 0 ]]; do
             shift 2
             ;;
         -a|--auth)
-            echo "DEBUG: Setting AUTH_TOKEN from parameter: '${2:0:20}...'"
+            if [ "$VERBOSE" = true ]; then
+                echo "DEBUG: Setting AUTH_TOKEN from parameter: '${2:0:20}...'"
+            fi
             AUTH_TOKEN="$2"
             shift 2
             ;;
@@ -96,6 +95,13 @@ if [ -z "$AUTH_TOKEN" ]; then
     echo "Error: Authentication token required (-a/--auth)" >&2
     usage >&2
     exit 1
+fi
+
+# Show debug info if verbose
+if [ "$VERBOSE" = true ]; then
+    echo "DEBUG: Monitoring tasks with prefix: '$TASK_PREFIX'"
+    echo "DEBUG: Using AUTH_TOKEN: '${AUTH_TOKEN:0:20}...'"
+    echo "DEBUG: Base URL: $BASE_URL"
 fi
 
 log() {
@@ -122,28 +128,121 @@ get_tasks_by_prefix() {
         return 1
     fi
     
-    # Filter tasks by prefix in metadata or task payload
+    # Filter tasks by prefix in metadata or task payload with detailed analysis
     echo "$response" | python3 -c "
 import json, sys
+from collections import Counter
+verbose = '${VERBOSE}' == 'true'
+prefix = '${TASK_PREFIX}'
+
 try:
     data = json.load(sys.stdin)
-    tasks = data.get('tasks', []) if isinstance(data, dict) else data
+    tasks = data.get('data', []) if isinstance(data, dict) else data
     filtered_tasks = []
+    
+    # Analyze all tasks first
+    task_types = Counter()
+    status_counts = Counter() 
+    worker_counts = Counter()
+    status_by_type = {}  # {task_type: {status: count}}
+    
     for task in tasks:
-        # Check if task matches our prefix criteria
-        task_data = task.get('payload', {})
+        task_type = task.get('task_type', 'unknown')
+        status = task.get('status', 'unknown')
         metadata = task.get('metadata', {})
         
+        task_types[task_type] += 1
+        status_counts[status] += 1
+        
+        # Track status distribution per task type
+        if task_type not in status_by_type:
+            status_by_type[task_type] = Counter()
+        status_by_type[task_type][status] += 1
+        
+        # Count workers if present in metadata
+        if isinstance(metadata, dict):
+            worker_id = metadata.get('worker_id', metadata.get('processed_by', 'none'))
+            if worker_id != 'none':
+                worker_counts[worker_id] += 1
+    
+    if verbose:
+        print(f'DEBUG: === PRE-FILTER ANALYSIS ===', file=sys.stderr)
+        print(f'DEBUG: Total tasks in system: {len(tasks)}', file=sys.stderr)
+        print(f'DEBUG: Task types: {dict(task_types)}', file=sys.stderr)
+        print(f'DEBUG: Overall status distribution: {dict(status_counts)}', file=sys.stderr)
+        print(f'DEBUG: Status distribution per task type:', file=sys.stderr)
+        for task_type, statuses in sorted(status_by_type.items()):
+            print(f'DEBUG:   {task_type}: {dict(statuses)}', file=sys.stderr)
+        if worker_counts:
+            print(f'DEBUG: Worker distribution: {dict(worker_counts)}', file=sys.stderr)
+        else:
+            print(f'DEBUG: No worker information found in task metadata', file=sys.stderr)
+        print(f'DEBUG: Looking for prefix: \"{prefix}\"', file=sys.stderr)
+        print(f'DEBUG: === FILTERING PROCESS ===', file=sys.stderr)
+    
+    # Now filter tasks
+    matching_task_types = Counter()
+    matching_status_counts = Counter()
+    matching_worker_counts = Counter()
+    matching_status_by_type = {}  # {task_type: {status: count}}
+    
+    for task in tasks:
+        task_data = task.get('payload', {})
+        metadata = task.get('metadata', {})
+        task_id = task.get('id', '')[:8]
+        task_type = task.get('task_type', 'unknown')
+        status = task.get('status', 'unknown')
+        
         # Check if it's our test task - look in metadata for task_prefix
-        if (isinstance(metadata, dict) and 
-            metadata.get('task_prefix') == '$TASK_PREFIX') or (
-            isinstance(metadata, dict) and 
-            isinstance(metadata.get('task_id', ''), str) and
-            metadata.get('task_id', '').startswith('$TASK_PREFIX')):
+        matches_prefix = (isinstance(metadata, dict) and 
+                         metadata.get('task_prefix') == prefix)
+        matches_task_id = (isinstance(metadata, dict) and 
+                          isinstance(metadata.get('task_id', ''), str) and
+                          metadata.get('task_id', '').startswith(prefix))
+        
+        if matches_prefix or matches_task_id:
+            if verbose:
+                worker_info = metadata.get('worker_id', metadata.get('processed_by', 'none'))
+                print(f'DEBUG: ✓ Match {task_id}: type={task_type}, status={status}, worker={worker_info}, prefix={metadata.get(\"task_prefix\", \"none\")}', file=sys.stderr)
+            
             filtered_tasks.append(task)
+            matching_task_types[task_type] += 1
+            matching_status_counts[status] += 1
+            
+            # Track status distribution per task type for matching tasks
+            if task_type not in matching_status_by_type:
+                matching_status_by_type[task_type] = Counter()
+            matching_status_by_type[task_type][status] += 1
+            
+            # Count workers in matching tasks
+            if isinstance(metadata, dict):
+                worker_id = metadata.get('worker_id', metadata.get('processed_by', 'none'))
+                if worker_id != 'none':
+                    matching_worker_counts[worker_id] += 1
+                    
+        elif verbose and len(filtered_tasks) == 0 and len([t for t in tasks if t.get('id') == task.get('id')]) <= 3:
+            print(f'DEBUG: ✗ No match {task_id}: type={task_type}, prefix={metadata.get(\"task_prefix\", \"none\")}, task_id={metadata.get(\"task_id\", \"none\")}', file=sys.stderr)
+    
+    if verbose:
+        print(f'DEBUG: === POST-FILTER ANALYSIS ===', file=sys.stderr)
+        print(f'DEBUG: Filtered to {len(filtered_tasks)} matching tasks', file=sys.stderr)
+        if matching_task_types:
+            print(f'DEBUG: Matching task types: {dict(matching_task_types)}', file=sys.stderr)
+        if matching_status_counts:
+            print(f'DEBUG: Matching overall status distribution: {dict(matching_status_counts)}', file=sys.stderr)
+            print(f'DEBUG: Matching status distribution per task type:', file=sys.stderr)
+            for task_type, statuses in sorted(matching_status_by_type.items()):
+                print(f'DEBUG:   {task_type}: {dict(statuses)}', file=sys.stderr)
+        if matching_worker_counts:
+            print(f'DEBUG: Matching worker distribution: {dict(matching_worker_counts)}', file=sys.stderr)
+        else:
+            print(f'DEBUG: No worker information in matching tasks', file=sys.stderr)
+        print(f'DEBUG: === END ANALYSIS ===', file=sys.stderr)
     
     print(json.dumps(filtered_tasks))
 except Exception as e:
+    if verbose:
+        print(f'DEBUG: Error filtering tasks: {e}', file=sys.stderr)
     print('[]')
 "
 }

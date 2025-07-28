@@ -117,91 +117,110 @@ Comprehensive API testing that:
 - **Measures success rates**: Calculates percentage of passing tests
 - **Reports consistently**: Standard output format
 
-## Difficulty Levels
+## Difficulty Levels (Redesigned Framework)
 
-The framework provides progressive difficulty levels to match your testing needs:
+The framework provides 6 scientifically-designed difficulty levels with logical progression from basic functionality to catastrophic load testing:
 
-### Level 1: Basic (Development)
-**Purpose**: Daily development validation
-- **Load**: 20 tasks, 0.5s delay
-- **Duration**: 10 seconds of chaos
-- **Expected**: 100% success rate, minimal impact
+### Level 1: Basic Resilience
+**Purpose**: Baseline functionality validation
+- **Configuration**: 2 workers, 10 tasks, 2s delays each, 30s deadline
+- **Chaos Pattern**: Minimal disruption (20-30s intervals)
+- **Expected**: ≥90% completion rate + deadline met
+- **Total Time**: ~30-60 seconds
 
 ```bash
 ./scripts/test-chaos.sh --difficulty 1
 ```
 
 **Use cases**:
-- Pre-commit testing
-- Local development validation
-- CI/CD pipeline checks
+- Daily development testing
+- Pre-commit validation
+- CI/CD pipeline gates
+- Basic functionality verification
 
-### Level 2: Moderate (Integration)
-**Purpose**: Pre-production validation
-- **Load**: 50 tasks, 0.2s delay
-- **Duration**: 20 seconds of chaos
-- **Expected**: 95%+ success rate, graceful degradation
+### Level 2: Light Disruption
+**Purpose**: Introduction of controlled failures
+- **Configuration**: 2 workers, 15 tasks, 3s delays each, 45s deadline
+- **Chaos Pattern**: Moderate disruption (15-25s intervals)
+- **Expected**: ≥85% completion rate + deadline met
+- **Total Time**: ~45-75 seconds
 
 ```bash
 ./scripts/test-chaos.sh --difficulty 2
 ```
 
 **Use cases**:
-- Staging environment testing
 - Integration testing
 - Feature branch validation
+- Staging environment testing
 
-### Level 3: Advanced (Load Testing)
-**Purpose**: Performance validation under stress
-- **Load**: 100 tasks, 0.1s delay  
-- **Duration**: 30 seconds of chaos
-- **Expected**: 90%+ success rate, circuit breaker activation
+### Level 3: Load Testing
+**Purpose**: Increased task volume validation
+- **Configuration**: 3 workers, 25 tasks, 3s delays each, 60s deadline
+- **Chaos Pattern**: Regular failures (10-15s intervals)
+- **Expected**: ≥80% completion rate + deadline met
+- **Total Time**: ~60-90 seconds
 
 ```bash
 ./scripts/test-chaos.sh --difficulty 3
 ```
 
 **Use cases**:
-- Performance testing
-- Circuit breaker validation
+- Performance validation
+- Load testing scenarios
 - Resource limit testing
 
-### Level 4: Expert (Pre-Production)
-**Purpose**: Production readiness validation
-- **Load**: 200 tasks, 0.05s delay
-- **Duration**: 45 seconds of chaos
-- **Expected**: 85%+ success rate, fault isolation
+### Level 4: Resource Pressure
+**Purpose**: Challenging workload validation
+- **Configuration**: 3 workers, 35 tasks, 4s delays each, 90s deadline
+- **Chaos Pattern**: Aggressive cycling (5-10s intervals)
+- **Expected**: ≥75% completion rate + deadline met
+- **Total Time**: ~90-120 seconds
 
 ```bash
 ./scripts/test-chaos.sh --difficulty 4
 ```
 
-### Level 5: Extreme (Production Validation)
-**Purpose**: Full resilience testing
-- **Load**: 500 tasks, 0.01s delay
-- **Duration**: 60 seconds of chaos
-- **Expected**: 80%+ success rate, comprehensive recovery
+**Use cases**:
+- Pre-production validation
+- High-load scenarios
+- Resource pressure testing
+
+### Level 5: Extreme Chaos
+**Purpose**: High-pressure resilience testing
+- **Configuration**: 4 workers, 30 tasks, 5s delays each, 80s deadline
+- **Chaos Pattern**: Continuous failures (3-7s intervals)
+- **Expected**: ≥60% completion rate (deadline may be missed)
+- **Total Time**: ~80-120 seconds
 
 ```bash
 ./scripts/test-chaos.sh --difficulty 5
 ```
 
-### Level 6: Catastrophic ⚠️ **DESIGNED TO FAIL**
-**Purpose**: Test system failure detection and handling
-- **Load**: 1000 tasks, 0.005s delay (multi-worker only)
-- **Multi-Worker**: 50 tasks × 15s delays = 750s needed, only 60s deadline
-- **Worker Chaos**: 30% permanent failures, 3-8s kill intervals
-- **Expected**: **SYSTEM MUST FAIL** - validates proper failure handling
+**Use cases**:
+- Extreme resilience testing
+- Chaos engineering validation
+- Production readiness testing
+
+### Level 6: Catastrophic Load ⚠️ **STRESS TEST LIMITS**
+**Purpose**: Test partial completion under impossible workload
+- **Configuration**: 2 workers, 40 tasks, 6s delays each, 60s deadline
+- **Theoretical Need**: 240s of work in 60s deadline (4x overload)
+- **Chaos Pattern**: Constant failures (2-5s intervals)
+- **Expected**: **20-50% completion** (designed partial failure)
+- **Total Time**: ~90-120 seconds
 
 ```bash
 ./scripts/test-chaos.sh --difficulty 6 --scenarios multi-worker-chaos
 ```
 
 **Use cases**:
-- Testing failure detection mechanisms
-- Validating system behavior under impossible loads
-- Confirming graceful degradation patterns
-- Training teams on failure scenarios
+- Stress testing system limits
+- Validating graceful degradation
+- Testing partial completion scenarios
+- Training on failure handling
+
+> ⚠️ **Level 6 is intentionally designed with impossible workload to test partial completion patterns**
 
 ## Chaos Scenarios
 
@@ -492,28 +511,37 @@ The framework tracks several key metrics:
 
 ### Example Results Analysis
 
+**Level 1 (Basic Resilience)**:
 ```
 📊 Chaos Testing Results
 =========================
-Total scenarios: 9
-Passed: 8
-Failed: 1
-Success rate: 89%
-Total duration: 842s
+Total scenarios: 1
+Passed: 1
+Failed: 0
+Success rate: 100%
+Total duration: 46s
 
 Scenario Results:
-✅ baseline: PASS
-✅ db-failure: PASS  
-✅ server-restart: PASS
-❌ worker-restart: FAIL
-✅ task-flood: PASS
-✅ circuit-breaker: PASS
-✅ mixed-chaos: PASS
-✅ recovery: PASS (12s avg)
-✅ multi-worker-chaos: PASS (85.2%, 12 retries)
+✅ multi-worker-chaos: PASS (100.0%, 0 retries)
 ```
 
-**Analysis**: System shows good overall resilience (87% success) with concerning worker restart issues that need investigation.
+**Analysis**: Perfect baseline performance with 100% task completion within the 30-second deadline, indicating healthy system foundation.
+
+**Level 6 (Catastrophic Load)**:
+```
+📊 Chaos Testing Results
+=========================
+Total scenarios: 1
+Passed: 1
+Failed: 0
+Success rate: 100%
+Total duration: 92s
+
+Scenario Results:
+✅ multi-worker-chaos: PASS (27.5%, 0 retries)
+```
+
+**Analysis**: Successful catastrophic load test with 27.5% completion (within expected 20-50% range), demonstrating proper partial completion handling under impossible workload.
 
 ## Customization and Extension
 

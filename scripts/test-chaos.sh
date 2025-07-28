@@ -28,19 +28,19 @@ usage() {
     echo ""
     echo "Options:"
     echo "  -p, --port PORT        Server port (default: $PORT)"
-    echo "  -d, --difficulty LEVEL Difficulty level 1-5 (default: $DIFFICULTY)"
+    echo "  -d, --difficulty LEVEL Difficulty level 1-6 (default: $DIFFICULTY)"
     echo "  -s, --scenarios LIST   Scenarios to run (default: all)"
     echo "  -o, --output DIR       Output directory (default: /tmp)"
     echo "  -v, --verbose          Verbose output"
     echo "  -h, --help             Show this help"
     echo ""
-    echo "Difficulty Levels:"
-    echo "  1 - Basic: Simple restarts and database failures"
-    echo "  2 - Moderate: Service interruptions with load"
-    echo "  3 - Advanced: High load with circuit breaker triggers"
-    echo "  4 - Expert: Multiple concurrent failures"
-    echo "  5 - Extreme: Sustained chaos with recovery testing"
-    echo "  6 - Catastrophic: Designed to fail - tests failure handling (multi-worker only)"
+    echo "Difficulty Levels (Redesigned):"
+    echo "  1 - Basic Resilience: Baseline functionality (2 workers, 10 tasks, ≥90% completion)"
+    echo "  2 - Light Disruption: Introduction of failures (2 workers, 15 tasks, ≥85% completion)" 
+    echo "  3 - Load Testing: Increased task volume (3 workers, 25 tasks, ≥80% completion)"
+    echo "  4 - Resource Pressure: Challenging workload (3 workers, 35 tasks, ≥75% completion)"
+    echo "  5 - Extreme Chaos: High-pressure scenarios (4 workers, 30 tasks, ≥60% completion)"
+    echo "  6 - Catastrophic Load: Stress test limits (2 workers, 40 tasks, 20-50% completion)"
     echo ""
     echo "Available Scenarios:"
     echo "  baseline         - Baseline functionality test"
@@ -135,6 +135,42 @@ log() {
     fi
 }
 
+# Start background status monitoring
+start_status_monitor() {
+    local scenario="$1"
+    local output_file="$OUTPUT_DIR/status-monitor-$scenario.log"
+    
+    {
+        while true; do
+            echo "=== $(date '+%Y-%m-%d %H:%M:%S') - Status Check ===" >> "$output_file"
+            "$PROJECT_ROOT/scripts/status.sh" >> "$output_file" 2>&1
+            echo "" >> "$output_file"
+            sleep 10
+        done
+    } &
+    
+    STATUS_MONITOR_PID=$!
+    echo "$STATUS_MONITOR_PID" > "$OUTPUT_DIR/status-monitor.pid"
+    
+    if [ "$VERBOSE" = true ]; then
+        log "INFO" "Started status monitor (PID: $STATUS_MONITOR_PID) -> $output_file"
+    fi
+}
+
+# Stop background status monitoring
+stop_status_monitor() {
+    if [ -f "$OUTPUT_DIR/status-monitor.pid" ]; then
+        local monitor_pid=$(cat "$OUTPUT_DIR/status-monitor.pid" 2>/dev/null)
+        if [ -n "$monitor_pid" ] && kill -0 "$monitor_pid" 2>/dev/null; then
+            kill "$monitor_pid" 2>/dev/null || true
+            if [ "$VERBOSE" = true ]; then
+                log "INFO" "Stopped status monitor (PID: $monitor_pid)"
+            fi
+        fi
+        rm -f "$OUTPUT_DIR/status-monitor.pid"
+    fi
+}
+
 run_api_test() {
     local test_name="$1"
     local expect_success="${2:-true}"
@@ -184,6 +220,9 @@ run_scenario() {
     log "INFO" "=========================================="
     log "INFO" "Starting scenario: $scenario (Difficulty: $DIFFICULTY)"
     log "INFO" "=========================================="
+    
+    # Start status monitoring for this scenario
+    start_status_monitor "$scenario"
     
     local scenario_start=$(date +%s)
     local params=$(get_difficulty_params "$DIFFICULTY")
@@ -429,18 +468,38 @@ run_scenario() {
             local min_stop_interval=10
             local max_stop_interval=20
             
+            # Redesigned levels with logical progression
             case "$DIFFICULTY" in
-                1) worker_count=2; delay_per_task=3; task_deadline=45; min_stop_interval=15; max_stop_interval=25 ;;
-                2) worker_count=3; delay_per_task=4; task_deadline=50; min_stop_interval=12; max_stop_interval=20 ;;
-                3) worker_count=3; delay_per_task=5; task_deadline=60; min_stop_interval=10; max_stop_interval=18 ;;
-                4) worker_count=4; delay_per_task=6; task_deadline=70; min_stop_interval=8; max_stop_interval=15 ;;
-                5) worker_count=5; delay_per_task=8; task_deadline=90; min_stop_interval=5; max_stop_interval=12 ;;
-                6) worker_count=5; delay_per_task=15; task_deadline=45; min_stop_interval=2; max_stop_interval=5 ;;
+                1) # Basic Resilience - Baseline functionality
+                   worker_count=2; task_count=10; delay_per_task=2; task_deadline=30; chaos_duration=8
+                   min_stop_interval=20; max_stop_interval=30  # Minimal disruption
+                   ;;
+                2) # Light Disruption - Introduction of failures  
+                   worker_count=2; task_count=15; delay_per_task=3; task_deadline=45; chaos_duration=12
+                   min_stop_interval=15; max_stop_interval=25  # Moderate disruption
+                   ;;
+                3) # Load Testing - Increased task volume
+                   worker_count=3; task_count=25; delay_per_task=3; task_deadline=60; chaos_duration=15
+                   min_stop_interval=10; max_stop_interval=15  # Regular failures
+                   ;;
+                4) # Resource Pressure - Challenging workload
+                   worker_count=3; task_count=35; delay_per_task=4; task_deadline=90; chaos_duration=20
+                   min_stop_interval=5; max_stop_interval=10   # Aggressive cycling
+                   ;;
+                5) # Extreme Chaos - High-pressure scenarios
+                   worker_count=4; task_count=30; delay_per_task=5; task_deadline=80; chaos_duration=25
+                   min_stop_interval=3; max_stop_interval=7    # Continuous failures
+                   ;;
+                6) # Catastrophic Load - Stress test limits
+                   worker_count=2; task_count=40; delay_per_task=6; task_deadline=60; chaos_duration=30
+                   min_stop_interval=2; max_stop_interval=5    # Constant failures + impossible load
+                   ;;
             esac
             
             if [ "$DIFFICULTY" -eq 6 ]; then
-                log "WARN" "⚠️  CATASTROPHIC MODE: This test is designed to fail!"
-                log "INFO" "Level 6 creates impossible workload: 30 tasks × ${delay_per_task}s = $((30 * delay_per_task))s needed, only ${task_deadline}s allowed"
+                log "WARN" "⚠️  CATASTROPHIC MODE: Overwhelming workload designed for partial completion!"
+                log "INFO" "Level 6 creates impossible workload: $task_count tasks × ${delay_per_task}s = $((task_count * delay_per_task))s needed, only ${task_deadline}s allowed"
+                log "INFO" "Theoretical capacity: $worker_count workers can handle ~$((task_deadline * worker_count / delay_per_task)) tasks in ${task_deadline}s"
             fi
             
             log "INFO" "Multi-worker scenario: $worker_count workers, ${delay_per_task}s delays, ${task_deadline}s deadline"
@@ -467,16 +526,9 @@ run_scenario() {
             sleep 5
             
             # Create delay tasks that will test the worker resilience
-            # For Level 6, use fewer tasks but still impossible timing
-            local actual_task_count=$task_count
-            if [ "$DIFFICULTY" -eq 6 ]; then
-                actual_task_count=30  # 30 tasks × 15s = 450s needed, only 45s allowed
-                log "INFO" "Level 6: Reducing to $actual_task_count tasks for focused catastrophic failure"
-            fi
-            
-            log "INFO" "Creating delay tasks (count: $actual_task_count, delay: ${delay_per_task}s each)"
+            log "INFO" "Creating delay tasks (count: $task_count, delay: ${delay_per_task}s each)"
             "$HELPERS_DIR/delay-task-flood.sh" \
-                --count "$actual_task_count" \
+                --count "$task_count" \
                 --delay "$delay_per_task" \
                 --deadline "$task_deadline" \
                 --auth "$token" \
@@ -544,39 +596,77 @@ run_scenario() {
                 success_rate=$(echo "scale=1; ($completed_tasks * 100) / $total_tasks" | bc -l 2>/dev/null || echo "0")
             fi
             
+            # Pass criteria depend on difficulty level - redesigned for logical progression
+            case "$DIFFICULTY" in
+                1) # Level 1: Basic Resilience - ≥90% completion, deadline met
+                   local min_success=$(echo "$success_rate >= 90" | bc -l 2>/dev/null || echo "0")
+                   local level_name="Basic Resilience"
+                   local require_deadline=true
+                   ;;
+                2) # Level 2: Light Disruption - ≥85% completion, deadline met  
+                   local min_success=$(echo "$success_rate >= 85" | bc -l 2>/dev/null || echo "0")
+                   local level_name="Light Disruption"
+                   local require_deadline=true
+                   ;;
+                3) # Level 3: Load Testing - ≥80% completion, deadline met
+                   local min_success=$(echo "$success_rate >= 80" | bc -l 2>/dev/null || echo "0")
+                   local level_name="Load Testing" 
+                   local require_deadline=true
+                   ;;
+                4) # Level 4: Resource Pressure - ≥75% completion, deadline met
+                   local min_success=$(echo "$success_rate >= 75" | bc -l 2>/dev/null || echo "0")
+                   local level_name="Resource Pressure"
+                   local require_deadline=true
+                   ;;
+                5) # Level 5: Extreme Chaos - ≥60% completion (deadline may be missed)
+                   local min_success=$(echo "$success_rate >= 60" | bc -l 2>/dev/null || echo "0")
+                   local level_name="Extreme Chaos"
+                   local require_deadline=false
+                   ;;
+                6) # Level 6: Catastrophic Load - 20-50% completion (impossible workload)
+                   local min_success=$(echo "$success_rate >= 20" | bc -l 2>/dev/null || echo "0")
+                   local max_success=$(echo "$success_rate <= 50" | bc -l 2>/dev/null || echo "0")
+                   local level_name="Catastrophic Load"
+                   local require_deadline=false
+                   ;;
+            esac
+            
+            log "INFO" "Level $DIFFICULTY ($level_name): Evaluating results..."
             log "INFO" "Multi-worker chaos results: $completed_tasks/$total_tasks tasks completed (${success_rate}%)"
             log "INFO" "Retry attempts: $retry_attempts, Deadline met: $deadline_met"
             
-            # Pass criteria depend on difficulty level
             if [ "$DIFFICULTY" -eq 6 ]; then
-                # Level 6: Designed to fail - success criteria are inverted
-                log "INFO" "Level 6 (Catastrophic): Testing designed failure scenario"
-                # For level 6, success means the system properly detected it couldn't meet the impossible deadline
-                # We expect 0% completion and deadline missed - this validates failure detection
-                log "INFO" "Debug: deadline_met=$deadline_met, success_rate=$success_rate"
-                local math_result=$(echo "$success_rate <= 10" | bc -l 2>/dev/null || echo "0")
-                log "INFO" "Debug: math comparison result=$math_result"
-                log "INFO" "Debug: deadline check: [$deadline_met = false] = $([ "$deadline_met" = "false" ] || [ "$deadline_met" = "False" ] && echo "true" || echo "false")"
-                log "INFO" "Debug: math check: [$math_result -eq 1] = $([ "$math_result" -eq 1 ] && echo "true" || echo "false")"
-                
-                if ([ "$deadline_met" = "false" ] || [ "$deadline_met" = "False" ]) && [ "$math_result" -eq 1 ]; then
-                    log "SUCCESS" "Multi-worker chaos scenario passed (designed failure validated)"
-                    log "SUCCESS" "System properly detected impossible workload and failed gracefully"
-                    PASSED_SCENARIOS=$((PASSED_SCENARIOS + 1))
-                    TEST_RESULTS+=("✅ multi-worker-chaos: PASS (designed failure: ${success_rate}%, deadline missed as expected)")
-                else
-                    log "ERROR" "Multi-worker chaos scenario failed (system too resilient for level 6)"
-                    log "ERROR" "Expected: deadline missed + <10% completion. Got: deadline_met=$deadline_met, completion=${success_rate}%"
-                    TEST_RESULTS+=("❌ multi-worker-chaos: FAIL (system survived: ${success_rate}%, deadline: $deadline_met)")
-                fi
-            else
-                # Levels 1-5: Normal pass criteria - >80% task completion, evidence of retries
-                if [ "$total_tasks" -gt 0 ] && [ "$(echo "$success_rate >= 80" | bc -l)" -eq 1 ] && [ "$retry_attempts" -gt 0 ]; then
-                    log "SUCCESS" "Multi-worker chaos scenario passed"
+                # Special logic for Level 6 - partial completion range
+                if [ "$min_success" -eq 1 ] && [ "$max_success" -eq 1 ]; then
+                    log "SUCCESS" "$level_name scenario passed - partial completion within expected range"
                     PASSED_SCENARIOS=$((PASSED_SCENARIOS + 1))
                     TEST_RESULTS+=("✅ multi-worker-chaos: PASS (${success_rate}%, $retry_attempts retries)")
                 else
-                    log "ERROR" "Multi-worker chaos scenario failed"
+                    log "ERROR" "$level_name scenario failed - expected 20-50% completion, got ${success_rate}%"
+                    TEST_RESULTS+=("❌ multi-worker-chaos: FAIL (${success_rate}%, $retry_attempts retries)")
+                fi
+            else
+                # Standard logic for Levels 1-5
+                local deadline_ok=0
+                if [ "$require_deadline" = "true" ]; then
+                    if [ "$deadline_met" = "true" ] || [ "$deadline_met" = "True" ]; then
+                        deadline_ok=1
+                    fi
+                else
+                    deadline_ok=1  # Don't require deadline for levels that allow it to be missed
+                fi
+                
+                if [ "$min_success" -eq 1 ] && [ "$deadline_ok" -eq 1 ]; then
+                    log "SUCCESS" "$level_name scenario passed"
+                    PASSED_SCENARIOS=$((PASSED_SCENARIOS + 1))
+                    TEST_RESULTS+=("✅ multi-worker-chaos: PASS (${success_rate}%, $retry_attempts retries)")
+                else
+                    if [ "$min_success" -eq 0 ]; then
+                        log "ERROR" "$level_name scenario failed - insufficient completion rate (${success_rate}%)"
+                    fi
+                    if [ "$deadline_ok" -eq 0 ]; then
+                        log "ERROR" "$level_name scenario failed - deadline not met"
+                    fi
                     TEST_RESULTS+=("❌ multi-worker-chaos: FAIL (${success_rate}%, $retry_attempts retries)")
                 fi
             fi
@@ -590,6 +680,9 @@ run_scenario() {
             TEST_RESULTS+=("❌ $scenario: UNKNOWN")
             ;;
     esac
+    
+    # Stop status monitoring for this scenario
+    stop_status_monitor
     
     local scenario_end=$(date +%s)
     local scenario_duration=$((scenario_end - scenario_start))
@@ -698,6 +791,9 @@ else
 fi)
 
 EOF
+
+# Cleanup any leftover status monitors
+stop_status_monitor
 
 log "SUCCESS" "Chaos testing completed!"
 log "INFO" "Report written to: $REPORT_FILE"

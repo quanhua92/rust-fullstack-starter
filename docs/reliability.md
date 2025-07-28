@@ -153,7 +153,7 @@ let task = factory.create_task("send_email", payload).await;
 
 ### Test Coverage
 
-The starter includes 38 integration tests covering:
+The starter includes 53 integration tests covering:
 
 #### Authentication Tests
 - User registration with validation
@@ -208,7 +208,7 @@ Test 3: 0.3s (clone from template)
 Total: 3.4s for 3 tests (55% faster)
 ```
 
-For 40 tests, this saves significant development time.
+For 53 tests, this saves significant development time.
 
 #### Parallel Test Execution
 Tests run safely in parallel because:
@@ -401,7 +401,7 @@ Consider adding:
 - **Load Balancing**: Multiple instance support
 - **Rate Limiting**: Request throttling
 - **Audit Logging**: Security event tracking
-- **Chaos Engineering**: See [Chaos Testing Guide](guides/08-chaos-testing.md) for systematic resilience testing
+- **Chaos Engineering**: See [Chaos Testing Guide](guides/08-chaos-testing.md) for systematic resilience testing with 6-level difficulty progression
 
 ## Best Practices Demonstrated
 

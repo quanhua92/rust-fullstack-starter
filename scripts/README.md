@@ -108,17 +108,17 @@ Gracefully stop background worker.
 ## 🧪 Testing & Integration
 
 ### Rust Integration Tests (Recommended)
-Comprehensive test suite with 38 integration tests covering all functionality:
+Comprehensive test suite with 51 integration tests covering all functionality:
 ```bash
 # Install faster test runner (recommended)
 cargo install cargo-nextest
 
-# Run all tests (~10 seconds)
+# Run all tests (~12 seconds)
 cargo nextest run
 
 # Run specific test categories
 cargo nextest run auth::     # Authentication tests (6 tests)
-cargo nextest run tasks::    # Task system tests (11 tests)
+cargo nextest run tasks::    # Task system tests (18 tests including TDD metadata tests)
 cargo nextest run health::   # Health check tests
 cargo nextest run api::      # API standards tests
 ```
@@ -126,8 +126,42 @@ cargo nextest run api::      # API standards tests
 Benefits of the Rust test suite:
 - **Fast**: 10x speedup with database template pattern
 - **Isolated**: Each test gets its own database
-- **Comprehensive**: 38 tests covering all functionality
+- **Comprehensive**: 51 tests covering all functionality including metadata persistence
 - **Reliable**: Uses proper HTTP client and test harness
+- **TDD**: Includes Test-Driven Development tests for critical system behaviors
+
+### Chaos Testing Framework (Advanced)
+Comprehensive resilience testing with 6 difficulty levels and realistic failure scenarios:
+
+```bash
+# Basic resilience testing
+./scripts/test-chaos.sh --difficulty 1
+
+# Advanced chaos scenarios  
+./scripts/test-chaos.sh --difficulty 6 --verbose
+
+# Specific scenarios only
+./scripts/test-chaos.sh --scenarios "multi-worker-chaos"
+
+# API endpoint testing
+./scripts/test-with-curl.sh             # 38 endpoint tests (~5 seconds)
+./scripts/test-with-curl.sh localhost 8080  # Custom host/port
+```
+
+**Chaos Testing Levels (Redesigned):**
+- **Level 1** - Basic Resilience: 2 workers, 10 tasks, ≥90% completion (baseline functionality)
+- **Level 2** - Light Disruption: 2 workers, 15 tasks, ≥85% completion (introduction of failures)
+- **Level 3** - Load Testing: 3 workers, 25 tasks, ≥80% completion (increased task volume)
+- **Level 4** - Resource Pressure: 3 workers, 35 tasks, ≥75% completion (challenging workload)
+- **Level 5** - Extreme Chaos: 4 workers, 30 tasks, ≥60% completion (high-pressure scenarios)
+- **Level 6** - Catastrophic Load: 2 workers, 40 tasks, 20-50% completion (stress test limits)
+
+**Chaos Testing Features:**
+- **Multi-worker resilience**: Tests worker failures, restarts, and recovery
+- **Task completion monitoring**: Real-time progress tracking with metadata validation
+- **Deadline enforcement**: Validates system performance under time pressure
+- **Failure injection**: Systematic worker cycling and service disruption
+- **Comprehensive reporting**: Detailed logs, statistics, and failure analysis
 
 ## 📊 Complete Workflow Examples
 

@@ -460,7 +460,7 @@ impl TaskProcessor {
         sqlx::query!(
             r#"
             UPDATE tasks 
-            SET status = $1, updated_at = $2, completed_at = $3, metadata = $4
+            SET status = $1, updated_at = $2, completed_at = $3, metadata = metadata || $4
             WHERE id = $5
             "#,
             TaskStatus::Completed as TaskStatus,

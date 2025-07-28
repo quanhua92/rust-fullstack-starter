@@ -104,10 +104,19 @@ pub struct TaskResponse {
     pub started_at: Option<DateTime<Utc>>,
     pub completed_at: Option<DateTime<Utc>>,
     pub created_by: Option<Uuid>,
+    #[serde(default)]
+    pub metadata: std::collections::HashMap<String, serde_json::Value>,
 }
 
 impl From<Task> for TaskResponse {
     fn from(task: Task) -> Self {
+        // Convert JSON metadata to HashMap
+        let metadata =
+            serde_json::from_value::<std::collections::HashMap<String, serde_json::Value>>(
+                task.metadata,
+            )
+            .unwrap_or_default();
+
         Self {
             id: task.id,
             task_type: task.task_type,
@@ -122,6 +131,7 @@ impl From<Task> for TaskResponse {
             started_at: task.started_at,
             completed_at: task.completed_at,
             created_by: task.created_by,
+            metadata,
         }
     }
 }

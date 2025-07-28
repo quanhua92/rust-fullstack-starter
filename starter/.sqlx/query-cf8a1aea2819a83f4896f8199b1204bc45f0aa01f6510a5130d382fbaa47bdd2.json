@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n            UPDATE tasks \n            SET status = $1, updated_at = $2, completed_at = $3, metadata = $4\n            WHERE id = $5\n            ",
+  "query": "\n            UPDATE tasks \n            SET status = $1, updated_at = $2, completed_at = $3, metadata = metadata || $4\n            WHERE id = $5\n            ",
   "describe": {
     "columns": [],
     "parameters": {
@@ -28,5 +28,5 @@
     },
     "nullable": []
   },
-  "hash": "8f2f9ba15d2e511a4ff6b5c819cb1dbb42c7c1f1695af5c51342ccde1aa000e3"
+  "hash": "cf8a1aea2819a83f4896f8199b1204bc45f0aa01f6510a5130d382fbaa47bdd2"
 }

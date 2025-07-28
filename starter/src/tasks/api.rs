@@ -100,10 +100,15 @@ pub async fn create_task(
         ));
     }
 
-    let request = CreateTaskRequest::new(payload.task_type, payload.payload)
+    let mut request = CreateTaskRequest::new(payload.task_type, payload.payload)
         .with_priority(priority)
         .with_scheduled_at(payload.scheduled_at.unwrap_or_else(chrono::Utc::now))
         .with_metadata("api_created", serde_json::json!(true));
+
+    // Add user-provided metadata
+    for (key, value) in payload.metadata {
+        request = request.with_metadata(key, value);
+    }
 
     // Create a temporary processor to create the task
     // In a real application, you might want to have a shared processor instance

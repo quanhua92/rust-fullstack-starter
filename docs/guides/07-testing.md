@@ -26,7 +26,7 @@ Integration tests verify that different parts of your system work together corre
     │   (Manual)  │
     ├─────────────┤
     │ Integration │ ← This starter focuses here
-    │   Tests     │   (38 comprehensive tests)
+    │   Tests     │   (53 comprehensive tests)
     ├─────────────┤
     │ Unit Tests  │ ← Some included in modules
     │ (Functions) │
