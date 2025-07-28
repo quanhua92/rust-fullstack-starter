@@ -5,8 +5,10 @@ use crate::auth::{
     AuthUser,
     models::{LoginRequest, LoginResponse, RegisterRequest},
 };
-use crate::tasks::api::{CreateTaskApiRequest, TaskQueryParams};
-use crate::tasks::types::{CreateTaskRequest, TaskResponse, TaskStatus};
+use crate::tasks::api::{
+    CreateTaskApiRequest, RegisterTaskTypeRequest, TaskQueryParams, TaskTypeResponse,
+};
+use crate::tasks::types::{CreateTaskRequest, TaskResponse, TaskStats, TaskStatus};
 use crate::types::{DetailedHealthResponse, ErrorResponse, HealthResponse};
 use crate::users::models::{User, UserProfile};
 
@@ -38,7 +40,9 @@ use crate::users::models::{User, UserProfile};
         crate::auth::api::register,
         crate::auth::api::login,
         crate::auth::api::logout,
+        crate::auth::api::logout_all,
         crate::auth::api::me,
+        crate::auth::api::refresh,
 
         // User endpoints
         crate::users::api::get_user_by_id,
@@ -47,9 +51,13 @@ use crate::users::models::{User, UserProfile};
         crate::tasks::api::create_task,
         crate::tasks::api::list_tasks,
         crate::tasks::api::get_task,
+        crate::tasks::api::get_stats,
         crate::tasks::api::cancel_task,
         crate::tasks::api::register_task_type,
         crate::tasks::api::list_task_types,
+        crate::tasks::api::get_dead_letter_queue,
+        crate::tasks::api::retry_task,
+        crate::tasks::api::delete_task,
     ),
     components(
         schemas(
@@ -68,7 +76,10 @@ use crate::users::models::{User, UserProfile};
             CreateTaskApiRequest,
             TaskResponse,
             TaskStatus,
+            TaskStats,
             TaskQueryParams,
+            RegisterTaskTypeRequest,
+            TaskTypeResponse,
 
             // Common response types
             ErrorResponse,

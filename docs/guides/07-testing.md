@@ -25,7 +25,7 @@ graph TD
     subgraph "🧪 Testing Strategy for Learning"
         E2E[🌐 E2E Tests<br/><i>Manual Testing</i><br/>🚫 Not automated<br/>💡 Too complex for starter]
         
-        INTEGRATION[🔌 Integration Tests<br/><b>51 comprehensive tests</b><br/>✅ Main focus<br/>💡 Test real interactions]
+        INTEGRATION[🔌 Integration Tests<br/><b>53 comprehensive tests</b><br/>✅ Main focus<br/>💡 Test real interactions]
         
         UNIT[⚙️ Unit Tests<br/><i>Some in modules</i><br/>📝 Function-level<br/>💡 Fast feedback]
     end

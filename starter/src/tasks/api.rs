@@ -212,6 +212,20 @@ pub async fn list_tasks(
 }
 
 /// Get task statistics
+#[utoipa::path(
+    get,
+    path = "/tasks/stats",
+    tag = "Tasks",
+    summary = "Get task statistics",
+    description = "Get statistics about tasks (total, pending, completed, failed, etc.)",
+    responses(
+        (status = 200, description = "Task statistics", body = ApiResponse<TaskStats>),
+        (status = 401, description = "Unauthorized", body = ErrorResponse)
+    ),
+    security(
+        ("bearer_auth" = [])
+    )
+)]
 pub async fn get_stats(
     State(app_state): State<AppState>,
 ) -> Result<Json<ApiResponse<TaskStats>>, Error> {

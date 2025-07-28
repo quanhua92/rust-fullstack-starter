@@ -403,7 +403,7 @@ Invalidate current user session.
 
 ### POST /auth/logout-all
 
-Invalidate all sessions for the current user.
+Invalidate all sessions for the current user (all devices).
 
 **Authentication**: Required
 
@@ -417,6 +417,8 @@ Invalidate all sessions for the current user.
   "message": "Ended 3 session(s)"
 }
 ```
+
+**Use Case**: Security feature to log out from all devices if account is compromised.
 
 **Error Responses**:
 - `401` - Invalid or expired token
@@ -499,6 +501,76 @@ Get another user's profile (public information only).
 ## Task Management Endpoints
 
 Task endpoints demonstrate background job processing patterns.
+
+### Task Type Management
+
+Before creating tasks, you must register task types with the API server. This is typically done automatically by workers, but you can also manage task types manually.
+
+### POST /tasks/types
+
+Register a new task type that workers can handle.
+
+**Authentication**: None required (public endpoint for worker registration)
+
+**Request Body**:
+```json
+{
+  "task_type": "email",
+  "description": "Email notification tasks"
+}
+```
+
+**Response** (200 OK):
+```json
+{
+  "success": true,
+  "data": {
+    "task_type": "email",
+    "description": "Email notification tasks",
+    "is_active": true,
+    "created_at": "2024-01-01T00:00:00Z",
+    "updated_at": "2024-01-01T00:00:00Z"
+  }
+}
+```
+
+**Use Case**: Workers automatically call this endpoint on startup to register their capabilities.
+
+**Error Responses**:
+- `400` - Invalid request data
+
+### GET /tasks/types
+
+List all registered task types available for task creation.
+
+**Authentication**: None required (public endpoint)
+
+**Response** (200 OK):
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "task_type": "email",
+      "description": "Email notification tasks",
+      "is_active": true,
+      "created_at": "2024-01-01T00:00:00Z",
+      "updated_at": "2024-01-01T00:00:00Z"
+    },
+    {
+      "task_type": "webhook",
+      "description": "Webhook notification tasks",
+      "is_active": true,
+      "created_at": "2024-01-01T00:00:00Z",
+      "updated_at": "2024-01-01T00:00:00Z"
+    }
+  ]
+}
+```
+
+**Use Case**: Check which task types are available before creating tasks.
+
+## Task Management Endpoints
 
 ### POST /tasks
 
@@ -663,6 +735,41 @@ Get basic task statistics.
 }
 ```
 
+### GET /tasks/dead-letter
+
+Get all failed tasks in the dead letter queue for debugging and manual recovery.
+
+**Authentication**: Required
+
+**Query Parameters**:
+- `limit` (optional): Maximum number of tasks to return (default: 100)
+- `offset` (optional): Number of tasks to skip for pagination
+
+**Response** (200 OK):
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": "uuid-here",
+      "task_type": "email",
+      "status": "Failed",
+      "priority": "Normal",
+      "current_attempt": 5,
+      "max_attempts": 5,
+      "last_error": "SMTP connection failed",
+      "created_at": "2024-01-01T00:00:00Z",
+      "failed_at": "2024-01-01T00:05:00Z"
+    }
+  ]
+}
+```
+
+**Use Case**: Monitor failed tasks for debugging and decide which ones to retry manually.
+
+**Error Responses**:
+- `401` - Authentication required
+
 ### POST /tasks/{task_id}/cancel
 
 Cancel a pending or retrying task.
@@ -687,6 +794,60 @@ Cancel a pending or retrying task.
 - `401` - Authentication required
 - `404` - Task not found
 - `400` - Task cannot be cancelled (already completed/running)
+
+### POST /tasks/{task_id}/retry
+
+Retry a failed task by resetting it to pending status.
+
+**Authentication**: Required
+
+**Parameters**:
+- `task_id` (path): UUID of the task
+
+**Request Body**: None
+
+**Response** (200 OK):
+```json
+{
+  "success": true,
+  "data": "Task retried successfully",
+  "message": "Task uuid-here has been reset to pending status"
+}
+```
+
+**Use Case**: Manually retry tasks that failed due to temporary issues (network errors, service downtime).
+
+**Error Responses**:
+- `401` - Authentication required
+- `404` - Task not found or not in failed status
+- `400` - Task is not in failed status
+
+### DELETE /tasks/{task_id}
+
+Permanently delete a completed, failed, or cancelled task.
+
+**Authentication**: Required
+
+**Parameters**:
+- `task_id` (path): UUID of the task
+
+**Request Body**: None
+
+**Response** (200 OK):
+```json
+{
+  "success": true,
+  "data": "Task deleted successfully",
+  "message": "Task uuid-here has been permanently deleted"
+}
+```
+
+**Use Case**: Clean up old completed/failed tasks to reduce database size and improve performance.
+
+**Error Responses**:
+- `401` - Authentication required
+- `404` - Task not found
+- `400` - Task is not in a deletable status (running tasks cannot be deleted)
 
 ## Task Types Reference
 

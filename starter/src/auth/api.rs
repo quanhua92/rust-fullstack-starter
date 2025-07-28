@@ -98,6 +98,20 @@ pub async fn logout(
     )))
 }
 
+#[utoipa::path(
+    post,
+    path = "/auth/logout-all",
+    tag = "Authentication",
+    summary = "Logout from all devices",
+    description = "Logout current user from all devices and end all sessions",
+    responses(
+        (status = 200, description = "Logout successful", body = ApiResponse<String>),
+        (status = 401, description = "Unauthorized", body = ErrorResponse)
+    ),
+    security(
+        ("bearer_auth" = [])
+    )
+)]
 pub async fn logout_all(
     State(app_state): State<AppState>,
     Extension(auth_user): Extension<AuthUser>,
@@ -134,6 +148,20 @@ pub async fn me(Extension(auth_user): Extension<AuthUser>) -> Json<ApiResponse<A
     Json(ApiResponse::success(auth_user))
 }
 
+#[utoipa::path(
+    post,
+    path = "/auth/refresh",
+    tag = "Authentication",
+    summary = "Refresh token",
+    description = "Validate current session token (refresh endpoint)",
+    responses(
+        (status = 200, description = "Token is valid", body = ApiResponse<String>),
+        (status = 401, description = "Unauthorized", body = ErrorResponse)
+    ),
+    security(
+        ("bearer_auth" = [])
+    )
+)]
 pub async fn refresh(Extension(_auth_user): Extension<AuthUser>) -> Json<ApiResponse<String>> {
     Json(ApiResponse::success_with_message(
         "Token is still valid".to_string(),

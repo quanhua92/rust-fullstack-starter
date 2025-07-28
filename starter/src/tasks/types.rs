@@ -287,7 +287,7 @@ impl Default for TaskFilter {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, utoipa::ToSchema)]
 pub struct TaskStats {
     pub total: i64,
     pub pending: i64,

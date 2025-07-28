@@ -296,8 +296,43 @@ if [ -n "$USER_TOKEN" ]; then
     # Test delete on nonexistent task
     test_api "DELETE /tasks/{id} (nonexistent)" "DELETE" "/tasks/$FAKE_TASK_ID" "404" "$USER_TOKEN"
     
+    # Test logout-all endpoint before regular logout
+    echo ""
+    echo "🔐 Testing Multi-Session Logout..."
+    # Create a second session for testing logout-all
+    SECOND_LOGIN_RESPONSE=$(curl -s -X POST "$BASE_URL/auth/login" -H "Content-Type: application/json" -d "$LOGIN_DATA")
+    SECOND_TOKEN=$(echo "$SECOND_LOGIN_RESPONSE" | python3 -c "import json,sys; print(json.load(sys.stdin)['data']['session_token'])" 2>/dev/null || echo "")
+    
+    if [ -n "$SECOND_TOKEN" ]; then
+        # Test logout-all with the first token (should invalidate both sessions)
+        test_api "POST /auth/logout-all" "POST" "/auth/logout-all" "200" "$USER_TOKEN"
+        
+        # Verify both tokens are invalidated by testing /auth/me with the second token
+        ME_RESPONSE=$(curl -s -w 'HTTP_STATUS:%{http_code}' -X GET "$BASE_URL/auth/me" -H "Authorization: Bearer $SECOND_TOKEN")
+        ME_STATUS=$(echo "$ME_RESPONSE" | grep -o 'HTTP_STATUS:[0-9]*' | cut -d: -f2)
+        if [ "$ME_STATUS" = "401" ]; then
+            echo -e "${GREEN}✅ PASS${NC} All sessions invalidated after logout-all"
+            PASSED_TESTS=$((PASSED_TESTS + 1))
+        else
+            echo -e "${RED}❌ FAIL${NC} Second token should be invalidated after logout-all (Got: $ME_STATUS)"
+        fi
+        TOTAL_TESTS=$((TOTAL_TESTS + 1))
+    else
+        # Fallback if second login fails - just test logout-all endpoint
+        test_api "POST /auth/logout-all" "POST" "/auth/logout-all" "200" "$USER_TOKEN"
+    fi
+    
     # Test logout (single session) - test this last since it invalidates the token
-    test_api "POST /auth/logout" "POST" "/auth/logout" "200" "$USER_TOKEN"
+    # Note: This might return 401 if logout-all already invalidated the token, which is expected
+    LOGOUT_RESPONSE=$(curl -s -w 'HTTP_STATUS:%{http_code}' -X POST "$BASE_URL/auth/logout" -H "Authorization: Bearer $USER_TOKEN")
+    LOGOUT_STATUS=$(echo "$LOGOUT_RESPONSE" | grep -o 'HTTP_STATUS:[0-9]*' | cut -d: -f2)
+    if [ "$LOGOUT_STATUS" = "200" ] || [ "$LOGOUT_STATUS" = "401" ]; then
+        echo -e "${GREEN}✅ PASS${NC} POST /auth/logout (Status: $LOGOUT_STATUS - expected 200 or 401)"
+        PASSED_TESTS=$((PASSED_TESTS + 1))
+    else
+        echo -e "${RED}❌ FAIL${NC} POST /auth/logout (Expected: 200 or 401, Got: $LOGOUT_STATUS)"
+    fi
+    TOTAL_TESTS=$((TOTAL_TESTS + 1))
 fi
 
 echo ""
@@ -316,6 +351,13 @@ test_api "POST /auth/register (validation)" "POST" "/auth/register" "400" "" "$I
 
 # Test 404
 test_api "GET /nonexistent" "GET" "/nonexistent" "404"
+
+echo ""
+echo -e "${YELLOW}📚 Documentation Endpoints${NC}"
+
+# Test documentation endpoints (public access)
+test_api "GET /api-docs" "GET" "/api-docs" "200"
+test_api "GET /api-docs/openapi.json" "GET" "/api-docs/openapi.json" "200"
 
 echo ""
 echo -e "${YELLOW}👑 Admin Endpoints${NC}"
