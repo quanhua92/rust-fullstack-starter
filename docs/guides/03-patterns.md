@@ -71,83 +71,54 @@ stateDiagram-v2
 ```
 
 ### How It Works
+
+A circuit breaker tracks three essential pieces of information:
+
 ```rust
-pub struct CircuitBreaker {
-    state: CircuitState,
-    failure_count: u32,
-    failure_threshold: u32,    // Open after N failures
-    success_threshold: u32,    // Close after N successes  
-    last_failure_time: Option<Instant>,
-    timeout: Duration,         // How long to stay open
+// Conceptual structure
+struct CircuitBreaker {
+    state: CircuitState,         // Current state (Closed/Open/HalfOpen)
+    failure_count: u32,          // How many failures we've seen
+    failure_threshold: u32,      // Open after N failures
+    success_threshold: u32,      // Close after N successes
+    timeout: Duration,           // How long to stay open
 }
 
-pub enum CircuitState {
+enum CircuitState {
     Closed,    // Normal operation - allow all requests
     Open,      // Failing - block all requests immediately  
     HalfOpen,  // Testing - allow limited requests
 }
 ```
 
-### Implementation Example
+### Core Logic
+
+The circuit breaker follows a simple decision tree:
+
 ```rust
-impl CircuitBreaker {
-    pub async fn call<F, T, E>(&mut self, operation: F) -> Result<T, CircuitBreakerError<E>>
-    where
-        F: Future<Output = Result<T, E>>,
-    {
-        match self.state {
-            CircuitState::Open => {
-                if self.should_attempt_reset() {
-                    self.state = CircuitState::HalfOpen;
-                } else {
-                    return Err(CircuitBreakerError::Open);
-                }
-            }
-            CircuitState::Closed | CircuitState::HalfOpen => {}
+// Conceptual flow
+if circuit_breaker.should_allow_request() {
+    match execute_operation().await {
+        Ok(result) => {
+            circuit_breaker.record_success();
+            Ok(result)
         }
-
-        match operation.await {
-            Ok(result) => {
-                self.on_success();
-                Ok(result)
-            }
-            Err(error) => {
-                self.on_failure();
-                Err(CircuitBreakerError::Inner(error))
-            }
+        Err(error) => {
+            circuit_breaker.record_failure();
+            Err(error)
         }
     }
-
-    fn on_success(&mut self) {
-        match self.state {
-            CircuitState::HalfOpen => {
-                self.success_count += 1;
-                if self.success_count >= self.success_threshold {
-                    self.state = CircuitState::Closed;
-                    self.reset_counts();
-                }
-            }
-            CircuitState::Closed => {
-                // Already healthy, reset failure count
-                self.failure_count = 0;
-            }
-            CircuitState::Open => {
-                // Shouldn't happen, but reset to half-open
-                self.state = CircuitState::HalfOpen;
-            }
-        }
-    }
-
-    fn on_failure(&mut self) {
-        self.failure_count += 1;
-        self.last_failure_time = Some(Instant::now());
-
-        if self.failure_count >= self.failure_threshold {
-            self.state = CircuitState::Open;
-        }
-    }
+} else {
+    // Circuit is open - fail immediately
+    Err("Circuit breaker is open")
 }
 ```
+
+**State Transitions:**
+- **Closed → Open**: After `failure_threshold` failures
+- **Open → HalfOpen**: After `timeout` duration
+- **HalfOpen → Closed**: After `success_threshold` successes
+- **HalfOpen → Open**: On any failure
 
 ### When to Use Circuit Breakers
 - **External Services**: API calls, database connections, email services
@@ -170,6 +141,33 @@ CircuitBreaker::new(
     success_threshold: 2,    // Recover faster
     timeout: Duration::from_secs(30),
 )
+```
+
+### Testing Circuit Breakers
+
+**Test State Transitions:**
+```rust
+#[test]
+fn test_circuit_breaker_states() {
+    let mut cb = CircuitBreaker::new(2, 1, Duration::from_secs(1));
+    
+    // Start closed
+    assert_eq!(cb.state(), CircuitState::Closed);
+    
+    // Failures should eventually open
+    cb.record_failure();
+    cb.record_failure();
+    assert_eq!(cb.state(), CircuitState::Open);
+    
+    // After timeout, should go half-open
+    sleep(Duration::from_secs(2));
+    assert!(cb.should_allow_operation());
+    assert_eq!(cb.state(), CircuitState::HalfOpen);
+    
+    // Success in half-open should close
+    cb.record_success();
+    assert_eq!(cb.state(), CircuitState::Closed);
+}
 ```
 
 ## Pattern 2: Retry Strategies
@@ -204,45 +202,28 @@ gantt
 - **⚡ Fast Initial Recovery**: Quick retry if it's just a hiccup
 - **🛡️ Prevents Thundering Herd**: Avoids all clients retrying simultaneously
 
-**Implementation**:
+**Implementation Concept:**
 ```rust
-pub struct ExponentialBackoff {
-    pub base_delay: Duration,
-    pub multiplier: f64,
-    pub max_delay: Duration,
-    pub max_attempts: u32,
+// Three main retry strategies
+enum RetryStrategy {
+    Exponential { base_delay, multiplier, max_delay, max_attempts },
+    Linear { base_delay, increment, max_delay, max_attempts },
+    Fixed { interval, max_attempts },
 }
 
-impl ExponentialBackoff {
-    pub fn calculate_delay(&self, attempt: u32) -> Option<Duration> {
-        if attempt >= self.max_attempts {
-            return None; // No more retries
-        }
-
-        let delay = self.base_delay.as_millis() as f64 
-            * self.multiplier.powi(attempt as i32);
-        
-        let delay = Duration::from_millis(delay as u64);
-        Some(delay.min(self.max_delay))
-    }
-
-    pub async fn execute<F, Fut, T, E>(&self, mut operation: F) -> Result<T, E>
-    where
-        F: FnMut() -> Fut,
-        Fut: Future<Output = Result<T, E>>,
-    {
-        let mut attempt = 0;
-        
-        loop {
-            match operation().await {
-                Ok(result) => return Ok(result),
-                Err(error) => {
-                    if let Some(delay) = self.calculate_delay(attempt) {
-                        tokio::time::sleep(delay).await;
-                        attempt += 1;
-                    } else {
-                        return Err(error); // Max attempts reached
-                    }
+// Retry execution pattern
+async fn execute_with_retry<F>(strategy: RetryStrategy, operation: F) -> Result<T> {
+    let mut attempt = 0;
+    
+    loop {
+        match operation().await {
+            Ok(result) => return Ok(result),
+            Err(error) => {
+                if let Some(delay) = strategy.calculate_delay(attempt) {
+                    sleep(delay).await;
+                    attempt += 1;
+                } else {
+                    return Err(error); // Max attempts reached
                 }
             }
         }
@@ -264,24 +245,18 @@ Attempt 3: Wait 2 seconds → retry
 Attempt 4: Wait 3 seconds → retry
 ```
 
-**Implementation**:
+**Implementation Concept:**
 ```rust
-pub struct LinearBackoff {
-    pub base_delay: Duration,
-    pub increment: Duration,
-    pub max_delay: Duration,
-    pub max_attempts: u32,
+// Linear backoff calculation
+fn calculate_linear_delay(attempt: u32, base: Duration, increment: Duration) -> Duration {
+    base + (increment * attempt)
 }
 
-impl LinearBackoff {
-    pub fn calculate_delay(&self, attempt: u32) -> Option<Duration> {
-        if attempt >= self.max_attempts {
-            return None;
-        }
-
-        let delay = self.base_delay + self.increment * attempt;
-        Some(delay.min(self.max_delay))
-    }
+// Example: 1s, 3s, 5s, 7s, 9s...
+Linear {
+    base_delay: Duration::from_secs(1),
+    increment: Duration::from_secs(2),
+    max_attempts: 5,
 }
 ```
 
@@ -299,21 +274,17 @@ Attempt 3: Wait 30 seconds → retry
 Attempt 4: Wait 30 seconds → retry
 ```
 
-**Implementation**:
+**Implementation Concept:**
 ```rust
-pub struct FixedInterval {
-    pub interval: Duration,
-    pub max_attempts: u32,
+// Fixed interval calculation
+fn calculate_fixed_delay(attempt: u32, interval: Duration) -> Duration {
+    interval // Always the same
 }
 
-impl FixedInterval {
-    pub fn calculate_delay(&self, attempt: u32) -> Option<Duration> {
-        if attempt >= self.max_attempts {
-            None
-        } else {
-            Some(self.interval)
-        }
-    }
+// Example: 30s, 30s, 30s, 30s...
+Fixed {
+    interval: Duration::from_secs(30),
+    max_attempts: 4,
 }
 ```
 
@@ -322,36 +293,73 @@ impl FixedInterval {
 - Monitoring checks (consistent intervals)
 - Simple retry logic (easy to reason about)
 
-### Retry Strategy Selection Guide
+### Strategy Selection Guide
+
+**When to Use Each Strategy:**
+
+| Use Case | Strategy | Why |
+|----------|----------|-----|
+| **External APIs** | Exponential | Gives failing services time to recover |
+| **Database ops** | Exponential (fast) | Quick recovery from temporary issues |
+| **Rate-limited APIs** | Linear | Predictable, steady backing off |
+| **Health checks** | Fixed | Consistent monitoring intervals |
+| **File operations** | Exponential | Handles temporary locks gracefully |
+
+**Configuration Examples:**
 ```rust
-// For external API calls
-ExponentialBackoff {
-    base_delay: Duration::from_millis(500),
-    multiplier: 2.0,
-    max_delay: Duration::from_secs(30),
-    max_attempts: 5,
-}
+// External API calls (be gentle, allow recovery)
+Exponential { base: 500ms, multiplier: 2.0, max: 30s, attempts: 5 }
 
-// For database operations
-ExponentialBackoff {
-    base_delay: Duration::from_millis(100),
-    multiplier: 1.5,
-    max_delay: Duration::from_secs(5),
-    max_attempts: 3,
-}
+// Database operations (recover quickly)
+Exponential { base: 100ms, multiplier: 1.5, max: 5s, attempts: 3 }
 
-// For rate-limited services
-LinearBackoff {
-    base_delay: Duration::from_secs(1),
-    increment: Duration::from_secs(5),
-    max_delay: Duration::from_secs(60),
-    max_attempts: 10,
-}
+// Rate-limited services (predictable backoff)
+Linear { base: 1s, increment: 5s, max: 60s, attempts: 10 }
 
-// For periodic health checks
-FixedInterval {
-    interval: Duration::from_secs(30),
-    max_attempts: 3,
+// Periodic health checks (consistent timing)
+Fixed { interval: 30s, attempts: 3 }
+```
+
+### Testing Retry Strategies
+
+**Test Delay Calculations:**
+```rust
+#[test]
+fn test_retry_delays() {
+    let exponential = RetryStrategy::Exponential {
+        base_delay: Duration::from_millis(100),
+        multiplier: 2.0,
+        max_attempts: 3,
+    };
+    
+    // Should double each time: 100ms, 200ms, 400ms, then None
+    assert_eq!(exponential.calculate_delay(0), Some(Duration::from_millis(100)));
+    assert_eq!(exponential.calculate_delay(1), Some(Duration::from_millis(200)));
+    assert_eq!(exponential.calculate_delay(2), Some(Duration::from_millis(400)));
+    assert_eq!(exponential.calculate_delay(3), None);
+}
+```
+
+**Test Actual Retry Execution:**
+```rust
+#[tokio::test]
+async fn test_retry_execution() {
+    let mut attempt_count = 0;
+    
+    let result = retry_with_strategy(
+        RetryStrategy::Fixed { interval: 10ms, max_attempts: 3 }, 
+        || async {
+            attempt_count += 1;
+            if attempt_count < 3 {
+                Err("temporary failure")
+            } else {
+                Ok("success")
+            }
+        }
+    ).await;
+    
+    assert_eq!(result, Ok("success"));
+    assert_eq!(attempt_count, 3);
 }
 ```
 
@@ -380,96 +388,65 @@ These tasks shouldn't retry forever, but you also shouldn't lose them completely
                                └─────────────┘
 ```
 
-### Implementation
+### Implementation Concept
+
+The dead letter queue follows a simple decision process:
+
 ```rust
-pub async fn process_failed_task(
-    conn: &mut DbConn,
-    task: &Task,
-    error: &TaskError,
-) -> Result<()> {
-    // Increment attempt counter
-    let new_attempt = task.current_attempt + 1;
+// Conceptual failure handling flow
+async fn handle_task_failure(task: Task, error: Error) -> Result<()> {
+    task.current_attempt += 1;
     
-    if new_attempt >= task.max_attempts {
-        // Move to dead letter queue
-        mark_task_as_dead_letter(conn, task.id, error).await?;
-        log::warn!("Task {} moved to dead letter queue after {} attempts", 
-                   task.id, new_attempt);
-    } else {
+    if task.can_retry() {
+        // Calculate when to retry based on strategy
+        let retry_at = task.retry_strategy.calculate_next_retry(task.current_attempt);
+        
         // Schedule for retry
-        let retry_at = calculate_retry_time(&task.retry_strategy, new_attempt);
-        schedule_task_retry(conn, task.id, retry_at, new_attempt, error).await?;
-        log::info!("Task {} scheduled for retry {} at {}", 
-                   task.id, new_attempt, retry_at);
+        schedule_task_retry(task.id, retry_at, error).await?;
+        log::info!("Task {} scheduled for retry {}", task.id, task.current_attempt);
+    } else {
+        // Max attempts reached - move to dead letter queue
+        mark_task_as_dead_letter(task.id, error).await?;
+        log::warn!("Task {} moved to dead letter queue", task.id);
     }
     
     Ok(())
 }
-
-async fn mark_task_as_dead_letter(
-    conn: &mut DbConn,
-    task_id: Uuid,
-    error: &TaskError,
-) -> Result<()> {
-    sqlx::query!(
-        "UPDATE tasks 
-         SET status = 'failed', 
-             last_error = $1, 
-             updated_at = NOW()
-         WHERE id = $2",
-        error.to_string(),
-        task_id
-    )
-    .execute(conn)
-    .await?;
-    
-    Ok(())
-}
 ```
+
+**Key Decisions:**
+1. **Can retry?** Check `current_attempt < max_attempts`
+2. **When to retry?** Use retry strategy to calculate delay
+3. **Can't retry?** Mark as failed (dead letter)
 
 ### Dead Letter Queue Management
-```rust
-// Find tasks in dead letter queue
-pub async fn get_dead_letter_tasks(
-    conn: &mut DbConn,
-    limit: i32,
-) -> Result<Vec<Task>> {
-    let tasks = sqlx::query_as!(
-        Task,
-        "SELECT * FROM tasks 
-         WHERE status = 'failed' 
-           AND current_attempt >= max_attempts
-         ORDER BY updated_at DESC 
-         LIMIT $1",
-        limit
-    )
-    .fetch_all(conn)
-    .await?;
-    
-    Ok(tasks)
-}
 
-// Retry a dead letter task (manual intervention)
-pub async fn retry_dead_letter_task(
-    conn: &mut DbConn,
-    task_id: Uuid,
-) -> Result<()> {
-    sqlx::query!(
-        "UPDATE tasks 
-         SET status = 'pending',
-             current_attempt = 0,
-             last_error = NULL,
-             updated_at = NOW()
-         WHERE id = $1 
-           AND status = 'failed'",
-        task_id
-    )
-    .execute(conn)
-    .await?;
+Once tasks are in the dead letter queue, you need tools to manage them:
+
+**Common Operations:**
+```rust
+// Conceptual management operations
+trait DeadLetterQueue {
+    // Find failed tasks
+    async fn get_failed_tasks(limit: Option<u32>) -> Vec<Task>;
     
-    Ok(())
+    // Manually retry a failed task (reset attempt counter)
+    async fn retry_failed_task(task_id: Uuid) -> Result<()>;
+    
+    // Permanently delete a failed task
+    async fn delete_failed_task(task_id: Uuid) -> Result<()>;
+    
+    // Get failure statistics
+    async fn get_failure_stats() -> FailureStats;
 }
 ```
+
+**Management Workflows:**
+1. **Monitor**: Regularly check dead letter queue size
+2. **Investigate**: Analyze failure patterns and error messages
+3. **Fix**: Address root causes (fix data, update handlers)
+4. **Retry**: Manually retry tasks after fixes
+5. **Cleanup**: Delete old or irrelevant failed tasks
 
 ### When to Use Dead Letter Queues
 - **Poison Messages**: Tasks that crash the processor
@@ -477,161 +454,199 @@ pub async fn retry_dead_letter_task(
 - **External Failures**: Services that are permanently unavailable
 - **Debugging**: Investigate why certain tasks consistently fail
 
-## Combining Patterns
+### Testing Dead Letter Queues
 
-### Circuit Breaker + Retry Strategy
+**Test Failure Handling:**
 ```rust
-pub struct ReliableTaskProcessor {
-    circuit_breaker: CircuitBreaker,
-    retry_strategy: ExponentialBackoff,
-}
-
-impl ReliableTaskProcessor {
-    pub async fn process_task(&mut self, task: Task) -> Result<TaskResult> {
-        let result = self.retry_strategy.execute(|| async {
-            // Circuit breaker protects the actual operation
-            self.circuit_breaker.call(|| async {
-                self.execute_task_handler(&task).await
-            }).await
-        }).await;
-
-        match result {
-            Ok(success) => Ok(success),
-            Err(error) => {
-                // Send to dead letter queue if max retries exceeded
-                self.handle_permanent_failure(task, error).await
-            }
+#[tokio::test]
+async fn test_dead_letter_queue_flow() {
+    let mut task = Task {
+        id: Uuid::new_v4(),
+        current_attempt: 0,
+        max_attempts: 3,
+        retry_strategy: RetryStrategy::Fixed { interval: 1ms, max_attempts: 3 },
+    };
+    
+    // Simulate failures
+    for attempt in 1..=3 {
+        task.current_attempt = attempt;
+        let result = handle_task_failure(task.clone(), "simulated error").await;
+        
+        if attempt < 3 {
+            // Should schedule retry
+            assert!(matches!(result, Ok(TaskAction::Retry { .. })));
+        } else {
+            // Should move to dead letter queue
+            assert!(matches!(result, Ok(TaskAction::DeadLetter)));
         }
     }
 }
 ```
 
-### Task System Integration
-In our background job system, these patterns work together:
+## Combining Patterns
 
-1. **Circuit Breaker**: Protects each task type (email, webhook, etc.)
-2. **Retry Strategy**: Configured per task with exponential backoff
-3. **Dead Letter Queue**: Failed tasks after max retries
+### Pattern Integration
+
+These patterns work together to create a robust system:
 
 ```rust
-// Task configuration example
-Task {
-    task_type: "email",
-    retry_strategy: json!({
-        "type": "exponential",
-        "base_delay_ms": 1000,
-        "multiplier": 2.0,
-        "max_delay_ms": 300000,
-        "max_attempts": 5
-    }),
-    max_attempts: 5,
-    // ... other fields
+// Conceptual integration
+struct ReliableTaskProcessor {
+    circuit_breakers: HashMap<String, CircuitBreaker>,  // Per task type
+    retry_strategies: HashMap<String, RetryStrategy>,   // Per task type
+    dead_letter_queue: DeadLetterQueue,
+}
+
+impl ReliableTaskProcessor {
+    async fn process_task(&self, task: Task) -> Result<()> {
+        // 1. Check circuit breaker
+        let circuit_breaker = self.circuit_breakers.get(&task.task_type);
+        if !circuit_breaker.should_allow_operation() {
+            return self.move_to_dead_letter(task, "Circuit breaker open");
+        }
+
+        // 2. Execute task
+        let result = execute_task_handler(&task).await;
+
+        // 3. Handle result
+        match result {
+            Ok(success) => {
+                circuit_breaker.record_success();
+                self.mark_completed(task);
+            }
+            Err(error) => {
+                circuit_breaker.record_failure();
+                self.handle_failure(task, error).await?;
+            }
+        }
+    }
+
+    async fn handle_failure(&self, task: Task, error: Error) -> Result<()> {
+        task.attempt += 1;
+        
+        if task.can_retry() {
+            // Use retry strategy to schedule next attempt
+            let retry_strategy = self.retry_strategies.get(&task.task_type);
+            let delay = retry_strategy.calculate_delay(task.attempt);
+            self.schedule_retry(task, delay).await
+        } else {
+            // Max retries exceeded - move to dead letter queue
+            self.dead_letter_queue.add(task, error).await
+        }
+    }
 }
 ```
+
+### System Integration
+
+In a real system, these patterns work together:
+
+**1. Task Configuration:**
+```rust
+// Each task carries its own retry strategy
+struct Task {
+    id: Uuid,
+    task_type: String,
+    payload: serde_json::Value,
+    retry_strategy: RetryStrategy,   // How to handle failures
+    current_attempt: u32,            // Tracks retry count
+    max_attempts: u32,               // When to give up
+}
+```
+
+**2. Processor Configuration:**
+```rust
+// System-wide reliability settings
+struct ProcessorConfig {
+    enable_circuit_breaker: bool,    // Use circuit breakers?
+    task_timeout: Duration,          // Max execution time
+    max_concurrent_tasks: usize,     // Concurrency limits
+}
+```
+
+**3. Pattern Coordination:**
+- **Circuit Breaker**: Protects each task type from cascading failures
+- **Retry Strategy**: Embedded in tasks, controls retry timing
+- **Dead Letter Queue**: Automatic destination for permanently failed tasks
+- **Timeouts**: Prevent hung tasks from blocking the system
 
 ## Configuration Examples
 
 ### Conservative (High Reliability)
 ```rust
 // Circuit breaker: Very sensitive to failures
-CircuitBreaker::new(
-    failure_threshold: 2,
-    success_threshold: 5,
-    timeout: Duration::from_secs(120),
-)
+CircuitBreaker {
+    failure_threshold: 2,     // Open after just 2 failures
+    success_threshold: 5,     // Need 5 successes to close
+    timeout: 120_seconds,     // Stay open for 2 minutes
+}
 
 // Retry: Many attempts with long delays  
-ExponentialBackoff {
-    base_delay: Duration::from_secs(2),
-    multiplier: 2.0,
-    max_delay: Duration::from_secs(300),
-    max_attempts: 8,
+RetryStrategy::Exponential {
+    base_delay: 2_seconds,    // Start with 2 second delay
+    multiplier: 2.0,          // Double each time
+    max_delay: 300_seconds,   // Cap at 5 minutes
+    max_attempts: 8,          // Try 8 times total
 }
 ```
 
 ### Aggressive (High Performance)
 ```rust
 // Circuit breaker: Tolerates more failures
-CircuitBreaker::new(
-    failure_threshold: 10,
-    success_threshold: 2, 
-    timeout: Duration::from_secs(30),
-)
+CircuitBreaker {
+    failure_threshold: 10,    // Allow 10 failures before opening
+    success_threshold: 2,     // Just 2 successes to close
+    timeout: 30_seconds,      // Quick recovery attempts
+}
 
 // Retry: Fewer attempts with short delays
-ExponentialBackoff {
-    base_delay: Duration::from_millis(200),
-    multiplier: 1.5,
-    max_delay: Duration::from_secs(10),
-    max_attempts: 3,
+RetryStrategy::Exponential {
+    base_delay: 200_millis,   // Start quickly
+    multiplier: 1.5,          // Gentle increase
+    max_delay: 10_seconds,    // Low cap
+    max_attempts: 3,          // Give up quickly
 }
 ```
 
 ### Balanced (Good Default)
 ```rust
 // Circuit breaker: Reasonable thresholds
-CircuitBreaker::new(
-    failure_threshold: 5,
-    success_threshold: 3,
-    timeout: Duration::from_secs(60),
-)
+CircuitBreaker {
+    failure_threshold: 5,     // Open after 5 failures
+    success_threshold: 3,     // Close after 3 successes
+    timeout: 60_seconds,      // 1 minute recovery window
+}
 
 // Retry: Standard exponential backoff
-ExponentialBackoff {
-    base_delay: Duration::from_secs(1),
-    multiplier: 2.0,
-    max_delay: Duration::from_secs(60),
-    max_attempts: 5,
+RetryStrategy::Exponential {
+    base_delay: 1_second,     // Start with 1 second
+    multiplier: 2.0,          // Standard doubling
+    max_delay: 300_seconds,   // Cap at 5 minutes
+    max_attempts: 5,          // 5 attempts total
 }
 ```
 
-## Testing Patterns
+## Key Takeaways
 
-### Circuit Breaker Tests
-```rust
-#[tokio::test]
-async fn test_circuit_breaker_opens_after_failures() {
-    let mut cb = CircuitBreaker::new(2, 1, Duration::from_secs(1));
-    
-    // First failure
-    let result = cb.call(|| async { Err::<(), _>("error") }).await;
-    assert!(matches!(result, Err(CircuitBreakerError::Inner(_))));
-    
-    // Second failure - should open circuit
-    let result = cb.call(|| async { Err::<(), _>("error") }).await;
-    assert!(matches!(result, Err(CircuitBreakerError::Inner(_))));
-    
-    // Third call - should be blocked
-    let result = cb.call(|| async { Ok::<(), String>(()) }).await;
-    assert!(matches!(result, Err(CircuitBreakerError::Open)));
-}
-```
+**Pattern Selection:**
+- **Circuit Breaker**: Use when external services can fail catastrophically
+- **Exponential Backoff**: Best for most retry scenarios (network, database)
+- **Linear Backoff**: Good for rate-limited services
+- **Fixed Interval**: Perfect for scheduled operations
+- **Dead Letter Queue**: Essential for debugging and manual intervention
 
-### Retry Strategy Tests
-```rust
-#[tokio::test]
-async fn test_exponential_backoff_delays() {
-    let strategy = ExponentialBackoff {
-        base_delay: Duration::from_millis(100),
-        multiplier: 2.0,
-        max_delay: Duration::from_secs(1),
-        max_attempts: 4,
-    };
-
-    assert_eq!(strategy.calculate_delay(0), Some(Duration::from_millis(100)));
-    assert_eq!(strategy.calculate_delay(1), Some(Duration::from_millis(200)));
-    assert_eq!(strategy.calculate_delay(2), Some(Duration::from_millis(400)));
-    assert_eq!(strategy.calculate_delay(3), Some(Duration::from_millis(800)));
-    assert_eq!(strategy.calculate_delay(4), None); // Max attempts reached
-}
-```
+**Design Principles:**
+1. **Fail Fast**: Circuit breakers prevent wasted resources
+2. **Back Off Gracefully**: Exponential delays give services time to recover
+3. **Preserve Evidence**: Dead letter queues help with debugging
+4. **Configure Appropriately**: Match patterns to your specific use cases
 
 ## Next Steps
 
-Now that you understand these reliability patterns, see how they're used in practice:
+Now that you understand these reliability patterns, see how they're implemented:
 
-- **[Background Tasks →](./04-background-tasks.md)** - How the task system uses these patterns
+- **[Background Tasks →](./04-background-tasks.md)** - Real implementation in the task system
 - **[Custom Task Types →](./05-task-types.md)** - Applying patterns to your own tasks
 
 ---
-*These patterns form the reliability foundation for the entire system. Understanding them helps you build robust, fault-tolerant applications.*
+*These patterns form the reliability foundation for building robust, fault-tolerant systems. The concepts here apply far beyond this starter - use them in any distributed system you build.*

@@ -5,6 +5,23 @@ PROJECT_NAME="starter"
 LOG_FILE="/tmp/starter-worker.log"
 PID_FILE="/tmp/starter-worker.pid"
 MAX_LOG_SIZE_MB=50
+FOLLOW_LOGS=false
+
+# Parse arguments
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        -f|--follow)
+            FOLLOW_LOGS=true
+            shift
+            ;;
+        *)
+            echo "Unknown option: $1"
+            echo "Usage: $0 [-f|--follow]"
+            echo "  -f, --follow    Follow logs after starting worker"
+            exit 1
+            ;;
+    esac
+done
 
 # Validate we're in the right directory
 if [ ! -f "docker-compose.yaml" ] || [ ! -d "starter" ]; then
@@ -79,4 +96,12 @@ if ! kill -0 $WORKER_PID 2>/dev/null; then
     exit 1
 else
     echo "🟢 Worker running successfully"
+fi
+
+# Follow logs if requested
+if [ "$FOLLOW_LOGS" = true ]; then
+    echo ""
+    echo "📋 Following worker logs (Ctrl+C to exit)..."
+    echo "=================================="
+    tail -f "$LOG_FILE"
 fi

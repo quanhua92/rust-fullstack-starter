@@ -1,7 +1,33 @@
 #!/bin/bash
 set -e
 
-PORT=${1:-3000}
+PORT=""
+FOLLOW_LOGS=false
+
+# Parse arguments
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        -f|--follow)
+            FOLLOW_LOGS=true
+            shift
+            ;;
+        [0-9]*)
+            PORT=$1
+            shift
+            ;;
+        *)
+            echo "Unknown option: $1"
+            echo "Usage: $0 [port] [-f|--follow]"
+            echo "  port            Port number (default: 3000)"
+            echo "  -f, --follow    Follow logs after starting server"
+            exit 1
+            ;;
+    esac
+done
+
+# Set default port if not provided
+PORT=${PORT:-3000}
+
 PROJECT_NAME="starter"
 LOG_FILE="/tmp/starter-server-${PORT}.log"
 PID_FILE="/tmp/starter-server-${PORT}.pid"
@@ -74,6 +100,15 @@ sleep 1
 if ! kill -0 $SERVER_PID 2>/dev/null; then
     echo "❌ Server failed to start. Check logs: cat $LOG_FILE"
     rm -f "$PID_FILE"
+    exit 1
 else
     echo "🟢 Server running successfully"
+fi
+
+# Follow logs if requested
+if [ "$FOLLOW_LOGS" = true ]; then
+    echo ""
+    echo "📋 Following server logs (Ctrl+C to exit)..."
+    echo "=================================="
+    tail -f "$LOG_FILE"
 fi

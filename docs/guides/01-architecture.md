@@ -125,9 +125,79 @@ src/tasks/          -- Background job processing
 - **Service Layer**: Business logic separate from HTTP handlers
 - **Consistent Structure**: Same organization across domains
 
-### 3. Interface Layer
-**What:** How external systems interact with domains
-**Files:** `server.rs`, `main.rs`, HTTP routes
+#### Service Layer Pattern
+
+The service layer is where business logic lives, separate from HTTP concerns. Services work with database connections and contain the core application logic.
+
+**Database Connection Management:**
+```rust
+// Services receive database connections from HTTP handlers
+pub async fn create_user(
+    conn: &mut DbConn,        // Database connection
+    request: CreateUserRequest,
+) -> Result<User> {
+    // Business logic here
+    let password_hash = hash_password(&request.password)?;
+    
+    let user = sqlx::query_as!(
+        User,
+        "INSERT INTO users (username, email, password_hash) 
+         VALUES ($1, $2, $3) RETURNING *",
+        request.username,
+        request.email,
+        password_hash
+    )
+    .fetch_one(conn)
+    .await?;
+    
+    Ok(user)
+}
+```
+
+**Connection Patterns:**
+```rust
+// API handlers acquire connections and pass to services
+pub async fn register_handler(
+    State(app_state): State<AppState>,
+    Json(payload): Json<RegisterRequest>,
+) -> Result<Json<ApiResponse<User>>> {
+    // Acquire connection from pool
+    let mut conn = app_state.database.pool.acquire().await?;
+    
+    // Pass to service layer
+    let user = auth_services::create_user(&mut conn, payload).await?;
+    
+    Ok(Json(ApiResponse::success(user)))
+}
+
+// For transactions, use begin/commit
+pub async fn complex_operation(
+    State(app_state): State<AppState>,
+    Json(payload): Json<ComplexRequest>,
+) -> Result<Json<ApiResponse<ComplexResponse>>> {
+    // Begin transaction
+    let mut tx = app_state.database.pool.begin().await?;
+    
+    // Multiple service calls in transaction
+    let result1 = service1::operation(&mut *tx, &payload).await?;
+    let result2 = service2::operation(&mut *tx, result1).await?;
+    
+    // Commit transaction
+    tx.commit().await?;
+    
+    Ok(Json(ApiResponse::success(result2)))
+}
+```
+
+**Why This Pattern?**
+- **Testability**: Services can be tested with mock connections
+- **Reusability**: Same service logic for API, CLI, background jobs
+- **Transaction Control**: Handlers control transaction boundaries
+- **Separation**: Business logic separate from HTTP/serialization concerns
+
+### 3. API Layer (HTTP Handlers)
+**What:** HTTP endpoints that handle web requests and coordinate with services
+**Files:** `server.rs`, `main.rs`, HTTP routes in each domain's `api.rs`
 
 ```rust
 // HTTP handlers are thin
@@ -154,32 +224,44 @@ users           -- Core identity
 ├── id (UUID)
 ├── username, email (unique)
 ├── password_hash (Argon2)
-├── role (admin/user)
+├── role (TEXT, default 'user')
 ├── is_active, email_verified (booleans)
 └── created_at, updated_at, last_login_at
 
 sessions        -- Authentication state
-├── token (unique string)
+├── id (UUID)
+├── token (unique TEXT)
 ├── expires_at (24 hours default)
-├── user_id (FK)
+├── user_id (FK to users)
 ├── user_agent, is_active
 └── created_at, updated_at, last_activity_at
 
-tasks           -- Background job queue
-├── task_type (email, webhook, etc.)
-├── payload (JSONB - flexible data)
-├── status (pending → running → completed/failed/cancelled/retrying)
-├── priority (low/normal/high/critical)
-├── retry_strategy (JSONB), max_attempts, current_attempt
-├── last_error (for debugging)
-├── scheduled_at, started_at, completed_at
+api_keys        -- Machine-to-machine authentication
+├── id (UUID)
+├── name, description (metadata)
+├── key_hash (unique TEXT), key_prefix
 ├── created_by (FK to users)
+├── expires_at, is_active
+├── permissions (JSONB)
+├── last_used_at, usage_count
+└── created_at, updated_at
+
+tasks           -- Background job queue
+├── id (UUID)
+├── task_type (VARCHAR, references task_types)
+├── payload (JSONB - flexible data)
+├── status (ENUM: pending → running → completed/failed/cancelled/retrying)
+├── priority (ENUM: low/normal/high/critical)
+├── retry_strategy (JSONB), max_attempts, current_attempt
+├── last_error (TEXT for debugging)
+├── scheduled_at, started_at, completed_at
+├── created_by (FK to users, nullable)
 └── metadata (JSONB for extra context)
 
-task_types      -- Registered handlers (NEW!)
-├── task_type (primary key)
-├── description
-├── is_active
+task_types      -- Registered handlers
+├── task_type (VARCHAR primary key)
+├── description (TEXT)
+├── is_active (boolean)
 └── created_at, updated_at
 ```
 
@@ -190,7 +272,7 @@ erDiagram
         varchar username UK "Unique"
         varchar email UK "Unique"
         text password_hash "Argon2"
-        varchar role "admin/user"
+        text role "Default: user"
         boolean is_active
         boolean email_verified
         timestamptz created_at
@@ -210,9 +292,25 @@ erDiagram
         timestamptz last_activity_at
     }
     
+    API_KEYS {
+        uuid id PK
+        varchar name
+        text description
+        text key_hash UK "Unique"
+        varchar key_prefix
+        uuid created_by FK
+        timestamptz expires_at
+        boolean is_active
+        jsonb permissions
+        timestamptz last_used_at
+        bigint usage_count
+        timestamptz created_at
+        timestamptz updated_at
+    }
+    
     TASKS {
         uuid id PK
-        varchar task_type FK "Registered type"
+        varchar task_type FK "References task_types"
         jsonb payload "Flexible data"
         task_status status "Enum"
         task_priority priority "Enum"
@@ -222,10 +320,10 @@ erDiagram
         text last_error "Debug info"
         timestamptz created_at
         timestamptz updated_at
-        timestamptz scheduled_at "NULL = now"
+        timestamptz scheduled_at "Nullable"
         timestamptz started_at
         timestamptz completed_at
-        uuid created_by FK "Optional"
+        uuid created_by FK "Nullable"
         jsonb metadata "Extra context"
     }
     
@@ -238,6 +336,7 @@ erDiagram
     }
     
     USERS ||--o{ SESSIONS : "has many"
+    USERS ||--o{ API_KEYS : "creates"
     USERS ||--o{ TASKS : "creates"
     TASK_TYPES ||--o{ TASKS : "validates"
 ```

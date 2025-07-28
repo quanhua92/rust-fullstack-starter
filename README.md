@@ -26,8 +26,8 @@ cd rust-fullstack-starter
 ### 3. Start the Worker (New Terminal)
 
 ```bash
-# Start background task worker
-./scripts/worker.sh
+# Start background task worker with log following
+./scripts/worker.sh -f
 ```
 
 ### 4. Try It Out
@@ -99,7 +99,7 @@ cargo nextest run                    # Integration tests (53 tests)
 ./scripts/check.sh                  # Format, lint, test (run before commits)
 
 # Background tasks
-./scripts/worker.sh                 # Start task worker
+./scripts/worker.sh -f              # Start task worker with logs
 ```
 
 ## Project Structure

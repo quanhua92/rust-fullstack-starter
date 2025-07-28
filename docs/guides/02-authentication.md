@@ -406,12 +406,12 @@ The authentication test suite covers:
 # 2. Register a user
 curl -X POST http://localhost:3000/auth/register \
   -H "Content-Type: application/json" \
-  -d '{"username":"test","email":"test@example.com","password":"password123"}'
+  -d '{"username":"alice","email":"alice@example.com","password":"secure123"}'
 
 # 3. Login and save token
 TOKEN=$(curl -s -X POST http://localhost:3000/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"username_or_email":"test","password":"password123"}' \
+  -d '{"username_or_email":"alice","password":"secure123"}' \
   | jq -r '.data.session_token')
 
 # 4. Use token for authenticated requests

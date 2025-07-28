@@ -21,9 +21,12 @@ This guide will help you set up and run the Rust Full-Stack Starter project loca
 ### Quick Start (Recommended)
 
 ```bash
-# Check prerequisites and start everything
+# Check prerequisites and start server
 ./scripts/check-prereqs.sh
 ./scripts/dev-server.sh 3000
+
+# In a new terminal, start the background worker with log following
+./scripts/worker.sh -f
 ```
 
 ### Manual Step-by-Step Setup
@@ -108,20 +111,18 @@ The admin user will be created automatically when the server first starts.
 
 ### Start Development Environment
 ```bash
-# Complete development setup (recommended)
-./scripts/dev-server.sh 3000
+# Check prerequisites and start server
+./scripts/check-prereqs.sh
+./scripts/dev-server.sh
 
-# Or just infrastructure  
-docker compose up -d postgres && docker compose up --wait
+# In a new terminal, start the background worker with log following
+./scripts/worker.sh -f
 ```
 
 ### Stop Everything
 ```bash
 # Stop all Docker services
 docker compose down
-
-# Stop with data cleanup (careful!)
-docker compose down -v
 ```
 
 ## Common Issues
@@ -190,6 +191,9 @@ Now that you have the system running, follow these guides to understand and exte
 # Complete development setup
 ./scripts/dev-server.sh [port]
 
+# Start background worker with logs
+./scripts/worker.sh -f
+
 # Start server with auto-restart
 ./scripts/server.sh [port]
 
@@ -211,7 +215,7 @@ docker compose up -d postgres && docker compose up --wait
 # Run all integration tests (~12 seconds)
 cargo nextest run
 
-# Test API endpoints (38 tests)
+# Test API endpoints (44 tests)
 ./scripts/test-with-curl.sh
 
 # Test custom server configuration
