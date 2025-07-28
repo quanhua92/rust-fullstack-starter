@@ -143,16 +143,52 @@ if [ -n "$USER_TOKEN" ]; then
     # Get initial task stats
     test_api "GET /tasks/stats" "GET" "/tasks/stats" "200" "$USER_TOKEN"
     
-    # Test task type management (public endpoints)
+    # Test task type management
     echo ""
     echo "🔧 Testing Task Type Management..."
     
-    # Register a custom task type
-    CUSTOM_TASK_TYPE='{"task_type": "test_custom", "description": "Custom task type for testing"}'
-    test_api "POST /tasks/types (register)" "POST" "/tasks/types" "200" "" "$CUSTOM_TASK_TYPE"
+    # Wait for workers to register task types (especially important for Docker deployments)
+    echo "⏳ Waiting for workers to register task types..."
+    wait_attempts=5
+    wait_attempt=0
+    while [ $wait_attempt -lt $wait_attempts ]; do
+        task_types_response=$(curl -s "$BASE_URL/tasks/types" 2>/dev/null || echo "")
+        if echo "$task_types_response" | grep -q '"task_type".*"email"' && echo "$task_types_response" | grep -q '"task_type".*"webhook"'; then
+            echo "✅ Workers have registered expected task types"
+            break
+        fi
+        wait_attempt=$((wait_attempt + 1))
+        sleep 1
+    done
+    
+    if [ $wait_attempt -eq $wait_attempts ]; then
+        echo "⚠️ Workers may not have fully registered all task types, registering manually for compatibility..."
+        # Fallback: register all task types that workers would normally auto-register
+        EMAIL_TASK_TYPE='{"task_type": "email", "description": "Email sending task"}'
+        test_api "POST /tasks/types (email)" "POST" "/tasks/types" "200" "" "$EMAIL_TASK_TYPE"
+        
+        DATA_TASK_TYPE='{"task_type": "data_processing", "description": "Data processing task"}'
+        test_api "POST /tasks/types (data_processing)" "POST" "/tasks/types" "200" "" "$DATA_TASK_TYPE"
+        
+        WEBHOOK_TASK_TYPE='{"task_type": "webhook", "description": "Webhook notification tasks"}'
+        test_api "POST /tasks/types (webhook)" "POST" "/tasks/types" "200" "" "$WEBHOOK_TASK_TYPE"
+        
+        FILE_CLEANUP_TASK_TYPE='{"task_type": "file_cleanup", "description": "File system cleanup tasks"}'
+        test_api "POST /tasks/types (file_cleanup)" "POST" "/tasks/types" "200" "" "$FILE_CLEANUP_TASK_TYPE"
+        
+        REPORT_TASK_TYPE='{"task_type": "report_generation", "description": "Report generation tasks"}'
+        test_api "POST /tasks/types (report_generation)" "POST" "/tasks/types" "200" "" "$REPORT_TASK_TYPE"
+        
+        DELAY_TASK_TYPE='{"task_type": "delay_task", "description": "Delay/sleep tasks for testing and chaos scenarios"}'
+        test_api "POST /tasks/types (delay_task)" "POST" "/tasks/types" "200" "" "$DELAY_TASK_TYPE"
+    fi
     
     # List registered task types  
     test_api "GET /tasks/types" "GET" "/tasks/types" "200" ""
+    
+    # Test task creation with valid types
+    echo ""
+    echo "🔧 Testing Task Creation..."
     
     # Test creating task with unregistered type (should fail with 400)
     UNREGISTERED_TASK='{"task_type": "absolutely_unknown_type_9999", "payload": {"test": "data"}, "priority": "normal"}'

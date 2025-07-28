@@ -5,8 +5,8 @@
 
 set -e
 
-# Default values
-PORT="${PORT:-3000}"
+# Default values  
+PORT="${PORT:-8888}"
 BASE_URL="http://localhost:$PORT"
 DIFFICULTY="${DIFFICULTY:-1}"
 SCENARIOS="${SCENARIOS:-all}"
@@ -24,7 +24,8 @@ NC='\033[0m'
 usage() {
     echo "Usage: $0 [OPTIONS]"
     echo ""
-    echo "Comprehensive chaos testing for the Rust starter application"
+    echo "Comprehensive Docker-based chaos testing for the Rust starter application"
+    echo "Note: This script automatically builds Docker images with the latest code before testing."
     echo ""
     echo "Options:"
     echo "  -p, --port PORT        Server port (default: $PORT)"
@@ -108,6 +109,16 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 HELPERS_DIR="$SCRIPT_DIR/helpers"
 
+# Docker compose file for chaos testing
+CHAOS_COMPOSE_FILE="$PROJECT_ROOT/docker-compose.chaos.yaml"
+
+# Check if Docker compose file exists
+if [ ! -f "$CHAOS_COMPOSE_FILE" ]; then
+    echo "❌ Docker compose file not found: $CHAOS_COMPOSE_FILE" >&2
+    echo "   Please ensure docker-compose.chaos.yaml exists" >&2
+    exit 1
+fi
+
 # Ensure output directory exists
 mkdir -p "$OUTPUT_DIR"
 
@@ -135,16 +146,45 @@ log() {
     fi
 }
 
-# Start background status monitoring
+# Docker-aware status check
+check_docker_status() {
+    local output_file="$1"
+    
+    echo "=== $(date '+%Y-%m-%d %H:%M:%S') - Docker Chaos Status ===" >> "$output_file"
+    echo "🐳 Docker Containers:" >> "$output_file"
+    
+    cd "$PROJECT_ROOT"
+    if docker-compose -f "$CHAOS_COMPOSE_FILE" ps >> "$output_file" 2>&1; then
+        echo "" >> "$output_file"
+        echo "📊 Container Resource Usage:" >> "$output_file"
+        local container_ids=$(docker-compose -f "$CHAOS_COMPOSE_FILE" ps -q 2>/dev/null)
+        if [ -n "$container_ids" ]; then
+            docker stats --no-stream --format "table {{.Container}}\t{{.CPUPerc}}\t{{.MemUsage}}\t{{.MemPerc}}" $container_ids >> "$output_file" 2>&1 || true
+        fi
+    else
+        echo "   No chaos containers running" >> "$output_file"
+    fi
+    
+    echo "" >> "$output_file"
+    echo "🔌 Port Status:" >> "$output_file"
+    for port in 3000 8080; do
+        if lsof -ti:$port > /dev/null 2>&1; then
+            local process=$(lsof -i:$port 2>/dev/null | grep LISTEN | awk '{print $1}' | head -1)
+            echo "   Port $port: $process" >> "$output_file"
+        fi
+    done
+    
+    echo "" >> "$output_file"
+}
+
+# Start background status monitoring (Docker-aware)
 start_status_monitor() {
     local scenario="$1"
     local output_file="$OUTPUT_DIR/status-monitor-$scenario.log"
     
     {
         while true; do
-            echo "=== $(date '+%Y-%m-%d %H:%M:%S') - Status Check ===" >> "$output_file"
-            "$PROJECT_ROOT/scripts/status.sh" >> "$output_file" 2>&1
-            echo "" >> "$output_file"
+            check_docker_status "$output_file"
             sleep 10
         done
     } &
@@ -153,7 +193,7 @@ start_status_monitor() {
     echo "$STATUS_MONITOR_PID" > "$OUTPUT_DIR/status-monitor.pid"
     
     if [ "$VERBOSE" = true ]; then
-        log "INFO" "Started status monitor (PID: $STATUS_MONITOR_PID) -> $output_file"
+        log "INFO" "Started Docker status monitor (PID: $STATUS_MONITOR_PID) -> $output_file"
     fi
 }
 
@@ -286,7 +326,7 @@ run_scenario() {
             log "INFO" "Testing worker restart resilience"
             
             # Create auth token
-            local auth_result=$(timeout 30 "$HELPERS_DIR/auth-helper.sh" --prefix "worker_test")
+            local auth_result=$(BASE_URL="$BASE_URL" timeout 30 "$HELPERS_DIR/auth-helper.sh" --prefix "worker_test")
             local token=$(echo "$auth_result" | python3 -c "import json,sys; print(json.load(sys.stdin)['token'])" 2>/dev/null || echo "")
             
             if [ -n "$token" ]; then
@@ -315,7 +355,7 @@ run_scenario() {
             log "INFO" "Testing high task load (Count: $task_count, Delay: ${delay}s)"
             
             # Create auth token
-            local auth_result=$(timeout 30 "$HELPERS_DIR/auth-helper.sh" --prefix "flood_test")
+            local auth_result=$(BASE_URL="$BASE_URL" timeout 30 "$HELPERS_DIR/auth-helper.sh" --prefix "flood_test")
             local token=$(echo "$auth_result" | python3 -c "import json,sys; print(json.load(sys.stdin)['token'])" 2>/dev/null || echo "")
             
             if [ -n "$token" ]; then
@@ -341,7 +381,7 @@ run_scenario() {
             log "INFO" "Testing circuit breaker activation"
             
             # Create auth token
-            local auth_result=$(timeout 30 "$HELPERS_DIR/auth-helper.sh" --prefix "cb_test")
+            local auth_result=$(BASE_URL="$BASE_URL" timeout 30 "$HELPERS_DIR/auth-helper.sh" --prefix "cb_test")
             local token=$(echo "$auth_result" | python3 -c "import json,sys; print(json.load(sys.stdin)['token'])" 2>/dev/null || echo "")
             
             if [ -n "$token" ]; then
@@ -367,7 +407,7 @@ run_scenario() {
             log "INFO" "Testing multiple simultaneous failures"
             
             # Create auth token
-            local auth_result=$(timeout 30 "$HELPERS_DIR/auth-helper.sh" --prefix "mixed_test")
+            local auth_result=$(BASE_URL="$BASE_URL" timeout 30 "$HELPERS_DIR/auth-helper.sh" --prefix "mixed_test")
             local token=$(echo "$auth_result" | python3 -c "import json,sys; print(json.load(sys.stdin)['token'])" 2>/dev/null || echo "")
             
             if [ -n "$token" ]; then
@@ -448,7 +488,9 @@ run_scenario() {
             
             log "INFO" "Average recovery time: ${avg_recovery}s"
             
-            if [ "$avg_recovery" -le 15 ]; then
+            # Docker containers take longer to restart than binary processes
+            # Adjusted threshold to 20s for Docker-based deployments
+            if [ "$avg_recovery" -le 20 ]; then
                 log "SUCCESS" "Recovery scenario passed"
                 PASSED_SCENARIOS=$((PASSED_SCENARIOS + 1))
                 TEST_RESULTS+=("✅ recovery: PASS (${avg_recovery}s avg)")
@@ -505,7 +547,7 @@ run_scenario() {
             log "INFO" "Multi-worker scenario: $worker_count workers, ${delay_per_task}s delays, ${task_deadline}s deadline"
             
             # Create auth token for tasks
-            local auth_result=$(timeout 30 "$HELPERS_DIR/auth-helper.sh" --prefix "multiworker_test")
+            local auth_result=$(BASE_URL="$BASE_URL" timeout 30 "$HELPERS_DIR/auth-helper.sh" --prefix "multiworker_test")
             local token=$(echo "$auth_result" | python3 -c "import json,sys; print(json.load(sys.stdin)['token'])" 2>/dev/null || echo "")
             
             if [ -z "$token" ]; then
@@ -699,16 +741,109 @@ echo "Scenarios: $SCENARIOS"
 echo "Output: $OUTPUT_DIR"
 echo ""
 
+# Clean up any existing chaos environment
+cleanup_existing_environment() {
+    log "INFO" "Cleaning up any existing chaos environment..."
+    cd "$PROJECT_ROOT"
+    
+    # Stop any existing chaos containers
+    docker-compose -f "$CHAOS_COMPOSE_FILE" down --remove-orphans 2>/dev/null || true
+    
+    # Clean up any leftover containers with chaos-related names
+    docker ps -aq --filter "name=starter-" | xargs docker rm -f 2>/dev/null || true
+    
+    # Kill any processes using the target port
+    local target_port=$(grep "CHAOS_APP_PORT" .env.chaos.example 2>/dev/null | cut -d'=' -f2 || echo "3000")
+    lsof -ti:$target_port | xargs kill -9 2>/dev/null || true
+    
+    log "INFO" "Environment cleanup completed"
+}
+
 # Validate environment
 log "INFO" "Validating environment..."
 
-if ! curl -s -f "$BASE_URL/health" > /dev/null; then
-    log "ERROR" "Server not responding on $BASE_URL"
-    log "INFO" "Please ensure server is running: ./scripts/server.sh $PORT"
-    exit 1
+# Clean up first to ensure clean state
+cleanup_existing_environment
+
+# Check if Docker services are running for chaos testing
+log "INFO" "Starting Docker-based chaos testing environment..."
+cd "$PROJECT_ROOT"
+
+# Create environment file if it doesn't exist
+if [ ! -f .env.chaos ]; then
+    log "INFO" "Creating .env.chaos from example..."
+    cp .env.chaos.example .env.chaos
 fi
 
-log "SUCCESS" "Environment validation passed"
+# Build and start chaos environment
+log "INFO" "Building Docker images with latest code..."
+docker-compose -f "$CHAOS_COMPOSE_FILE" build
+
+log "INFO" "Starting Docker chaos environment..."
+docker-compose -f "$CHAOS_COMPOSE_FILE" up -d
+
+# Wait for all containers to be healthy
+log "INFO" "Waiting for all containers to be healthy..."
+health_attempts=20  # 40 seconds total wait time (optimized)
+health_attempt=0
+while [ $health_attempt -lt $health_attempts ]; do
+    # Check container health using container names
+    server_health=$(docker inspect chaos-starter-server --format='{{.State.Health.Status}}' 2>/dev/null || echo "")
+    worker_health=$(docker inspect chaos-starter-worker --format='{{.State.Health.Status}}' 2>/dev/null || echo "")
+    postgres_health=$(docker inspect chaos-starter-postgres --format='{{.State.Health.Status}}' 2>/dev/null || echo "")
+    
+    if [ "$server_health" = "healthy" ] && [ "$worker_health" = "healthy" ] && [ "$postgres_health" = "healthy" ]; then
+        log "SUCCESS" "All containers are healthy"
+        break
+    else
+        log "INFO" "Container health status - server: $server_health, worker: $worker_health, postgres: $postgres_health"
+    fi
+    
+    health_attempt=$((health_attempt + 1))
+    sleep 2
+done
+
+if [ $health_attempt -eq $health_attempts ]; then
+    log "WARNING" "Not all containers reached healthy status within timeout, checking API availability..."
+fi
+
+# Validate that the API service is responding  
+log "INFO" "Validating API service availability..."
+api_attempts=15  # 30 seconds max
+api_attempt=0
+while [ $api_attempt -lt $api_attempts ]; do
+    if curl -s -f "$BASE_URL/health" > /dev/null 2>&1; then
+        log "SUCCESS" "API service is responding"
+        break
+    fi
+    api_attempt=$((api_attempt + 1))
+    sleep 2
+done
+
+# Wait for workers to complete task type registration
+log "INFO" "Waiting for workers to register task types..."
+task_type_attempts=10  # 20 seconds max for worker registration 
+task_type_attempt=0
+while [ $task_type_attempt -lt $task_type_attempts ]; do
+    # Check if task types are registered by checking the /tasks/types endpoint
+    task_types_response=$(curl -s "$BASE_URL/tasks/types" 2>/dev/null || echo "")
+    if echo "$task_types_response" | grep -q '"task_type".*"email"' && echo "$task_types_response" | grep -q '"task_type".*"webhook"'; then
+        log "SUCCESS" "Workers have registered task types"
+        break
+    fi
+    task_type_attempt=$((task_type_attempt + 1))
+    sleep 2
+done
+
+if [ $task_type_attempt -eq $task_type_attempts ]; then
+    log "WARNING" "Workers may not have fully registered all task types yet, continuing anyway"
+fi
+
+if [ $api_attempt -eq $api_attempts ]; then
+    log "ERROR" "API service not responding on $BASE_URL after ${api_attempts} attempts"
+    log "INFO" "Check Docker containers: docker-compose -f docker-compose.chaos.yaml ps"
+    exit 1
+fi
 
 # Parse scenarios to run
 if [ "$SCENARIOS" = "all" ]; then
@@ -794,6 +929,11 @@ EOF
 
 # Cleanup any leftover status monitors
 stop_status_monitor
+
+# Cleanup Docker containers after chaos testing
+log "INFO" "Cleaning up Docker chaos environment..."
+cd "$PROJECT_ROOT"
+docker-compose -f "$CHAOS_COMPOSE_FILE" down --remove-orphans || true
 
 log "SUCCESS" "Chaos testing completed!"
 log "INFO" "Report written to: $REPORT_FILE"

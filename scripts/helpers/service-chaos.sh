@@ -93,20 +93,25 @@ log() {
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 
+# Docker compose file for chaos testing
+CHAOS_COMPOSE_FILE="$PROJECT_ROOT/docker-compose.chaos.yaml"
+
 kill_service() {
     local service_type="$1"
     local port="$2"
     
+    cd "$PROJECT_ROOT"
+    
     case "$service_type" in
         server)
-            echo -e "${RED}💀 Killing server on port $port...${NC}"
-            log "   Using stop-server.sh script"
-            "$PROJECT_ROOT/scripts/stop-server.sh" "$port" || true
+            echo -e "${RED}💀 Killing Docker server container...${NC}"
+            log "   Stopping server container"
+            docker-compose -f "$CHAOS_COMPOSE_FILE" stop server || true
             ;;
         worker)
-            echo -e "${RED}💀 Killing worker process...${NC}"
-            log "   Using stop-worker.sh script"
-            "$PROJECT_ROOT/scripts/stop-worker.sh" || true
+            echo -e "${RED}💀 Killing Docker worker container...${NC}"
+            log "   Stopping worker container"
+            docker-compose -f "$CHAOS_COMPOSE_FILE" stop worker || true
             ;;
         *)
             echo "Unknown service type: $service_type" >&2
@@ -119,25 +124,43 @@ start_service() {
     local service_type="$1"
     local port="$2"
     
+    cd "$PROJECT_ROOT"
+    
     case "$service_type" in
         server)
-            echo -e "${GREEN}🚀 Starting server on port $port...${NC}"
-            log "   Using server.sh script"
-            "$PROJECT_ROOT/scripts/server.sh" "$port"
-            sleep 2
-            echo -e "${BLUE}🔍 Testing server health...${NC}"
-            "$PROJECT_ROOT/scripts/test-server.sh" "$port" || echo "   Server health check failed"
+            echo -e "${GREEN}🚀 Starting Docker server container...${NC}"
+            log "   Starting server container"
+            docker-compose -f "$CHAOS_COMPOSE_FILE" up -d server
+            
+            echo -e "${YELLOW}⏳ Waiting for server to be ready...${NC}"
+            local max_attempts=30
+            local attempt=0
+            while [ $attempt -lt $max_attempts ]; do
+                if curl -s -f "http://localhost:$port/health" > /dev/null 2>&1; then
+                    echo -e "${GREEN}✅ Server is ready${NC}"
+                    break
+                fi
+                attempt=$((attempt + 1))
+                sleep 2
+            done
+            
+            if [ $attempt -eq $max_attempts ]; then
+                echo -e "${RED}❌ Server readiness timeout${NC}"
+            fi
             ;;
         worker)
-            echo -e "${GREEN}🔄 Starting worker process...${NC}"
-            log "   Using worker.sh script"
-            "$PROJECT_ROOT/scripts/worker.sh"
-            sleep 2
-            echo -e "${BLUE}🔍 Checking worker process...${NC}"
-            if [ -f "/tmp/starter-worker.pid" ] && kill -0 "$(cat /tmp/starter-worker.pid)" 2>/dev/null; then
-                echo "   Worker is running"
+            echo -e "${GREEN}🔄 Starting Docker worker container...${NC}"
+            log "   Starting worker container"
+            docker-compose -f "$CHAOS_COMPOSE_FILE" up -d worker
+            
+            echo -e "${YELLOW}⏳ Waiting for worker to be ready...${NC}"
+            sleep 5
+            
+            echo -e "${BLUE}🔍 Checking worker container...${NC}"
+            if docker-compose -f "$CHAOS_COMPOSE_FILE" ps worker | grep -q "Up"; then
+                echo -e "${GREEN}✅ Worker is running${NC}"
             else
-                echo "   Worker health check failed"
+                echo -e "${RED}❌ Worker health check failed${NC}"
             fi
             ;;
         *)
@@ -149,22 +172,22 @@ start_service() {
 
 stop_database() {
     echo -e "${RED}🛑 Stopping database...${NC}"
-    log "   Using docker-compose stop"
+    log "   Using chaos docker-compose stop"
     cd "$PROJECT_ROOT"
-    docker-compose stop postgres || echo "   Database may already be stopped"
+    docker-compose -f "$CHAOS_COMPOSE_FILE" stop postgres || echo "   Database may already be stopped"
 }
 
 start_database() {
     echo -e "${GREEN}🗄️ Starting database...${NC}"
-    log "   Using docker-compose start"
+    log "   Using chaos docker-compose start"
     cd "$PROJECT_ROOT"
-    docker-compose start postgres
+    docker-compose -f "$CHAOS_COMPOSE_FILE" start postgres
     
     echo -e "${YELLOW}⏳ Waiting for database to be ready...${NC}"
     timeout=30
     while [ $timeout -gt 0 ]; do
-        if docker-compose exec -T postgres pg_isready -U starter_user -d starter_db > /dev/null 2>&1; then
-            echo "   Database is ready"
+        if docker-compose -f "$CHAOS_COMPOSE_FILE" exec -T postgres pg_isready -U starter_user -d starter_db > /dev/null 2>&1; then
+            echo -e "${GREEN}✅ Database is ready${NC}"
             break
         fi
         sleep 1
@@ -172,7 +195,7 @@ start_database() {
     done
     
     if [ $timeout -eq 0 ]; then
-        echo "   Warning: Database readiness timeout"
+        echo -e "${YELLOW}⚠️ Warning: Database readiness timeout${NC}"
     fi
 }
 

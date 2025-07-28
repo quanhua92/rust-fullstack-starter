@@ -6,7 +6,7 @@
 set -e
 
 # Default values
-BASE_URL="${BASE_URL:-http://localhost:3000}"
+BASE_URL="${BASE_URL:-http://localhost:8888}"
 TASK_PREFIX="${TASK_PREFIX:-chaos}"
 DEADLINE_SECONDS="${DEADLINE_SECONDS:-60}"
 CHECK_INTERVAL="${CHECK_INTERVAL:-5}"

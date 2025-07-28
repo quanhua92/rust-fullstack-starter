@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Multi-Worker Chaos Helper
-# Manages multiple workers and simulates random worker failures
+# Uses Docker Compose scaling to manage multiple workers
 
 set -e
 
@@ -25,22 +25,24 @@ NC='\033[0m'
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 
-# Worker tracking
-WORKER_PIDS=()
-WORKER_LOG_DIR="/tmp/multi-worker-chaos"
-WORKER_STATE_FILE="/tmp/multi-worker-state.json"
+# Docker compose file for chaos testing
+CHAOS_COMPOSE_FILE="$PROJECT_ROOT/docker-compose.chaos.yaml"
+
+# Simple state tracking
+CHAOS_LOG_DIR="/tmp/multi-worker-chaos"
+CHAOS_EVENT_COUNT=0
 
 usage() {
     echo "Usage: $0 [ACTION] [OPTIONS]"
     echo ""
-    echo "Manage multiple workers for chaos testing"
+    echo "Manage multiple workers using Docker Compose scaling"
     echo ""
     echo "Actions:"
-    echo "  start-multi    Start multiple workers"
-    echo "  stop-all       Stop all managed workers"
-    echo "  chaos-run      Start workers and run chaos scenario"
+    echo "  start-multi    Scale workers to specified count"
+    echo "  stop-all       Scale workers to 0"
+    echo "  chaos-run      Run chaos scenario with worker failures"
     echo "  status         Show worker status"
-    echo "  cleanup        Clean up worker files and processes"
+    echo "  cleanup        Clean up worker files"
     echo ""
     echo "Options:"
     echo "  -w, --workers COUNT       Number of workers (default: $WORKER_COUNT)"
@@ -52,9 +54,9 @@ usage() {
     echo "  -h, --help                Show this help"
     echo ""
     echo "Examples:"
-    echo "  $0 start-multi -w 4                    # Start 4 workers"
+    echo "  $0 start-multi -w 4                    # Scale to 4 workers"
     echo "  $0 chaos-run -w 3 -d 120 -s 15 -S 30  # 3 workers, 2min chaos, 15-30s stops"
-    echo "  $0 stop-all                            # Stop all workers"
+    echo "  $0 stop-all                            # Scale to 0 workers"
     echo "  $0 status                              # Check worker status"
 }
 
@@ -123,153 +125,113 @@ log() {
     esac
     
     if [ "$VERBOSE" = true ]; then
-        echo "[$timestamp] $level: $message" >> "$WORKER_LOG_DIR/multi-worker.log"
+        mkdir -p "$CHAOS_LOG_DIR"
+        echo "[$timestamp] $level: $message" >> "$CHAOS_LOG_DIR/multi-worker.log"
     fi
 }
 
-# Setup worker directories
-setup_worker_environment() {
-    mkdir -p "$WORKER_LOG_DIR"
-    rm -f "$WORKER_STATE_FILE"
-    
-    # Initialize worker state
-    echo "{\"workers\": [], \"start_time\": $(date +%s), \"chaos_events\": []}" > "$WORKER_STATE_FILE"
+# Setup chaos environment
+setup_chaos_environment() {
+    mkdir -p "$CHAOS_LOG_DIR"
+    CHAOS_EVENT_COUNT=0
+    echo "$(date '+%Y-%m-%d %H:%M:%S') - Multi-worker chaos started with $WORKER_COUNT workers" > "$CHAOS_LOG_DIR/events.log"
 }
 
-# Start a single worker with unique ID
-start_worker() {
-    local worker_id="$1"
-    local worker_pid_file="/tmp/starter-worker-${worker_id}.pid"
-    local worker_log_file="$WORKER_LOG_DIR/worker-${worker_id}.log"
+# Scale workers using Docker Compose
+scale_workers() {
+    local target_count="$1"
     
-    log "INFO" "Starting worker $worker_id..."
+    log "INFO" "Scaling workers to $target_count..."
     
-    # Stop any existing worker with this ID
-    if [ -f "$worker_pid_file" ]; then
-        local old_pid=$(cat "$worker_pid_file" 2>/dev/null || echo "")
-        if [ -n "$old_pid" ] && kill -0 "$old_pid" 2>/dev/null; then
-            log "WARN" "Killing existing worker $worker_id (PID: $old_pid)"
-            kill -TERM "$old_pid" 2>/dev/null || kill -9 "$old_pid" 2>/dev/null || true
-            sleep 1
-        fi
-        rm -f "$worker_pid_file"
-    fi
+    cd "$PROJECT_ROOT"
     
-    # Start new worker
-    bash -c "cd '$PROJECT_ROOT/starter' && exec cargo run -- worker" > "$worker_log_file" 2>&1 &
-    local worker_pid=$!
+    # Use docker-compose scale command
+    docker-compose -f "$CHAOS_COMPOSE_FILE" up -d --scale workers="$target_count"
     
-    # Save PID
-    echo $worker_pid > "$worker_pid_file"
-    WORKER_PIDS+=("$worker_pid")
+    # Wait a moment for containers to stabilize
+    sleep 3
     
-    # Update state file
-    local worker_info="{\"id\": $worker_id, \"pid\": $worker_pid, \"pid_file\": \"$worker_pid_file\", \"log_file\": \"$worker_log_file\", \"started_at\": $(date +%s), \"status\": \"running\"}"
-    python3 -c "
-import json, sys
-with open('$WORKER_STATE_FILE', 'r') as f:
-    state = json.load(f)
-state['workers'].append($worker_info)
-with open('$WORKER_STATE_FILE', 'w') as f:
-    json.dump(state, f, indent=2)
-"
+    # Verify scaling using Docker ps
+    local actual_count=$(docker ps --filter "name=rust-fullstack-starter-workers" --format "{{.Names}}" | wc -l)
     
-    # Quick validation
-    sleep 2
-    if kill -0 $worker_pid 2>/dev/null; then
-        log "SUCCESS" "Worker $worker_id started (PID: $worker_pid)"
+    if [ "$actual_count" -eq "$target_count" ]; then
+        log "SUCCESS" "Successfully scaled to $target_count workers"
+        echo "$(date '+%Y-%m-%d %H:%M:%S') - Scaled workers to $target_count (actual: $actual_count)" >> "$CHAOS_LOG_DIR/events.log"
         return 0
     else
-        log "ERROR" "Worker $worker_id failed to start"
-        rm -f "$worker_pid_file"
+        log "ERROR" "Scaling failed. Expected $target_count, got $actual_count workers"
+        echo "$(date '+%Y-%m-%d %H:%M:%S') - Scale FAILED: expected $target_count, got $actual_count" >> "$CHAOS_LOG_DIR/events.log"
         return 1
     fi
 }
 
-# Stop a specific worker
-stop_worker() {
-    local worker_id="$1"
-    local worker_pid_file="/tmp/starter-worker-${worker_id}.pid"
-    
-    if [ ! -f "$worker_pid_file" ]; then
-        log "WARN" "Worker $worker_id PID file not found"
-        return 1
-    fi
-    
-    local worker_pid=$(cat "$worker_pid_file" 2>/dev/null || echo "")
-    if [ -z "$worker_pid" ]; then
-        log "WARN" "Worker $worker_id PID file empty"
-        return 1
-    fi
-    
-    if ! kill -0 "$worker_pid" 2>/dev/null; then
-        log "WARN" "Worker $worker_id (PID: $worker_pid) not running"
-        rm -f "$worker_pid_file"
-        return 1
-    fi
-    
-    log "INFO" "Stopping worker $worker_id (PID: $worker_pid)..."
-    
-    # Graceful shutdown
-    kill -TERM "$worker_pid" 2>/dev/null || true
-    
-    # Wait for graceful shutdown
-    for i in {1..10}; do
-        if ! kill -0 "$worker_pid" 2>/dev/null; then
-            break
-        fi
-        sleep 1
-    done
-    
-    # Force kill if still running
-    if kill -0 "$worker_pid" 2>/dev/null; then
-        log "WARN" "Force killing worker $worker_id"
-        kill -9 "$worker_pid" 2>/dev/null || true
-    fi
-    
-    rm -f "$worker_pid_file"
-    
-    # Update state file
-    python3 -c "
-import json, sys
-with open('$WORKER_STATE_FILE', 'r') as f:
-    state = json.load(f)
-for worker in state['workers']:
-    if worker['id'] == $worker_id:
-        worker['status'] = 'stopped'
-        worker['stopped_at'] = $(date +%s)
-        break
-with open('$WORKER_STATE_FILE', 'w') as f:
-    json.dump(state, f, indent=2)
-"
-    
-    log "SUCCESS" "Worker $worker_id stopped"
-    return 0
+# Get list of running worker container names
+get_running_workers() {
+    docker ps --filter "name=rust-fullstack-starter-workers" --format "{{.Names}}"
 }
 
-# Get random worker ID from running workers
-get_random_running_worker() {
-    local running_workers=()
+# Get random worker container name
+get_random_worker() {
+    local workers_list=$(get_running_workers)
     
-    for worker_id in $(seq 1 $WORKER_COUNT); do
-        local worker_pid_file="/tmp/starter-worker-${worker_id}.pid"
-        if [ -f "$worker_pid_file" ]; then
-            local worker_pid=$(cat "$worker_pid_file" 2>/dev/null || echo "")
-            if [ -n "$worker_pid" ] && kill -0 "$worker_pid" 2>/dev/null; then
-                running_workers+=("$worker_id")
-            fi
-        fi
-    done
-    
-    if [ ${#running_workers[@]} -eq 0 ]; then
+    if [ -z "$workers_list" ]; then
         echo ""
         return 1
     fi
     
-    # Select random worker
-    local random_index=$((RANDOM % ${#running_workers[@]}))
-    echo "${running_workers[$random_index]}"
+    # Convert to array and select random worker
+    local workers=($workers_list)
+    local worker_count=${#workers[@]}
+    
+    if [ $worker_count -eq 0 ]; then
+        echo ""
+        return 1
+    fi
+    
+    local random_index=$((RANDOM % worker_count))
+    echo "${workers[$random_index]}"
     return 0
+}
+
+# Kill a specific worker container
+kill_worker() {
+    local worker_name="$1"
+    
+    if [ -z "$worker_name" ]; then
+        log "ERROR" "No worker name provided"
+        return 1
+    fi
+    
+    log "WARN" "🔥 CHAOS EVENT: Killing worker container $worker_name"
+    
+    # Kill the container
+    docker kill "$worker_name" >/dev/null 2>&1 || docker stop "$worker_name" >/dev/null 2>&1 || true
+    
+    # Record chaos event
+    CHAOS_EVENT_COUNT=$((CHAOS_EVENT_COUNT + 1))
+    echo "$(date '+%Y-%m-%d %H:%M:%S') - CHAOS EVENT $CHAOS_EVENT_COUNT: Killed worker $worker_name" >> "$CHAOS_LOG_DIR/events.log"
+    
+    log "SUCCESS" "Worker $worker_name killed"
+    return 0
+}
+
+# Restart dead worker containers (Docker Compose will automatically recreate them)
+restart_workers() {
+    log "INFO" "Restarting any dead worker containers..."
+    
+    cd "$PROJECT_ROOT"
+    
+    # Docker Compose will automatically recreate killed containers when we run up again
+    docker-compose -f "$CHAOS_COMPOSE_FILE" up -d workers >/dev/null 2>&1
+    
+    # Wait for containers to stabilize
+    sleep 3
+    
+    local worker_count=$(docker ps --filter "name=rust-fullstack-starter-workers" --format "{{.Names}}" | wc -l)
+    log "SUCCESS" "Worker restart completed. Currently $worker_count workers running"
+    
+    # Record restart event
+    echo "$(date '+%Y-%m-%d %H:%M:%S') - RESTART: Now have $worker_count workers running" >> "$CHAOS_LOG_DIR/events.log"
 }
 
 # Random chaos events
@@ -279,39 +241,27 @@ run_chaos_scenario() {
     local next_chaos_time=$((start_time + $(shuf -i $MIN_STOP_INTERVAL-$MAX_STOP_INTERVAL -n 1)))
     
     log "INFO" "Starting chaos scenario for ${CHAOS_DURATION}s..."
-    log "INFO" "Stop intervals: ${MIN_STOP_INTERVAL}-${MAX_STOP_INTERVAL}s, restart delay: ${RESTART_DELAY}s"
+    log "INFO" "Kill intervals: ${MIN_STOP_INTERVAL}-${MAX_STOP_INTERVAL}s, restart delay: ${RESTART_DELAY}s"
     
     while [ $(date +%s) -lt $end_time ]; do
         local current_time=$(date +%s)
         
         if [ $current_time -ge $next_chaos_time ]; then
             # Time for chaos event
-            local victim_worker=$(get_random_running_worker)
+            local victim_worker=$(get_random_worker)
             
             if [ -n "$victim_worker" ]; then
-                log "WARN" "🔥 CHAOS EVENT: Stopping worker $victim_worker"
-                
-                # Record chaos event
-                local chaos_event="{\"type\": \"worker_stop\", \"worker_id\": $victim_worker, \"timestamp\": $current_time}"
-                python3 -c "
-import json, sys
-with open('$WORKER_STATE_FILE', 'r') as f:
-    state = json.load(f)
-state['chaos_events'].append($chaos_event)
-with open('$WORKER_STATE_FILE', 'w') as f:
-    json.dump(state, f, indent=2)
-"
-                
-                stop_worker "$victim_worker"
+                kill_worker "$victim_worker"
                 
                 # For extreme chaos (when min/max intervals are very short), 
                 # sometimes don't restart workers to create catastrophic failure
                 local should_restart=true
                 if [ $MIN_STOP_INTERVAL -le 3 ] && [ $MAX_STOP_INTERVAL -le 6 ]; then
-                    # 50% chance of not restarting in extreme chaos mode
-                    if [ $((RANDOM % 10)) -lt 5 ]; then
+                    # 30% chance of not restarting in extreme chaos mode
+                    if [ $((RANDOM % 10)) -lt 3 ]; then
                         should_restart=false
-                        log "WARN" "🚨 EXTREME CHAOS: Worker $victim_worker will NOT be restarted (catastrophic failure mode)"
+                        log "WARN" "🚨 EXTREME CHAOS: Worker will NOT be restarted (catastrophic failure mode)"
+                        echo "$(date '+%Y-%m-%d %H:%M:%S') - EXTREME CHAOS: $victim_worker NOT restarted" >> "$CHAOS_LOG_DIR/events.log"
                     fi
                 fi
                 
@@ -322,30 +272,8 @@ with open('$WORKER_STATE_FILE', 'w') as f:
                         sleep $RESTART_DELAY
                     fi
                     
-                    # Restart worker
-                    start_worker "$victim_worker"
-                    
-                    # Record restart event
-                    local restart_event="{\"type\": \"worker_restart\", \"worker_id\": $victim_worker, \"timestamp\": $(date +%s)}"
-                    python3 -c "
-import json, sys
-with open('$WORKER_STATE_FILE', 'r') as f:
-    state = json.load(f)
-state['chaos_events'].append($restart_event)
-with open('$WORKER_STATE_FILE', 'w') as f:
-    json.dump(state, f, indent=2)
-"
-                else
-                    # Record permanent stop event
-                    local perm_stop_event="{\"type\": \"worker_permanent_stop\", \"worker_id\": $victim_worker, \"timestamp\": $(date +%s)}"
-                    python3 -c "
-import json, sys
-with open('$WORKER_STATE_FILE', 'r') as f:
-    state = json.load(f)
-state['chaos_events'].append($perm_stop_event)
-with open('$WORKER_STATE_FILE', 'w') as f:
-    json.dump(state, f, indent=2)
-"
+                    # Restart workers (Docker Compose will recreate killed containers)
+                    restart_workers
                 fi
             else
                 log "WARN" "No running workers found for chaos event"
@@ -359,6 +287,7 @@ with open('$WORKER_STATE_FILE', 'w') as f:
     done
     
     log "SUCCESS" "Chaos scenario completed"
+    echo "$(date '+%Y-%m-%d %H:%M:%S') - Chaos scenario completed. Total events: $CHAOS_EVENT_COUNT" >> "$CHAOS_LOG_DIR/events.log"
 }
 
 # Show status of all workers
@@ -366,44 +295,37 @@ show_worker_status() {
     echo -e "${BLUE}🔧 Multi-Worker Status${NC}"
     echo "=================================="
     
-    if [ ! -f "$WORKER_STATE_FILE" ]; then
-        echo "No worker state file found. Run 'start-multi' first."
-        return 1
+    local workers_list=$(get_running_workers)
+    local running_count=0
+    
+    if [ -z "$workers_list" ]; then
+        echo -e "${RED}No workers currently running${NC}"
+    else
+        local workers=($workers_list)
+        running_count=${#workers[@]}
+        echo -e "${GREEN}$running_count workers running:${NC}"
+        
+        for worker in "${workers[@]}"; do
+            local container_id=$(docker ps -q -f name="$worker" 2>/dev/null || echo "unknown")
+            local started_at=$(docker inspect "$worker" --format='{{.State.StartedAt}}' 2>/dev/null || echo "unknown")
+            if [ "$started_at" != "unknown" ]; then
+                local start_timestamp=$(date -d "$started_at" +%s 2>/dev/null || echo "0")
+                local current_time=$(date +%s)
+                local age=$((current_time - start_timestamp))
+                echo "  - $worker (ID: ${container_id:0:12}, Age: ${age}s)"
+            else
+                echo "  - $worker (ID: ${container_id:0:12}, Age: unknown)"
+            fi
+        done
     fi
     
-    local running_count=0
-    local total_count=0
-    
-    for worker_id in $(seq 1 $WORKER_COUNT); do
-        local worker_pid_file="/tmp/starter-worker-${worker_id}.pid"
-        total_count=$((total_count + 1))
-        
-        if [ -f "$worker_pid_file" ]; then
-            local worker_pid=$(cat "$worker_pid_file" 2>/dev/null || echo "")
-            if [ -n "$worker_pid" ] && kill -0 "$worker_pid" 2>/dev/null; then
-                echo -e "Worker $worker_id: ${GREEN}RUNNING${NC} (PID: $worker_pid)"
-                running_count=$((running_count + 1))
-            else
-                echo -e "Worker $worker_id: ${RED}STOPPED${NC} (stale PID file)"
-                rm -f "$worker_pid_file"
-            fi
-        else
-            echo -e "Worker $worker_id: ${YELLOW}NOT STARTED${NC}"
-        fi
-    done
-    
     echo ""
-    echo "Summary: $running_count/$total_count workers running"
+    echo "Target worker count: $WORKER_COUNT"
+    echo "Actual worker count: $running_count"
     
     # Show chaos events if available
-    if [ -f "$WORKER_STATE_FILE" ]; then
-        local event_count=$(python3 -c "
-import json
-with open('$WORKER_STATE_FILE', 'r') as f:
-    state = json.load(f)
-print(len(state.get('chaos_events', [])))
-" 2>/dev/null || echo "0")
-        echo "Chaos events recorded: $event_count"
+    if [ -f "$CHAOS_LOG_DIR/events.log" ]; then
+        echo "Chaos events recorded: $CHAOS_EVENT_COUNT"
     fi
 }
 
@@ -411,18 +333,17 @@ print(len(state.get('chaos_events', [])))
 cleanup_workers() {
     log "INFO" "Cleaning up all workers and files..."
     
-    # Stop all workers
-    for worker_id in $(seq 1 10); do  # Check up to 10 workers
-        stop_worker "$worker_id" 2>/dev/null || true
-    done
+    cd "$PROJECT_ROOT"
     
-    # Clean up remaining processes
-    pkill -f "starter worker" 2>/dev/null || true
+    # Scale workers to 0
+    docker-compose -f "$CHAOS_COMPOSE_FILE" up -d --scale workers=0 >/dev/null 2>&1
+    
+    # Remove any remaining worker containers
+    docker ps -a --filter "name=rust-fullstack-starter-workers" --format "{{.Names}}" | \
+        xargs -I {} docker rm -f {} >/dev/null 2>&1 || true
     
     # Clean up files
-    rm -f /tmp/starter-worker-*.pid
-    rm -f "$WORKER_STATE_FILE"
-    rm -rf "$WORKER_LOG_DIR"
+    rm -rf "$CHAOS_LOG_DIR"
     
     log "SUCCESS" "Cleanup completed"
 }
@@ -430,34 +351,21 @@ cleanup_workers() {
 # Execute action
 case "$ACTION" in
     start-multi)
-        setup_worker_environment
-        log "INFO" "Starting $WORKER_COUNT workers..."
-        
-        for worker_id in $(seq 1 $WORKER_COUNT); do
-            start_worker "$worker_id"
-            sleep 1  # Stagger starts slightly
-        done
-        
+        setup_chaos_environment
+        scale_workers "$WORKER_COUNT"
         show_worker_status
         ;;
         
     stop-all)
-        log "INFO" "Stopping all workers..."
-        for worker_id in $(seq 1 $WORKER_COUNT); do
-            stop_worker "$worker_id" 2>/dev/null || true
-        done
+        log "INFO" "Scaling workers to 0..."
+        scale_workers 0
         ;;
         
     chaos-run)
-        setup_worker_environment
+        setup_chaos_environment
         
-        # Start workers
-        log "INFO" "Starting $WORKER_COUNT workers for chaos scenario..."
-        for worker_id in $(seq 1 $WORKER_COUNT); do
-            start_worker "$worker_id"
-            sleep 1
-        done
-        
+        # Scale workers to target count
+        scale_workers "$WORKER_COUNT"
         show_worker_status
         
         # Run chaos scenario

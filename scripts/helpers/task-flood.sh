@@ -6,7 +6,7 @@
 set -e
 
 # Default values
-BASE_URL="${BASE_URL:-http://localhost:3000}"
+BASE_URL="${BASE_URL:-http://localhost:8888}"
 TASK_COUNT="${TASK_COUNT:-50}"
 TASK_TYPE="${TASK_TYPE:-email}"
 DELAY="${DELAY:-0.1}"

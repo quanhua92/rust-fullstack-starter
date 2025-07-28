@@ -133,6 +133,7 @@ Benefits of the Rust test suite:
 ### Chaos Testing Framework (Advanced)
 Comprehensive resilience testing with 6 difficulty levels and realistic failure scenarios:
 
+**Binary-Based Testing (Traditional):**
 ```bash
 # Basic resilience testing
 ./scripts/test-chaos.sh --difficulty 1
@@ -142,8 +143,22 @@ Comprehensive resilience testing with 6 difficulty levels and realistic failure 
 
 # Specific scenarios only
 ./scripts/test-chaos.sh --scenarios "multi-worker-chaos"
+```
 
-# API endpoint testing
+**Docker-Based Testing (Enhanced):** ⭐ **NEW**
+```bash
+# Docker chaos testing with resource limits (now unified)
+./scripts/test-chaos.sh --difficulty 1
+
+# Container resource constraints testing
+./scripts/test-chaos.sh --difficulty 3
+
+# Docker-specific scenarios (automatically uses Docker containers)
+./scripts/test-chaos.sh --scenarios "container-restart,resource-pressure"
+```
+
+**API Endpoint Testing:**
+```bash
 ./scripts/test-with-curl.sh             # 38 endpoint tests (~5 seconds)
 ./scripts/test-with-curl.sh localhost 8080  # Custom host/port
 ```
@@ -162,6 +177,13 @@ Comprehensive resilience testing with 6 difficulty levels and realistic failure 
 - **Deadline enforcement**: Validates system performance under time pressure
 - **Failure injection**: Systematic worker cycling and service disruption
 - **Comprehensive reporting**: Detailed logs, statistics, and failure analysis
+
+**Docker Chaos Features:** ⭐ **NEW**
+- **Container isolation**: Tests run in isolated Docker containers
+- **Resource constraints**: CPU and memory limits for realistic testing
+- **Container failures**: Docker kill/restart scenarios
+- **Horizontal scaling**: Multi-container worker testing
+- **Production alignment**: Same runtime environment as production
 
 ## 📊 Complete Workflow Examples
 

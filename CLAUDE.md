@@ -20,7 +20,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
   - Custom: `./scripts/test-with-curl.sh localhost 8080`
   - HTTPS: `./scripts/test-with-curl.sh api.example.com 443`
   - **NEW**: Includes task type registration testing (`POST/GET /tasks/types`)
-- **Chaos Testing**: `./scripts/test-chaos.sh [options]` (resilience testing with failure simulation)
+- **Chaos Testing**: `./scripts/test-chaos.sh [options]` (Docker-based resilience testing with automatic image building)
   - Basic: `./scripts/test-chaos.sh` (difficulty 1, all scenarios)
   - Advanced: `./scripts/test-chaos.sh --difficulty 3 --scenarios "db-failure,task-flood"`
   - Output: Results saved to `/tmp/chaos-test-report.md` and `/tmp/api-test-*.txt`

@@ -6,7 +6,7 @@
 set -e
 
 # Default values
-BASE_URL="${BASE_URL:-http://localhost:3000}"
+BASE_URL="${BASE_URL:-http://localhost:8888}"
 TASK_COUNT="${TASK_COUNT:-30}"
 DELAY_DURATION="${DELAY_DURATION:-5}"     # How long each task should delay (seconds)
 TASK_DEADLINE="${TASK_DEADLINE:-60}"      # Maximum time for all tasks to complete

@@ -6,7 +6,7 @@
 set -e
 
 # Default values
-BASE_URL="${BASE_URL:-http://localhost:3000}"
+BASE_URL="${BASE_URL:-http://localhost:8888}"
 USERNAME_PREFIX="${USERNAME_PREFIX:-testuser}"
 EMAIL_DOMAIN="${EMAIL_DOMAIN:-example.com}"
 PASSWORD="${PASSWORD:-SecurePass123}"

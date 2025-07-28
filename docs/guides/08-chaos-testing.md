@@ -62,6 +62,15 @@ Start small and gradually increase scope:
 
 ## Framework Architecture
 
+### Deployment Options
+
+The chaos testing framework supports two deployment modes:
+
+1. **Binary-Based Testing** (Traditional): Direct process management for rapid development
+2. **Docker-Based Testing** (Enhanced): Container isolation with resource limits
+
+For Docker-based chaos testing, see the [Docker Chaos Testing Guide](09-docker-chaos-testing.md).
+
 ### Core Components
 
 The chaos testing framework consists of three main parts:
@@ -410,6 +419,8 @@ The framework provides 6 scientifically-designed difficulty levels with logical 
 
 ### Quick Start
 
+### Binary-Based Testing (Traditional)
+
 ```bash
 # Basic chaos testing (recommended for daily use)
 ./scripts/test-chaos.sh
@@ -423,6 +434,29 @@ The framework provides 6 scientifically-designed difficulty levels with logical 
 # Verbose output with detailed logs
 ./scripts/test-chaos.sh --difficulty 5 --verbose
 ```
+
+### Docker-Based Testing (Enhanced)
+
+The chaos testing framework now automatically uses Docker containers for improved realism:
+
+```bash
+# Docker chaos testing with resource limits (unified framework)
+# Note: Automatically builds containers with latest code before testing
+./scripts/test-chaos.sh --difficulty 1
+
+# Test with container resource constraints
+./scripts/test-chaos.sh --difficulty 3
+
+# All scenarios now run in Docker containers automatically
+./scripts/test-chaos.sh --scenarios "baseline,multi-worker-chaos"
+```
+
+**Docker Benefits:**
+- **Container Isolation**: Each service runs in isolated Docker containers
+- **Resource Limits**: CPU and memory constraints for realistic testing
+- **Production Alignment**: Same runtime environment as production
+- **Scalable Testing**: Easy horizontal scaling of workers
+- **Always Fresh**: Automatically rebuilds images with latest code changes
 
 ### Progressive Testing Strategy
 
