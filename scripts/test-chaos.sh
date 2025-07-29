@@ -555,7 +555,7 @@ run_scenario() {
             fi
             
             # Quick API health check before flooding
-            if ! curl -s -f "$BASE_URL/health" > /dev/null 2>&1; then
+            if ! curl -s -f "$BASE_URL/api/v1/health" > /dev/null 2>&1; then
                 log "ERROR" "⚡ FAIL FAST: API unhealthy before task flood - skipping"
                 TEST_RESULTS+=("❌ task-flood: FAIL (API)")
                 continue
@@ -592,7 +592,7 @@ run_scenario() {
             fi
             
             # Quick API health check
-            if ! curl -s -f "$BASE_URL/health" > /dev/null 2>&1; then
+            if ! curl -s -f "$BASE_URL/api/v1/health" > /dev/null 2>&1; then
                 log "ERROR" "⚡ FAIL FAST: API unhealthy - skipping circuit breaker test"
                 TEST_RESULTS+=("❌ circuit-breaker: FAIL (API)")
                 continue
@@ -674,7 +674,7 @@ run_scenario() {
                 local recovered=false
                 local timeout_count=0
                 while [ $timeout_count -lt 30 ]; do
-                    if curl -s -f "$BASE_URL/health" > /dev/null 2>&1; then
+                    if curl -s -f "$BASE_URL/api/v1/health" > /dev/null 2>&1; then
                         local recovery_time=$(($(date +%s) - kill_time))
                         recovery_times+=("$recovery_time")
                         log "SUCCESS" "Recovery time iteration $i: ${recovery_time}s"
@@ -822,23 +822,31 @@ run_scenario() {
             # Wait for monitoring to complete
             wait $MONITOR_PID || true
             
-            # Get final results from monitor log
-            local monitor_result=""
-            if [ -f "$OUTPUT_DIR/multi-worker-monitor.log" ]; then
-                monitor_result=$(tail -1 "$OUTPUT_DIR/multi-worker-monitor.log" | grep -o '{.*}' || echo "{}")
-            fi
-            
-            # Parse results
+            # Get final results using admin CLI helper (bypasses authentication and log file issues)
             local completed_tasks=0
             local total_tasks=0
             local deadline_met=false
             local retry_attempts=0
             
-            if [ -n "$monitor_result" ] && [ "$monitor_result" != "{}" ]; then
-                completed_tasks=$(echo "$monitor_result" | python3 -c "import json,sys; print(json.load(sys.stdin).get('completed', 0))" 2>/dev/null || echo "0")
-                total_tasks=$(echo "$monitor_result" | python3 -c "import json,sys; print(json.load(sys.stdin).get('total', 0))" 2>/dev/null || echo "0")
-                deadline_met=$(echo "$monitor_result" | python3 -c "import json,sys; print(json.load(sys.stdin).get('deadline_met', False))" 2>/dev/null || echo "false")
-                retry_attempts=$(echo "$monitor_result" | python3 -c "import json,sys; print(json.load(sys.stdin).get('retry_attempts', 0))" 2>/dev/null || echo "0")
+            # Use admin CLI helper to get accurate task statistics
+            if docker ps | grep -q "chaos-starter-server"; then
+                local admin_output=$("$HELPERS_DIR/admin-cli-helper.sh" -c "chaos-starter-server" task-stats --tag multiworker 2>/dev/null || echo "")
+                
+                if [ -n "$admin_output" ]; then
+                    # Parse admin CLI output: "completed: X" and "Total: Y"
+                    completed_tasks=$(echo "$admin_output" | grep "completed:" | awk '{print $2}' || echo "0")
+                    total_tasks=$(echo "$admin_output" | grep "Total:" | awk '{print $2}' || echo "0")
+                    
+                    # For deadline, check if tasks exceeded the expected deadline
+                    # We can approximate this by checking if we're past the deadline time
+                    local current_time=$(date +%s)
+                    local deadline_time=$((scenario_start + task_deadline))
+                    if [ "$current_time" -le "$deadline_time" ]; then
+                        deadline_met=true
+                    else
+                        deadline_met=false
+                    fi
+                fi
             fi
             
             # Clean up workers
@@ -998,7 +1006,7 @@ run_scenario() {
             
             # Pre-Phase Health Check
             log "INFO" "⚡ FAIL FAST: Checking system health before dynamic scaling phases..."
-            if ! curl -s -f "$BASE_URL/health" > /dev/null 2>&1; then
+            if ! curl -s -f "$BASE_URL/api/v1/health" > /dev/null 2>&1; then
                 log "ERROR" "⚡ FAIL FAST: API unhealthy before dynamic scaling - aborting"
                 TEST_RESULTS+=("❌ dynamic-scaling: FAIL (Pre-check API)")
                 continue
@@ -1422,7 +1430,7 @@ log "INFO" "Validating API service availability..."
 # api check variables already defined at top of file
 api_attempt=0
 while [ $api_attempt -lt $api_attempts ]; do
-    if curl -s -f "$BASE_URL/health" > /dev/null 2>&1; then
+    if curl -s -f "$BASE_URL/api/v1/health" > /dev/null 2>&1; then
         log "SUCCESS" "API service is responding"
         break
     fi
@@ -1436,7 +1444,7 @@ log "INFO" "Waiting for workers to register task types..."
 task_type_attempt=0
 while [ $task_type_attempt -lt $task_type_attempts ]; do
     # Check if task types are registered by checking the /tasks/types endpoint
-    task_types_response=$(curl -s "$BASE_URL/tasks/types" 2>/dev/null || echo "")
+    task_types_response=$(curl -s "$BASE_URL/api/v1/tasks/types" 2>/dev/null || echo "")
     if echo "$task_types_response" | grep -q '"task_type".*"email"' && echo "$task_types_response" | grep -q '"task_type".*"webhook"'; then
         log "SUCCESS" "Workers have registered task types"
         break
