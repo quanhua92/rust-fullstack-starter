@@ -66,16 +66,8 @@ const menuItems = [
 		icon: Heart,
 		items: [
 			{
-				title: "Health Status",
+				title: "Health Dashboard",
 				url: "/admin/health",
-			},
-			{
-				title: "System Metrics",
-				url: "/admin/health/metrics",
-			},
-			{
-				title: "Probes",
-				url: "/admin/health/probes",
 			},
 		],
 	},

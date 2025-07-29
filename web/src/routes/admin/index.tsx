@@ -1,4 +1,4 @@
-import { HealthIndicator } from "@/components/admin/HealthIndicator";
+import { HealthStatusCards } from "@/components/admin/HealthStatusCards";
 import { RecentActivity } from "@/components/admin/RecentActivity";
 import { StatsCard } from "@/components/admin/StatsCard";
 import { AdminLayout } from "@/components/layout/AdminLayout";
@@ -18,14 +18,6 @@ function AdminDashboard() {
 		},
 	});
 
-	// Fetch health status
-	const { data: healthData, isLoading: isLoadingHealth } = useQuery({
-		queryKey: ["health"],
-		queryFn: async () => {
-			const response = await apiClient.getHealth();
-			return response.data;
-		},
-	});
 
 	// Fetch current user for user count (mock data for now)
 	const { data: currentUser } = useQuery({
@@ -36,11 +28,6 @@ function AdminDashboard() {
 		},
 	});
 
-	const formatUptime = (uptimeSeconds: number) => {
-		const hours = Math.floor(uptimeSeconds / 3600);
-		const minutes = Math.floor((uptimeSeconds % 3600) / 60);
-		return `${hours}h ${minutes}m`;
-	};
 
 	return (
 		<AdminLayout>
@@ -96,48 +83,16 @@ function AdminDashboard() {
 					)}
 				</div>
 
-				{/* Health and Activity */}
-				<div className="grid gap-4 md:grid-cols-2">
-					{/* Health Status */}
-					<div className="space-y-4">
-						<h2 className="text-xl font-semibold">System Health</h2>
-						{isLoadingHealth ? (
-							<Skeleton className="h-32" />
-						) : (
-							<HealthIndicator
-								title="Application Status"
-								status={
-									healthData?.status === "healthy" ? "healthy" : "unhealthy"
-								}
-								message={`System is ${healthData?.status || "unknown"}`}
-								version={healthData?.version}
-								uptime={
-									healthData?.uptime
-										? formatUptime(healthData.uptime)
-										: undefined
-								}
-							/>
-						)}
+				{/* Health Status Cards */}
+				<div className="space-y-4">
+					<h2 className="text-xl font-semibold">System Health</h2>
+					<HealthStatusCards />
+				</div>
 
-						{/* Mock additional health indicators */}
-						<HealthIndicator
-							title="Database"
-							status="healthy"
-							message="Connected to PostgreSQL"
-						/>
-
-						<HealthIndicator
-							title="Task Workers"
-							status="healthy"
-							message="2 workers active"
-						/>
-					</div>
-
-					{/* Recent Activity */}
-					<div className="space-y-4">
-						<h2 className="text-xl font-semibold">Recent Activity</h2>
-						<RecentActivity activities={[]} /> {/* Uses mock data internally */}
-					</div>
+				{/* Activity Section */}
+				<div className="space-y-4">
+					<h2 className="text-xl font-semibold">Recent Activity</h2>
+					<RecentActivity activities={[]} /> {/* Uses mock data internally */}
 				</div>
 
 				{/* Quick Actions */}
