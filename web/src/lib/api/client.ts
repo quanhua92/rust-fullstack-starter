@@ -265,6 +265,44 @@ class ApiClient {
 			"/health/startup",
 		);
 	}
+
+	// User management endpoints
+	async getUser(id: string): Promise<UserProfileResponse> {
+		return this.request<UserProfileResponse>(`/users/${id}`);
+	}
+
+	async getUsers(): Promise<{ data: { users: any[] } }> {
+		// Mock implementation since /users endpoint doesn't exist yet
+		// In a real implementation, this would call GET /users
+		const currentUser = await this.getCurrentUser();
+		return {
+			data: {
+				users: [currentUser.data],
+			},
+		};
+	}
+
+	async createUser(userData: {
+		username: string;
+		email: string;
+		password: string;
+		role: string;
+		isActive: boolean;
+	}): Promise<{ data: any }> {
+		// Mock implementation - would need actual API endpoint
+		// In a real implementation, this would call POST /users
+		console.log("Creating user:", userData);
+		return {
+			data: {
+				id: "mock-" + Date.now(),
+				username: userData.username,
+				email: userData.email,
+				role: userData.role,
+				is_active: userData.isActive,
+				created_at: new Date().toISOString(),
+			},
+		};
+	}
 }
 
 // Export singleton instance
