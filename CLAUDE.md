@@ -80,6 +80,7 @@ This starter template includes comprehensive development infrastructure:
 
 ## Development Workflow
 
+### Backend Development (Rust API)
 1. **Start Services**: `./scripts/dev-server.sh 3000` (complete environment)
    - Or manually: `./scripts/server.sh && ./scripts/worker.sh`
    - **IMPORTANT**: Workers must start to register task types before creating tasks
@@ -88,6 +89,41 @@ This starter template includes comprehensive development infrastructure:
 3. **API Testing**: `./scripts/test-with-curl.sh` (40+ endpoint tests)
 4. **Chaos Testing**: `./scripts/test-chaos.sh` (Docker-based resilience validation)
 5. **Stop Services**: `./scripts/stop-server.sh 3000`
+
+### Frontend Development (React/TypeScript)
+**Multi-phase development workflow with quality checks:**
+
+1. **Implement Phase**: Work on specific feature phase (authentication, admin portal, user management, etc.)
+2. **Quality Validation**: `cd web && ./scripts/check-web.sh` (**RUN BEFORE EVERY COMMIT**)
+   - Dependencies validation and API type generation
+   - TypeScript type checking and compilation
+   - Biome linting and code formatting
+   - Production build testing
+   - Unit/integration tests
+   - Code quality analysis and bundle optimization
+3. **Fix Issues**: Address any failures from quality checks
+4. **Commit Phase**: Commit completed phase without push to mark milestone
+5. **Next Phase**: Proceed to next development phase
+
+**Web Quality Checks**: `@web/scripts/check-web.sh`
+- **Dependencies**: Validates pnpm dependencies and installation
+- **API Types**: Auto-generates TypeScript types from `../docs/openapi.json`
+- **TypeScript**: Full type checking with `tsc --noEmit`
+- **Linting**: Biome linting with auto-fix suggestions
+- **Formatting**: Code formatting validation with Biome
+- **Build**: Production build testing with Vite
+- **Tests**: Unit and integration test execution
+- **Analysis**: Bundle size analysis, unused dependencies, code quality checks
+- **Components**: Validates shadcn/ui components and API client setup
+
+**Web Project Structure**:
+- Modern React 18 with TanStack Router (file-based routing)
+- TanStack Query for server state management
+- shadcn/ui@canary components with Tailwind CSS 4
+- TypeScript with auto-generated API types
+- Authentication system with JWT tokens
+- Admin portal with sidebar navigation and dashboard
+- Comprehensive quality checking and production build validation
 
 ## CLI Module Architecture
 
