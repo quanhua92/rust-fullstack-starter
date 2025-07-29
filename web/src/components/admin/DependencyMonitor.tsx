@@ -19,7 +19,6 @@ import {
 
 import type { components } from '@/types/api'
 
-type DetailedHealth = components['schemas']['DetailedHealthResponse']
 type ComponentHealth = components['schemas']['ComponentHealth']
 
 // Type for probe responses that return unknown data
@@ -91,8 +90,8 @@ export function DependencyMonitor() {
   const calculateOverallHealth = () => {
     const allChecks: ComponentHealth[] = [
       ...(detailedHealthQuery.data?.data?.checks ? Object.values(detailedHealthQuery.data.data.checks) : []),
-      ...(readinessQuery.data?.data?.checks ? Object.values(readinessQuery.data.data.checks) : []),
-      ...(startupQuery.data?.data?.checks ? Object.values(startupQuery.data.data.checks) : [])
+      ...((readinessQuery.data?.data as ProbeResponse)?.checks ? Object.values((readinessQuery.data?.data as ProbeResponse).checks!) : []),
+      ...((startupQuery.data?.data as ProbeResponse)?.checks ? Object.values((startupQuery.data?.data as ProbeResponse).checks!) : [])
     ]
 
     if (allChecks.length === 0) return { percentage: 0, status: 'unknown' }
@@ -333,7 +332,7 @@ export function DependencyMonitor() {
             <div className="flex items-center justify-between p-3 bg-gray-50 rounded">
               <span className="font-medium">Detailed Health:</span>
               <span className="text-muted-foreground">
-                {detailedHealthQuery.data?.data.timestamp ? 
+                {detailedHealthQuery.data?.data?.timestamp ? 
                   new Date(detailedHealthQuery.data.data.timestamp).toLocaleTimeString() : 
                   'Not available'}
               </span>

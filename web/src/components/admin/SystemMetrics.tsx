@@ -186,15 +186,15 @@ export function SystemMetrics() {
         <CardContent>
           <div className="text-2xl font-bold">
             {taskStatsQuery.data ? 
-              (taskStatsQuery.data?.data.pending + taskStatsQuery.data?.data.running) : 
+              ((taskStatsQuery.data?.data?.pending || 0) + (taskStatsQuery.data?.data?.running || 0)) : 
               'Loading...'}
           </div>
           <div className="flex space-x-2 mt-2">
             <Badge variant="outline" className="text-xs">
-              {taskStatsQuery.data?.data.pending || 0} pending
+              {taskStatsQuery.data?.data?.pending || 0} pending
             </Badge>
             <Badge variant="outline" className="text-xs">
-              {taskStatsQuery.data?.data.running || 0} running
+              {taskStatsQuery.data?.data?.running || 0} running
             </Badge>
           </div>
           <p className="text-xs text-muted-foreground mt-2">
@@ -221,31 +221,31 @@ export function SystemMetrics() {
             <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
               <div className="text-center">
                 <div className="text-2xl font-bold text-blue-600">
-                  {taskStatsQuery.data?.data.total}
+                  {taskStatsQuery.data?.data?.total || 0}
                 </div>
                 <div className="text-sm text-muted-foreground">Total</div>
               </div>
               <div className="text-center">
                 <div className="text-2xl font-bold text-yellow-600">
-                  {taskStatsQuery.data?.data.pending}
+                  {taskStatsQuery.data?.data?.pending || 0}
                 </div>
                 <div className="text-sm text-muted-foreground">Pending</div>
               </div>
               <div className="text-center">
                 <div className="text-2xl font-bold text-purple-600">
-                  {taskStatsQuery.data?.data.running}
+                  {taskStatsQuery.data?.data?.running || 0}
                 </div>
                 <div className="text-sm text-muted-foreground">Running</div>
               </div>
               <div className="text-center">
                 <div className="text-2xl font-bold text-green-600">
-                  {taskStatsQuery.data?.data.completed}
+                  {taskStatsQuery.data?.data?.completed || 0}
                 </div>
                 <div className="text-sm text-muted-foreground">Completed</div>
               </div>
               <div className="text-center">
                 <div className="text-2xl font-bold text-red-600">
-                  {(taskStatsQuery.data?.data.failed || 0) + (taskStatsQuery.data?.data.cancelled || 0)}
+                  {(taskStatsQuery.data?.data?.failed || 0) + (taskStatsQuery.data?.data?.cancelled || 0)}
                 </div>
                 <div className="text-sm text-muted-foreground">
                   Failed + Cancelled
