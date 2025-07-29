@@ -15,8 +15,12 @@ import { Route as DemoTanstackQueryRouteImport } from './routes/demo.tanstack-qu
 import { Route as AuthRegisterRouteImport } from './routes/auth/register'
 import { Route as AuthLoginRouteImport } from './routes/auth/login'
 import { Route as AdminUsersIndexRouteImport } from './routes/admin/users/index'
+import { Route as AdminTasksIndexRouteImport } from './routes/admin/tasks/index'
 import { Route as AdminUsersNewRouteImport } from './routes/admin/users/new'
 import { Route as AdminUsersUserIdRouteImport } from './routes/admin/users/$userId'
+import { Route as AdminTasksNewRouteImport } from './routes/admin/tasks/new'
+import { Route as AdminTasksDeadLetterRouteImport } from './routes/admin/tasks/dead-letter'
+import { Route as AdminTasksTaskIdRouteImport } from './routes/admin/tasks/$taskId'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -48,6 +52,11 @@ const AdminUsersIndexRoute = AdminUsersIndexRouteImport.update({
   path: '/admin/users/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminTasksIndexRoute = AdminTasksIndexRouteImport.update({
+  id: '/admin/tasks/',
+  path: '/admin/tasks/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminUsersNewRoute = AdminUsersNewRouteImport.update({
   id: '/admin/users/new',
   path: '/admin/users/new',
@@ -58,6 +67,21 @@ const AdminUsersUserIdRoute = AdminUsersUserIdRouteImport.update({
   path: '/admin/users/$userId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminTasksNewRoute = AdminTasksNewRouteImport.update({
+  id: '/admin/tasks/new',
+  path: '/admin/tasks/new',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminTasksDeadLetterRoute = AdminTasksDeadLetterRouteImport.update({
+  id: '/admin/tasks/dead-letter',
+  path: '/admin/tasks/dead-letter',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminTasksTaskIdRoute = AdminTasksTaskIdRouteImport.update({
+  id: '/admin/tasks/$taskId',
+  path: '/admin/tasks/$taskId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -65,8 +89,12 @@ export interface FileRoutesByFullPath {
   '/auth/register': typeof AuthRegisterRoute
   '/demo/tanstack-query': typeof DemoTanstackQueryRoute
   '/admin': typeof AdminIndexRoute
+  '/admin/tasks/$taskId': typeof AdminTasksTaskIdRoute
+  '/admin/tasks/dead-letter': typeof AdminTasksDeadLetterRoute
+  '/admin/tasks/new': typeof AdminTasksNewRoute
   '/admin/users/$userId': typeof AdminUsersUserIdRoute
   '/admin/users/new': typeof AdminUsersNewRoute
+  '/admin/tasks': typeof AdminTasksIndexRoute
   '/admin/users': typeof AdminUsersIndexRoute
 }
 export interface FileRoutesByTo {
@@ -75,8 +103,12 @@ export interface FileRoutesByTo {
   '/auth/register': typeof AuthRegisterRoute
   '/demo/tanstack-query': typeof DemoTanstackQueryRoute
   '/admin': typeof AdminIndexRoute
+  '/admin/tasks/$taskId': typeof AdminTasksTaskIdRoute
+  '/admin/tasks/dead-letter': typeof AdminTasksDeadLetterRoute
+  '/admin/tasks/new': typeof AdminTasksNewRoute
   '/admin/users/$userId': typeof AdminUsersUserIdRoute
   '/admin/users/new': typeof AdminUsersNewRoute
+  '/admin/tasks': typeof AdminTasksIndexRoute
   '/admin/users': typeof AdminUsersIndexRoute
 }
 export interface FileRoutesById {
@@ -86,8 +118,12 @@ export interface FileRoutesById {
   '/auth/register': typeof AuthRegisterRoute
   '/demo/tanstack-query': typeof DemoTanstackQueryRoute
   '/admin/': typeof AdminIndexRoute
+  '/admin/tasks/$taskId': typeof AdminTasksTaskIdRoute
+  '/admin/tasks/dead-letter': typeof AdminTasksDeadLetterRoute
+  '/admin/tasks/new': typeof AdminTasksNewRoute
   '/admin/users/$userId': typeof AdminUsersUserIdRoute
   '/admin/users/new': typeof AdminUsersNewRoute
+  '/admin/tasks/': typeof AdminTasksIndexRoute
   '/admin/users/': typeof AdminUsersIndexRoute
 }
 export interface FileRouteTypes {
@@ -98,8 +134,12 @@ export interface FileRouteTypes {
     | '/auth/register'
     | '/demo/tanstack-query'
     | '/admin'
+    | '/admin/tasks/$taskId'
+    | '/admin/tasks/dead-letter'
+    | '/admin/tasks/new'
     | '/admin/users/$userId'
     | '/admin/users/new'
+    | '/admin/tasks'
     | '/admin/users'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -108,8 +148,12 @@ export interface FileRouteTypes {
     | '/auth/register'
     | '/demo/tanstack-query'
     | '/admin'
+    | '/admin/tasks/$taskId'
+    | '/admin/tasks/dead-letter'
+    | '/admin/tasks/new'
     | '/admin/users/$userId'
     | '/admin/users/new'
+    | '/admin/tasks'
     | '/admin/users'
   id:
     | '__root__'
@@ -118,8 +162,12 @@ export interface FileRouteTypes {
     | '/auth/register'
     | '/demo/tanstack-query'
     | '/admin/'
+    | '/admin/tasks/$taskId'
+    | '/admin/tasks/dead-letter'
+    | '/admin/tasks/new'
     | '/admin/users/$userId'
     | '/admin/users/new'
+    | '/admin/tasks/'
     | '/admin/users/'
   fileRoutesById: FileRoutesById
 }
@@ -129,8 +177,12 @@ export interface RootRouteChildren {
   AuthRegisterRoute: typeof AuthRegisterRoute
   DemoTanstackQueryRoute: typeof DemoTanstackQueryRoute
   AdminIndexRoute: typeof AdminIndexRoute
+  AdminTasksTaskIdRoute: typeof AdminTasksTaskIdRoute
+  AdminTasksDeadLetterRoute: typeof AdminTasksDeadLetterRoute
+  AdminTasksNewRoute: typeof AdminTasksNewRoute
   AdminUsersUserIdRoute: typeof AdminUsersUserIdRoute
   AdminUsersNewRoute: typeof AdminUsersNewRoute
+  AdminTasksIndexRoute: typeof AdminTasksIndexRoute
   AdminUsersIndexRoute: typeof AdminUsersIndexRoute
 }
 
@@ -178,6 +230,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminUsersIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/tasks/': {
+      id: '/admin/tasks/'
+      path: '/admin/tasks'
+      fullPath: '/admin/tasks'
+      preLoaderRoute: typeof AdminTasksIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin/users/new': {
       id: '/admin/users/new'
       path: '/admin/users/new'
@@ -192,6 +251,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminUsersUserIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/tasks/new': {
+      id: '/admin/tasks/new'
+      path: '/admin/tasks/new'
+      fullPath: '/admin/tasks/new'
+      preLoaderRoute: typeof AdminTasksNewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/tasks/dead-letter': {
+      id: '/admin/tasks/dead-letter'
+      path: '/admin/tasks/dead-letter'
+      fullPath: '/admin/tasks/dead-letter'
+      preLoaderRoute: typeof AdminTasksDeadLetterRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/tasks/$taskId': {
+      id: '/admin/tasks/$taskId'
+      path: '/admin/tasks/$taskId'
+      fullPath: '/admin/tasks/$taskId'
+      preLoaderRoute: typeof AdminTasksTaskIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -201,8 +281,12 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRegisterRoute: AuthRegisterRoute,
   DemoTanstackQueryRoute: DemoTanstackQueryRoute,
   AdminIndexRoute: AdminIndexRoute,
+  AdminTasksTaskIdRoute: AdminTasksTaskIdRoute,
+  AdminTasksDeadLetterRoute: AdminTasksDeadLetterRoute,
+  AdminTasksNewRoute: AdminTasksNewRoute,
   AdminUsersUserIdRoute: AdminUsersUserIdRoute,
   AdminUsersNewRoute: AdminUsersNewRoute,
+  AdminTasksIndexRoute: AdminTasksIndexRoute,
   AdminUsersIndexRoute: AdminUsersIndexRoute,
 }
 export const routeTree = rootRouteImport

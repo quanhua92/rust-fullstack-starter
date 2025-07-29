@@ -1,3 +1,5 @@
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Separator } from "@/components/ui/separator";
 import {
 	Sidebar,
 	SidebarContent,
@@ -14,19 +16,17 @@ import {
 	SidebarMenuSubItem,
 	SidebarRail,
 } from "@/components/ui/sidebar";
+import { useAuth } from "@/lib/auth/context";
 import { Link, useLocation } from "@tanstack/react-router";
 import {
 	BarChart3,
-	Home,
-	Users,
-	Heart,
 	CheckSquare,
 	Database,
+	Heart,
+	Home,
 	LogOut,
+	Users,
 } from "lucide-react";
-import { useAuth } from "@/lib/auth/context";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Separator } from "@/components/ui/separator";
 
 const menuItems = [
 	{
@@ -137,7 +137,7 @@ export function AdminSidebar() {
 											asChild
 											isActive={location.pathname === item.url}
 										>
-											<Link to={item.url || '#'}>
+											<Link to={item.url || "#"}>
 												<item.icon className="size-4" />
 												<span>{item.title}</span>
 											</Link>

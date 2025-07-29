@@ -1,7 +1,6 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { useMutation } from "@tanstack/react-query";
 import { AdminLayout } from "@/components/layout/AdminLayout";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -11,13 +10,14 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { apiClient } from "@/lib/api/client";
-import { ArrowLeft, User, Lock, Shield } from "lucide-react";
+import { useMutation } from "@tanstack/react-query";
+import { createFileRoute } from "@tanstack/react-router";
 import { Link, useNavigate } from "@tanstack/react-router";
+import { ArrowLeft, Lock, Shield, User } from "lucide-react";
 import { useState } from "react";
 
 interface CreateUserForm {
@@ -32,7 +32,7 @@ interface CreateUserForm {
 function NewUserPage() {
 	const navigate = useNavigate();
 	const { toast } = useToast();
-	
+
 	const [formData, setFormData] = useState<CreateUserForm>({
 		username: "",
 		email: "",
@@ -45,7 +45,7 @@ function NewUserPage() {
 	const [errors, setErrors] = useState<Partial<CreateUserForm>>({});
 
 	const createUserMutation = useMutation({
-		mutationFn: async (userData: Omit<CreateUserForm, 'confirmPassword'>) => {
+		mutationFn: async (userData: Omit<CreateUserForm, "confirmPassword">) => {
 			const response = await apiClient.createUser(userData);
 			return response.data;
 		},
@@ -56,10 +56,11 @@ function NewUserPage() {
 			});
 			navigate({ to: "/admin/users" });
 		},
-		onError: (error: any) => {
+		onError: (error: Error) => {
 			toast({
 				title: "Failed to create user",
-				description: error.message || "An error occurred while creating the user",
+				description:
+					error.message || "An error occurred while creating the user",
 				variant: "destructive",
 			});
 		},
@@ -96,18 +97,21 @@ function NewUserPage() {
 
 	const handleSubmit = (e: React.FormEvent) => {
 		e.preventDefault();
-		
+
 		if (!validateForm()) return;
 
 		const { confirmPassword, ...userData } = formData;
 		createUserMutation.mutate(userData);
 	};
 
-	const handleInputChange = (field: keyof CreateUserForm, value: string | boolean) => {
-		setFormData(prev => ({ ...prev, [field]: value }));
+	const handleInputChange = (
+		field: keyof CreateUserForm,
+		value: string | boolean,
+	) => {
+		setFormData((prev) => ({ ...prev, [field]: value }));
 		// Clear error when user starts typing
 		if (errors[field]) {
-			setErrors(prev => ({ ...prev, [field]: undefined }));
+			setErrors((prev) => ({ ...prev, [field]: undefined }));
 		}
 	};
 
@@ -123,7 +127,9 @@ function NewUserPage() {
 						</Link>
 					</Button>
 					<div>
-						<h1 className="text-3xl font-bold tracking-tight">Create New User</h1>
+						<h1 className="text-3xl font-bold tracking-tight">
+							Create New User
+						</h1>
 						<p className="text-muted-foreground">
 							Add a new user account to the system
 						</p>
@@ -147,7 +153,9 @@ function NewUserPage() {
 									<Input
 										id="username"
 										value={formData.username}
-										onChange={(e) => handleInputChange("username", e.target.value)}
+										onChange={(e) =>
+											handleInputChange("username", e.target.value)
+										}
 										placeholder="Enter username"
 										className={errors.username ? "border-red-500" : ""}
 									/>
@@ -155,7 +163,7 @@ function NewUserPage() {
 										<p className="text-sm text-red-600">{errors.username}</p>
 									)}
 								</div>
-								
+
 								<div className="space-y-2">
 									<Label htmlFor="email">Email Address *</Label>
 									<Input
@@ -190,7 +198,9 @@ function NewUserPage() {
 										id="password"
 										type="password"
 										value={formData.password}
-										onChange={(e) => handleInputChange("password", e.target.value)}
+										onChange={(e) =>
+											handleInputChange("password", e.target.value)
+										}
 										placeholder="Enter password"
 										className={errors.password ? "border-red-500" : ""}
 									/>
@@ -198,19 +208,23 @@ function NewUserPage() {
 										<p className="text-sm text-red-600">{errors.password}</p>
 									)}
 								</div>
-								
+
 								<div className="space-y-2">
 									<Label htmlFor="confirmPassword">Confirm Password *</Label>
 									<Input
 										id="confirmPassword"
 										type="password"
 										value={formData.confirmPassword}
-										onChange={(e) => handleInputChange("confirmPassword", e.target.value)}
+										onChange={(e) =>
+											handleInputChange("confirmPassword", e.target.value)
+										}
 										placeholder="Confirm password"
 										className={errors.confirmPassword ? "border-red-500" : ""}
 									/>
 									{errors.confirmPassword && (
-										<p className="text-sm text-red-600">{errors.confirmPassword}</p>
+										<p className="text-sm text-red-600">
+											{errors.confirmPassword}
+										</p>
 									)}
 								</div>
 							</div>
@@ -243,14 +257,16 @@ function NewUserPage() {
 										</SelectContent>
 									</Select>
 								</div>
-								
+
 								<div className="space-y-2">
 									<Label htmlFor="isActive">Account Status</Label>
 									<div className="flex items-center space-x-2 pt-2">
 										<Switch
 											id="isActive"
 											checked={formData.isActive}
-											onCheckedChange={(checked) => handleInputChange("isActive", checked)}
+											onCheckedChange={(checked) =>
+												handleInputChange("isActive", checked)
+											}
 										/>
 										<Label htmlFor="isActive" className="text-sm">
 											{formData.isActive ? "Active" : "Inactive"}
@@ -258,9 +274,9 @@ function NewUserPage() {
 									</div>
 								</div>
 							</div>
-							
+
 							<Separator />
-							
+
 							<div className="space-y-2">
 								<Label className="text-sm font-medium">Role Permissions</Label>
 								<div className="text-sm text-muted-foreground space-y-1">
@@ -286,10 +302,7 @@ function NewUserPage() {
 						<Button type="button" variant="outline" asChild>
 							<Link to="/admin/users">Cancel</Link>
 						</Button>
-						<Button 
-							type="submit" 
-							disabled={createUserMutation.isPending}
-						>
+						<Button type="submit" disabled={createUserMutation.isPending}>
 							{createUserMutation.isPending ? "Creating..." : "Create User"}
 						</Button>
 					</div>

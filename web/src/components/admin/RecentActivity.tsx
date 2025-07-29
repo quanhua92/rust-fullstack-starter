@@ -1,8 +1,8 @@
+import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Badge } from "@/components/ui/badge";
 import { formatDistanceToNow } from "date-fns";
-import { CheckCircle, XCircle, User, Settings } from "lucide-react";
+import { CheckCircle, Settings, User, XCircle } from "lucide-react";
 
 type ActivityType =
 	| "task_completed"

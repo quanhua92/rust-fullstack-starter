@@ -1,6 +1,6 @@
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { CheckCircle, XCircle, AlertCircle, Clock } from "lucide-react";
+import { AlertCircle, CheckCircle, Clock, XCircle } from "lucide-react";
 
 type HealthStatus = "healthy" | "unhealthy" | "warning" | "unknown";
 

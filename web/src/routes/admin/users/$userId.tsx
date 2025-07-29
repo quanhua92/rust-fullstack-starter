@@ -1,11 +1,8 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
 import { AdminLayout } from "@/components/layout/AdminLayout";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
 	Table,
 	TableBody,
@@ -14,18 +11,21 @@ import {
 	TableHeader,
 	TableRow,
 } from "@/components/ui/table";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { apiClient } from "@/lib/api/client";
-import {
-	ArrowLeft,
-	User,
-	Mail,
-	Calendar,
-	Shield,
-	Activity,
-	Settings,
-	Clock,
-} from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { createFileRoute } from "@tanstack/react-router";
 import { Link } from "@tanstack/react-router";
+import {
+	Activity,
+	ArrowLeft,
+	Calendar,
+	Clock,
+	Mail,
+	Settings,
+	Shield,
+	User,
+} from "lucide-react";
 
 function UserDetailPage() {
 	const { userId } = Route.useParams();
@@ -50,14 +50,16 @@ function UserDetailPage() {
 					action: "Login",
 					timestamp: new Date().toISOString(),
 					ip_address: "192.168.1.100",
-					user_agent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36",
+					user_agent:
+						"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36",
 				},
 				{
-					id: "2", 
+					id: "2",
 					action: "Profile Update",
 					timestamp: new Date(Date.now() - 86400000).toISOString(),
 					ip_address: "192.168.1.100",
-					user_agent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36",
+					user_agent:
+						"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36",
 				},
 			];
 		},
@@ -96,15 +98,16 @@ function UserDetailPage() {
 		const roleColors: Record<string, string> = {
 			admin: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300",
 			user: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300",
-			moderator: "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300",
+			moderator:
+				"bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300",
 		};
 
 		return (
-			<Badge 
-				variant="secondary" 
+			<Badge
+				variant="secondary"
 				className={roleColors[role] || roleColors.user}
 			>
-				{role || 'user'}
+				{role || "user"}
 			</Badge>
 		);
 	};
@@ -153,9 +156,7 @@ function UserDetailPage() {
 						</CardHeader>
 						<CardContent>
 							<div className="text-2xl font-bold">{user.username}</div>
-							<p className="text-xs text-muted-foreground">
-								Display name
-							</p>
+							<p className="text-xs text-muted-foreground">Display name</p>
 						</CardContent>
 					</Card>
 
@@ -166,9 +167,7 @@ function UserDetailPage() {
 						</CardHeader>
 						<CardContent>
 							<div className="font-bold truncate">{user.email}</div>
-							<p className="text-xs text-muted-foreground">
-								Contact email
-							</p>
+							<p className="text-xs text-muted-foreground">Contact email</p>
 						</CardContent>
 					</Card>
 
@@ -178,28 +177,25 @@ function UserDetailPage() {
 							<Shield className="h-4 w-4 text-muted-foreground" />
 						</CardHeader>
 						<CardContent>
-							<div className="font-bold">{user.role || 'user'}</div>
-							<p className="text-xs text-muted-foreground">
-								Access level
-							</p>
+							<div className="font-bold">{user.role || "user"}</div>
+							<p className="text-xs text-muted-foreground">Access level</p>
 						</CardContent>
 					</Card>
 
 					<Card>
 						<CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-							<CardTitle className="text-sm font-medium">Member Since</CardTitle>
+							<CardTitle className="text-sm font-medium">
+								Member Since
+							</CardTitle>
 							<Calendar className="h-4 w-4 text-muted-foreground" />
 						</CardHeader>
 						<CardContent>
 							<div className="font-bold">
-								{user.created_at 
+								{user.created_at
 									? new Date(user.created_at).toLocaleDateString()
-									: 'Unknown'
-								}
+									: "Unknown"}
 							</div>
-							<p className="text-xs text-muted-foreground">
-								Registration date
-							</p>
+							<p className="text-xs text-muted-foreground">Registration date</p>
 						</CardContent>
 					</Card>
 				</div>
@@ -224,47 +220,46 @@ function UserDetailPage() {
 								<CardContent className="space-y-4">
 									<div className="grid grid-cols-2 gap-4">
 										<div>
-											<label className="text-sm font-medium text-muted-foreground">
+											<span className="text-sm font-medium text-muted-foreground">
 												User ID
-											</label>
+											</span>
 											<p className="font-mono text-sm">{user.id}</p>
 										</div>
 										<div>
-											<label className="text-sm font-medium text-muted-foreground">
+											<span className="text-sm font-medium text-muted-foreground">
 												Username
-											</label>
+											</span>
 											<p>{user.username}</p>
 										</div>
 										<div>
-											<label className="text-sm font-medium text-muted-foreground">
+											<span className="text-sm font-medium text-muted-foreground">
 												Email
-											</label>
+											</span>
 											<p>{user.email}</p>
 										</div>
 										<div>
-											<label className="text-sm font-medium text-muted-foreground">
+											<span className="text-sm font-medium text-muted-foreground">
 												Role
-											</label>
-											<p>{user.role || 'user'}</p>
+											</span>
+											<p>{user.role || "user"}</p>
 										</div>
 									</div>
 									<Separator />
 									<div className="grid grid-cols-2 gap-4">
 										<div>
-											<label className="text-sm font-medium text-muted-foreground">
+											<span className="text-sm font-medium text-muted-foreground">
 												Account Status
-											</label>
-											<p>{user.is_active ? 'Active' : 'Inactive'}</p>
+											</span>
+											<p>{user.is_active ? "Active" : "Inactive"}</p>
 										</div>
 										<div>
-											<label className="text-sm font-medium text-muted-foreground">
+											<span className="text-sm font-medium text-muted-foreground">
 												Created At
-											</label>
+											</span>
 											<p>
-												{user.created_at 
+												{user.created_at
 													? new Date(user.created_at).toLocaleString()
-													: 'Unknown'
-												}
+													: "Unknown"}
 											</p>
 										</div>
 									</div>
@@ -280,31 +275,29 @@ function UserDetailPage() {
 								</CardHeader>
 								<CardContent className="space-y-4">
 									<div>
-										<label className="text-sm font-medium text-muted-foreground">
+										<span className="text-sm font-medium text-muted-foreground">
 											Last Login
-										</label>
+										</span>
 										<p>
-											{user.last_login_at 
+											{user.last_login_at
 												? new Date(user.last_login_at).toLocaleString()
-												: 'Never logged in'
-											}
+												: "Never logged in"}
 										</p>
 									</div>
 									<div>
-										<label className="text-sm font-medium text-muted-foreground">
+										<span className="text-sm font-medium text-muted-foreground">
 											Total Sessions
-										</label>
+										</span>
 										<p>N/A</p>
 									</div>
 									<div>
-										<label className="text-sm font-medium text-muted-foreground">
+										<span className="text-sm font-medium text-muted-foreground">
 											Account Age
-										</label>
+										</span>
 										<p>
-											{user.created_at 
+											{user.created_at
 												? `${Math.floor((Date.now() - new Date(user.created_at).getTime()) / (1000 * 60 * 60 * 24))} days`
-												: 'Unknown'
-											}
+												: "Unknown"}
 										</p>
 									</div>
 								</CardContent>
@@ -379,7 +372,7 @@ function UserDetailPage() {
 											</p>
 										</div>
 										<Button variant="outline" size="sm">
-											{user.is_active ? 'Deactivate' : 'Activate'} Account
+											{user.is_active ? "Deactivate" : "Activate"} Account
 										</Button>
 									</div>
 									<Separator />

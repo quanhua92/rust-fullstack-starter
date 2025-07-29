@@ -1,7 +1,14 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
 import { AdminLayout } from "@/components/layout/AdminLayout";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuItem,
+	DropdownMenuSeparator,
+	DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import {
 	Table,
@@ -11,28 +18,21 @@ import {
 	TableHeader,
 	TableRow,
 } from "@/components/ui/table";
-import {
-	DropdownMenu,
-	DropdownMenuContent,
-	DropdownMenuItem,
-	DropdownMenuSeparator,
-	DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { apiClient } from "@/lib/api/client";
+import { useQuery } from "@tanstack/react-query";
+import { createFileRoute } from "@tanstack/react-router";
+import { Link } from "@tanstack/react-router";
 import {
-	Search,
-	Plus,
+	Eye,
 	MoreHorizontal,
+	Plus,
+	Search,
+	Shield,
+	Trash2,
 	UserCheck,
 	UserX,
-	Shield,
-	Eye,
-	Trash2,
 } from "lucide-react";
 import { useState } from "react";
-import { Link } from "@tanstack/react-router";
 
 function UsersPage() {
 	const [searchTerm, setSearchTerm] = useState("");
@@ -56,10 +56,12 @@ function UsersPage() {
 		},
 	});
 
-	const filteredUsers = users?.filter((user) =>
-		user.username?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-		user.email?.toLowerCase().includes(searchTerm.toLowerCase())
-	) || [];
+	const filteredUsers =
+		users?.filter(
+			(user) =>
+				user.username?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+				user.email?.toLowerCase().includes(searchTerm.toLowerCase()),
+		) || [];
 
 	const handleUserAction = async (userId: string, action: string) => {
 		console.log(`${action} user:`, userId);
@@ -70,15 +72,16 @@ function UsersPage() {
 		const roleColors: Record<string, string> = {
 			admin: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300",
 			user: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300",
-			moderator: "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300",
+			moderator:
+				"bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300",
 		};
 
 		return (
-			<Badge 
-				variant="secondary" 
+			<Badge
+				variant="secondary"
 				className={roleColors[role] || roleColors.user}
 			>
-				{role || 'user'}
+				{role || "user"}
 			</Badge>
 		);
 	};
@@ -124,19 +127,19 @@ function UsersPage() {
 							</p>
 						</CardContent>
 					</Card>
-					
+
 					<Card>
 						<CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-							<CardTitle className="text-sm font-medium">Active Users</CardTitle>
+							<CardTitle className="text-sm font-medium">
+								Active Users
+							</CardTitle>
 							<UserCheck className="h-4 w-4 text-muted-foreground" />
 						</CardHeader>
 						<CardContent>
 							<div className="text-2xl font-bold">
-								{users?.filter(u => u.is_active).length || 0}
+								{users?.filter((u) => u.is_active).length || 0}
 							</div>
-							<p className="text-xs text-muted-foreground">
-								Currently active
-							</p>
+							<p className="text-xs text-muted-foreground">Currently active</p>
 						</CardContent>
 					</Card>
 
@@ -147,7 +150,7 @@ function UsersPage() {
 						</CardHeader>
 						<CardContent>
 							<div className="text-2xl font-bold">
-								{users?.filter(u => u.role === 'admin').length || 0}
+								{users?.filter((u) => u.role === "admin").length || 0}
 							</div>
 							<p className="text-xs text-muted-foreground">
 								Administrator accounts
@@ -193,7 +196,9 @@ function UsersPage() {
 								) : filteredUsers.length === 0 ? (
 									<TableRow>
 										<TableCell colSpan={6} className="text-center py-4">
-											{searchTerm ? "No users match your search." : "No users found."}
+											{searchTerm
+												? "No users match your search."
+												: "No users found."}
 										</TableCell>
 									</TableRow>
 								) : (
@@ -209,26 +214,20 @@ function UsersPage() {
 													</div>
 												</div>
 											</TableCell>
-											<TableCell>
-												{getUserRoleBadge(user.role)}
-											</TableCell>
-											<TableCell>
-												{getStatusBadge(user.is_active)}
-											</TableCell>
+											<TableCell>{getUserRoleBadge(user.role)}</TableCell>
+											<TableCell>{getStatusBadge(user.is_active)}</TableCell>
 											<TableCell>
 												<div className="text-sm">
-													{user.created_at 
+													{user.created_at
 														? new Date(user.created_at).toLocaleDateString()
-														: 'Unknown'
-													}
+														: "Unknown"}
 												</div>
 											</TableCell>
 											<TableCell>
 												<div className="text-sm text-muted-foreground">
-													{user.last_login_at 
+													{user.last_login_at
 														? new Date(user.last_login_at).toLocaleDateString()
-														: 'Never'
-													}
+														: "Never"}
 												</div>
 											</TableCell>
 											<TableCell>
@@ -240,40 +239,53 @@ function UsersPage() {
 													</DropdownMenuTrigger>
 													<DropdownMenuContent align="end">
 														<DropdownMenuItem asChild>
-															<Link to="/admin/users/$userId" params={{ userId: user.id }}>
+															<Link
+																to="/admin/users/$userId"
+																params={{ userId: user.id }}
+															>
 																<Eye className="mr-2 h-4 w-4" />
 																View Details
 															</Link>
 														</DropdownMenuItem>
-														
-														{currentUser?.role === 'admin' && user.id !== currentUser.id && (
-															<>
-																<DropdownMenuSeparator />
-																<DropdownMenuItem
-																	onClick={() => handleUserAction(user.id, user.is_active ? 'deactivate' : 'activate')}
-																>
-																	{user.is_active ? (
-																		<>
-																			<UserX className="mr-2 h-4 w-4" />
-																			Deactivate
-																		</>
-																	) : (
-																		<>
-																			<UserCheck className="mr-2 h-4 w-4" />
-																			Activate
-																		</>
-																	)}
-																</DropdownMenuItem>
-																
-																<DropdownMenuItem
-																	onClick={() => handleUserAction(user.id, 'delete')}
-																	className="text-red-600"
-																>
-																	<Trash2 className="mr-2 h-4 w-4" />
-																	Delete User
-																</DropdownMenuItem>
-															</>
-														)}
+
+														{currentUser?.role === "admin" &&
+															user.id !== currentUser.id && (
+																<>
+																	<DropdownMenuSeparator />
+																	<DropdownMenuItem
+																		onClick={() =>
+																			handleUserAction(
+																				user.id,
+																				user.is_active
+																					? "deactivate"
+																					: "activate",
+																			)
+																		}
+																	>
+																		{user.is_active ? (
+																			<>
+																				<UserX className="mr-2 h-4 w-4" />
+																				Deactivate
+																			</>
+																		) : (
+																			<>
+																				<UserCheck className="mr-2 h-4 w-4" />
+																				Activate
+																			</>
+																		)}
+																	</DropdownMenuItem>
+
+																	<DropdownMenuItem
+																		onClick={() =>
+																			handleUserAction(user.id, "delete")
+																		}
+																		className="text-red-600"
+																	>
+																		<Trash2 className="mr-2 h-4 w-4" />
+																		Delete User
+																	</DropdownMenuItem>
+																</>
+															)}
 													</DropdownMenuContent>
 												</DropdownMenu>
 											</TableCell>

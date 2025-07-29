@@ -1,12 +1,12 @@
+import { apiClient, getAuthToken, setAuthToken } from "@/lib/api/client";
+import type { components } from "@/types/api";
 import {
+	type ReactNode,
 	createContext,
 	useContext,
-	useState,
 	useEffect,
-	type ReactNode,
+	useState,
 } from "react";
-import { apiClient, setAuthToken, getAuthToken } from "@/lib/api/client";
-import type { components } from "@/types/api";
 
 type AuthUser = components["schemas"]["AuthUser"];
 

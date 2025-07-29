@@ -1,4 +1,4 @@
-import { SidebarTrigger } from "@/components/ui/sidebar";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
 	Breadcrumb,
 	BreadcrumbItem,
@@ -7,12 +7,7 @@ import {
 	BreadcrumbPage,
 	BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
-import { Separator } from "@/components/ui/separator";
-import { useAuth } from "@/lib/auth/context";
-import { useLocation } from "@tanstack/react-router";
-import { Bell, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
@@ -20,7 +15,12 @@ import {
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Input } from "@/components/ui/input";
+import { Separator } from "@/components/ui/separator";
+import { SidebarTrigger } from "@/components/ui/sidebar";
+import { useAuth } from "@/lib/auth/context";
+import { useLocation } from "@tanstack/react-router";
+import { Bell, Search } from "lucide-react";
 
 // Helper function to generate breadcrumbs from pathname
 const generateBreadcrumbs = (pathname: string) => {

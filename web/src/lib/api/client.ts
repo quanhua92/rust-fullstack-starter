@@ -8,6 +8,7 @@ const API_BASE_URL =
 export type ApiError = components["schemas"]["ErrorResponse"];
 export type LoginRequest = components["schemas"]["LoginRequest"];
 export type RegisterRequest = components["schemas"]["RegisterRequest"];
+export type UserProfile = components["schemas"]["UserProfile"];
 export type CreateTaskRequest = components["schemas"]["CreateTaskApiRequest"];
 export type RegisterTaskTypeRequest =
 	components["schemas"]["RegisterTaskTypeRequest"];
@@ -271,13 +272,21 @@ class ApiClient {
 		return this.request<UserProfileResponse>(`/users/${id}`);
 	}
 
-	async getUsers(): Promise<{ data: { users: any[] } }> {
+	async getUsers(): Promise<{ data: { users: UserProfile[] } }> {
 		// Mock implementation since /users endpoint doesn't exist yet
 		// In a real implementation, this would call GET /users
 		const currentUser = await this.getCurrentUser();
 		return {
 			data: {
-				users: [currentUser.data],
+				users: currentUser.data ? [
+					{
+						...currentUser.data,
+						email_verified: false,
+						is_active: true,
+						created_at: new Date().toISOString(),
+						last_login_at: new Date().toISOString(),
+					}
+				] : [],
 			},
 		};
 	}
@@ -288,18 +297,20 @@ class ApiClient {
 		password: string;
 		role: string;
 		isActive: boolean;
-	}): Promise<{ data: any }> {
+	}): Promise<{ data: UserProfile }> {
 		// Mock implementation - would need actual API endpoint
 		// In a real implementation, this would call POST /users
 		console.log("Creating user:", userData);
 		return {
 			data: {
-				id: "mock-" + Date.now(),
+				id: `mock-${Date.now()}`,
 				username: userData.username,
 				email: userData.email,
 				role: userData.role,
 				is_active: userData.isActive,
 				created_at: new Date().toISOString(),
+				email_verified: false,
+				last_login_at: null,
 			},
 		};
 	}

@@ -1,8 +1,8 @@
-import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
-import { AdminSidebar } from "./AdminSidebar";
-import { AdminHeader } from "./AdminHeader";
+import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { ProtectedRoute } from "@/lib/auth/ProtectedRoute";
 import type { ReactNode } from "react";
+import { AdminHeader } from "./AdminHeader";
+import { AdminSidebar } from "./AdminSidebar";
 
 interface AdminLayoutProps {
 	children: ReactNode;
