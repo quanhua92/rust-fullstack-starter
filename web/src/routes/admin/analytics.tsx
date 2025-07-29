@@ -4,6 +4,7 @@ import { TaskAnalytics } from '@/components/admin/TaskAnalytics'
 import { HealthTrends } from '@/components/admin/HealthTrends'
 import { UserActivityAnalytics } from '@/components/admin/UserActivityAnalytics'
 import { RealTimeNotifications } from '@/components/admin/RealTimeNotifications'
+import { AdminLayout } from '@/components/layout/AdminLayout'
 import { 
   BarChart3, 
   TrendingUp, 
@@ -12,7 +13,11 @@ import {
 } from 'lucide-react'
 
 export const Route = createFileRoute('/admin/analytics')({
-  component: AnalyticsDashboard,
+  component: () => (
+    <AdminLayout>
+      <AnalyticsDashboard />
+    </AdminLayout>
+  ),
 })
 
 function AnalyticsDashboard() {

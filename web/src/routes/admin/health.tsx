@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { SystemMetrics } from '@/components/admin/SystemMetrics'
 import { DependencyMonitor } from '@/components/admin/DependencyMonitor'
+import { AdminLayout } from '@/components/layout/AdminLayout'
 import { apiClient } from '@/lib/api/client'
 import { formatDistanceToNow } from 'date-fns'
 import { 
@@ -39,7 +40,11 @@ interface ProbeResponse {
 }
 
 export const Route = createFileRoute('/admin/health')({
-  component: HealthDashboard,
+  component: () => (
+    <AdminLayout>
+      <HealthDashboard />
+    </AdminLayout>
+  ),
 })
 
 function HealthDashboard() {
