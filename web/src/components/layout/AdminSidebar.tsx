@@ -44,15 +44,11 @@ const menuItems = [
 			},
 			{
 				title: "Create Task",
-				url: "/admin/tasks/create",
+				url: "/admin/tasks/new",
 			},
 			{
 				title: "Dead Letter Queue",
 				url: "/admin/tasks/dead-letter",
-			},
-			{
-				title: "Task Types",
-				url: "/admin/tasks/types",
 			},
 		],
 	},

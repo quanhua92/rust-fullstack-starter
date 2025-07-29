@@ -119,6 +119,7 @@ function NewTaskPage() {
 		const taskPayload = {
 			task_type: formData.taskType,
 			payload: parsedData,
+			priority: formData.priority,
 			...(formData.delay &&
 				Number(formData.delay) > 0 && {
 					scheduled_at: new Date(
