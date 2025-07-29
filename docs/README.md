@@ -91,7 +91,7 @@ cd rust-fullstack-starter
 ./scripts/dev-server.sh 3000
 
 # Verify
-curl http://localhost:3000/health
+curl http://localhost:3000/api/v1/health
 open http://localhost:3000/api-docs
 ```
 
@@ -123,17 +123,17 @@ The starter includes interactive API documentation:
 - **Documentation**: http://localhost:3000/api-docs
 - **OpenAPI Schema**: http://localhost:3000/api-docs/openapi.json
 - **[Interactive Swagger UI](https://petstore.swagger.io/?url=https://raw.githubusercontent.com/quanhua92/rust-fullstack-starter/refs/heads/main/docs/openapi.json)**
-- **Health Check**: http://localhost:3000/health
+- **Health Check**: http://localhost:3000/api/v1/health
 
 Key endpoints:
-- `POST /auth/register` - User registration
-- `POST /auth/login` - User authentication
-- `GET /users/{id}` - User profile
-- `POST /tasks` - Create background task
-- `GET /tasks` - List tasks with filtering
-- `GET /tasks/dead-letter` - Dead letter queue (failed tasks)
-- `POST /tasks/{id}/retry` - Retry failed task
-- `DELETE /tasks/{id}` - Delete completed/failed task
+- `POST /api/v1/auth/register` - User registration
+- `POST /api/v1/auth/login` - User authentication
+- `GET /api/v1/users/{id}` - User profile
+- `POST /api/v1/tasks` - Create background task
+- `GET /api/v1/tasks` - List tasks with filtering
+- `GET /api/v1/tasks/dead-letter` - Dead letter queue (failed tasks)
+- `POST /api/v1/tasks/{id}/retry` - Retry failed task
+- `DELETE /api/v1/tasks/{id}` - Delete completed/failed task
 
 ### Background Tasks
 
@@ -144,18 +144,18 @@ Create and process async jobs with dead letter queue management:
 ./scripts/worker.sh
 
 # Create task via API
-curl -X POST http://localhost:3000/tasks \
+curl -X POST http://localhost:3000/api/v1/tasks \
   -H "Content-Type: application/json" \
   -d '{"task_type": "email", "payload": {"to": "user@example.com"}}'
 
 # Monitor failed tasks (dead letter queue)
-curl http://localhost:3000/tasks/dead-letter
+curl http://localhost:3000/api/v1/tasks/dead-letter
 
 # Retry failed task
-curl -X POST http://localhost:3000/tasks/{task_id}/retry
+curl -X POST http://localhost:3000/api/v1/tasks/{task_id}/retry
 
 # Clean up completed/failed tasks
-curl -X DELETE http://localhost:3000/tasks/{task_id}
+curl -X DELETE http://localhost:3000/api/v1/tasks/{task_id}
 ```
 
 ## Configuration

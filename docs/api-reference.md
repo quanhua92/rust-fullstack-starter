@@ -22,7 +22,7 @@ The starter now includes **comprehensive OpenAPI documentation** with interactiv
 ### 🚀 Quick Access
 The health endpoint now includes documentation links:
 ```bash
-curl http://localhost:3000/health
+curl http://localhost:3000/api/v1/health
 # Returns documentation URLs in the response
 ```
 
@@ -31,21 +31,21 @@ curl http://localhost:3000/health
 ```mermaid
 graph TB
     subgraph "🔓 Public Endpoints"
-        HEALTH[💓 /health/*<br/>Health checks]
-        AUTH_PUB[🔐 /auth/register<br/>🔐 /auth/login]
-        TYPES_PUB[🏷️ /tasks/types<br/>GET: List types<br/>POST: Register type]
+        HEALTH[💓 /api/v1/health/*<br/>Health checks]
+        AUTH_PUB[🔐 /api/v1/auth/register<br/>🔐 /api/v1/auth/login]
+        TYPES_PUB[🏷️ /api/v1/tasks/types<br/>GET: List types<br/>POST: Register type]
         DOCS[📚 /api-docs/*<br/>OpenAPI documentation]
     end
     
     subgraph "🔒 Protected Endpoints (Auth Required)"
-        AUTH_PROT[🚪 /auth/logout<br/>🚪 /auth/me<br/>🔄 /auth/refresh]
-        USERS["👤 /users/{id}<br/>User profiles"]
-        TASKS[⚙️ /tasks<br/>📊 /tasks/stats<br/>💀 /tasks/dead-letter]
-        TASK_OPS["🔧 /tasks/{id}<br/>GET, DELETE<br/>🔄 /tasks/{id}/retry<br/>🛑 /tasks/{id}/cancel"]
+        AUTH_PROT[🚪 /api/v1/auth/logout<br/>🚪 /api/v1/auth/me<br/>🔄 /api/v1/auth/refresh]
+        USERS["👤 /api/v1/users/{id}<br/>User profiles"]
+        TASKS[⚙️ /api/v1/tasks<br/>📊 /api/v1/tasks/stats<br/>💀 /api/v1/tasks/dead-letter]
+        TASK_OPS["🔧 /api/v1/tasks/{id}<br/>GET, DELETE<br/>🔄 /api/v1/tasks/{id}/retry<br/>🛑 /api/v1/tasks/{id}/cancel"]
     end
     
     subgraph "👑 Admin Only"
-        ADMIN[🔧 /admin/health<br/>Detailed system status]
+        ADMIN[🔧 /api/v1/admin/health<br/>Detailed system status]
     end
     
     subgraph "🔑 Authentication Flow"
@@ -82,8 +82,8 @@ graph TB
 
 ## Base URL
 
-**Development**: `http://localhost:3000`  
-**Production**: Configure via `STARTER__SERVER__HOST` and `STARTER__SERVER__PORT`
+**Development**: `http://localhost:3000/api/v1`  
+**Production**: Configure via `STARTER__SERVER__HOST` and `STARTER__SERVER__PORT` + `/api/v1`
 
 ## Response Format
 
@@ -118,7 +118,7 @@ Authorization: Bearer <session_token>
 
 ## Health Endpoints
 
-### GET /health
+### GET /api/v1/health
 
 Basic health check endpoint.
 
@@ -141,7 +141,7 @@ Basic health check endpoint.
 }
 ```
 
-### GET /health/detailed
+### GET /api/v1/health/detailed
 
 Detailed health check including database connectivity.
 
@@ -164,7 +164,7 @@ Detailed health check including database connectivity.
 }
 ```
 
-### GET /health/live
+### GET /api/v1/health/live
 
 Kubernetes liveness probe endpoint. Checks if the application process is alive and responding.
 
@@ -185,7 +185,7 @@ Kubernetes liveness probe endpoint. Checks if the application process is alive a
 }
 ```
 
-### GET /health/ready
+### GET /api/v1/health/ready
 
 Kubernetes readiness probe endpoint. Checks if the application is ready to serve traffic by validating all critical dependencies.
 
@@ -243,7 +243,7 @@ Kubernetes readiness probe endpoint. Checks if the application is ready to serve
 }
 ```
 
-### GET /health/startup
+### GET /api/v1/health/startup
 
 Kubernetes startup probe endpoint. Checks if the application has completed initialization, including database schema validation.
 
@@ -304,7 +304,7 @@ Kubernetes startup probe endpoint. Checks if the application has completed initi
 
 ## Authentication Endpoints
 
-### POST /auth/register
+### POST /api/v1/auth/register
 
 Create a new user account.
 
@@ -346,7 +346,7 @@ Create a new user account.
 - `400` - Validation error
 - `409` - Username or email already exists
 
-### POST /auth/login
+### POST /api/v1/auth/login
 
 Authenticate user and create session.
 
@@ -382,7 +382,7 @@ Authenticate user and create session.
 - `400` - Validation error
 - `401` - Invalid credentials or inactive user
 
-### POST /auth/logout
+### POST /api/v1/auth/logout
 
 Invalidate current user session.
 
@@ -402,7 +402,7 @@ Invalidate current user session.
 **Error Responses**:
 - `401` - Invalid or expired token
 
-### POST /auth/logout-all
+### POST /api/v1/auth/logout-all
 
 Invalidate all sessions for the current user (all devices).
 
@@ -424,7 +424,7 @@ Invalidate all sessions for the current user (all devices).
 **Error Responses**:
 - `401` - Invalid or expired token
 
-### GET /auth/me
+### GET /api/v1/auth/me
 
 Get current user profile.
 
@@ -446,7 +446,7 @@ Get current user profile.
 **Error Responses**:
 - `401` - Invalid or expired token
 
-### POST /auth/refresh
+### POST /api/v1/auth/refresh
 
 Validate current session (refresh token).
 
@@ -469,7 +469,7 @@ Validate current session (refresh token).
 ## User Management Endpoints
 
 
-### GET /users/{user_id}
+### GET /api/v1/users/{user_id}
 
 Get another user's profile (public information only).
 
@@ -507,7 +507,7 @@ Task endpoints demonstrate background job processing patterns.
 
 Before creating tasks, you must register task types with the API server. This is typically done automatically by workers, but you can also manage task types manually.
 
-### POST /tasks/types
+### POST /api/v1/tasks/types
 
 Register a new task type that workers can handle.
 
@@ -540,7 +540,7 @@ Register a new task type that workers can handle.
 **Error Responses**:
 - `400` - Invalid request data
 
-### GET /tasks/types
+### GET /api/v1/tasks/types
 
 List all registered task types available for task creation.
 
@@ -573,7 +573,7 @@ List all registered task types available for task creation.
 
 ## Task Management Endpoints
 
-### POST /tasks
+### POST /api/v1/tasks
 
 Create a background task for async processing.
 
@@ -638,7 +638,7 @@ Create a background task for async processing.
 
 **Note**: The API accepts any task type string. Unknown task types will be accepted but will fail during processing if no handler is registered for that type.
 
-### GET /tasks
+### GET /api/v1/tasks
 
 List your background tasks.
 
@@ -668,7 +668,7 @@ List your background tasks.
 }
 ```
 
-### GET /tasks/{task_id}
+### GET /api/v1/tasks/{task_id}
 
 Get details about a specific task.
 
@@ -714,7 +714,7 @@ Get details about a specific task.
 - `401` - Authentication required
 - `404` - Task not found
 
-### GET /tasks/stats
+### GET /api/v1/tasks/stats
 
 Get basic task statistics.
 
@@ -736,7 +736,7 @@ Get basic task statistics.
 }
 ```
 
-### GET /tasks/dead-letter
+### GET /api/v1/tasks/dead-letter
 
 Get all failed tasks in the dead letter queue for debugging and manual recovery.
 
@@ -771,7 +771,7 @@ Get all failed tasks in the dead letter queue for debugging and manual recovery.
 **Error Responses**:
 - `401` - Authentication required
 
-### POST /tasks/{task_id}/cancel
+### POST /api/v1/tasks/{task_id}/cancel
 
 Cancel a pending or retrying task.
 
@@ -796,7 +796,7 @@ Cancel a pending or retrying task.
 - `404` - Task not found
 - `400` - Task cannot be cancelled (already completed/running)
 
-### POST /tasks/{task_id}/retry
+### POST /api/v1/tasks/{task_id}/retry
 
 Retry a failed task by resetting it to pending status.
 
@@ -823,7 +823,7 @@ Retry a failed task by resetting it to pending status.
 - `404` - Task not found or not in failed status
 - `400` - Task is not in failed status
 
-### DELETE /tasks/{task_id}
+### DELETE /api/v1/tasks/{task_id}
 
 Permanently delete a completed, failed, or cancelled task.
 
@@ -878,7 +878,7 @@ These are example task types to demonstrate different background job patterns:
 
 ## Admin Endpoints
 
-### GET /admin/health
+### GET /api/v1/admin/health
 
 Admin-only detailed health check.
 
@@ -946,27 +946,27 @@ CORS is configured for development:
 
 1. **Register a new user**:
 ```bash
-curl -X POST http://localhost:3000/auth/register \
+curl -X POST http://localhost:3000/api/v1/auth/register \
   -H "Content-Type: application/json" \
   -d '{"username": "testuser", "email": "test@example.com", "password": "SecurePass123!"}'
 ```
 
 2. **Login to get session token**:
 ```bash
-curl -X POST http://localhost:3000/auth/login \
+curl -X POST http://localhost:3000/api/v1/auth/login \
   -H "Content-Type: application/json" \
   -d '{"username_or_email": "test@example.com", "password": "SecurePass123!"}'
 ```
 
 3. **Access protected endpoint**:
 ```bash
-curl -X GET http://localhost:3000/auth/me \
+curl -X GET http://localhost:3000/api/v1/auth/me \
   -H "Authorization: Bearer YOUR_SESSION_TOKEN_HERE"
 ```
 
 4. **Logout**:
 ```bash
-curl -X POST http://localhost:3000/auth/logout \
+curl -X POST http://localhost:3000/api/v1/auth/logout \
   -H "Authorization: Bearer YOUR_SESSION_TOKEN_HERE"
 ```
 
@@ -1024,17 +1024,17 @@ The curl test script validates:
 ./scripts/worker.sh
 
 # 2. Register and login
-curl -X POST http://localhost:3000/auth/register \
+curl -X POST http://localhost:3000/api/v1/auth/register \
   -H "Content-Type: application/json" \
   -d '{"username":"testuser","email":"test@example.com","password":"password123"}'
 
-TOKEN=$(curl -s -X POST http://localhost:3000/auth/login \
+TOKEN=$(curl -s -X POST http://localhost:3000/api/v1/auth/login \
   -H "Content-Type: application/json" \
   -d '{"username_or_email":"testuser","password":"password123"}' \
   | python3 -c "import json,sys; print(json.load(sys.stdin)['data']['session_token'])")
 
 # 3. Create and monitor task
-curl -X POST http://localhost:3000/tasks \
+curl -X POST http://localhost:3000/api/v1/tasks \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
@@ -1048,7 +1048,7 @@ curl -X POST http://localhost:3000/tasks \
   }'
 
 # 4. Check task statistics
-curl -H "Authorization: Bearer $TOKEN" http://localhost:3000/tasks/stats
+curl -H "Authorization: Bearer $TOKEN" http://localhost:3000/api/v1/tasks/stats
 ```
 
 ## Error Handling
@@ -1128,7 +1128,7 @@ The integration tests demonstrate:
 #### Authentication Flow Testing
 ```bash
 # Test registration
-curl -X POST http://localhost:3000/auth/register \
+curl -X POST http://localhost:3000/api/v1/auth/register \
   -H "Content-Type: application/json" \
   -d '{
     "username": "testuser",
@@ -1137,7 +1137,7 @@ curl -X POST http://localhost:3000/auth/register \
   }'
 
 # Test login and extract token
-TOKEN=$(curl -X POST http://localhost:3000/auth/login \
+TOKEN=$(curl -X POST http://localhost:3000/api/v1/auth/login \
   -H "Content-Type: application/json" \
   -d '{"username_or_email": "testuser", "password": "SecurePass123!"}' \
   | jq -r '.data.session_token')
@@ -1146,11 +1146,11 @@ TOKEN=$(curl -X POST http://localhost:3000/auth/login \
 #### Protected Endpoint Testing
 ```bash
 # Test protected endpoint with authentication
-curl -X GET http://localhost:3000/auth/me \
+curl -X GET http://localhost:3000/api/v1/auth/me \
   -H "Authorization: Bearer $TOKEN"
 
 # Test task creation (requires auth)
-curl -X POST http://localhost:3000/tasks \
+curl -X POST http://localhost:3000/api/v1/tasks \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
@@ -1162,12 +1162,12 @@ curl -X POST http://localhost:3000/tasks \
 #### Error Response Testing
 ```bash
 # Test validation errors
-curl -X POST http://localhost:3000/auth/register \
+curl -X POST http://localhost:3000/api/v1/auth/register \
   -H "Content-Type: application/json" \
   -d '{"username": "", "email": "invalid", "password": "weak"}'
 
 # Test authentication errors
-curl -X GET http://localhost:3000/auth/me
+curl -X GET http://localhost:3000/api/v1/auth/me
 ```
 
 ### Test Database Isolation

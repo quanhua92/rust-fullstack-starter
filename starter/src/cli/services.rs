@@ -241,7 +241,7 @@ impl TaskTypeService {
 
         for (task_type, description) in task_types.iter() {
             let response = client
-                .post(format!("{base_url}/tasks/types"))
+                .post(format!("{base_url}/api/v1/tasks/types"))
                 .header("Content-Type", "application/json")
                 .json(&json!({
                     "task_type": task_type,

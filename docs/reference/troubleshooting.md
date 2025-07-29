@@ -19,14 +19,14 @@ tail -f /tmp/starter-*.log          # Recent logs
 ### Health Endpoints
 ```bash
 # Basic health check
-curl http://localhost:3000/health
+curl http://localhost:3000/api/v1/health
 
 # Detailed health with database
-curl http://localhost:3000/health/detailed
+curl http://localhost:3000/api/v1/health/detailed
 
 # Task statistics
 curl -H "Authorization: Bearer $TOKEN" \
-  http://localhost:3000/tasks/stats
+  http://localhost:3000/api/v1/tasks/stats
 ```
 
 ## Database Issues
@@ -208,11 +208,11 @@ tail -f /tmp/starter-worker.log
 
 # Check task queue
 curl -H "Authorization: Bearer $TOKEN" \
-  "http://localhost:3000/tasks?status=pending&limit=5"
+  "http://localhost:3000/api/v1/tasks?status=pending&limit=5"
 
 # Check task statistics
 curl -H "Authorization: Bearer $TOKEN" \
-  http://localhost:3000/tasks/stats
+  http://localhost:3000/api/v1/tasks/stats
 ```
 
 **Solutions:**
@@ -252,14 +252,14 @@ curl -H "Authorization: Bearer $TOKEN" \
 ```bash
 # Check failed tasks
 curl -H "Authorization: Bearer $TOKEN" \
-  "http://localhost:3000/tasks?status=failed&limit=10"
+  "http://localhost:3000/api/v1/tasks?status=failed&limit=10"
 
 # Look for error patterns
 grep "ERROR" /tmp/starter-worker.log | tail -20
 
 # Check specific task details
 curl -H "Authorization: Bearer $TOKEN" \
-  "http://localhost:3000/tasks/TASK_ID_HERE"
+  "http://localhost:3000/api/v1/tasks/TASK_ID_HERE"
 ```
 
 **Solutions:**
@@ -279,7 +279,7 @@ curl -H "Authorization: Bearer $TOKEN" \
 3. **Test task creation:**
    ```bash
    # Create simple test task
-   curl -X POST http://localhost:3000/tasks \
+   curl -X POST http://localhost:3000/api/v1/tasks \
      -H "Authorization: Bearer $TOKEN" \
      -H "Content-Type: application/json" \
      -d '{
@@ -358,7 +358,7 @@ psql $DATABASE_URL -c "SELECT token, expires_at, is_active FROM sessions WHERE t
 
 1. **Create test user:**
    ```bash
-   curl -X POST http://localhost:3000/auth/register \
+   curl -X POST http://localhost:3000/api/v1/auth/register \
      -H "Content-Type: application/json" \
      -d '{"username":"test","email":"test@example.com","password":"password123"}'
    ```

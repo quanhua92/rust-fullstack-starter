@@ -51,7 +51,7 @@ async fn test_create_task_with_metadata() {
     });
 
     let response = app
-        .post_json_auth("/tasks", &task_payload, &token.token)
+        .post_json_auth("/api/v1/tasks", &task_payload, &token.token)
         .await;
 
     assert_eq!(response.status(), 200);
@@ -62,7 +62,7 @@ async fn test_create_task_with_metadata() {
 
     // Get the task and verify metadata is preserved
     let get_response = app
-        .get_auth(&format!("/tasks/{task_id}"), &token.token)
+        .get_auth(&format!("/api/v1/tasks/{task_id}"), &token.token)
         .await;
 
     assert_eq!(get_response.status(), 200);
@@ -101,7 +101,7 @@ async fn test_get_task_status() {
     let unique_username = format!("testuser_{}", &uuid::Uuid::new_v4().to_string()[..8]);
     let (_user, token) = factory.create_authenticated_user(&unique_username).await;
     let response = app
-        .get_auth(&format!("/tasks/{task_id}"), &token.token)
+        .get_auth(&format!("/api/v1/tasks/{task_id}"), &token.token)
         .await;
 
     assert_status(&response, StatusCode::OK);
@@ -131,7 +131,7 @@ async fn test_list_tasks() {
     // Need auth for protected routes
     let unique_username = format!("testuser_{}", &uuid::Uuid::new_v4().to_string()[..8]);
     let (_user, token) = factory.create_authenticated_user(&unique_username).await;
-    let response = app.get_auth("/tasks", &token.token).await;
+    let response = app.get_auth("/api/v1/tasks", &token.token).await;
 
     assert_status(&response, StatusCode::OK);
     let json: serde_json::Value = response.json().await.unwrap();
@@ -160,7 +160,9 @@ async fn test_create_task_with_priority() {
         "priority": "high"
     });
 
-    let response = app.post_json_auth("/tasks", &task_data, &token.token).await;
+    let response = app
+        .post_json_auth("/api/v1/tasks", &task_data, &token.token)
+        .await;
 
     assert_status(&response, StatusCode::OK);
     let json: serde_json::Value = response.json().await.unwrap();
@@ -178,7 +180,7 @@ async fn test_get_nonexistent_task() {
 
     let fake_id = uuid::Uuid::new_v4();
     let response = app
-        .get_auth(&format!("/tasks/{fake_id}"), &token.token)
+        .get_auth(&format!("/api/v1/tasks/{fake_id}"), &token.token)
         .await;
 
     assert_status(&response, StatusCode::OK);
@@ -208,7 +210,9 @@ async fn test_task_retry_mechanism() {
         "metadata": {"max_retries": 3}
     });
 
-    let response = app.post_json_auth("/tasks", &task_data, &token.token).await;
+    let response = app
+        .post_json_auth("/api/v1/tasks", &task_data, &token.token)
+        .await;
 
     assert_status(&response, StatusCode::OK);
     let json: serde_json::Value = response.json().await.unwrap();
@@ -239,7 +243,9 @@ async fn test_tasks_pagination() {
     let (_user, token) = factory.create_authenticated_user(&unique_username).await;
 
     // Test pagination
-    let response = app.get_auth("/tasks?limit=10&offset=0", &token.token).await;
+    let response = app
+        .get_auth("/api/v1/tasks?limit=10&offset=0", &token.token)
+        .await;
     assert_status(&response, StatusCode::OK);
 
     let json: serde_json::Value = response.json().await.unwrap();
@@ -267,7 +273,9 @@ async fn test_filter_tasks_by_status() {
     let (_user, token) = factory.create_authenticated_user(&unique_username).await;
 
     // Filter by status
-    let response = app.get_auth("/tasks?status=pending", &token.token).await;
+    let response = app
+        .get_auth("/api/v1/tasks?status=pending", &token.token)
+        .await;
     assert_status(&response, StatusCode::OK);
 
     let json: serde_json::Value = response.json().await.unwrap();
@@ -291,7 +299,9 @@ async fn test_dead_letter_queue() {
     let (_user, token) = factory.create_authenticated_user(&unique_username).await;
 
     // Test empty dead letter queue
-    let response = app.get_auth("/tasks/dead-letter", &token.token).await;
+    let response = app
+        .get_auth("/api/v1/tasks/dead-letter", &token.token)
+        .await;
     assert_status(&response, StatusCode::OK);
 
     let json: serde_json::Value = response.json().await.unwrap();
@@ -313,7 +323,7 @@ async fn test_dead_letter_queue() {
     });
 
     let task_response = app
-        .post_json_auth("/tasks", &failing_task_data, &token.token)
+        .post_json_auth("/api/v1/tasks", &failing_task_data, &token.token)
         .await;
     assert_status(&task_response, StatusCode::OK);
     let task_json: serde_json::Value = task_response.json().await.unwrap();
@@ -331,7 +341,9 @@ async fn test_dead_letter_queue() {
     .unwrap();
 
     // Check dead letter queue now contains the failed task
-    let response = app.get_auth("/tasks/dead-letter", &token.token).await;
+    let response = app
+        .get_auth("/api/v1/tasks/dead-letter", &token.token)
+        .await;
     assert_status(&response, StatusCode::OK);
 
     let json: serde_json::Value = response.json().await.unwrap();
@@ -367,7 +379,9 @@ async fn test_retry_failed_task() {
         }
     });
 
-    let task_response = app.post_json_auth("/tasks", &task_data, &token.token).await;
+    let task_response = app
+        .post_json_auth("/api/v1/tasks", &task_data, &token.token)
+        .await;
     assert_status(&task_response, StatusCode::OK);
     let task_json: serde_json::Value = task_response.json().await.unwrap();
     let task_id = task_json["data"]["id"].as_str().unwrap();
@@ -384,7 +398,7 @@ async fn test_retry_failed_task() {
 
     // Retry the failed task
     let retry_response = app
-        .post_auth(&format!("/tasks/{task_id}/retry"), &token.token)
+        .post_auth(&format!("/api/v1/tasks/{task_id}/retry"), &token.token)
         .await;
     assert_status(&retry_response, StatusCode::OK);
 
@@ -393,7 +407,7 @@ async fn test_retry_failed_task() {
 
     // Verify task is now pending again
     let task_response = app
-        .get_auth(&format!("/tasks/{task_id}"), &token.token)
+        .get_auth(&format!("/api/v1/tasks/{task_id}"), &token.token)
         .await;
     assert_status(&task_response, StatusCode::OK);
     let task_json: serde_json::Value = task_response.json().await.unwrap();
@@ -416,7 +430,7 @@ async fn test_retry_nonexistent_task() {
 
     let fake_id = uuid::Uuid::new_v4();
     let response = app
-        .post_auth(&format!("/tasks/{fake_id}/retry"), &token.token)
+        .post_auth(&format!("/api/v1/tasks/{fake_id}/retry"), &token.token)
         .await;
 
     assert_status(&response, StatusCode::NOT_FOUND);
@@ -441,14 +455,16 @@ async fn test_retry_non_failed_task() {
         }
     });
 
-    let task_response = app.post_json_auth("/tasks", &task_data, &token.token).await;
+    let task_response = app
+        .post_json_auth("/api/v1/tasks", &task_data, &token.token)
+        .await;
     assert_status(&task_response, StatusCode::OK);
     let task_json: serde_json::Value = task_response.json().await.unwrap();
     let task_id = task_json["data"]["id"].as_str().unwrap();
 
     // Try to retry a pending task (should fail)
     let retry_response = app
-        .post_auth(&format!("/tasks/{task_id}/retry"), &token.token)
+        .post_auth(&format!("/api/v1/tasks/{task_id}/retry"), &token.token)
         .await;
     assert_status(&retry_response, StatusCode::NOT_FOUND);
 }
@@ -472,7 +488,9 @@ async fn test_delete_task() {
         }
     });
 
-    let task_response = app.post_json_auth("/tasks", &task_data, &token.token).await;
+    let task_response = app
+        .post_json_auth("/api/v1/tasks", &task_data, &token.token)
+        .await;
     assert_status(&task_response, StatusCode::OK);
     let task_json: serde_json::Value = task_response.json().await.unwrap();
     let task_id = task_json["data"]["id"].as_str().unwrap();
@@ -489,7 +507,7 @@ async fn test_delete_task() {
 
     // Delete the task
     let delete_response = app
-        .delete_auth(&format!("/tasks/{task_id}"), &token.token)
+        .delete_auth(&format!("/api/v1/tasks/{task_id}"), &token.token)
         .await;
     assert_status(&delete_response, StatusCode::OK);
 
@@ -498,7 +516,7 @@ async fn test_delete_task() {
 
     // Verify task is deleted
     let task_response = app
-        .get_auth(&format!("/tasks/{task_id}"), &token.token)
+        .get_auth(&format!("/api/v1/tasks/{task_id}"), &token.token)
         .await;
     assert_status(&task_response, StatusCode::OK);
     let task_json: serde_json::Value = task_response.json().await.unwrap();
@@ -516,7 +534,7 @@ async fn test_delete_nonexistent_task() {
 
     let fake_id = uuid::Uuid::new_v4();
     let response = app
-        .delete_auth(&format!("/tasks/{fake_id}"), &token.token)
+        .delete_auth(&format!("/api/v1/tasks/{fake_id}"), &token.token)
         .await;
 
     assert_status(&response, StatusCode::NOT_FOUND);
@@ -541,14 +559,16 @@ async fn test_delete_pending_task() {
         }
     });
 
-    let task_response = app.post_json_auth("/tasks", &task_data, &token.token).await;
+    let task_response = app
+        .post_json_auth("/api/v1/tasks", &task_data, &token.token)
+        .await;
     assert_status(&task_response, StatusCode::OK);
     let task_json: serde_json::Value = task_response.json().await.unwrap();
     let task_id = task_json["data"]["id"].as_str().unwrap();
 
     // Try to delete a pending task (should fail)
     let delete_response = app
-        .delete_auth(&format!("/tasks/{task_id}"), &token.token)
+        .delete_auth(&format!("/api/v1/tasks/{task_id}"), &token.token)
         .await;
     assert_status(&delete_response, StatusCode::NOT_FOUND);
 }
@@ -588,7 +608,9 @@ async fn test_filter_tasks_by_failed_status() {
     .unwrap();
 
     // Filter by failed status
-    let response = app.get_auth("/tasks?status=failed", &token.token).await;
+    let response = app
+        .get_auth("/api/v1/tasks?status=failed", &token.token)
+        .await;
     assert_status(&response, StatusCode::OK);
 
     let json: serde_json::Value = response.json().await.unwrap();
@@ -644,7 +666,7 @@ async fn test_dead_letter_queue_pagination() {
 
     // Test pagination
     let response = app
-        .get_auth("/tasks/dead-letter?limit=10&offset=0", &token.token)
+        .get_auth("/api/v1/tasks/dead-letter?limit=10&offset=0", &token.token)
         .await;
     assert_status(&response, StatusCode::OK);
 
@@ -731,7 +753,7 @@ async fn test_metadata_persistence_through_all_state_transitions() {
     });
 
     let response = app
-        .post_json_auth("/tasks", &task_payload, &token.token)
+        .post_json_auth("/api/v1/tasks", &task_payload, &token.token)
         .await;
 
     assert_eq!(response.status(), 200);
@@ -742,7 +764,7 @@ async fn test_metadata_persistence_through_all_state_transitions() {
 
     // Verify metadata in initial state (could be Pending or Running due to worker timing)
     let get_response = app
-        .get_auth(&format!("/tasks/{task_id}"), &token.token)
+        .get_auth(&format!("/api/v1/tasks/{task_id}"), &token.token)
         .await;
     assert_eq!(get_response.status(), 200);
     let initial_task: serde_json::Value = get_response.json().await.unwrap();
@@ -764,7 +786,7 @@ async fn test_metadata_persistence_through_all_state_transitions() {
         tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
 
         let check_response = app
-            .get_auth(&format!("/tasks/{task_id}"), &token.token)
+            .get_auth(&format!("/api/v1/tasks/{task_id}"), &token.token)
             .await;
 
         if check_response.status() == 200 {
@@ -818,7 +840,7 @@ async fn test_metadata_persistence_through_all_state_transitions() {
     assert_metadata_preserved(&completed_task["data"]["metadata"], &test_metadata);
 
     // 4. Also verify in task listings (as chaos testing uses this)
-    let list_response = app.get_auth("/tasks?limit=100", &token.token).await;
+    let list_response = app.get_auth("/api/v1/tasks?limit=100", &token.token).await;
     assert_eq!(list_response.status(), 200);
     let list_result: serde_json::Value = list_response.json().await.unwrap();
     let tasks_list = list_result["data"].as_array().unwrap();
@@ -849,7 +871,7 @@ async fn test_metadata_persistence_through_all_state_transitions() {
     });
 
     let chaos_response = app
-        .post_json_auth("/tasks", &chaos_task_payload, &token.token)
+        .post_json_auth("/api/v1/tasks", &chaos_task_payload, &token.token)
         .await;
 
     let chaos_task_data: serde_json::Value = chaos_response.json().await.unwrap();
@@ -861,7 +883,7 @@ async fn test_metadata_persistence_through_all_state_transitions() {
         tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
 
         let chaos_check = app
-            .get_auth(&format!("/tasks/{chaos_task_id}"), &token.token)
+            .get_auth(&format!("/api/v1/tasks/{chaos_task_id}"), &token.token)
             .await;
 
         if chaos_check.status() == 200 {

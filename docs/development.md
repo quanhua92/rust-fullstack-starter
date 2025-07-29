@@ -31,7 +31,7 @@ graph TB
     
     subgraph "🔍 Verification"
         VERIFY[🧪 Verification Steps]
-        V1[💓 curl localhost:3000/health]
+        V1[💓 curl localhost:3000/api/v1/health]
         V2[📚 open localhost:3000/api-docs]
         V3[🧪 ./scripts/test-with-curl.sh]
         
@@ -165,7 +165,7 @@ TEST_LOG=1 cargo test -- --nocapture
 
 # Test production Docker setup (with SCRAM-SHA-256 auth)
 docker-compose -f docker-compose.prod.yaml --env-file .env.prod.test up -d
-curl http://localhost:8080/health
+curl http://localhost:8080/api/v1/health
 
 # Combined workflow: integration + API tests
 cargo nextest run && ./scripts/test-with-curl.sh
@@ -482,10 +482,10 @@ open http://localhost:3000/api-docs
 curl http://localhost:3000/api-docs/openapi.json | jq '.paths | keys'
 
 # 3. Test specific endpoints
-curl http://localhost:3000/health
+curl http://localhost:3000/api/v1/health
 
 # 4. Register test user and get documentation links
-curl -X POST http://localhost:3000/auth/register \
+curl -X POST http://localhost:3000/api/v1/auth/register \
   -H "Content-Type: application/json" \
   -d '{"username": "testuser", "email": "test@example.com", "password": "password123"}'
 ```

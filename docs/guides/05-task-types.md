@@ -157,7 +157,7 @@ async fn start_worker(database: Database) -> Result<()> {
 
 ```bash
 # Create a welcome email task
-curl -X POST http://localhost:3000/tasks \
+curl -X POST http://localhost:3000/api/v1/tasks \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{

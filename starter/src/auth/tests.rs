@@ -35,7 +35,7 @@ mod auth_tests {
 
         let request = Request::builder()
             .method("POST")
-            .uri("/auth/register")
+            .uri("/api/v1/auth/register")
             .header("content-type", "application/json")
             .body(Body::from(register_payload.to_string()))
             .unwrap();
@@ -51,7 +51,7 @@ mod auth_tests {
 
         let request = Request::builder()
             .method("POST")
-            .uri("/auth/login")
+            .uri("/api/v1/auth/login")
             .header("content-type", "application/json")
             .body(Body::from(login_payload.to_string()))
             .unwrap();
@@ -67,7 +67,7 @@ mod auth_tests {
 
         let request = Request::builder()
             .method("GET")
-            .uri("/auth/me")
+            .uri("/api/v1/auth/me")
             .body(Body::empty())
             .unwrap();
 

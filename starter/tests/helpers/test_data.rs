@@ -27,7 +27,10 @@ impl TestDataFactory {
             role: None,
         };
 
-        let response = self.app.post_json("/auth/register", &user_data).await;
+        let response = self
+            .app
+            .post_json("/api/v1/auth/register", &user_data)
+            .await;
         assert_eq!(response.status(), 200);
 
         let json: serde_json::Value = response.json().await.unwrap();
@@ -58,7 +61,7 @@ impl TestDataFactory {
             "password": "SecurePass123!"
         });
 
-        let response = self.app.post_json("/auth/login", &login_data).await;
+        let response = self.app.post_json("/api/v1/auth/login", &login_data).await;
         assert_eq!(response.status(), 200);
 
         let token = self.app.extract_auth_token(response).await;
@@ -98,7 +101,10 @@ impl TestDataFactory {
                 "description": description
             });
 
-            let response = self.app.post_json("/tasks/types", &task_type_data).await;
+            let response = self
+                .app
+                .post_json("/api/v1/tasks/types", &task_type_data)
+                .await;
             // Don't assert - task type might already be registered
             if response.status() != 200 {
                 eprintln!(
@@ -131,7 +137,7 @@ impl TestDataFactory {
 
         let response = self
             .app
-            .post_json_auth("/tasks", &task_data, &token.token)
+            .post_json_auth("/api/v1/tasks", &task_data, &token.token)
             .await;
         assert_eq!(response.status(), 200);
 
@@ -169,7 +175,7 @@ impl TestDataFactory {
 
         let response = self
             .app
-            .post_json_auth("/tasks", &task_data, &token.token)
+            .post_json_auth("/api/v1/tasks", &task_data, &token.token)
             .await;
         assert_eq!(response.status(), 200);
 

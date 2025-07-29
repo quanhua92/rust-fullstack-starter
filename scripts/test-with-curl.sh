@@ -88,11 +88,11 @@ USER_ID=""
 TASK_ID=""
 
 echo -e "${YELLOW}📊 Health Endpoints${NC}"
-test_api "GET /health" "GET" "/health" "200"
-test_api "GET /health/detailed" "GET" "/health/detailed" "200"
-test_api "GET /health/live" "GET" "/health/live" "200"
-test_api "GET /health/ready" "GET" "/health/ready" "200"
-test_api "GET /health/startup" "GET" "/health/startup" "200"
+test_api "GET /api/v1/health" "GET" "/api/v1/health" "200"
+test_api "GET /api/v1/health/detailed" "GET" "/api/v1/health/detailed" "200"
+test_api "GET /api/v1/health/live" "GET" "/api/v1/health/live" "200"
+test_api "GET /api/v1/health/ready" "GET" "/api/v1/health/ready" "200"
+test_api "GET /api/v1/health/startup" "GET" "/api/v1/health/startup" "200"
 
 echo ""
 echo -e "${YELLOW}🔐 Authentication Flow${NC}"
@@ -100,12 +100,12 @@ echo -e "${YELLOW}🔐 Authentication Flow${NC}"
 # Register user with unique name
 TIMESTAMP=$(date +%s)
 USER_DATA="{\"username\": \"testuser_$TIMESTAMP\", \"email\": \"test_$TIMESTAMP@example.com\", \"password\": \"SecurePass123\"}"
-test_api "POST /auth/register" "POST" "/auth/register" "200" "" "$USER_DATA"
+test_api "POST /api/v1/auth/register" "POST" "/api/v1/auth/register" "200" "" "$USER_DATA"
 
 # Login user and extract token
 echo "🔑 Logging in to get session token..."
 LOGIN_DATA="{\"username_or_email\": \"test_$TIMESTAMP@example.com\", \"password\": \"SecurePass123\"}"
-LOGIN_RESPONSE=$(curl -s -X POST "$BASE_URL/auth/login" -H "Content-Type: application/json" -d "$LOGIN_DATA")
+LOGIN_RESPONSE=$(curl -s -X POST "$BASE_URL/api/v1/auth/login" -H "Content-Type: application/json" -d "$LOGIN_DATA")
 if echo "$LOGIN_RESPONSE" | grep -q '"success":true'; then
     USER_TOKEN=$(echo "$LOGIN_RESPONSE" | python3 -c "import json,sys; print(json.load(sys.stdin)['data']['session_token'])" 2>/dev/null || echo "")
     USER_ID=$(echo "$LOGIN_RESPONSE" | python3 -c "import json,sys; print(json.load(sys.stdin)['data']['user']['id'])" 2>/dev/null || echo "")
@@ -123,25 +123,25 @@ fi
 
 # Test protected endpoints with auth
 if [ -n "$USER_TOKEN" ]; then
-    test_api "GET /auth/me" "GET" "/auth/me" "200" "$USER_TOKEN"
-    test_api "POST /auth/refresh" "POST" "/auth/refresh" "200" "$USER_TOKEN"
+    test_api "GET /api/v1/auth/me" "GET" "/api/v1/auth/me" "200" "$USER_TOKEN"
+    test_api "POST /api/v1/auth/refresh" "POST" "/api/v1/auth/refresh" "200" "$USER_TOKEN"
     
     echo ""
     echo -e "${YELLOW}👤 User Management${NC}"
     
     # Test user by ID
     if [ -n "$USER_ID" ]; then
-        test_api "GET /users/{id}" "GET" "/users/$USER_ID" "200" "$USER_TOKEN"
+        test_api "GET /api/v1/users/{id}" "GET" "/api/v1/users/$USER_ID" "200" "$USER_TOKEN"
     fi
     
     # Test nonexistent user
-    test_api "GET /users/nonexistent" "GET" "/users/00000000-0000-0000-0000-000000000000" "404" "$USER_TOKEN"
+    test_api "GET /api/v1/users/nonexistent" "GET" "/api/v1/users/00000000-0000-0000-0000-000000000000" "404" "$USER_TOKEN"
     
     echo ""
     echo -e "${YELLOW}📋 Task Management${NC}"
     
     # Get initial task stats
-    test_api "GET /tasks/stats" "GET" "/tasks/stats" "200" "$USER_TOKEN"
+    test_api "GET /api/v1/tasks/stats" "GET" "/api/v1/tasks/stats" "200" "$USER_TOKEN"
     
     # Test task type management
     echo ""
@@ -152,7 +152,7 @@ if [ -n "$USER_TOKEN" ]; then
     wait_attempts=5
     wait_attempt=0
     while [ $wait_attempt -lt $wait_attempts ]; do
-        task_types_response=$(curl -s "$BASE_URL/tasks/types" 2>/dev/null || echo "")
+        task_types_response=$(curl -s "$BASE_URL/api/v1/tasks/types" 2>/dev/null || echo "")
         if echo "$task_types_response" | grep -q '"task_type".*"email"' && echo "$task_types_response" | grep -q '"task_type".*"webhook"'; then
             echo "✅ Workers have registered expected task types"
             break
@@ -165,26 +165,26 @@ if [ -n "$USER_TOKEN" ]; then
         echo "⚠️ Workers may not have fully registered all task types, registering manually for compatibility..."
         # Fallback: register all task types that workers would normally auto-register
         EMAIL_TASK_TYPE='{"task_type": "email", "description": "Email sending task"}'
-        test_api "POST /tasks/types (email)" "POST" "/tasks/types" "200" "" "$EMAIL_TASK_TYPE"
+        test_api "POST /api/v1/tasks/types (email)" "POST" "/api/v1/tasks/types" "200" "" "$EMAIL_TASK_TYPE"
         
         DATA_TASK_TYPE='{"task_type": "data_processing", "description": "Data processing task"}'
-        test_api "POST /tasks/types (data_processing)" "POST" "/tasks/types" "200" "" "$DATA_TASK_TYPE"
+        test_api "POST /api/v1/tasks/types (data_processing)" "POST" "/api/v1/tasks/types" "200" "" "$DATA_TASK_TYPE"
         
         WEBHOOK_TASK_TYPE='{"task_type": "webhook", "description": "Webhook notification tasks"}'
-        test_api "POST /tasks/types (webhook)" "POST" "/tasks/types" "200" "" "$WEBHOOK_TASK_TYPE"
+        test_api "POST /api/v1/tasks/types (webhook)" "POST" "/api/v1/tasks/types" "200" "" "$WEBHOOK_TASK_TYPE"
         
         FILE_CLEANUP_TASK_TYPE='{"task_type": "file_cleanup", "description": "File system cleanup tasks"}'
-        test_api "POST /tasks/types (file_cleanup)" "POST" "/tasks/types" "200" "" "$FILE_CLEANUP_TASK_TYPE"
+        test_api "POST /api/v1/tasks/types (file_cleanup)" "POST" "/api/v1/tasks/types" "200" "" "$FILE_CLEANUP_TASK_TYPE"
         
         REPORT_TASK_TYPE='{"task_type": "report_generation", "description": "Report generation tasks"}'
-        test_api "POST /tasks/types (report_generation)" "POST" "/tasks/types" "200" "" "$REPORT_TASK_TYPE"
+        test_api "POST /api/v1/tasks/types (report_generation)" "POST" "/api/v1/tasks/types" "200" "" "$REPORT_TASK_TYPE"
         
         DELAY_TASK_TYPE='{"task_type": "delay_task", "description": "Delay/sleep tasks for testing and chaos scenarios"}'
-        test_api "POST /tasks/types (delay_task)" "POST" "/tasks/types" "200" "" "$DELAY_TASK_TYPE"
+        test_api "POST /api/v1/tasks/types (delay_task)" "POST" "/api/v1/tasks/types" "200" "" "$DELAY_TASK_TYPE"
     fi
     
     # List registered task types  
-    test_api "GET /tasks/types" "GET" "/tasks/types" "200" ""
+    test_api "GET /api/v1/tasks/types" "GET" "/api/v1/tasks/types" "200" ""
     
     # Test task creation with valid types
     echo ""
@@ -192,14 +192,14 @@ if [ -n "$USER_TOKEN" ]; then
     
     # Test creating task with unregistered type (should fail with 400)
     UNREGISTERED_TASK='{"task_type": "absolutely_unknown_type_9999", "payload": {"test": "data"}, "priority": "normal"}'
-    test_api "POST /tasks (unregistered type)" "POST" "/tasks" "400" "$USER_TOKEN" "$UNREGISTERED_TASK"
+    test_api "POST /api/v1/tasks (unregistered type)" "POST" "/api/v1/tasks" "400" "$USER_TOKEN" "$UNREGISTERED_TASK"
     
     echo ""
     echo "📋 Testing Task Creation..."
     
     # Create email task
     EMAIL_TASK='{"task_type": "email", "payload": {"to": "test@example.com", "subject": "Test Email", "body": "Hello from API test"}, "priority": "normal"}'
-    TASK_RESPONSE=$(curl -s -X POST "$BASE_URL/tasks" -H "Content-Type: application/json" -H "Authorization: Bearer $USER_TOKEN" -d "$EMAIL_TASK")
+    TASK_RESPONSE=$(curl -s -X POST "$BASE_URL/api/v1/tasks" -H "Content-Type: application/json" -H "Authorization: Bearer $USER_TOKEN" -d "$EMAIL_TASK")
     if echo "$TASK_RESPONSE" | grep -q '"success":true'; then
         TASK_ID=$(echo "$TASK_RESPONSE" | python3 -c "import json,sys; print(json.load(sys.stdin)['data']['id'])" 2>/dev/null || echo "")
         echo -e "${GREEN}✅ PASS${NC} POST /tasks (Email task created: ${TASK_ID:0:8}...)"
@@ -212,23 +212,23 @@ if [ -n "$USER_TOKEN" ]; then
     
     # Create data processing task
     DATA_TASK='{"task_type": "data_processing", "payload": {"operation": "sum", "data": [1, 2, 3, 4, 5]}, "priority": "high"}'
-    test_api "POST /tasks (data processing)" "POST" "/tasks" "200" "$USER_TOKEN" "$DATA_TASK"
+    test_api "POST /api/v1/tasks (data processing)" "POST" "/api/v1/tasks" "200" "$USER_TOKEN" "$DATA_TASK"
     
     # List tasks
-    test_api "GET /tasks" "GET" "/tasks" "200" "$USER_TOKEN"
+    test_api "GET /api/v1/tasks" "GET" "/api/v1/tasks" "200" "$USER_TOKEN"
     
     # Get specific task
     if [ -n "$TASK_ID" ]; then
-        test_api "GET /tasks/{id}" "GET" "/tasks/$TASK_ID" "200" "$USER_TOKEN"
+        test_api "GET /api/v1/tasks/{id}" "GET" "/api/v1/tasks/$TASK_ID" "200" "$USER_TOKEN"
     fi
     
     # Get updated task stats
-    test_api "GET /tasks/stats (updated)" "GET" "/tasks/stats" "200" "$USER_TOKEN"
+    test_api "GET /api/v1/tasks/stats (updated)" "GET" "/api/v1/tasks/stats" "200" "$USER_TOKEN"
     
     # Test task cancellation (might fail if task already processed)
     if [ -n "$TASK_ID" ]; then
         # This might return 400 if task is already completed, which is expected behavior
-        CANCEL_RESPONSE=$(curl -s -w 'HTTP_STATUS:%{http_code}' -X POST "$BASE_URL/tasks/$TASK_ID/cancel" -H "Authorization: Bearer $USER_TOKEN")
+        CANCEL_RESPONSE=$(curl -s -w 'HTTP_STATUS:%{http_code}' -X POST "$BASE_URL/api/v1/tasks/$TASK_ID/cancel" -H "Authorization: Bearer $USER_TOKEN")
         CANCEL_STATUS=$(echo "$CANCEL_RESPONSE" | grep -o 'HTTP_STATUS:[0-9]*' | cut -d: -f2)
         if [ "$CANCEL_STATUS" = "200" ] || [ "$CANCEL_STATUS" = "400" ]; then
             echo -e "${GREEN}✅ PASS${NC} POST /tasks/{id}/cancel (Status: $CANCEL_STATUS - expected 200 or 400)"
@@ -243,16 +243,16 @@ if [ -n "$USER_TOKEN" ]; then
     echo -e "${YELLOW}🗃️ Dead Letter Queue Management${NC}"
     
     # Test filtering tasks by status
-    test_api "GET /tasks?status=pending" "GET" "/tasks?status=pending" "200" "$USER_TOKEN"
-    test_api "GET /tasks?status=failed" "GET" "/tasks?status=failed" "200" "$USER_TOKEN"
+    test_api "GET /api/v1/tasks?status=pending" "GET" "/api/v1/tasks?status=pending" "200" "$USER_TOKEN"
+    test_api "GET /api/v1/tasks?status=failed" "GET" "/api/v1/tasks?status=failed" "200" "$USER_TOKEN"
     
     # Test dead letter queue endpoint
-    test_api "GET /tasks/dead-letter" "GET" "/tasks/dead-letter" "200" "$USER_TOKEN"
-    test_api "GET /tasks/dead-letter (paginated)" "GET" "/tasks/dead-letter?limit=5&offset=0" "200" "$USER_TOKEN"
+    test_api "GET /api/v1/tasks/dead-letter" "GET" "/api/v1/tasks/dead-letter" "200" "$USER_TOKEN"
+    test_api "GET /api/v1/tasks/dead-letter (paginated)" "GET" "/api/v1/tasks/dead-letter?limit=5&offset=0" "200" "$USER_TOKEN"
     
     # Create a task that we can mark as failed for testing
     FAILED_TASK='{"task_type": "email", "payload": {"to": "test@example.com", "subject": "Test Failed", "body": "fail"}, "priority": "normal"}'
-    FAILED_TASK_RESPONSE=$(curl -s -X POST "$BASE_URL/tasks" -H "Content-Type: application/json" -H "Authorization: Bearer $USER_TOKEN" -d "$FAILED_TASK")
+    FAILED_TASK_RESPONSE=$(curl -s -X POST "$BASE_URL/api/v1/tasks" -H "Content-Type: application/json" -H "Authorization: Bearer $USER_TOKEN" -d "$FAILED_TASK")
     if echo "$FAILED_TASK_RESPONSE" | grep -q '"success":true'; then
         FAILED_TASK_ID=$(echo "$FAILED_TASK_RESPONSE" | python3 -c "import json,sys; print(json.load(sys.stdin)['data']['id'])" 2>/dev/null || echo "")
         echo -e "${GREEN}✅ PASS${NC} POST /tasks (Failed task created: ${FAILED_TASK_ID:0:8}...)"
@@ -265,7 +265,7 @@ if [ -n "$USER_TOKEN" ]; then
     
     # Test retry endpoint (on non-failed task - should fail)
     if [ -n "$TASK_ID" ]; then
-        RETRY_RESPONSE=$(curl -s -w 'HTTP_STATUS:%{http_code}' -X POST "$BASE_URL/tasks/$TASK_ID/retry" -H "Authorization: Bearer $USER_TOKEN")
+        RETRY_RESPONSE=$(curl -s -w 'HTTP_STATUS:%{http_code}' -X POST "$BASE_URL/api/v1/tasks/$TASK_ID/retry" -H "Authorization: Bearer $USER_TOKEN")
         RETRY_STATUS=$(echo "$RETRY_RESPONSE" | grep -o 'HTTP_STATUS:[0-9]*' | cut -d: -f2)
         if [ "$RETRY_STATUS" = "404" ]; then
             echo -e "${GREEN}✅ PASS${NC} POST /tasks/{id}/retry (pending task) (Status: $RETRY_STATUS - expected 404)"
@@ -278,7 +278,7 @@ if [ -n "$USER_TOKEN" ]; then
     
     # Test delete endpoint (task may be completed by worker, so expect 200 or 404)
     if [ -n "$TASK_ID" ]; then
-        DELETE_RESPONSE=$(curl -s -w 'HTTP_STATUS:%{http_code}' -X DELETE "$BASE_URL/tasks/$TASK_ID" -H "Authorization: Bearer $USER_TOKEN")
+        DELETE_RESPONSE=$(curl -s -w 'HTTP_STATUS:%{http_code}' -X DELETE "$BASE_URL/api/v1/tasks/$TASK_ID" -H "Authorization: Bearer $USER_TOKEN")
         DELETE_STATUS=$(echo "$DELETE_RESPONSE" | grep -o 'HTTP_STATUS:[0-9]*' | cut -d: -f2)
         if [ "$DELETE_STATUS" = "200" ] || [ "$DELETE_STATUS" = "404" ]; then
             echo -e "${GREEN}✅ PASS${NC} DELETE /tasks/{id} (task) (Status: $DELETE_STATUS - expected 200 or 404)"
@@ -291,24 +291,24 @@ if [ -n "$USER_TOKEN" ]; then
     
     # Test retry on nonexistent task
     FAKE_TASK_ID="00000000-0000-0000-0000-000000000000"
-    test_api "POST /tasks/{id}/retry (nonexistent)" "POST" "/tasks/$FAKE_TASK_ID/retry" "404" "$USER_TOKEN"
+    test_api "POST /api/v1/tasks/{id}/retry (nonexistent)" "POST" "/api/v1/tasks/$FAKE_TASK_ID/retry" "404" "$USER_TOKEN"
     
     # Test delete on nonexistent task
-    test_api "DELETE /tasks/{id} (nonexistent)" "DELETE" "/tasks/$FAKE_TASK_ID" "404" "$USER_TOKEN"
+    test_api "DELETE /api/v1/tasks/{id} (nonexistent)" "DELETE" "/api/v1/tasks/$FAKE_TASK_ID" "404" "$USER_TOKEN"
     
     # Test logout-all endpoint before regular logout
     echo ""
     echo "🔐 Testing Multi-Session Logout..."
     # Create a second session for testing logout-all
-    SECOND_LOGIN_RESPONSE=$(curl -s -X POST "$BASE_URL/auth/login" -H "Content-Type: application/json" -d "$LOGIN_DATA")
+    SECOND_LOGIN_RESPONSE=$(curl -s -X POST "$BASE_URL/api/v1/auth/login" -H "Content-Type: application/json" -d "$LOGIN_DATA")
     SECOND_TOKEN=$(echo "$SECOND_LOGIN_RESPONSE" | python3 -c "import json,sys; print(json.load(sys.stdin)['data']['session_token'])" 2>/dev/null || echo "")
     
     if [ -n "$SECOND_TOKEN" ]; then
         # Test logout-all with the first token (should invalidate both sessions)
-        test_api "POST /auth/logout-all" "POST" "/auth/logout-all" "200" "$USER_TOKEN"
+        test_api "POST /api/v1/auth/logout-all" "POST" "/api/v1/auth/logout-all" "200" "$USER_TOKEN"
         
         # Verify both tokens are invalidated by testing /auth/me with the second token
-        ME_RESPONSE=$(curl -s -w 'HTTP_STATUS:%{http_code}' -X GET "$BASE_URL/auth/me" -H "Authorization: Bearer $SECOND_TOKEN")
+        ME_RESPONSE=$(curl -s -w 'HTTP_STATUS:%{http_code}' -X GET "$BASE_URL/api/v1/auth/me" -H "Authorization: Bearer $SECOND_TOKEN")
         ME_STATUS=$(echo "$ME_RESPONSE" | grep -o 'HTTP_STATUS:[0-9]*' | cut -d: -f2)
         if [ "$ME_STATUS" = "401" ]; then
             echo -e "${GREEN}✅ PASS${NC} All sessions invalidated after logout-all"
@@ -319,12 +319,12 @@ if [ -n "$USER_TOKEN" ]; then
         TOTAL_TESTS=$((TOTAL_TESTS + 1))
     else
         # Fallback if second login fails - just test logout-all endpoint
-        test_api "POST /auth/logout-all" "POST" "/auth/logout-all" "200" "$USER_TOKEN"
+        test_api "POST /api/v1/auth/logout-all" "POST" "/api/v1/auth/logout-all" "200" "$USER_TOKEN"
     fi
     
     # Test logout (single session) - test this last since it invalidates the token
     # Note: This might return 401 if logout-all already invalidated the token, which is expected
-    LOGOUT_RESPONSE=$(curl -s -w 'HTTP_STATUS:%{http_code}' -X POST "$BASE_URL/auth/logout" -H "Authorization: Bearer $USER_TOKEN")
+    LOGOUT_RESPONSE=$(curl -s -w 'HTTP_STATUS:%{http_code}' -X POST "$BASE_URL/api/v1/auth/logout" -H "Authorization: Bearer $USER_TOKEN")
     LOGOUT_STATUS=$(echo "$LOGOUT_RESPONSE" | grep -o 'HTTP_STATUS:[0-9]*' | cut -d: -f2)
     if [ "$LOGOUT_STATUS" = "200" ] || [ "$LOGOUT_STATUS" = "401" ]; then
         echo -e "${GREEN}✅ PASS${NC} POST /auth/logout (Status: $LOGOUT_STATUS - expected 200 or 401)"
@@ -339,15 +339,15 @@ echo ""
 echo -e "${YELLOW}❌ Error Response Testing${NC}"
 
 # Test unauthorized access
-test_api "GET /auth/me (no auth)" "GET" "/auth/me" "401"
+test_api "GET /api/v1/auth/me (no auth)" "GET" "/api/v1/auth/me" "401"
 
 # Test invalid login
 INVALID_LOGIN='{"username_or_email": "wrong", "password": "wrong"}'
-test_api "POST /auth/login (invalid)" "POST" "/auth/login" "401" "" "$INVALID_LOGIN"
+test_api "POST /api/v1/auth/login (invalid)" "POST" "/api/v1/auth/login" "401" "" "$INVALID_LOGIN"
 
 # Test validation error
 INVALID_REGISTER='{"username": "", "email": "invalid", "password": "weak"}'
-test_api "POST /auth/register (validation)" "POST" "/auth/register" "400" "" "$INVALID_REGISTER"
+test_api "POST /api/v1/auth/register (validation)" "POST" "/api/v1/auth/register" "400" "" "$INVALID_REGISTER"
 
 # Test 404
 test_api "GET /nonexistent" "GET" "/nonexistent" "404"
@@ -363,7 +363,7 @@ echo ""
 echo -e "${YELLOW}👑 Admin Endpoints${NC}"
 
 # Test admin endpoint without auth
-test_api "GET /admin/health (no auth)" "GET" "/admin/health" "401"
+test_api "GET /api/v1/admin/health (no auth)" "GET" "/api/v1/admin/health" "401"
 
 
 # Note: Admin endpoint with proper admin credentials would require setting up 
@@ -376,29 +376,29 @@ echo -e "${YELLOW}🧪 Additional API Tests${NC}"
 if [ -n "$USER_TOKEN" ]; then
     # Create a new user for clean testing
     NEW_USER_DATA="{\"username\": \"testuser2_$TIMESTAMP\", \"email\": \"test2_$TIMESTAMP@example.com\", \"password\": \"SecurePass123\"}"
-    curl -s -X POST "$BASE_URL/auth/register" -H "Content-Type: application/json" -d "$NEW_USER_DATA" > /dev/null
+    curl -s -X POST "$BASE_URL/api/v1/auth/register" -H "Content-Type: application/json" -d "$NEW_USER_DATA" > /dev/null
     
     NEW_LOGIN_DATA="{\"username_or_email\": \"test2_$TIMESTAMP@example.com\", \"password\": \"SecurePass123\"}"
-    NEW_LOGIN_RESPONSE=$(curl -s -X POST "$BASE_URL/auth/login" -H "Content-Type: application/json" -d "$NEW_LOGIN_DATA")
+    NEW_LOGIN_RESPONSE=$(curl -s -X POST "$BASE_URL/api/v1/auth/login" -H "Content-Type: application/json" -d "$NEW_LOGIN_DATA")
     NEW_TOKEN=$(echo "$NEW_LOGIN_RESPONSE" | python3 -c "import json,sys; print(json.load(sys.stdin)['data']['session_token'])" 2>/dev/null || echo "")
     
     if [ -n "$NEW_TOKEN" ]; then
         # Test all supported task types
         WEBHOOK_TASK='{"task_type": "webhook", "payload": {"url": "https://httpbin.org/post", "method": "POST", "payload": {"test": "data"}}, "priority": "normal"}'
-        test_api "POST /tasks (webhook)" "POST" "/tasks" "200" "$NEW_TOKEN" "$WEBHOOK_TASK"
+        test_api "POST /api/v1/tasks (webhook)" "POST" "/api/v1/tasks" "200" "$NEW_TOKEN" "$WEBHOOK_TASK"
         
         FILE_CLEANUP_TASK='{"task_type": "file_cleanup", "payload": {"file_path": "/tmp/test", "max_age_hours": 24}, "priority": "low"}'
-        test_api "POST /tasks (file_cleanup)" "POST" "/tasks" "200" "$NEW_TOKEN" "$FILE_CLEANUP_TASK"
+        test_api "POST /api/v1/tasks (file_cleanup)" "POST" "/api/v1/tasks" "200" "$NEW_TOKEN" "$FILE_CLEANUP_TASK"
         
         REPORT_TASK='{"task_type": "report_generation", "payload": {"report_type": "sales", "start_date": "2024-01-01", "end_date": "2024-01-31", "format": "pdf"}, "priority": "normal"}'
-        test_api "POST /tasks (report_generation)" "POST" "/tasks" "200" "$NEW_TOKEN" "$REPORT_TASK"
+        test_api "POST /api/v1/tasks (report_generation)" "POST" "/api/v1/tasks" "200" "$NEW_TOKEN" "$REPORT_TASK"
         
         # Test unknown task type (should now be rejected by API)
         UNKNOWN_TASK='{"task_type": "truly_unknown_type_12345", "payload": {"test": "data"}, "priority": "normal"}'
-        test_api "POST /tasks (unknown type)" "POST" "/tasks" "400" "$NEW_TOKEN" "$UNKNOWN_TASK"
+        test_api "POST /api/v1/tasks (unknown type)" "POST" "/api/v1/tasks" "400" "$NEW_TOKEN" "$UNKNOWN_TASK"
         
         # Test admin endpoint with regular user (should get 401)
-        test_api "GET /admin/health (non-admin)" "GET" "/admin/health" "401" "$NEW_TOKEN"
+        test_api "GET /api/v1/admin/health (non-admin)" "GET" "/api/v1/admin/health" "401" "$NEW_TOKEN"
     fi
 fi
 

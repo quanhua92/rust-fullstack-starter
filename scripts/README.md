@@ -204,7 +204,7 @@ tail -f /tmp/starter-worker.log
 
 # Test changes
 cargo nextest run
-curl -X POST http://localhost:3000/tasks \
+curl -X POST http://localhost:3000/api/v1/tasks \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"task_type":"email","payload":{"to":"test@example.com","subject":"Test","body":"Hello"}}'

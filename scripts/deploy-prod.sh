@@ -149,7 +149,7 @@ echo -e "${BLUE}🧪 Testing deployment...${NC}"
 APP_PORT=$(grep "^APP_PORT=" "$ENV_FILE" | cut -d'=' -f2 || echo "8080")
 
 # Test health endpoint
-if curl -f -s "http://localhost:$APP_PORT/health" > /dev/null; then
+if curl -f -s "http://localhost:$APP_PORT/api/v1/health" > /dev/null; then
     echo -e "${GREEN}✅ Health check passed${NC}"
 else
     echo -e "${RED}❌ Health check failed${NC}"
@@ -176,7 +176,7 @@ echo "• Stop: docker compose -f $COMPOSE_FILE --env-file $ENV_FILE down"
 echo ""
 echo -e "${BLUE}🌐 Your application is now running at:${NC}"
 echo "• HTTP: http://localhost:$APP_PORT"
-echo "• Health: http://localhost:$APP_PORT/health"
+echo "• Health: http://localhost:$APP_PORT/api/v1/health"
 
 # Show environment-specific info
 if grep -q "NGINX_PORT=" "$ENV_FILE"; then

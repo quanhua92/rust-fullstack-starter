@@ -235,7 +235,7 @@ open http://localhost:3000/api-docs
 curl http://localhost:3000/api-docs/openapi.json | jq
 
 # Quick health check with docs links
-curl http://localhost:3000/health | jq '.data.documentation'
+curl http://localhost:3000/api/v1/health | jq '.data.documentation'
 ```
 
 **Full OpenAPI Documentation:**

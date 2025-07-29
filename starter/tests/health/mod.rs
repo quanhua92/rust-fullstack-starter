@@ -5,7 +5,7 @@ use reqwest::StatusCode;
 async fn test_health_endpoint() {
     let app = spawn_app().await;
 
-    let response = app.get("/health").await;
+    let response = app.get("/api/v1/health").await;
 
     assert_status(&response, StatusCode::OK);
     let json: serde_json::Value = response.json().await.unwrap();
@@ -16,7 +16,7 @@ async fn test_health_endpoint() {
 async fn test_health_detailed() {
     let app = spawn_app().await;
 
-    let response = app.get("/health/detailed").await;
+    let response = app.get("/api/v1/health/detailed").await;
 
     assert_status(&response, StatusCode::OK);
     let json: serde_json::Value = response.json().await.unwrap();
@@ -28,7 +28,7 @@ async fn test_health_detailed() {
 async fn test_liveness_probe() {
     let app = spawn_app().await;
 
-    let response = app.get("/health/live").await;
+    let response = app.get("/api/v1/health/live").await;
 
     assert_status(&response, StatusCode::OK);
     let json: serde_json::Value = response.json().await.unwrap();
@@ -41,7 +41,7 @@ async fn test_liveness_probe() {
 async fn test_readiness_probe() {
     let app = spawn_app().await;
 
-    let response = app.get("/health/ready").await;
+    let response = app.get("/api/v1/health/ready").await;
 
     assert_status(&response, StatusCode::OK);
     let json: serde_json::Value = response.json().await.unwrap();
@@ -62,7 +62,7 @@ async fn test_readiness_probe() {
 async fn test_startup_probe() {
     let app = spawn_app().await;
 
-    let response = app.get("/health/startup").await;
+    let response = app.get("/api/v1/health/startup").await;
 
     assert_status(&response, StatusCode::OK);
     let json: serde_json::Value = response.json().await.unwrap();
@@ -83,7 +83,7 @@ async fn test_startup_probe() {
 async fn test_database_health_check() {
     let app = spawn_app().await;
 
-    let response = app.get("/health/detailed").await;
+    let response = app.get("/api/v1/health/detailed").await;
 
     assert_status(&response, StatusCode::OK);
     let json: serde_json::Value = response.json().await.unwrap();
@@ -98,7 +98,7 @@ async fn test_database_health_check() {
 async fn test_health_includes_version() {
     let app = spawn_app().await;
 
-    let response = app.get("/health").await;
+    let response = app.get("/api/v1/health").await;
 
     assert_status(&response, StatusCode::OK);
     let json: serde_json::Value = response.json().await.unwrap();
@@ -112,7 +112,7 @@ async fn test_health_includes_uptime() {
     // Wait a moment to ensure uptime is measurable
     tokio::time::sleep(std::time::Duration::from_millis(100)).await;
 
-    let response = app.get("/health").await;
+    let response = app.get("/api/v1/health").await;
 
     assert_status(&response, StatusCode::OK);
     let json: serde_json::Value = response.json().await.unwrap();

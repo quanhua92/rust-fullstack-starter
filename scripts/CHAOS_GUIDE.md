@@ -576,8 +576,8 @@ echo "✅ All chaos tests passed - ready for deployment"
 ./scripts/test-server.sh 3000
 
 # Manual testing
-curl -X GET http://localhost:3000/health
-curl -X GET http://localhost:3000/tasks/stats
+curl -X GET http://localhost:3000/api/v1/health
+curl -X GET http://localhost:3000/api/v1/tasks/stats
 ```
 
 ## 🎯 Best Practices

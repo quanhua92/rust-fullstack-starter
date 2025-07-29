@@ -901,8 +901,8 @@ echo "✅ All chaos tests passed - ready for deployment"
 ./scripts/test-chaos.sh --verbose --difficulty 1
 
 # Check individual components
-curl -X GET http://localhost:3000/health
-curl -X GET http://localhost:3000/tasks/stats
+curl -X GET http://localhost:3000/api/v1/health
+curl -X GET http://localhost:3000/api/v1/tasks/stats
 
 # Admin CLI direct access (bypasses API authentication)
 cargo run -- admin task-stats --verbose

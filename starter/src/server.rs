@@ -61,7 +61,7 @@ async fn api_docs() -> impl IntoResponse {
                 
                 <div class="info">
                     <p><strong>API Version:</strong> 0.1.0</p>
-                    <p><strong>Base URL:</strong> <code>http://localhost:3000</code></p>
+                    <p><strong>Base URL:</strong> <code>http://localhost:3000/api/v1</code></p>
                 </div>
 
                 <h2>📋 Available Documentation</h2>
@@ -72,24 +72,24 @@ async fn api_docs() -> impl IntoResponse {
 
                 <h2>🚀 Quick Start</h2>
                 <h3>Test the API:</h3>
-                <pre>curl http://localhost:3000/health</pre>
+                <pre>curl http://localhost:3000/api/v1/health</pre>
                 
                 <h3>Register a new user:</h3>
-                <pre>curl -X POST http://localhost:3000/auth/register \
+                <pre>curl -X POST http://localhost:3000/api/v1/auth/register \
   -H "Content-Type: application/json" \
   -d '{"username": "testuser", "email": "test@example.com", "password": "password123"}'</pre>
 
                 <h3>Login:</h3>
-                <pre>curl -X POST http://localhost:3000/auth/login \
+                <pre>curl -X POST http://localhost:3000/api/v1/auth/login \
   -H "Content-Type: application/json" \
   -d '{"username_or_email": "testuser", "password": "password123"}'</pre>
 
                 <h2>📖 API Endpoints</h2>
                 <ul>
-                    <li><strong>Health:</strong> <code>GET /health</code> - Basic health check</li>
-                    <li><strong>Auth:</strong> <code>POST /auth/register</code>, <code>POST /auth/login</code></li>
-                    <li><strong>Users:</strong> <code>GET /users/{id}</code> - Get user by ID</li>
-                    <li><strong>Tasks:</strong> <code>POST /tasks</code>, <code>GET /tasks</code>, <code>GET /tasks/{id}</code>, <code>GET /tasks/dead-letter</code>, <code>POST /tasks/{id}/retry</code>, <code>DELETE /tasks/{id}</code></li>
+                    <li><strong>Health:</strong> <code>GET /api/v1/health</code> - Basic health check</li>
+                    <li><strong>Auth:</strong> <code>POST /api/v1/auth/register</code>, <code>POST /api/v1/auth/login</code></li>
+                    <li><strong>Users:</strong> <code>GET /api/v1/users/{id}</code> - Get user by ID</li>
+                    <li><strong>Tasks:</strong> <code>POST /api/v1/tasks</code>, <code>GET /api/v1/tasks</code>, <code>GET /api/v1/tasks/{id}</code>, <code>GET /api/v1/tasks/dead-letter</code>, <code>POST /api/v1/tasks/{id}/retry</code>, <code>DELETE /api/v1/tasks/{id}</code></li>
                 </ul>
 
                 <p><em>For complete API documentation, see the OpenAPI JSON schema above.</em></p>
@@ -113,10 +113,7 @@ pub fn create_router(state: AppState) -> Router {
         .route("/auth/register", post(auth_api::register))
         // Task type registration (public for workers)
         .route("/tasks/types", post(tasks_api::register_task_type))
-        .route("/tasks/types", get(tasks_api::list_task_types))
-        // OpenAPI documentation routes
-        .route("/api-docs", get(api_docs))
-        .route("/api-docs/openapi.json", get(openapi_json));
+        .route("/tasks/types", get(tasks_api::list_task_types));
 
     // Protected routes (authentication required)
     let protected_routes = Router::new()
@@ -193,7 +190,12 @@ pub async fn start_server(config: AppConfig, database: Database) -> Result<()> {
         config: config.clone(),
         database,
     };
-    let app = create_router(state);
+    let api_router = create_router(state);
+    let app = Router::new()
+        .nest("/api/v1", api_router)
+        // Keep documentation routes at root level
+        .route("/api-docs", get(api_docs))
+        .route("/api-docs/openapi.json", get(openapi_json));
 
     let bind_addr = format!("{}:{}", config.server.host, config.server.port);
     let listener = TcpListener::bind(&bind_addr)

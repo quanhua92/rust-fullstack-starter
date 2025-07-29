@@ -27,13 +27,13 @@ sequenceDiagram
     participant P as 🚀 Protected API
     
     Note over U,P: 🏁 Registration & Login
-    U->>+A: POST /auth/register<br/>{username, email, password}
+    U->>+A: POST /api/v1/auth/register<br/>{username, email, password}
     A->>A: 🔒 Hash password (Argon2)
     A->>+D: Store user with hashed password
     D-->>-A: ✅ User created
     A-->>-U: 📝 User profile (no password!)
     
-    U->>+A: POST /auth/login<br/>{username_or_email, password}
+    U->>+A: POST /api/v1/auth/login<br/>{username_or_email, password}
     A->>+D: Find user by username/email
     D-->>-A: 👤 User record
     A->>A: 🔍 Verify password vs hash
@@ -43,7 +43,7 @@ sequenceDiagram
     A-->>-U: 🎫 {session_token, user_profile}
     
     Note over U,P: 🔄 API Usage
-    U->>+P: GET /protected-endpoint<br/>Authorization: Bearer <token>
+    U->>+P: GET /api/v1/protected-endpoint<br/>Authorization: Bearer <token>
     P->>+A: Validate session token
     A->>+D: Find active session by token
     D-->>-A: 📋 Session + User data
@@ -52,7 +52,7 @@ sequenceDiagram
     P-->>-U: 📊 Protected data
     
     Note over U,P: 🚪 Logout
-    U->>+A: POST /auth/logout<br/>Authorization: Bearer <token>
+    U->>+A: POST /api/v1/auth/logout<br/>Authorization: Bearer <token>
     A->>+D: Mark session as inactive
     D-->>-A: ✅ Session deactivated
     A-->>-U: 👋 Logged out successfully
@@ -238,7 +238,7 @@ pub async fn auth_middleware<B>(
 
 ### User Registration
 ```bash
-curl -X POST http://localhost:3000/auth/register \
+curl -X POST http://localhost:3000/api/v1/auth/register \
   -H "Content-Type: application/json" \
   -d '{
     "username": "alice",
@@ -256,7 +256,7 @@ curl -X POST http://localhost:3000/auth/register \
 
 ### User Login
 ```bash
-curl -X POST http://localhost:3000/auth/login \
+curl -X POST http://localhost:3000/api/v1/auth/login \
   -H "Content-Type: application/json" \
   -d '{
     "username_or_email": "alice",
@@ -289,7 +289,7 @@ curl -X POST http://localhost:3000/auth/login \
 
 ### Protected Request
 ```bash
-curl -X GET http://localhost:3000/auth/me \
+curl -X GET http://localhost:3000/api/v1/auth/me \
   -H "Authorization: Bearer abc123...64chars"
 ```
 
@@ -303,7 +303,7 @@ curl -X GET http://localhost:3000/auth/me \
 
 ### Logout
 ```bash
-curl -X POST http://localhost:3000/auth/logout \
+curl -X POST http://localhost:3000/api/v1/auth/logout \
   -H "Authorization: Bearer abc123...64chars"
 ```
 
@@ -314,7 +314,7 @@ curl -X POST http://localhost:3000/auth/logout \
 
 **Logout All Devices:**
 ```bash
-curl -X POST http://localhost:3000/auth/logout-all \
+curl -X POST http://localhost:3000/api/v1/auth/logout-all \
   -H "Authorization: Bearer abc123...64chars"
 ```
 Marks all user's sessions as inactive.
@@ -404,18 +404,18 @@ The authentication test suite covers:
 ./scripts/server.sh 3000
 
 # 2. Register a user
-curl -X POST http://localhost:3000/auth/register \
+curl -X POST http://localhost:3000/api/v1/auth/register \
   -H "Content-Type: application/json" \
   -d '{"username":"alice","email":"alice@example.com","password":"secure123"}'
 
 # 3. Login and save token
-TOKEN=$(curl -s -X POST http://localhost:3000/auth/login \
+TOKEN=$(curl -s -X POST http://localhost:3000/api/v1/auth/login \
   -H "Content-Type: application/json" \
   -d '{"username_or_email":"alice","password":"secure123"}' \
   | jq -r '.data.session_token')
 
 # 4. Use token for authenticated requests
-curl -H "Authorization: Bearer $TOKEN" http://localhost:3000/auth/me
+curl -H "Authorization: Bearer $TOKEN" http://localhost:3000/api/v1/auth/me
 ```
 
 ## Common Questions
