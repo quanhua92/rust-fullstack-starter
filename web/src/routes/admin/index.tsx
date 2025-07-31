@@ -2,16 +2,39 @@ import { HealthStatusCards } from "@/components/admin/HealthStatusCards";
 import { RecentActivity } from "@/components/admin/RecentActivity";
 import { StatsCard } from "@/components/admin/StatsCard";
 import { AdminLayout } from "@/components/layout/AdminLayout";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+	Card,
+	CardContent,
+	CardDescription,
+	CardHeader,
+	CardTitle,
+} from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { apiClient } from "@/lib/api/client";
 import { useQuery } from "@tanstack/react-query";
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { AlertTriangle, CheckSquare, Clock, TrendingUp, BarChart3, Activity, Users, Zap } from "lucide-react";
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { useMemo } from 'react';
+import { Link, createFileRoute } from "@tanstack/react-router";
+import {
+	Activity,
+	AlertTriangle,
+	BarChart3,
+	CheckSquare,
+	Clock,
+	TrendingUp,
+	Users,
+	Zap,
+} from "lucide-react";
+import { useMemo } from "react";
+import {
+	Area,
+	AreaChart,
+	CartesianGrid,
+	ResponsiveContainer,
+	Tooltip,
+	XAxis,
+	YAxis,
+} from "recharts";
 
 function AdminDashboard() {
 	// Fetch task statistics with real-time updates
@@ -46,20 +69,21 @@ function AdminDashboard() {
 
 	// Generate trend data for mini charts (mock historical data)
 	const trendData = useMemo(() => {
-		const data = []
+		const data = [];
 		for (let i = 7; i >= 0; i--) {
-			const completed = Math.floor(Math.random() * 20) + (taskStats?.completed || 0) * 0.1
-			const failed = Math.floor(Math.random() * 5) + (taskStats?.failed || 0) * 0.1
+			const completed =
+				Math.floor(Math.random() * 20) + (taskStats?.completed || 0) * 0.1;
+			const failed =
+				Math.floor(Math.random() * 5) + (taskStats?.failed || 0) * 0.1;
 			data.push({
 				day: i,
 				completed,
 				failed,
-				total: completed + failed
-			})
+				total: completed + failed,
+			});
 		}
-		return data
+		return data;
 	}, [taskStats]);
-
 
 	return (
 		<AdminLayout>
@@ -132,7 +156,7 @@ function AdminDashboard() {
 							</Link>
 						</Button>
 					</div>
-					
+
 					<div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 						{/* Task Trends Mini Chart */}
 						<Card>
@@ -188,8 +212,14 @@ function AdminDashboard() {
 								<div className="space-y-4">
 									<div className="flex items-center justify-between">
 										<span className="text-sm font-medium">System Health:</span>
-										<Badge className={healthStatus?.status === 'healthy' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}>
-											{healthStatus?.status || 'Unknown'}
+										<Badge
+											className={
+												healthStatus?.status === "healthy"
+													? "bg-green-100 text-green-800"
+													: "bg-red-100 text-red-800"
+											}
+										>
+											{healthStatus?.status || "Unknown"}
 										</Badge>
 									</div>
 									<div className="flex items-center justify-between">
@@ -201,7 +231,13 @@ function AdminDashboard() {
 									<div className="flex items-center justify-between">
 										<span className="text-sm font-medium">Success Rate:</span>
 										<Badge className="bg-blue-100 text-blue-800">
-											{taskStats?.total ? Math.round(((taskStats.completed || 0) / taskStats.total) * 100) : 0}%
+											{taskStats?.total
+												? Math.round(
+														((taskStats.completed || 0) / taskStats.total) *
+															100,
+													)
+												: 0}
+											%
 										</Badge>
 									</div>
 									<div className="flex items-center justify-between">
@@ -232,19 +268,31 @@ function AdminDashboard() {
 								<span>Analytics Dashboard</span>
 							</Link>
 						</Button>
-						<Button asChild variant="outline" className="h-20 flex-col space-y-2">
+						<Button
+							asChild
+							variant="outline"
+							className="h-20 flex-col space-y-2"
+						>
 							<Link to="/admin/tasks">
 								<Activity className="h-6 w-6" />
 								<span>Live Task Monitor</span>
 							</Link>
 						</Button>
-						<Button asChild variant="outline" className="h-20 flex-col space-y-2">
+						<Button
+							asChild
+							variant="outline"
+							className="h-20 flex-col space-y-2"
+						>
 							<Link to="/admin/health">
 								<Zap className="h-6 w-6" />
 								<span>Health Trends</span>
 							</Link>
 						</Button>
-						<Button asChild variant="outline" className="h-20 flex-col space-y-2">
+						<Button
+							asChild
+							variant="outline"
+							className="h-20 flex-col space-y-2"
+						>
 							<Link to="/admin/users">
 								<Users className="h-6 w-6" />
 								<span>User Analytics</span>

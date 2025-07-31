@@ -1,8 +1,7 @@
 // Typed API client using generated OpenAPI types
 import type { components } from "@/types/api";
 
-const API_BASE_URL =
-	import.meta.env.VITE_API_BASE_URL || "/api/v1";
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "/api/v1";
 
 // Type helpers for cleaner usage
 export type ApiError = components["schemas"]["ErrorResponse"];
@@ -278,15 +277,17 @@ class ApiClient {
 		const currentUser = await this.getCurrentUser();
 		return {
 			data: {
-				users: currentUser.data ? [
-					{
-						...currentUser.data,
-						email_verified: false,
-						is_active: true,
-						created_at: new Date().toISOString(),
-						last_login_at: new Date().toISOString(),
-					}
-				] : [],
+				users: currentUser.data
+					? [
+							{
+								...currentUser.data,
+								email_verified: false,
+								is_active: true,
+								created_at: new Date().toISOString(),
+								last_login_at: new Date().toISOString(),
+							},
+						]
+					: [],
 			},
 		};
 	}
