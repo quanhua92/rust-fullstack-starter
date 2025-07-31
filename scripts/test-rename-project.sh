@@ -131,6 +131,20 @@ echo -e "${BLUE}Timeout:${NC} ${TIMEOUT}s"
 echo -e "${BLUE}Verbose:${NC} $VERBOSE"
 echo ""
 
+# Step 0: Stop Docker services in root before starting test
+echo -e "${BLUE}🐳 Step 0: Stopping Docker services in project root...${NC}"
+cd "$PROJECT_ROOT"
+verbose_log "Stopping Docker services to avoid conflicts during testing..."
+if command -v docker-compose >/dev/null 2>&1; then
+    docker-compose down --remove-orphans 2>/dev/null || true
+elif command -v docker >/dev/null 2>&1 && docker compose version >/dev/null 2>&1; then
+    docker compose down --remove-orphans 2>/dev/null || true
+else
+    echo -e "${YELLOW}⚠️  Docker Compose not found, skipping container shutdown${NC}"
+fi
+echo -e "${GREEN}✅ Docker services stopped${NC}"
+echo ""
+
 # Step 1: Setup test environment
 echo -e "${YELLOW}📁 Step 1/4: Setting up test environment...${NC}"
 step_start=$(date +%s)
@@ -365,6 +379,8 @@ step_duration=$(($(date +%s) - step_start))
 add_test_result "✅" "Quality checks" "${step_duration}s"
 echo -e "${GREEN}✅ Quality checks passed (${step_duration}s)${NC}"
 
+# The rename script already started Docker services, so no additional restart needed
+
 # Final results
 total_duration=$(($(date +%s) - START_TIME))
 
@@ -386,23 +402,89 @@ echo -e "   📁 Test directory: $TEST_DIR"
 echo -e "   ⏱️  Total time: ${total_duration}s"
 echo ""
 
-if [ "$KEEP_ON_FAILURE" = false ]; then
-    echo -e "${BLUE}🧹 Cleaning up test directory...${NC}"
-    cd "$TEST_DIR"
-    
-    # Stop any Docker services that might have been started during testing
-    verbose_log "Stopping Docker services from test directory..."
-    if command -v docker-compose >/dev/null 2>&1; then
-        docker-compose down --remove-orphans 2>/dev/null || true
-    elif command -v docker >/dev/null 2>&1 && docker compose version >/dev/null 2>&1; then
-        docker compose down --remove-orphans 2>/dev/null || true
+# Clean up test environment Docker containers (with temporary database)
+echo -e "${BLUE}🧹 Stopping Docker containers from test directory...${NC}"
+cd "$TEST_DIR"
+
+# Stop Docker services in test directory (these have temporary database names)
+verbose_log "Stopping Docker services with temporary database from test directory..."
+CLEANUP_SUCCESS=false
+if command -v docker-compose >/dev/null 2>&1; then
+    if docker-compose down --remove-orphans 2>/dev/null; then
+        CLEANUP_SUCCESS=true
+        verbose_log "Test containers with temporary database stopped with docker-compose"
     fi
-    
-    cd "$PROJECT_ROOT"
+elif command -v docker >/dev/null 2>&1 && docker compose version >/dev/null 2>&1; then
+    if docker compose down --remove-orphans 2>/dev/null; then
+        CLEANUP_SUCCESS=true
+        verbose_log "Test containers with temporary database stopped with docker compose"
+    fi
+fi
+
+if [ "$CLEANUP_SUCCESS" = true ]; then
+    verbose_log "Waiting 5 seconds for test containers to fully shut down..."
+    sleep 5
+    echo -e "${GREEN}✅ Test containers with temporary database stopped${NC}"
+else
+    verbose_log "No test containers found to clean up"
+fi
+
+# Return to project root and remove test directory
+cd "$PROJECT_ROOT"
+
+if [ "$KEEP_ON_FAILURE" = false ]; then
+    echo -e "${BLUE}🧹 Removing test directory...${NC}"
     rm -rf "$TEST_DIR"
     verbose_log "Test directory removed"
 else
     echo -e "${YELLOW}📁 Test directory preserved: $TEST_DIR${NC}"
+fi
+
+# Start main project Docker services (with main database)
+echo -e "${BLUE}🐳 Starting main project Docker services...${NC}"
+verbose_log "Starting Docker services with main project database in root directory..."
+DOCKER_START_SUCCESS=false
+
+# Method 1: Try docker-compose first
+if command -v docker-compose >/dev/null 2>&1; then
+    verbose_log "Trying docker-compose command..."
+    if docker-compose up -d 2>/dev/null; then
+        echo -e "${GREEN}✅ Main project Docker services started successfully with docker-compose${NC}"
+        DOCKER_START_SUCCESS=true
+    else
+        verbose_log "docker-compose failed, continuing to next method..."
+    fi
+fi
+
+# Method 2: Try docker compose if docker-compose failed or is not available
+if [ "$DOCKER_START_SUCCESS" = false ] && command -v docker >/dev/null 2>&1 && docker compose version >/dev/null 2>&1; then
+    verbose_log "Trying docker compose command..."
+    if docker compose up -d 2>/dev/null; then
+        echo -e "${GREEN}✅ Main project Docker services started successfully with docker compose${NC}"
+        DOCKER_START_SUCCESS=true
+    else
+        verbose_log "docker compose failed, continuing to next method..."
+    fi
+fi
+
+# Method 3: Force docker compose with verbose output if previous methods failed
+if [ "$DOCKER_START_SUCCESS" = false ] && command -v docker >/dev/null 2>&1; then
+    echo -e "${YELLOW}⚠️  Previous methods failed, forcing docker compose with verbose output...${NC}"
+    verbose_log "Forcing docker compose up -d with error output..."
+    if docker compose up -d; then
+        echo -e "${GREEN}✅ Main project Docker services started successfully with forced docker compose${NC}"
+        DOCKER_START_SUCCESS=true
+    else
+        echo -e "${RED}❌ All Docker Compose methods failed${NC}"
+        echo -e "${YELLOW}💡 Manual fix required: Run 'docker compose up -d' in project root${NC}"
+    fi
+fi
+
+# Final status
+if [ "$DOCKER_START_SUCCESS" = true ]; then
+    echo -e "${GREEN}✅ Main project database and services are now running${NC}"
+else
+    echo -e "${YELLOW}⚠️  Main project Docker services failed to start - you may need to run 'docker compose up -d' manually${NC}"
 fi
 
 echo -e "${GREEN}${BOLD}✨ Rename script validation completed successfully!${NC}"

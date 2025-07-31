@@ -220,32 +220,59 @@ done
 
 # 8. Restart Docker services with updated environment
 echo -e "${BLUE}🐳 Starting Docker services with updated environment...${NC}"
+DOCKER_START_SUCCESS=false
+
+# Method 1: Try docker-compose first
 if command -v docker-compose >/dev/null 2>&1; then
     if docker-compose up -d 2>/dev/null; then
-        echo -e "${GREEN}✅ Docker services started successfully${NC}"
-        echo -e "${BLUE}🗄️  Resetting database and running migrations...${NC}"
-        if ./scripts/reset-all.sh --reset-database >/dev/null 2>&1; then
-            echo -e "${GREEN}✅ Database reset and migrations completed${NC}"
-        else
-            echo -e "${YELLOW}⚠️  Database reset failed, but continuing...${NC}"
-        fi
-    else
-        echo -e "${YELLOW}⚠️  Could not start Docker services (check configuration)${NC}"
+        echo -e "${GREEN}✅ Docker services started successfully with docker-compose${NC}"
+        DOCKER_START_SUCCESS=true
     fi
-elif command -v docker >/dev/null 2>&1 && docker compose version >/dev/null 2>&1; then
+fi
+
+# Method 2: Try docker compose if docker-compose failed or is not available
+if [ "$DOCKER_START_SUCCESS" = false ] && command -v docker >/dev/null 2>&1 && docker compose version >/dev/null 2>&1; then
     if docker compose up -d 2>/dev/null; then
-        echo -e "${GREEN}✅ Docker services started successfully${NC}"
-        echo -e "${BLUE}🗄️  Resetting database and running migrations...${NC}"
-        if ./scripts/reset-all.sh --reset-database >/dev/null 2>&1; then
-            echo -e "${GREEN}✅ Database reset and migrations completed${NC}"
-        else
-            echo -e "${YELLOW}⚠️  Database reset failed, but continuing...${NC}"
-        fi
-    else
-        echo -e "${YELLOW}⚠️  Could not start Docker services (check configuration)${NC}"
+        echo -e "${GREEN}✅ Docker services started successfully with docker compose${NC}"
+        DOCKER_START_SUCCESS=true
     fi
+fi
+
+# Method 3: Force docker compose with verbose output if previous methods failed
+if [ "$DOCKER_START_SUCCESS" = false ] && command -v docker >/dev/null 2>&1; then
+    echo -e "${YELLOW}⚠️  Previous methods failed, forcing docker compose with verbose output...${NC}"
+    if docker compose up -d; then
+        echo -e "${GREEN}✅ Docker services started successfully with forced docker compose${NC}"
+        DOCKER_START_SUCCESS=true
+    else
+        echo -e "${RED}❌ All Docker Compose methods failed${NC}"
+        echo -e "${YELLOW}💡 Manual fix required: Run 'docker compose up -d' in project root${NC}"
+    fi
+fi
+
+# Final fallback message
+if [ "$DOCKER_START_SUCCESS" = false ]; then
+    echo -e "${YELLOW}⚠️  Docker Compose not available or all methods failed${NC}"
+    echo -e "${YELLOW}💡 Please manually run 'docker compose up -d' in the project root directory${NC}"
+    exit 1
+fi
+
+# Step 1: Reset database and run migrations
+echo -e "${BLUE}🗄️  Step 1: Reset database and run migrations...${NC}"
+if ./scripts/reset-all.sh --reset-database >/dev/null 2>&1; then
+    echo -e "${GREEN}✅ Database reset and migrations completed${NC}"
 else
-    echo -e "${YELLOW}⚠️  Docker Compose not found, skipping container startup${NC}"
+    echo -e "${RED}❌ Database reset failed${NC}"
+    exit 1
+fi
+
+# Step 2: Compile project
+echo -e "${BLUE}🔧 Step 2: Compiling project...${NC}"
+if cargo check --manifest-path "$NEW_NAME/Cargo.toml" >/dev/null 2>&1; then
+    echo -e "${GREEN}✅ Project compiled successfully${NC}"
+else
+    echo -e "${RED}❌ Compilation failed${NC}"
+    exit 1
 fi
 
 # 9. Verification
@@ -263,6 +290,8 @@ echo "  • Updated config.rs with_prefix to use $NEW_NAME_UPPER"
 echo "  • Updated default database values (starter_* → ${NEW_NAME}_*)"
 echo "  • Updated script configurations"
 echo "  • Restarted Docker services with new environment"
+echo "  • Reset database and ran migrations"
+echo "  • Compiled project successfully"
 echo "  • Created backup in $BACKUP_DIR/"
 echo ""
 echo -e "${GREEN}🎉 Your project '$NEW_NAME' is ready!${NC}"
