@@ -22,6 +22,7 @@ import {
 	Shield,
 	XCircle,
 } from "lucide-react";
+import { memo } from "react";
 
 import type { components } from "@/types/api";
 
@@ -78,7 +79,7 @@ const renderDetails = (details: unknown) => {
 	);
 };
 
-export function DependencyMonitor() {
+export const DependencyMonitor = memo(function DependencyMonitor() {
 	const detailedHealthQuery = useQuery({
 		queryKey: ["health", "detailed"],
 		queryFn: () => apiClient.getDetailedHealth(),
@@ -144,10 +145,10 @@ export function DependencyMonitor() {
 				? Object.values(detailedHealthQuery.data.data.checks)
 				: []),
 			...(getProbeChecks(readinessQuery.data?.data)
-				? Object.values(getProbeChecks(readinessQuery.data?.data)!)
+				? Object.values(getProbeChecks(readinessQuery.data?.data) || {})
 				: []),
 			...(getProbeChecks(startupQuery.data?.data)
-				? Object.values(getProbeChecks(startupQuery.data?.data)!)
+				? Object.values(getProbeChecks(startupQuery.data?.data) || {})
 				: []),
 		];
 
@@ -442,4 +443,4 @@ export function DependencyMonitor() {
 			</Card>
 		</div>
 	);
-}
+});

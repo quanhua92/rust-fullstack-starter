@@ -458,7 +458,7 @@ function HealthDashboard() {
 												Last checked:{" "}
 												{getProbeTimestamp(livenessQuery.data?.data)
 													? new Date(
-															getProbeTimestamp(livenessQuery.data?.data)!,
+															getProbeTimestamp(livenessQuery.data?.data) || '',
 														).toLocaleString()
 													: "Unknown"}
 											</div>
@@ -501,7 +501,7 @@ function HealthDashboard() {
 												Last checked:{" "}
 												{getProbeTimestamp(readinessQuery.data?.data)
 													? new Date(
-															getProbeTimestamp(readinessQuery.data?.data)!,
+															getProbeTimestamp(readinessQuery.data?.data) || '',
 														).toLocaleString()
 													: "Unknown"}
 											</div>
@@ -510,7 +510,7 @@ function HealthDashboard() {
 									{getProbeChecks(readinessQuery.data?.data) && <Separator />}
 									{getProbeChecks(readinessQuery.data?.data) &&
 										Object.entries(
-											getProbeChecks(readinessQuery.data?.data)!,
+											getProbeChecks(readinessQuery.data?.data) || {},
 										).map(([name, check]: [string, ComponentHealth]) => (
 											<div
 												key={name}
@@ -574,7 +574,7 @@ function HealthDashboard() {
 												Last checked:{" "}
 												{getProbeTimestamp(startupQuery.data?.data)
 													? new Date(
-															getProbeTimestamp(startupQuery.data?.data)!,
+															getProbeTimestamp(startupQuery.data?.data) || '',
 														).toLocaleString()
 													: "Unknown"}
 											</div>
@@ -583,7 +583,7 @@ function HealthDashboard() {
 									{getProbeChecks(startupQuery.data?.data) && <Separator />}
 									{getProbeChecks(startupQuery.data?.data) &&
 										Object.entries(
-											getProbeChecks(startupQuery.data?.data)!,
+											getProbeChecks(startupQuery.data?.data) || {},
 										).map(([name, check]: [string, ComponentHealth]) => (
 											<div
 												key={name}
