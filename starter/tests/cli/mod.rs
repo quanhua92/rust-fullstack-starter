@@ -1,6 +1,6 @@
 use crate::helpers::*;
+use starter::Database;
 use starter::cli::{AdminService, TaskTypeService};
-use starter::{AppConfig, Database};
 
 #[tokio::test]
 async fn test_admin_service_list_tasks() {
@@ -29,9 +29,10 @@ async fn test_admin_service_list_tasks() {
         )
         .await;
 
-    // Test admin service
-    let config = AppConfig::load().unwrap();
-    let database = Database::connect(&config).await.unwrap();
+    // Test admin service - use the test app's database instead of creating a new connection
+    let database = Database {
+        pool: app.db_pool.clone(),
+    };
     let admin_service = AdminService::new(database);
 
     // Test listing tasks
@@ -67,9 +68,10 @@ async fn test_admin_service_task_stats() {
         )
         .await;
 
-    // Test admin service
-    let config = AppConfig::load().unwrap();
-    let database = Database::connect(&config).await.unwrap();
+    // Test admin service - use the test app's database instead of creating a new connection
+    let database = Database {
+        pool: app.db_pool.clone(),
+    };
     let admin_service = AdminService::new(database);
 
     // Test overall stats
@@ -105,9 +107,10 @@ async fn test_admin_service_clear_completed_dry_run() {
         )
         .await;
 
-    // Test admin service
-    let config = AppConfig::load().unwrap();
-    let database = Database::connect(&config).await.unwrap();
+    // Test admin service - use the test app's database instead of creating a new connection
+    let database = Database {
+        pool: app.db_pool.clone(),
+    };
     let admin_service = AdminService::new(database);
 
     // Test dry run - should not actually delete anything

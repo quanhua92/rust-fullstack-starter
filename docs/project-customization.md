@@ -17,6 +17,7 @@ The easiest way to customize the starter is using the automated rename script:
 
 The script automatically updates:
 
+- **Docker services**: Stops containers before changes, restarts with new environment, resets database
 - **Directory**: `starter/` → `my_awesome_project/`
 - **Package name**: In `Cargo.toml` files
 - **Binary name**: `cargo run --bin starter` → `cargo run --bin my_awesome_project`
@@ -54,6 +55,7 @@ The rename script includes safety measures:
 
 # Output shows progress:
 # 🚀 Renaming project from 'starter' to 'my_blog_api'...
+# 🐳 Stopping Docker services (environment will change)...
 # 📦 Creating backup in backup_20240127_143022/
 # 📁 Renaming starter/ directory to my_blog_api/
 # 📝 Updating root Cargo.toml workspace members
@@ -62,6 +64,10 @@ The rename script includes safety measures:
 # 🔄 Updating environment variable prefixes...
 # 🔄 Updating script references...
 # 🔄 Updating log file references...
+# 🐳 Starting Docker services with updated environment...
+# ✅ Docker services started successfully
+# 🗄️  Resetting database and running migrations...
+# ✅ Database reset and migrations completed
 # ✅ Renaming complete!
 
 # Test the renamed project
@@ -74,7 +80,7 @@ cargo run --bin my_blog_api -- --help
 ### After Renaming
 
 1. **Update Project Description**: Edit README.md with your project details
-2. **Update Environment Variables**: The script renames environment variable prefixes, so update your `.env` file:
+2. **Update Environment Variables**: The script automatically renames environment variable prefixes and restarts Docker services:
    ```bash
    # Before renaming (STARTER__ prefix)
    STARTER__SERVER__PORT=3000
@@ -84,7 +90,8 @@ cargo run --bin my_blog_api -- --help
    MY_BLOG_API__SERVER__PORT=3000
    MY_BLOG_API__DATABASE__USER=my_blog_api_user
    ```
-3. **Test Everything**: Run tests and start services
+   **Note**: Docker containers are automatically restarted with the new environment variables and database is reset with migrations
+3. **Test Everything**: Run tests and start services (database should already be running with updated schema)
 4. **Commit Changes**: Initialize or update your git repository
 
 ```bash
@@ -255,6 +262,43 @@ grep -r "starter" my_project/src/
 # Run tests to identify issues
 cargo nextest run
 # Update test helper imports if needed
+```
+
+**Problem**: Docker services not starting after rename
+```bash
+# Check Docker Compose status
+docker compose ps
+
+# View container logs
+docker compose logs
+
+# Manually restart services if needed
+docker compose down && docker compose up -d
+```
+
+**Problem**: Database connection errors after rename
+```bash
+# Verify environment variables are updated
+grep -r "MY_PROJECT" .env docker-compose.yaml
+
+# Check database is running with new credentials
+docker compose logs postgres
+
+# Manually reset database if needed
+./scripts/reset-all.sh --reset-database
+```
+
+**Problem**: SQLx prepare errors during quality checks
+```bash
+# The rename script automatically handles this, but if you encounter issues:
+# 1. Restart Docker services
+docker compose down && docker compose up -d
+
+# 2. Reset database and run migrations
+./scripts/reset-all.sh --reset-database
+
+# 3. Retry quality checks
+./scripts/check.sh
 ```
 
 ### Manual Customization Issues

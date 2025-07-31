@@ -41,8 +41,56 @@ if ! SQLX_OFFLINE=true cargo check --manifest-path starter/Cargo.toml --all --al
         echo -e "${GREEN}✅ Cargo check passed after cache update${NC}"
     else
         cd ..
-        echo -e "${RED}❌ Could not regenerate SQLx cache and cargo check failed!${NC}"
-        exit 1
+        echo -e "${YELLOW}⚠️  SQLx prepare failed, attempting to restart Docker services...${NC}"
+        
+        # Try to restart Docker services
+        if command -v docker-compose >/dev/null 2>&1; then
+            if docker-compose up -d 2>/dev/null; then
+                echo -e "${GREEN}✅ Docker services restarted successfully${NC}"
+                echo -e "${BLUE}🗄️  Resetting database and running migrations...${NC}"
+                if ./scripts/reset-all.sh --reset-database >/dev/null 2>&1; then
+                    echo -e "${GREEN}✅ Database reset and migrations completed${NC}"
+                    DOCKER_RESTARTED=true
+                else
+                    echo -e "${YELLOW}⚠️  Database reset failed, but continuing...${NC}"
+                    DOCKER_RESTARTED=true
+                fi
+            fi
+        elif command -v docker >/dev/null 2>&1 && docker compose version >/dev/null 2>&1; then
+            if docker compose up -d 2>/dev/null; then
+                echo -e "${GREEN}✅ Docker services restarted successfully${NC}"
+                echo -e "${BLUE}🗄️  Resetting database and running migrations...${NC}"
+                if ./scripts/reset-all.sh --reset-database >/dev/null 2>&1; then
+                    echo -e "${GREEN}✅ Database reset and migrations completed${NC}"
+                    DOCKER_RESTARTED=true
+                else
+                    echo -e "${YELLOW}⚠️  Database reset failed, but continuing...${NC}"
+                    DOCKER_RESTARTED=true
+                fi
+            fi
+        fi
+        
+        # If Docker was restarted, try SQLx prepare again
+        if [ "${DOCKER_RESTARTED:-false}" = true ]; then
+            echo -e "${BLUE}🔄 Retrying SQLx prepare after Docker restart...${NC}"
+            cd starter
+            if cargo sqlx prepare --all -- --all-targets 2>/dev/null; then
+                cd ..
+                echo -e "${BLUE}🔄 Retrying cargo check with updated cache...${NC}"
+                if ! SQLX_OFFLINE=true cargo check --manifest-path starter/Cargo.toml --all --all-targets --all-features; then
+                    echo -e "${RED}❌ Cargo check failed even after Docker restart and SQLx cache update!${NC}"
+                    exit 1
+                fi
+                echo -e "${GREEN}✅ Cargo check passed after Docker restart and cache update${NC}"
+            else
+                cd ..
+                echo -e "${RED}❌ SQLx prepare still failed after Docker restart!${NC}"
+                exit 1
+            fi
+        else
+            echo -e "${RED}❌ Could not regenerate SQLx cache and cargo check failed!${NC}"
+            exit 1
+        fi
     fi
 else
     echo -e "${GREEN}✅ Cargo check passed${NC}"

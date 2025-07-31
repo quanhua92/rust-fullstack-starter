@@ -349,12 +349,8 @@ step_start=$(date +%s)
 
 verbose_log "Running comprehensive quality check suite..."
 
-# Run check.sh with timeout
-if [ "$VERBOSE" = true ]; then
-    timeout "${TIMEOUT}s" ./scripts/check.sh
-else
-    timeout "${TIMEOUT}s" ./scripts/check.sh > /dev/null 2>&1
-fi
+# Run check.sh with timeout - always show full output
+timeout "${TIMEOUT}s" ./scripts/check.sh
 
 check_exit_code=$?
 if [ $check_exit_code -ne 0 ]; then
@@ -392,6 +388,16 @@ echo ""
 
 if [ "$KEEP_ON_FAILURE" = false ]; then
     echo -e "${BLUE}🧹 Cleaning up test directory...${NC}"
+    cd "$TEST_DIR"
+    
+    # Stop any Docker services that might have been started during testing
+    verbose_log "Stopping Docker services from test directory..."
+    if command -v docker-compose >/dev/null 2>&1; then
+        docker-compose down --remove-orphans 2>/dev/null || true
+    elif command -v docker >/dev/null 2>&1 && docker compose version >/dev/null 2>&1; then
+        docker compose down --remove-orphans 2>/dev/null || true
+    fi
+    
     cd "$PROJECT_ROOT"
     rm -rf "$TEST_DIR"
     verbose_log "Test directory removed"

@@ -67,6 +67,16 @@ fi
 echo -e "${BLUE}🚀 Renaming project from 'starter' to '$NEW_NAME'...${NC}"
 echo ""
 
+# 0. Stop any running Docker services (environment variables will change)
+echo -e "${BLUE}🐳 Stopping Docker services (environment will change)...${NC}"
+if command -v docker-compose >/dev/null 2>&1; then
+    docker-compose down --remove-orphans 2>/dev/null || true
+elif command -v docker >/dev/null 2>&1 && docker compose version >/dev/null 2>&1; then
+    docker compose down --remove-orphans 2>/dev/null || true
+else
+    echo -e "${YELLOW}⚠️  Docker Compose not found, skipping container shutdown${NC}"
+fi
+
 # Create backup timestamp
 BACKUP_TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 BACKUP_DIR="backup_${BACKUP_TIMESTAMP}"
@@ -208,11 +218,42 @@ for script in scripts/*.sh; do
     fi
 done
 
-# 8. Verification
+# 8. Restart Docker services with updated environment
+echo -e "${BLUE}🐳 Starting Docker services with updated environment...${NC}"
+if command -v docker-compose >/dev/null 2>&1; then
+    if docker-compose up -d 2>/dev/null; then
+        echo -e "${GREEN}✅ Docker services started successfully${NC}"
+        echo -e "${BLUE}🗄️  Resetting database and running migrations...${NC}"
+        if ./scripts/reset-all.sh --reset-database >/dev/null 2>&1; then
+            echo -e "${GREEN}✅ Database reset and migrations completed${NC}"
+        else
+            echo -e "${YELLOW}⚠️  Database reset failed, but continuing...${NC}"
+        fi
+    else
+        echo -e "${YELLOW}⚠️  Could not start Docker services (check configuration)${NC}"
+    fi
+elif command -v docker >/dev/null 2>&1 && docker compose version >/dev/null 2>&1; then
+    if docker compose up -d 2>/dev/null; then
+        echo -e "${GREEN}✅ Docker services started successfully${NC}"
+        echo -e "${BLUE}🗄️  Resetting database and running migrations...${NC}"
+        if ./scripts/reset-all.sh --reset-database >/dev/null 2>&1; then
+            echo -e "${GREEN}✅ Database reset and migrations completed${NC}"
+        else
+            echo -e "${YELLOW}⚠️  Database reset failed, but continuing...${NC}"
+        fi
+    else
+        echo -e "${YELLOW}⚠️  Could not start Docker services (check configuration)${NC}"
+    fi
+else
+    echo -e "${YELLOW}⚠️  Docker Compose not found, skipping container startup${NC}"
+fi
+
+# 9. Verification
 echo ""
 echo -e "${GREEN}✅ Renaming complete!${NC}"
 echo ""
 echo -e "${YELLOW}📋 Summary of changes:${NC}"
+echo "  • Stopped Docker services before environment changes"
 echo "  • Renamed starter/ → $NEW_NAME/"
 echo "  • Updated Cargo.toml workspace members"
 echo "  • Updated package name in $NEW_NAME/Cargo.toml"
@@ -221,6 +262,7 @@ echo "  • Updated environment variable prefixes (STARTER → $NEW_NAME_UPPER)"
 echo "  • Updated config.rs with_prefix to use $NEW_NAME_UPPER"
 echo "  • Updated default database values (starter_* → ${NEW_NAME}_*)"
 echo "  • Updated script configurations"
+echo "  • Restarted Docker services with new environment"
 echo "  • Created backup in $BACKUP_DIR/"
 echo ""
 echo -e "${GREEN}🎉 Your project '$NEW_NAME' is ready!${NC}"

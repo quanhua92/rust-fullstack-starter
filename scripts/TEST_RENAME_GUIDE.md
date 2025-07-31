@@ -6,9 +6,11 @@ This guide describes the automated testing process for the `rename-project.sh` s
 
 The rename project testing framework validates that:
 1. The rename script correctly transforms all references from `starter` to a new project name
-2. All quality checks pass after renaming (compilation, formatting, linting, tests)
-3. The complex chaos testing framework continues to work with renamed containers and references
-4. Docker-related patterns are properly updated
+2. Docker services are properly managed (stopped, restarted) during the rename process
+3. Database is reset and migrations are applied with new credentials
+4. All quality checks pass after renaming (compilation, formatting, linting, tests)
+5. The complex chaos testing framework continues to work with renamed containers and references
+6. Environment variable transformations work correctly (STARTER__ → NEW_NAME__)
 
 ## Test Script Usage
 
@@ -44,7 +46,11 @@ The rename project testing framework validates that:
 
 ### 2. Rename Process Testing
 - Runs `rename-project.sh` with verbose logging
+- Validates Docker service shutdown before changes
 - Validates all file transformations occur correctly
+- Verifies environment variable prefix updates (STARTER__ → NEW_NAME__)
+- Validates Docker service restart with new environment
+- Validates database reset and migration execution
 - Checks that backup is created
 - Verifies directory renaming
 
@@ -73,26 +79,41 @@ The test validates that these patterns are correctly transformed:
 - `starter-server` → `PROJECT_NAME-server`
 - `starter-worker` → `PROJECT_NAME-worker`
 
+#### Environment Variable Patterns
+- `STARTER__SERVER__PORT` → `PROJECT_NAME__SERVER__PORT`
+- `STARTER__DATABASE__USER` → `PROJECT_NAME__DATABASE__USER`
+- `with_prefix("STARTER")` → `with_prefix("PROJECT_NAME")`
+- `starter_user` → `PROJECT_NAME_user`
+- `starter_db` → `PROJECT_NAME_db`
+
 ### 4. Quality Validation
 After renaming, the test runs the comprehensive quality check suite:
 
-- **Compilation Check**: `cargo check --all-targets --all-features`
+- **Compilation Check**: `cargo check --all-targets --all-features` (with SQLx offline mode and fallback)
 - **Code Formatting**: `cargo fmt --check` (with auto-fix if needed)
 - **Linting**: `cargo clippy -- -D warnings`
-- **SQLx Validation**: Query cache validation
+- **SQLx Validation**: Query cache validation with automatic database restart if needed
 - **Unit Tests**: Library tests
 - **Integration Tests**: Full test suite with `cargo nextest run`
 - **OpenAPI Export**: Documentation generation
 - **Code Quality**: Additional checks for TODOs, debug prints, etc.
 
+**New SQLx Fallback Testing**: The quality checks now include testing of the multi-level fallback system:
+1. SQLX_OFFLINE=true cargo check (fast path)
+2. If fails: cargo sqlx prepare (regenerate cache)
+3. If still fails: Docker service restart + database reset + retry
+
 ## Expected Results
 
 ### Success Criteria
 ✅ All files copied correctly  
+✅ Docker services stopped before environment changes
 ✅ Rename script completes without errors  
-✅ All pattern replacements successful  
+✅ All pattern replacements successful (including environment variables)
+✅ Docker services restarted with new environment
+✅ Database reset and migrations completed successfully
 ✅ Backup created properly  
-✅ Compilation succeeds  
+✅ Compilation succeeds (with SQLx fallback if needed)
 ✅ All tests pass (typically 70+ integration tests)  
 ✅ Code formatting validated  
 ✅ Linting passes  
@@ -100,9 +121,11 @@ After renaming, the test runs the comprehensive quality check suite:
 
 ### Timing Expectations
 - **Setup Phase**: ~5-10 seconds
-- **Rename Phase**: ~10-20 seconds  
+- **Rename Phase**: ~10-30 seconds (includes Docker restart and database reset)
 - **Quality Checks**: ~300-600 seconds (5-10 minutes for full test suite)
 - **Total Runtime**: ~350-650 seconds (6-11 minutes)
+
+**Note**: Docker service management and database reset add ~10-20 seconds to the rename phase but ensure reliable quality checks.
 
 ## Test Scenarios
 
@@ -139,12 +162,20 @@ Usually indicates pattern replacement issues. Check:
 - Cargo.toml workspace members
 - Import statements in Rust files
 - Binary name references
+- Environment variable prefix mismatches
+
+#### SQLx/Database Issues
+New automatic handling, but may still occur:
+- **SQLx prepare failures**: Should auto-restart Docker and reset database
+- **Database connection errors**: Check Docker service status
+- **Environment variable mismatches**: Verify STARTER__ → NEW_NAME__ transformation
 
 #### Test Failures
 Look for:
 - Missing file transformations
 - Incorrect pattern replacements
-- Database connection issues during testing
+- Docker service startup failures
+- Database migration failures
 
 ### Debug Mode
 ```bash
@@ -184,6 +215,9 @@ When quality checks fail due to missed patterns in the rename script:
 - `starter::config::` → `PROJECT_NAME::config::`
 - `starter::types::` → `PROJECT_NAME::types::`
 - `starter::AppConfig` → `PROJECT_NAME::AppConfig`
+- `STARTER__` → `PROJECT_NAME__` (environment variable prefixes)
+- `with_prefix("STARTER")` → `with_prefix("PROJECT_NAME")` (config prefixes)
+- `starter_user` → `PROJECT_NAME_user` (database defaults)
 
 This iterative approach ensures the rename script becomes more robust with each test failure, eventually handling all edge cases in the codebase.
 
@@ -283,12 +317,15 @@ After running the test, verify:
 
 - [ ] No compilation errors
 - [ ] All tests pass
+- [ ] Docker services properly stopped and restarted
+- [ ] Database reset and migrations completed
+- [ ] Environment variables transformed (STARTER__ → NEW_NAME__)
 - [ ] Docker container names updated correctly
 - [ ] Chaos testing scripts reference new names
 - [ ] API documentation generated successfully
 - [ ] No remaining references to 'starter' in critical files
 - [ ] Backup created and contains original files
-- [ ] Quality check script passes completely
+- [ ] Quality check script passes completely (including SQLx fallback)
 
 ## Performance Notes
 
