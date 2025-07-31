@@ -190,7 +190,7 @@ echo -e "${YELLOW}🌊 Creating delay tasks...${NC}"
 for i in $(seq 1 "$TASK_COUNT"); do
     TASK_DATA=$(get_delay_task_payload "$i")
     
-    RESPONSE=$(curl -s -w "HTTP_STATUS:%{http_code}" -X POST "$BASE_URL/tasks" \
+    RESPONSE=$(curl -s -w "HTTP_STATUS:%{http_code}" -X POST "$BASE_URL/api/v1/tasks" \
         -H "Content-Type: application/json" \
         -H "Authorization: Bearer $AUTH_TOKEN" \
         -d "$TASK_DATA")
@@ -273,7 +273,7 @@ while [ $COMPLETED_TASKS -lt $CREATED ] && [ $(date +%s) -lt $DEADLINE_TIME ]; d
             for diag_i in $(seq 1 3); do
                 if [ $diag_i -le ${#TASK_IDS[@]} ]; then
                     DIAG_TASK_ID="${TASK_IDS[$((diag_i-1))]}"
-                    DIAG_RESPONSE=$(curl -s "$BASE_URL/tasks/$DIAG_TASK_ID" \
+                    DIAG_RESPONSE=$(curl -s "$BASE_URL/api/v1/tasks/$DIAG_TASK_ID" \
                         -H "Authorization: Bearer $AUTH_TOKEN" 2>/dev/null || echo "")
                     
                     if [ -n "$DIAG_RESPONSE" ]; then
@@ -297,7 +297,7 @@ while [ $COMPLETED_TASKS -lt $CREATED ] && [ $(date +%s) -lt $DEADLINE_TIME ]; d
             
             # Check if workers are processing tasks at all
             echo -e "   ${YELLOW}🔍${NC} Checking overall task queue status via API..."
-            QUEUE_RESPONSE=$(curl -s "$BASE_URL/tasks?limit=10" \
+            QUEUE_RESPONSE=$(curl -s "$BASE_URL/api/v1/tasks?limit=10" \
                 -H "Authorization: Bearer $AUTH_TOKEN" 2>/dev/null || echo "")
             if [ -n "$QUEUE_RESPONSE" ]; then
                 QUEUE_COUNT=$(echo "$QUEUE_RESPONSE" | python3 -c "import json,sys; print(len(json.load(sys.stdin)['data']))" 2>/dev/null || echo "0")

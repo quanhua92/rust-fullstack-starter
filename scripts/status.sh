@@ -75,7 +75,7 @@ echo ""
 echo "🔗 Connectivity Tests:"
 for PORT in 3000 8080; do
     if lsof -ti:$PORT > /dev/null 2>&1; then
-        if curl -s "http://localhost:$PORT/health" > /dev/null 2>&1; then
+        if curl -s "http://localhost:$PORT/api/v1/health" > /dev/null 2>&1; then
             echo "   Port $PORT: ✅ Health endpoint responding"
         else
             echo "   Port $PORT: ❌ Port open but health endpoint not responding"

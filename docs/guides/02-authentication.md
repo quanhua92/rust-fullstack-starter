@@ -2,14 +2,145 @@
 
 *This guide explains how user authentication works, from concepts to implementation to usage.*
 
-## Why Session-Based Authentication?
+## ⚡ TL;DR - Working Authentication (5 minutes)
 
-This starter uses **session-based authentication** because it's:
-- **Simple to understand**: No complex JWT signing/verification
-- **Secure by design**: Server controls all session state
-- **Database-centric**: Fits our data-first architecture
-- **Easy to revoke**: Delete session = user logged out
-- **Stateless-friendly**: Sessions stored in database, not memory
+**Want working auth right now?** Here's the copy-paste version:
+
+### Backend: Add Protected Endpoint
+```rust
+// Add to your handler
+use crate::auth::middleware::require_auth;
+
+pub async fn my_protected_endpoint(
+    Extension(user): Extension<User>, // User is already authenticated
+    State(state): State<AppState>,
+) -> Result<Json<ApiResponse<MyData>>, Error> {
+    // Your protected logic here
+    let data = get_user_data(&user).await?;
+    Ok(Json(ApiResponse::success(data)))
+}
+
+// Add to router with auth middleware
+Router::new()
+    .route("/my-endpoint", get(my_protected_endpoint))
+    .layer(middleware::from_fn_with_state(state.clone(), require_auth))
+```
+
+### Frontend: Use Authentication
+```typescript
+import { useAuth } from '@/lib/auth/context';
+
+function LoginForm() {
+  const { login } = useAuth();
+  
+  const handleLogin = async (credentials) => {
+    try {
+      await login(credentials); // Handles token storage automatically
+      // User is now logged in, redirects handled by AuthProvider
+    } catch (error) {
+      console.error('Login failed:', error.message);
+    }
+  };
+
+  return (
+    <form onSubmit={(e) => {
+      e.preventDefault();
+      handleLogin({ username: 'testuser', password: 'password' });
+    }}>
+      <button type="submit">Login</button>
+    </form>
+  );
+}
+
+function ProtectedComponent() {
+  const { user, authenticated } = useAuth();
+  
+  if (!authenticated) return <div>Please log in</div>;
+  
+  return <div>Welcome, {user.username}!</div>;
+}
+```
+
+### Test It Works
+```bash
+# Register new user
+curl -X POST http://localhost:3000/api/v1/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{"username":"testuser","email":"test@example.com","password":"SecurePass123!"}'
+
+# Login and get token
+curl -X POST http://localhost:3000/api/v1/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"username":"testuser","password":"SecurePass123!"}'
+```
+
+**That's it!** You now have working authentication. Want to understand why it works this way? Keep reading ↓
+
+---
+
+## 🤔 Why This Authentication Approach? (First Principles)
+
+### The Fundamental Problem: Identity Verification
+
+**What authentication actually solves**:
+- How do we verify someone is who they claim to be?
+- How do we remember that verification across multiple requests?
+- How do we revoke access when needed?
+- How do we balance security with usability?
+
+### Authentication Approach Comparison
+
+| Approach | How It Works | Pros | Cons | When to Use |
+|----------|--------------|------|------|-------------|
+| **Basic Auth** | Username/password in every request | Simple, stateless | Credentials in every request | Internal APIs, development |
+| **JWT Tokens** | Signed tokens with user data | Stateless, scalable | Hard to revoke, token size | Microservices, mobile apps |
+| **OAuth 2.0** | Third-party identity providers | User doesn't create passwords | Complex flow, external dependency | Social login, enterprise SSO |
+| **API Keys** | Long-lived secret tokens | Simple for machines | Hard to rotate, no user context | Machine-to-machine |
+| **Session-Based** ⭐ | Server-stored session tokens | Easy to understand/revoke | Requires database lookup | Web applications, learning |
+
+### Why Session-Based for This Starter?
+
+**Our First Principles Decision**:
+
+**Principle 1: Understandability**
+- Clear flow: password → hash verification → session creation → token validation
+- No cryptographic complexity to distract from core concepts
+- Easy to debug with database queries
+
+**Principle 2: Security by Default**
+- Server controls all session state (can revoke instantly)
+- Passwords never stored in plaintext (Argon2 hashing)
+- Session expiration handled automatically
+- No client-side secret storage complexity
+
+**Principle 3: Real-World Patterns**
+- Similar to how GitHub, GitLab, many web apps work
+- Database-first approach matches our architecture
+- Scales well for typical web applications
+
+**Principle 4: Learning Value**
+- Shows proper password hashing techniques
+- Demonstrates session lifecycle management
+- Teaches authorization patterns (roles, permissions)
+
+### 🧠 Mental Model: Authentication as State Machine
+
+```mermaid
+stateDiagram-v2
+    [*] --> Anonymous
+    Anonymous --> Authenticating: Submit credentials
+    Authenticating --> Authenticated: Valid credentials
+    Authenticating --> Anonymous: Invalid credentials
+    Authenticated --> Authenticated: Make authorized requests
+    Authenticated --> Anonymous: Logout / Session expires
+    Authenticated --> Anonymous: Session revoked
+    
+    note right of Anonymous: No user context
+    note right of Authenticating: Temporary state
+    note right of Authenticated: User context available
+```
+
+**Key Insight**: Authentication is about transitioning from "unknown" to "known" user state and maintaining that state across requests.
 
 ## Core Concepts
 
@@ -27,13 +158,13 @@ sequenceDiagram
     participant P as 🚀 Protected API
     
     Note over U,P: 🏁 Registration & Login
-    U->>+A: POST /auth/register<br/>{username, email, password}
+    U->>+A: POST /api/v1/auth/register<br/>{username, email, password}
     A->>A: 🔒 Hash password (Argon2)
     A->>+D: Store user with hashed password
     D-->>-A: ✅ User created
     A-->>-U: 📝 User profile (no password!)
     
-    U->>+A: POST /auth/login<br/>{username_or_email, password}
+    U->>+A: POST /api/v1/auth/login<br/>{username_or_email, password}
     A->>+D: Find user by username/email
     D-->>-A: 👤 User record
     A->>A: 🔍 Verify password vs hash
@@ -43,7 +174,7 @@ sequenceDiagram
     A-->>-U: 🎫 {session_token, user_profile}
     
     Note over U,P: 🔄 API Usage
-    U->>+P: GET /protected-endpoint<br/>Authorization: Bearer <token>
+    U->>+P: GET /api/v1/protected-endpoint<br/>Authorization: Bearer <token>
     P->>+A: Validate session token
     A->>+D: Find active session by token
     D-->>-A: 📋 Session + User data
@@ -52,7 +183,7 @@ sequenceDiagram
     P-->>-U: 📊 Protected data
     
     Note over U,P: 🚪 Logout
-    U->>+A: POST /auth/logout<br/>Authorization: Bearer <token>
+    U->>+A: POST /api/v1/auth/logout<br/>Authorization: Bearer <token>
     A->>+D: Mark session as inactive
     D-->>-A: ✅ Session deactivated
     A-->>-U: 👋 Logged out successfully
@@ -238,7 +369,7 @@ pub async fn auth_middleware<B>(
 
 ### User Registration
 ```bash
-curl -X POST http://localhost:3000/auth/register \
+curl -X POST http://localhost:3000/api/v1/auth/register \
   -H "Content-Type: application/json" \
   -d '{
     "username": "alice",
@@ -256,7 +387,7 @@ curl -X POST http://localhost:3000/auth/register \
 
 ### User Login
 ```bash
-curl -X POST http://localhost:3000/auth/login \
+curl -X POST http://localhost:3000/api/v1/auth/login \
   -H "Content-Type: application/json" \
   -d '{
     "username_or_email": "alice",
@@ -289,7 +420,7 @@ curl -X POST http://localhost:3000/auth/login \
 
 ### Protected Request
 ```bash
-curl -X GET http://localhost:3000/auth/me \
+curl -X GET http://localhost:3000/api/v1/auth/me \
   -H "Authorization: Bearer abc123...64chars"
 ```
 
@@ -303,7 +434,7 @@ curl -X GET http://localhost:3000/auth/me \
 
 ### Logout
 ```bash
-curl -X POST http://localhost:3000/auth/logout \
+curl -X POST http://localhost:3000/api/v1/auth/logout \
   -H "Authorization: Bearer abc123...64chars"
 ```
 
@@ -314,7 +445,7 @@ curl -X POST http://localhost:3000/auth/logout \
 
 **Logout All Devices:**
 ```bash
-curl -X POST http://localhost:3000/auth/logout-all \
+curl -X POST http://localhost:3000/api/v1/auth/logout-all \
   -H "Authorization: Bearer abc123...64chars"
 ```
 Marks all user's sessions as inactive.
@@ -404,18 +535,18 @@ The authentication test suite covers:
 ./scripts/server.sh 3000
 
 # 2. Register a user
-curl -X POST http://localhost:3000/auth/register \
+curl -X POST http://localhost:3000/api/v1/auth/register \
   -H "Content-Type: application/json" \
   -d '{"username":"alice","email":"alice@example.com","password":"secure123"}'
 
 # 3. Login and save token
-TOKEN=$(curl -s -X POST http://localhost:3000/auth/login \
+TOKEN=$(curl -s -X POST http://localhost:3000/api/v1/auth/login \
   -H "Content-Type: application/json" \
   -d '{"username_or_email":"alice","password":"secure123"}' \
   | jq -r '.data.session_token')
 
 # 4. Use token for authenticated requests
-curl -H "Authorization: Bearer $TOKEN" http://localhost:3000/auth/me
+curl -H "Authorization: Bearer $TOKEN" http://localhost:3000/api/v1/auth/me
 ```
 
 ## Common Questions

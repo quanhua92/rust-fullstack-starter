@@ -2,11 +2,93 @@
 
 *This guide introduces chaos engineering principles and explains how to use the comprehensive chaos testing framework to validate system resilience.*
 
-## Overview
+## 🤔 Why Chaos Engineering? (First Principles)
 
-Chaos engineering is the discipline of experimenting on a system to build confidence in its capability to withstand turbulent conditions in production. This starter includes a complete chaos testing framework that demonstrates how to systematically test failure scenarios while maintaining system reliability.
+### The Fundamental Problem: Unknown Failure Modes
 
-**Important**: This framework is designed for learning and development environments. For production chaos engineering, adapt these patterns with appropriate safeguards and monitoring.
+**What we think we know about our systems**:
+- Our code handles errors properly
+- Dependencies are reliable
+- Infrastructure is stable
+- Users behave predictably
+
+**What actually happens in production**:
+- Networks partition at the worst possible moment
+- Databases become temporarily unavailable
+- Memory leaks cause gradual degradation
+- Load patterns expose race conditions
+- Third-party APIs fail in unexpected ways
+
+**The gap**: We test for known problems, but production creates unknown problems.
+
+### Failure Testing Approach Comparison
+
+| Approach | How It Works | Pros | Cons | When to Use |
+|----------|--------------|------|------|-------------|
+| **Unit Testing** | Test individual components | Fast, focused | Misses system interactions | Component logic |
+| **Load Testing** | High traffic simulation | Finds performance limits | Doesn't test failure modes | Performance validation |
+| **Penetration Testing** | Security vulnerability testing | Finds security issues | Narrow scope | Security compliance |
+| **Traditional QA** | Manual testing scenarios | Human insight | Limited coverage, slow | User experience validation |
+| **Chaos Engineering** ⭐ | Intentional failure injection | Discovers unknown failure modes | Can cause real outages | Production resilience |
+
+### Why Chaos Engineering for This Starter?
+
+**Our First Principles Decision**:
+
+**Principle 1: Proactive Failure Discovery**
+- Find weaknesses before they cause outages
+- Test assumptions about system resilience
+- Validate that monitoring and alerting work
+- Build confidence in recovery procedures
+
+**Principle 2: Educational Value**
+- Learn how systems actually fail (not how we think they fail)
+- Practice debugging under stress
+- Understand the importance of graceful degradation
+- Experience the value of proper monitoring
+
+**Principle 3: Production Preparation**
+- Develop failure response muscle memory
+- Validate that systems can handle real-world conditions
+- Build confidence in deployment processes
+- Create runbooks for common failure scenarios
+
+### 🧠 Mental Model: Antifragile Systems
+
+```mermaid
+graph TD
+    subgraph "📈 System Response to Stress"
+        FRAGILE[💔 Fragile Systems<br/>Break under stress<br/>Examples: Monoliths, single points of failure]
+        ROBUST[🛡️ Robust Systems<br/>Resist stress<br/>Examples: Load balancers, redundancy]
+        ANTIFRAGILE[💪 Antifragile Systems<br/>Improve under stress<br/>Examples: Auto-scaling, circuit breakers]
+    end
+    
+    subgraph "🧪 Chaos Engineering Goal"
+        DISCOVER[🔍 Discover weaknesses]
+        FIX[🔧 Fix discovered issues]
+        VALIDATE[✅ Validate fixes work]
+        IMPROVE[📈 Improve system resilience]
+    end
+    
+    FRAGILE --> DISCOVER
+    ROBUST --> DISCOVER
+    DISCOVER --> FIX
+    FIX --> VALIDATE
+    VALIDATE --> IMPROVE
+    IMPROVE --> ANTIFRAGILE
+    
+    classDef fragile fill:#ffebee,stroke:#c62828,stroke-width:2px
+    classDef robust fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    classDef antifragile fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
+    classDef process fill:#e3f2fd,stroke:#0277bd,stroke-width:2px
+    
+    class FRAGILE fragile
+    class ROBUST robust
+    class ANTIFRAGILE antifragile
+    class DISCOVER,FIX,VALIDATE,IMPROVE process
+```
+
+**Key Insight**: Chaos engineering doesn't just test resilience - it builds antifragile systems that get stronger under stress.
 
 ## Why Chaos Testing?
 
@@ -901,8 +983,8 @@ echo "✅ All chaos tests passed - ready for deployment"
 ./scripts/test-chaos.sh --verbose --difficulty 1
 
 # Check individual components
-curl -X GET http://localhost:3000/health
-curl -X GET http://localhost:3000/tasks/stats
+curl -X GET http://localhost:3000/api/v1/health
+curl -X GET http://localhost:3000/api/v1/tasks/stats
 
 # Admin CLI direct access (bypasses API authentication)
 cargo run -- admin task-stats --verbose

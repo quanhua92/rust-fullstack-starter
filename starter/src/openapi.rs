@@ -25,8 +25,8 @@ use crate::users::models::{User, UserProfile};
         )
     ),
     servers(
-        (url = "http://localhost:3000", description = "Development server"),
-        (url = "https://api.example.com", description = "Production server")
+        (url = "http://localhost:3000/api/v1", description = "Development server"),
+        (url = "https://api.example.com/api/v1", description = "Production server")
     ),
     paths(
         // Health endpoints

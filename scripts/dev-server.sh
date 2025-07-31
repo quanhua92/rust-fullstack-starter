@@ -56,7 +56,7 @@ cd ..
 # Start server in foreground
 echo "🖥️  Starting server in foreground..."
 echo "   Server: http://localhost:$PORT"
-echo "   Health: http://localhost:$PORT/health"
+echo "   Health: http://localhost:$PORT/api/v1/health"
 echo "   API Docs: http://localhost:$PORT/api-docs"
 echo ""
 echo "🛑 To stop: Ctrl+C"

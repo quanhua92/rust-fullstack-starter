@@ -12,7 +12,7 @@ async fn test_user_registration_success() {
         "password": "SecurePass123!"
     });
 
-    let response = app.post_json("/auth/register", &user_data).await;
+    let response = app.post_json("/api/v1/auth/register", &user_data).await;
 
     assert_status(&response, StatusCode::OK);
     let json: serde_json::Value = response.json().await.unwrap();
@@ -34,7 +34,7 @@ async fn test_login_success() {
         "password": "SecurePass123!"
     });
 
-    let response = app.post_json("/auth/login", &login_data).await;
+    let response = app.post_json("/api/v1/auth/login", &login_data).await;
 
     assert_status(&response, StatusCode::OK);
     let json: serde_json::Value = response.json().await.unwrap();
@@ -56,7 +56,7 @@ async fn test_login_invalid_credentials() {
         "password": "WrongPassword"
     });
 
-    let response = app.post_json("/auth/login", &login_data).await;
+    let response = app.post_json("/api/v1/auth/login", &login_data).await;
     assert_status(&response, StatusCode::UNAUTHORIZED);
 }
 
@@ -75,7 +75,7 @@ async fn test_registration_duplicate_username() {
         "password": "SecurePass123!"
     });
 
-    let response = app.post_json("/auth/register", &user_data).await;
+    let response = app.post_json("/api/v1/auth/register", &user_data).await;
     assert_status(&response, StatusCode::CONFLICT);
 }
 
@@ -89,7 +89,7 @@ async fn test_registration_invalid_email() {
         "password": "SecurePass123!"
     });
 
-    let response = app.post_json("/auth/register", &user_data).await;
+    let response = app.post_json("/api/v1/auth/register", &user_data).await;
     assert_status(&response, StatusCode::BAD_REQUEST);
 }
 
@@ -103,6 +103,6 @@ async fn test_registration_weak_password() {
         "password": "weak"
     });
 
-    let response = app.post_json("/auth/register", &user_data).await;
+    let response = app.post_json("/api/v1/auth/register", &user_data).await;
     assert_status(&response, StatusCode::BAD_REQUEST);
 }

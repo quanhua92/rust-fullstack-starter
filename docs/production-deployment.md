@@ -311,15 +311,15 @@ The application exposes health endpoints:
 
 ```bash
 # Test basic application health
-curl http://localhost:8080/health
+curl http://localhost:8080/api/v1/health
 
 # Test detailed health (includes database connectivity)
-curl http://localhost:8080/health/detailed
+curl http://localhost:8080/api/v1/health/detailed
 
 # Test Kubernetes health probes
-curl http://localhost:8080/health/live      # Liveness probe
-curl http://localhost:8080/health/ready     # Readiness probe  
-curl http://localhost:8080/health/startup   # Startup probe
+curl http://localhost:8080/api/v1/health/live      # Liveness probe
+curl http://localhost:8080/api/v1/health/ready     # Readiness probe  
+curl http://localhost:8080/api/v1/health/startup   # Startup probe
 
 # Test through Nginx (if enabled)
 curl http://localhost/health

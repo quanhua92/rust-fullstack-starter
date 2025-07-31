@@ -19,7 +19,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
   - Default: `./scripts/test-with-curl.sh` (localhost:3000)
   - Custom: `./scripts/test-with-curl.sh localhost 8080`
   - HTTPS: `./scripts/test-with-curl.sh api.example.com 443`
-  - **NEW**: Includes task type registration testing (`POST/GET /tasks/types`)
+  - **NEW**: Includes task type registration testing (`POST/GET /api/v1/tasks/types`)
 - **Chaos Testing**: `./scripts/test-chaos.sh [options]` (Docker-based resilience testing with automatic image building)
   - Basic: `./scripts/test-chaos.sh` (difficulty 1, all scenarios)
   - Advanced: `./scripts/test-chaos.sh --difficulty 3 --scenarios "db-failure,task-flood"`
@@ -32,11 +32,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Health Endpoints
 
 Available health check endpoints:
-- `/health` - Basic health check (status, version, uptime, includes documentation links)
-- `/health/detailed` - Detailed health with dependency checks
-- `/health/live` - Kubernetes liveness probe (minimal checks)
-- `/health/ready` - Kubernetes readiness probe (dependency validation)
-- `/health/startup` - Kubernetes startup probe (initialization checks)
+- `/api/v1/health` - Basic health check (status, version, uptime, includes documentation links)
+- `/api/v1/health/detailed` - Detailed health with dependency checks
+- `/api/v1/health/live` - Kubernetes liveness probe (minimal checks)
+- `/api/v1/health/ready` - Kubernetes readiness probe (dependency validation)
+- `/api/v1/health/startup` - Kubernetes startup probe (initialization checks)
 
 ## API Documentation
 
@@ -80,6 +80,7 @@ This starter template includes comprehensive development infrastructure:
 
 ## Development Workflow
 
+### Backend Development (Rust API)
 1. **Start Services**: `./scripts/dev-server.sh 3000` (complete environment)
    - Or manually: `./scripts/server.sh && ./scripts/worker.sh`
    - **IMPORTANT**: Workers must start to register task types before creating tasks
@@ -88,6 +89,41 @@ This starter template includes comprehensive development infrastructure:
 3. **API Testing**: `./scripts/test-with-curl.sh` (40+ endpoint tests)
 4. **Chaos Testing**: `./scripts/test-chaos.sh` (Docker-based resilience validation)
 5. **Stop Services**: `./scripts/stop-server.sh 3000`
+
+### Frontend Development (React/TypeScript)
+**Multi-phase development workflow with quality checks:**
+
+1. **Implement Phase**: Work on specific feature phase (authentication, admin portal, user management, etc.)
+2. **Quality Validation**: `cd web && ./scripts/check-web.sh` (**RUN BEFORE EVERY COMMIT**)
+   - Dependencies validation and API type generation
+   - TypeScript type checking and compilation
+   - Biome linting and code formatting
+   - Production build testing
+   - Unit/integration tests
+   - Code quality analysis and bundle optimization
+3. **Fix Issues**: Address any failures from quality checks
+4. **Commit Phase**: Commit completed phase without push to mark milestone
+5. **Next Phase**: Proceed to next development phase
+
+**Web Quality Checks**: `web/scripts/check-web.sh`
+- **Dependencies**: Validates pnpm dependencies and installation
+- **API Types**: Auto-generates TypeScript types from `../docs/openapi.json`
+- **TypeScript**: Full type checking with `tsc --noEmit`
+- **Linting**: Biome linting with auto-fix suggestions
+- **Formatting**: Code formatting validation with Biome
+- **Build**: Production build testing with Vite
+- **Tests**: Unit and integration test execution
+- **Analysis**: Bundle size analysis, unused dependencies, code quality checks
+- **Components**: Validates shadcn/ui components and API client setup
+
+**Web Project Structure**:
+- Modern React 18 with TanStack Router (file-based routing)
+- TanStack Query for server state management
+- shadcn/ui@canary components with Tailwind CSS 4
+- TypeScript with auto-generated API types
+- Authentication system with JWT tokens
+- Admin portal with sidebar navigation and dashboard
+- Comprehensive quality checking and production build validation
 
 ## CLI Module Architecture
 
@@ -178,11 +214,11 @@ Available chaos testing scenarios:
 **BREAKING CHANGE**: As of recent updates, the system requires task type registration before tasks can be created.
 
 ### Key Changes:
-- **API Validation**: `POST /tasks` now validates task types against registered handlers
-- **Worker Registration**: Workers automatically register task types on startup via `POST /tasks/types`
+- **API Validation**: `POST /api/v1/tasks` now validates task types against registered handlers
+- **Worker Registration**: Workers automatically register task types on startup via `POST /api/v1/tasks/types`
 - **New Endpoints**: 
-  - `GET /tasks/types` - List registered task types (public)
-  - `POST /tasks/types` - Register task type (public, used by workers)
+  - `GET /api/v1/tasks/types` - List registered task types (public)
+  - `POST /api/v1/tasks/types` - Register task type (public, used by workers)
 - **Test Updates**: Integration tests now use `TestDataFactory::new_with_task_types()` for automatic registration
 - **Error Handling**: Unregistered task types return 400 validation errors instead of 200/201
 

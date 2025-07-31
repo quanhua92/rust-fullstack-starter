@@ -136,7 +136,7 @@ start_service() {
             local max_attempts=30
             local attempt=0
             while [ $attempt -lt $max_attempts ]; do
-                if curl -s -f "http://localhost:$port/health" > /dev/null 2>&1; then
+                if curl -s -f "http://localhost:$port/api/v1/health" > /dev/null 2>&1; then
                     echo -e "${GREEN}✅ Server is ready${NC}"
                     break
                 fi

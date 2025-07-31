@@ -6,7 +6,7 @@ use serde_json::json;
 async fn test_api_cors_headers() {
     let app = spawn_app().await;
 
-    let response = app.get("/health").await;
+    let response = app.get("/api/v1/health").await;
 
     assert_status(&response, StatusCode::OK);
 
@@ -23,7 +23,7 @@ async fn test_api_preflight_request() {
         .client
         .request(
             reqwest::Method::OPTIONS,
-            format!("{}/auth/login", app.address),
+            format!("{}/api/v1/auth/login", app.address),
         )
         .header("Origin", "http://localhost:3000")
         .header("Access-Control-Request-Method", "POST")
@@ -43,7 +43,7 @@ async fn test_api_preflight_request() {
 async fn test_api_content_type_json() {
     let app = spawn_app().await;
 
-    let response = app.get("/health").await;
+    let response = app.get("/api/v1/health").await;
 
     assert_status(&response, StatusCode::OK);
 
@@ -58,7 +58,7 @@ async fn test_api_rate_limiting() {
     // Make multiple rapid requests
     let mut responses = Vec::new();
     for _ in 0..20 {
-        let response = app.get("/health").await;
+        let response = app.get("/api/v1/health").await;
         responses.push(response.status());
     }
 
@@ -73,7 +73,7 @@ async fn test_api_error_format() {
     let app = spawn_app().await;
 
     // Make a request that should return an error
-    let response = app.get("/nonexistent").await;
+    let response = app.get("/api/v1/nonexistent").await;
 
     assert_status(&response, StatusCode::NOT_FOUND);
 
@@ -87,7 +87,7 @@ async fn test_api_error_format() {
 async fn test_api_request_id_header() {
     let app = spawn_app().await;
 
-    let response = app.get("/health").await;
+    let response = app.get("/api/v1/health").await;
 
     assert_status(&response, StatusCode::OK);
 
@@ -105,7 +105,7 @@ async fn test_api_malformed_json() {
 
     let response = app
         .client
-        .post(format!("{}/auth/register", app.address))
+        .post(format!("{}/api/v1/auth/register", app.address))
         .header("content-type", "application/json")
         .body("{ invalid json")
         .send()
@@ -133,7 +133,7 @@ async fn test_api_large_payload() {
         "description": large_description
     });
 
-    let response = app.post_json("/auth/register", &user_data).await;
+    let response = app.post_json("/api/v1/auth/register", &user_data).await;
 
     // Should handle large payloads gracefully
     assert!(response.status().is_client_error() || response.status().is_success());
@@ -144,7 +144,7 @@ async fn test_api_authentication_required() {
     let app = spawn_app().await;
 
     // Try to access protected endpoint without auth
-    let response = app.get("/auth/me").await;
+    let response = app.get("/api/v1/auth/me").await;
     assert_status(&response, StatusCode::UNAUTHORIZED);
 
     let json: serde_json::Value = response.json().await.unwrap();
@@ -155,7 +155,7 @@ async fn test_api_authentication_required() {
 async fn test_api_invalid_auth_token() {
     let app = spawn_app().await;
 
-    let response = app.get_auth("/auth/me", "invalid_token").await;
+    let response = app.get_auth("/api/v1/auth/me", "invalid_token").await;
     assert_status(&response, StatusCode::UNAUTHORIZED);
 }
 
@@ -163,7 +163,7 @@ async fn test_api_invalid_auth_token() {
 async fn test_api_security_headers() {
     let app = spawn_app().await;
 
-    let response = app.get("/health").await;
+    let response = app.get("/api/v1/health").await;
 
     assert_status(&response, StatusCode::OK);
 

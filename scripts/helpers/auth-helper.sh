@@ -85,14 +85,14 @@ else
 fi
 
 # Fail fast: Check API health before attempting registration
-if ! curl -s -f "$BASE_URL/health" > /dev/null 2>&1; then
+if ! curl -s -f "$BASE_URL/api/v1/health" > /dev/null 2>&1; then
     echo "{\"error\": \"API unhealthy - failing fast to save time\", \"base_url\": \"$BASE_URL\"}" >&2
     exit 1
 fi
 
 # Create user
 USER_DATA="{\"username\": \"$USERNAME\", \"email\": \"$EMAIL\", \"password\": \"$PASSWORD\"}"
-REGISTER_RESPONSE=$(curl -s -X POST "$BASE_URL/auth/register" \
+REGISTER_RESPONSE=$(curl -s -X POST "$BASE_URL/api/v1/auth/register" \
     -H "Content-Type: application/json" \
     -d "$USER_DATA")
 
@@ -103,7 +103,7 @@ fi
 
 # Login and get token
 LOGIN_DATA="{\"username_or_email\": \"$EMAIL\", \"password\": \"$PASSWORD\"}"
-LOGIN_RESPONSE=$(curl -s -X POST "$BASE_URL/auth/login" \
+LOGIN_RESPONSE=$(curl -s -X POST "$BASE_URL/api/v1/auth/login" \
     -H "Content-Type: application/json" \
     -d "$LOGIN_DATA")
 

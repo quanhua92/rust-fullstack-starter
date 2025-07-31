@@ -63,7 +63,8 @@ pub async fn spawn_app() -> TestApp {
         config: config.clone(),
         database,
     };
-    let app = server::create_router(state);
+    let api_router = server::create_router(state);
+    let app = axum::Router::new().nest("/api/v1", api_router);
 
     // Bind to random port
     let listener = TcpListener::bind("127.0.0.1:0")

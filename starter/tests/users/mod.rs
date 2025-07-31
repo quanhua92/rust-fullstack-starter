@@ -11,7 +11,7 @@ async fn test_get_users_list() {
     // Create test users
     factory.create_multiple_users(3).await;
 
-    let response = app.get("/users/").await;
+    let response = app.get("/api/v1/users/").await;
 
     assert_status(&response, StatusCode::OK);
     let json: serde_json::Value = response.json().await.unwrap();
@@ -32,7 +32,7 @@ async fn test_get_user_by_id() {
         .create_authenticated_user(&format!("auth_{}", &unique_username))
         .await;
     let response = app
-        .get_auth(&format!("/users/{}", user.id), &token.token)
+        .get_auth(&format!("/api/v1/users/{}", user.id), &token.token)
         .await;
 
     assert_status(&response, StatusCode::OK);
@@ -49,7 +49,7 @@ async fn test_get_user_profile_authenticated() {
     let unique_username = format!("testuser_{}", &uuid::Uuid::new_v4().to_string()[..8]);
     let (user, token) = factory.create_authenticated_user(&unique_username).await;
 
-    let response = app.get_auth("/auth/me", &token.token).await;
+    let response = app.get_auth("/api/v1/auth/me", &token.token).await;
 
     assert_status(&response, StatusCode::OK);
     let json: serde_json::Value = response.json().await.unwrap();
@@ -61,7 +61,7 @@ async fn test_get_user_profile_authenticated() {
 async fn test_get_user_profile_unauthenticated() {
     let app = spawn_app().await;
 
-    let response = app.get("/auth/me").await;
+    let response = app.get("/api/v1/auth/me").await;
     assert_status(&response, StatusCode::UNAUTHORIZED);
 }
 
@@ -80,7 +80,7 @@ async fn test_update_user_profile() {
     });
 
     let response = app
-        .put_json_auth("/auth/me", &update_data, &token.token)
+        .put_json_auth("/api/v1/auth/me", &update_data, &token.token)
         .await;
 
     assert_status(&response, StatusCode::OK);
@@ -103,7 +103,7 @@ async fn test_get_nonexistent_user() {
 
     let fake_id = uuid::Uuid::new_v4();
     let response = app
-        .get_auth(&format!("/users/{fake_id}"), &token.token)
+        .get_auth(&format!("/api/v1/users/{fake_id}"), &token.token)
         .await;
 
     assert_status(&response, StatusCode::NOT_FOUND);
@@ -119,7 +119,7 @@ async fn test_users_pagination() {
     factory.create_multiple_users(25).await;
 
     // Test first page
-    let response = app.get("/users/?page=1&limit=10").await;
+    let response = app.get("/api/v1/users/?page=1&limit=10").await;
     assert_status(&response, StatusCode::OK);
 
     let json: serde_json::Value = response.json().await.unwrap();

@@ -2,15 +2,81 @@
 
 *This guide explains how the async task processing system works, building on the reliability patterns you learned previously.*
 
-## Why Background Tasks?
+## 🤔 Why Background Tasks? (First Principles)
 
-Some operations shouldn't block HTTP requests:
-- **Sending emails**: Network calls can be slow
-- **Processing data**: Heavy computations take time  
-- **Calling webhooks**: External APIs might be unreliable
-- **Generating reports**: File operations can take minutes
+### The Fundamental Problem: Time and Responsibility
 
-**The Solution**: Queue these operations as **background tasks** and process them asynchronously.
+**What users care about**:
+- Fast response times (< 300ms feels instant)
+- Immediate feedback that their action was received
+- Reliable completion of requested operations
+
+**What operations actually need**:
+- Time to complete properly (emails, file processing, external API calls)
+- Retry capability for transient failures
+- Error handling and recovery mechanisms
+
+**The conflict**: Users want instant feedback, but real work takes time.
+
+### Background Processing Approach Comparison
+
+| Approach | How It Works | Pros | Cons | When to Use |
+|----------|--------------|------|------|-------------|
+| **Synchronous** | Process during HTTP request | Simple, immediate feedback | Slow responses, timeouts | Fast operations only |
+| **Message Queue** | Redis, RabbitMQ, Kafka | High performance, specialized | Extra infrastructure, complexity | High throughput systems |
+| **Cron Jobs** | Scheduled batch processing | Simple, predictable | Not event-driven, delays | Periodic tasks only |
+| **Cloud Functions** | Serverless event processing | No infrastructure, auto-scaling | Vendor lock-in, cold starts | Event-driven, variable load |
+| **Database Queue** ⭐ | Database table as queue | Simple, transactional, visible | Database load, polling overhead | Web applications, learning |
+
+### Why Database Queue for This Starter?
+
+**Our First Principles Decision**:
+
+**Principle 1: Simplicity**
+- No additional infrastructure (already have PostgreSQL)
+- Easy to understand (just database tables)
+- Visible state (can query tasks directly)
+
+**Principle 2: Reliability** 
+- ACID transactions ensure task creation/completion consistency
+- Failed tasks automatically preserved for analysis
+- Built-in persistence (survives application restarts)
+
+**Principle 3: Educational Value**
+- Shows queue patterns without message broker complexity
+- Demonstrates database-driven architecture
+- Easy to debug and monitor
+
+**Principle 4: Production Readiness**
+- Used by GitHub, GitLab, and many web applications
+- Scales to millions of tasks with proper indexing
+- Natural fit for web application architecture
+
+### 🧠 Mental Model: Task Lifecycle State Machine
+
+```mermaid
+stateDiagram-v2
+    [*] --> Pending
+    
+    Pending --> Processing: Worker picks up task
+    Processing --> Completed: Success
+    Processing --> Retrying: Temporary failure
+    Processing --> Failed: Permanent failure
+    
+    Retrying --> Processing: Retry attempt
+    Retrying --> Failed: Max retries exceeded
+    
+    Failed --> [*]: Dead letter queue
+    Completed --> [*]: Task archived
+    
+    note right of Pending: Waiting for worker
+    note right of Processing: Currently executing
+    note right of Retrying: Exponential backoff
+    note right of Failed: Needs investigation
+    note right of Completed: Successful finish
+```
+
+**Key Insight**: Background tasks are finite state machines. Understanding the state transitions helps with debugging and monitoring.
 
 ## System Overview
 
@@ -579,24 +645,24 @@ When tasks fail after exhausting all retry attempts, they're moved to the **dead
 ```bash
 # Get all failed tasks
 curl -H "Authorization: Bearer $TOKEN" \
-  "http://localhost:3000/tasks/dead-letter"
+  "http://localhost:3000/api/v1/tasks/dead-letter"
 
 # Get failed tasks with pagination
 curl -H "Authorization: Bearer $TOKEN" \
-  "http://localhost:3000/tasks/dead-letter?limit=10&offset=0"
+  "http://localhost:3000/api/v1/tasks/dead-letter?limit=10&offset=0"
 ```
 
 #### 2. Filter Tasks by Status
 ```bash
 # Get all failed tasks using status filter
 curl -H "Authorization: Bearer $TOKEN" \
-  "http://localhost:3000/tasks?status=failed"
+  "http://localhost:3000/api/v1/tasks?status=failed"
 
 # Other status filters
 curl -H "Authorization: Bearer $TOKEN" \
-  "http://localhost:3000/tasks?status=pending"
+  "http://localhost:3000/api/v1/tasks?status=pending"
 curl -H "Authorization: Bearer $TOKEN" \
-  "http://localhost:3000/tasks?status=completed"
+  "http://localhost:3000/api/v1/tasks?status=completed"
 ```
 
 #### 3. Retry Failed Tasks
@@ -604,7 +670,7 @@ curl -H "Authorization: Bearer $TOKEN" \
 # Retry a specific failed task
 curl -X POST \
   -H "Authorization: Bearer $TOKEN" \
-  "http://localhost:3000/tasks/{task-id}/retry"
+  "http://localhost:3000/api/v1/tasks/{task-id}/retry"
 ```
 
 **Response:**
@@ -621,7 +687,7 @@ curl -X POST \
 # Permanently delete a failed task
 curl -X DELETE \
   -H "Authorization: Bearer $TOKEN" \
-  "http://localhost:3000/tasks/{task-id}"
+  "http://localhost:3000/api/v1/tasks/{task-id}"
 ```
 
 **Response:**
@@ -639,7 +705,7 @@ curl -X DELETE \
 ```bash
 # 1. Get failed tasks
 FAILED_TASKS=$(curl -s -H "Authorization: Bearer $TOKEN" \
-  "http://localhost:3000/tasks/dead-letter")
+  "http://localhost:3000/api/v1/tasks/dead-letter")
 
 # 2. Identify tasks to retry
 echo "$FAILED_TASKS" | jq '.data[] | select(.last_error | contains("network"))'
@@ -647,21 +713,21 @@ echo "$FAILED_TASKS" | jq '.data[] | select(.last_error | contains("network"))'
 # 3. Retry specific tasks
 curl -X POST \
   -H "Authorization: Bearer $TOKEN" \
-  "http://localhost:3000/tasks/specific-task-id/retry"
+  "http://localhost:3000/api/v1/tasks/specific-task-id/retry"
 ```
 
 #### Cleanup Old Failed Tasks
 ```bash
 # Get old failed tasks (from API response, filter by date)
 OLD_TASKS=$(curl -s -H "Authorization: Bearer $TOKEN" \
-  "http://localhost:3000/tasks?status=failed" | \
+  "http://localhost:3000/api/v1/tasks?status=failed" | \
   jq '.data[] | select(.created_at < "2024-01-01")')
 
 # Delete old failed tasks
 for task_id in $(echo "$OLD_TASKS" | jq -r '.id'); do
   curl -X DELETE \
     -H "Authorization: Bearer $TOKEN" \
-    "http://localhost:3000/tasks/$task_id"
+    "http://localhost:3000/api/v1/tasks/$task_id"
 done
 ```
 
@@ -671,7 +737,7 @@ done
 ```bash
 # Get task statistics including failed count
 curl -H "Authorization: Bearer $TOKEN" \
-  "http://localhost:3000/tasks/stats"
+  "http://localhost:3000/api/v1/tasks/stats"
 ```
 
 **Response:**
@@ -694,7 +760,7 @@ curl -H "Authorization: Bearer $TOKEN" \
 ```bash
 # Get failed tasks with error details
 curl -H "Authorization: Bearer $TOKEN" \
-  "http://localhost:3000/tasks/dead-letter" | \
+  "http://localhost:3000/api/v1/tasks/dead-letter" | \
   jq '.data[] | {id, task_type, last_error, current_attempt}'
 ```
 
@@ -705,7 +771,7 @@ curl -H "Authorization: Bearer $TOKEN" \
 #!/bin/bash
 # Monitor dead letter queue size
 DLQ_SIZE=$(curl -s -H "Authorization: Bearer $TOKEN" \
-  "http://localhost:3000/tasks/stats" | \
+  "http://localhost:3000/api/v1/tasks/stats" | \
   jq '.data.failed')
 
 if [ "$DLQ_SIZE" -gt 10 ]; then
@@ -722,7 +788,7 @@ WEEK_AGO=$(date -d '7 days ago' '+%Y-%m-%dT%H:%M:%SZ')
 
 # Get tasks older than a week
 OLD_FAILED=$(curl -s -H "Authorization: Bearer $TOKEN" \
-  "http://localhost:3000/tasks?status=failed" | \
+  "http://localhost:3000/api/v1/tasks?status=failed" | \
   jq --arg week_ago "$WEEK_AGO" \
   '.data[] | select(.created_at < $week_ago) | .id' -r)
 
@@ -730,7 +796,7 @@ OLD_FAILED=$(curl -s -H "Authorization: Bearer $TOKEN" \
 for task_id in $OLD_FAILED; do
   curl -X DELETE \
     -H "Authorization: Bearer $TOKEN" \
-    "http://localhost:3000/tasks/$task_id"
+    "http://localhost:3000/api/v1/tasks/$task_id"
   echo "Deleted old failed task: $task_id"
 done
 ```
@@ -739,7 +805,7 @@ done
 ```bash
 # Analyze common failure patterns
 curl -s -H "Authorization: Bearer $TOKEN" \
-  "http://localhost:3000/tasks/dead-letter" | \
+  "http://localhost:3000/api/v1/tasks/dead-letter" | \
   jq '.data[] | .last_error' | \
   sort | uniq -c | sort -nr
 ```
@@ -750,11 +816,11 @@ curl -s -H "Authorization: Bearer $TOKEN" \
 ```bash
 # Export dead letter queue metrics for monitoring
 echo "dlq_size $(curl -s -H "Authorization: Bearer $TOKEN" \
-  "http://localhost:3000/tasks/stats" | jq '.data.failed')"
+  "http://localhost:3000/api/v1/tasks/stats" | jq '.data.failed')"
 
 # Export by task type
 curl -s -H "Authorization: Bearer $TOKEN" \
-  "http://localhost:3000/tasks/dead-letter" | \
+  "http://localhost:3000/api/v1/tasks/dead-letter" | \
   jq '.data | group_by(.task_type) | .[] | 
      "dlq_by_type{type=\"\(.[0].task_type)\"} \(length)"' -r
 ```
@@ -826,7 +892,7 @@ Before creating tasks, the system must know which task types are supported:
 
 ```bash
 # Register a new task type (done automatically by workers)
-curl -X POST http://localhost:3000/tasks/types \
+curl -X POST http://localhost:3000/api/v1/tasks/types \
   -H "Content-Type: application/json" \
   -d '{
     "task_type": "email", 
@@ -837,7 +903,7 @@ curl -X POST http://localhost:3000/tasks/types \
 ### Listing Available Task Types
 ```bash
 # Get all registered task types
-curl http://localhost:3000/tasks/types
+curl http://localhost:3000/api/v1/tasks/types
 
 # Response:
 {
@@ -864,7 +930,7 @@ curl http://localhost:3000/tasks/types
 ### Creating Tasks via HTTP
 ```bash
 # Create an email task (task type must be registered first!)
-curl -X POST http://localhost:3000/tasks \
+curl -X POST http://localhost:3000/api/v1/tasks \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
@@ -896,15 +962,15 @@ curl -X POST http://localhost:3000/tasks \
 ```bash
 # Get task statistics
 curl -H "Authorization: Bearer $TOKEN" \
-  http://localhost:3000/tasks/stats
+  http://localhost:3000/api/v1/tasks/stats
 
 # List your tasks
 curl -H "Authorization: Bearer $TOKEN" \
-  "http://localhost:3000/tasks?limit=10"
+  "http://localhost:3000/api/v1/tasks?limit=10"
 
 # Get specific task details
 curl -H "Authorization: Bearer $TOKEN" \
-  "http://localhost:3000/tasks/uuid-here"
+  "http://localhost:3000/api/v1/tasks/uuid-here"
 ```
 
 ## Development Workflow
@@ -945,23 +1011,23 @@ The task integration tests cover:
 ### Manual Testing
 ```bash
 # Create test user and get token
-curl -X POST http://localhost:3000/auth/register \
+curl -X POST http://localhost:3000/api/v1/auth/register \
   -H "Content-Type: application/json" \
   -d '{"username":"test","email":"test@example.com","password":"password123"}'
 
-TOKEN=$(curl -s -X POST http://localhost:3000/auth/login \
+TOKEN=$(curl -s -X POST http://localhost:3000/api/v1/auth/login \
   -H "Content-Type: application/json" \
   -d '{"username_or_email":"test","password":"password123"}' \
   | python3 -c "import json,sys; print(json.load(sys.stdin)['data']['session_token'])")
 
 # Create tasks
-curl -X POST http://localhost:3000/tasks \
+curl -X POST http://localhost:3000/api/v1/tasks \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"task_type":"email","payload":{"to":"test@example.com","subject":"Test","body":"Hello"}}'
 
 # Monitor processing
-curl -H "Authorization: Bearer $TOKEN" http://localhost:3000/tasks/stats
+curl -H "Authorization: Bearer $TOKEN" http://localhost:3000/api/v1/tasks/stats
 ```
 
 ## Configuration
@@ -1012,7 +1078,7 @@ ps aux | grep starter-worker
 tail -f /tmp/starter-worker.log
 
 # Verify task types are registered
-curl http://localhost:3000/tasks/types
+curl http://localhost:3000/api/v1/tasks/types
 ```
 
 **High Failure Rate**
@@ -1029,7 +1095,7 @@ curl http://localhost:3000/tasks/types
 ```bash
 # Get error patterns
 curl -H "Authorization: Bearer $TOKEN" \
-  "http://localhost:3000/tasks/dead-letter" | \
+  "http://localhost:3000/api/v1/tasks/dead-letter" | \
   jq '.data[].last_error' | sort | uniq -c
 
 # Check circuit breaker status in logs
@@ -1047,7 +1113,7 @@ curl -X POST webhook-endpoint-that-keeps-failing.com
 ```bash
 # Monitor queue depth over time
 watch 'curl -s -H "Authorization: Bearer $TOKEN" \
-  http://localhost:3000/tasks/stats | jq .data'
+  http://localhost:3000/api/v1/tasks/stats | jq .data'
 
 # Increase worker concurrency (carefully!)
 STARTER__WORKER__CONCURRENCY=8 ./scripts/worker.sh
