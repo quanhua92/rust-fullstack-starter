@@ -26,6 +26,7 @@ if [ $# -eq 0 ]; then
 fi
 
 NEW_NAME="$1"
+NEW_NAME_UPPER=$(echo "$NEW_NAME" | tr '[:lower:]' '[:upper:]')
 
 # Validate project name (Rust package naming conventions)
 if [[ ! "$NEW_NAME" =~ ^[a-zA-Z_][a-zA-Z0-9_]*$ ]]; then
@@ -152,7 +153,38 @@ find . -type f \( -name "*.rs" -o -name "*.toml" -o -name "*.md" -o -name "*.yam
     fi
 done
 
-# 5. Update script references
+# 5. Update environment variable prefixes and config
+echo -e "${BLUE}🔄 Updating environment variable prefixes...${NC}"
+find . -type f \( -name "*.rs" -o -name "*.toml" -o -name "*.md" -o -name "*.yaml" -o -name "*.yml" -o -name "*.env*" -o -name "*.sh" \) \
+    -not -path "./target/*" \
+    -not -path "./.git/*" \
+    -not -path "./backup_*/*" \
+    -not -path "./$NEW_NAME/target/*" \
+    -exec grep -l "STARTER" {} \; | while read -r file; do
+    
+    echo "  Updating env vars in: $file"
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+        # macOS version - Update environment variable prefixes
+        sed -i '' "s/with_prefix(\"STARTER\")/with_prefix(\"$NEW_NAME_UPPER\")/g" "$file"
+        sed -i '' "s/STARTER__/$NEW_NAME_UPPER\__/g" "$file"
+        sed -i '' "s/STARTER_/$NEW_NAME_UPPER\_/g" "$file"
+        # Update default database values
+        sed -i '' "s/starter_user/${NEW_NAME}_user/g" "$file"
+        sed -i '' "s/starter_pass/${NEW_NAME}_pass/g" "$file"
+        sed -i '' "s/starter_db/${NEW_NAME}_db/g" "$file"
+    else
+        # Linux version
+        sed -i "s/with_prefix(\"STARTER\")/with_prefix(\"$NEW_NAME_UPPER\")/g" "$file"
+        sed -i "s/STARTER__/$NEW_NAME_UPPER\__/g" "$file"
+        sed -i "s/STARTER_/$NEW_NAME_UPPER\_/g" "$file"
+        # Update default database values
+        sed -i "s/starter_user/${NEW_NAME}_user/g" "$file"
+        sed -i "s/starter_pass/${NEW_NAME}_pass/g" "$file"
+        sed -i "s/starter_db/${NEW_NAME}_db/g" "$file"
+    fi
+done
+
+# 6. Update script references
 echo -e "${BLUE}🔄 Updating script references...${NC}"
 if [ -f "scripts/server.sh" ]; then
     if [[ "$OSTYPE" == "darwin"* ]]; then
@@ -162,7 +194,7 @@ if [ -f "scripts/server.sh" ]; then
     fi
 fi
 
-# 6. Update log file references
+# 7. Update log file references
 echo -e "${BLUE}🔄 Updating log file references...${NC}"
 for script in scripts/*.sh; do
     if [ -f "$script" ]; then
@@ -176,7 +208,7 @@ for script in scripts/*.sh; do
     fi
 done
 
-# 7. Verification
+# 8. Verification
 echo ""
 echo -e "${GREEN}✅ Renaming complete!${NC}"
 echo ""
@@ -185,6 +217,9 @@ echo "  • Renamed starter/ → $NEW_NAME/"
 echo "  • Updated Cargo.toml workspace members"
 echo "  • Updated package name in $NEW_NAME/Cargo.toml"
 echo "  • Replaced references in source files"
+echo "  • Updated environment variable prefixes (STARTER → $NEW_NAME_UPPER)"
+echo "  • Updated config.rs with_prefix to use $NEW_NAME_UPPER"
+echo "  • Updated default database values (starter_* → ${NEW_NAME}_*)"
 echo "  • Updated script configurations"
 echo "  • Created backup in $BACKUP_DIR/"
 echo ""

@@ -21,6 +21,9 @@ The script automatically updates:
 - **Package name**: In `Cargo.toml` files
 - **Binary name**: `cargo run --bin starter` → `cargo run --bin my_awesome_project`
 - **Module references**: `starter::auth::jwt` → `my_awesome_project::auth::jwt`
+- **Environment variables**: `STARTER__SERVER__PORT` → `MY_AWESOME_PROJECT__SERVER__PORT`
+- **Config prefix**: `with_prefix("STARTER")` → `with_prefix("MY_AWESOME_PROJECT")`
+- **Database defaults**: `starter_user` → `my_awesome_project_user`, `starter_db` → `my_awesome_project_db`
 - **Script configurations**: Log files, process names
 - **Documentation**: All examples and command references
 
@@ -56,6 +59,9 @@ The rename script includes safety measures:
 # 📝 Updating root Cargo.toml workspace members
 # 📝 Updating my_blog_api/Cargo.toml package name
 # 🔄 Replacing 'starter' with 'my_blog_api' in source files...
+# 🔄 Updating environment variable prefixes...
+# 🔄 Updating script references...
+# 🔄 Updating log file references...
 # ✅ Renaming complete!
 
 # Test the renamed project
@@ -68,7 +74,16 @@ cargo run --bin my_blog_api -- --help
 ### After Renaming
 
 1. **Update Project Description**: Edit README.md with your project details
-2. **Customize Configuration**: Update `.env` with your settings
+2. **Update Environment Variables**: The script renames environment variable prefixes, so update your `.env` file:
+   ```bash
+   # Before renaming (STARTER__ prefix)
+   STARTER__SERVER__PORT=3000
+   STARTER__DATABASE__USER=starter_user
+   
+   # After renaming to "my_blog_api" (MY_BLOG_API__ prefix)
+   MY_BLOG_API__SERVER__PORT=3000
+   MY_BLOG_API__DATABASE__USER=my_blog_api_user
+   ```
 3. **Test Everything**: Run tests and start services
 4. **Commit Changes**: Initialize or update your git repository
 
@@ -200,11 +215,22 @@ pub struct AppConfig {
 
 ### 4. Environment Variables
 
+After renaming, your environment variables will use the new project name in uppercase:
+
 ```bash
-# .env
-YOUR_FEATURE_ENABLED=true
-YOUR_API_KEY=your-secret-key
+# .env - After renaming to "my_blog_api"
+MY_BLOG_API__SERVER__PORT=3000
+MY_BLOG_API__DATABASE__HOST=localhost
+MY_BLOG_API__DATABASE__USER=my_blog_api_user
+MY_BLOG_API__DATABASE__PASSWORD=my_blog_api_pass
+MY_BLOG_API__DATABASE__DATABASE=my_blog_api_db
+
+# Custom feature variables
+MY_BLOG_API__YOUR_FEATURE_ENABLED=true
+MY_BLOG_API__YOUR_API_KEY=your-secret-key
 ```
+
+The configuration system automatically uses your project's uppercase name as the environment variable prefix.
 
 ## Troubleshooting
 
