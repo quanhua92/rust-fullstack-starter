@@ -28,11 +28,25 @@ echo -e "${BLUE}📁 Working directory: $PROJECT_ROOT${NC}"
 
 # 1. Cargo check
 echo -e "\n${BLUE}🔍 Step 1/8: Running cargo check...${NC}"
-if ! cargo check --manifest-path starter/Cargo.toml --all --all-targets --all-features; then
-    echo -e "${RED}❌ Cargo check failed!${NC}"
-    exit 1
+if ! SQLX_OFFLINE=true cargo check --manifest-path starter/Cargo.toml --all --all-targets --all-features; then
+    echo -e "${YELLOW}⚠️  Offline cargo check failed, attempting to regenerate SQLx cache...${NC}"
+    cd starter
+    if cargo sqlx prepare --all -- --all-targets; then
+        cd ..
+        echo -e "${BLUE}🔄 Retrying cargo check with updated cache...${NC}"
+        if ! SQLX_OFFLINE=true cargo check --manifest-path starter/Cargo.toml --all --all-targets --all-features; then
+            echo -e "${RED}❌ Cargo check failed even after updating SQLx cache!${NC}"
+            exit 1
+        fi
+        echo -e "${GREEN}✅ Cargo check passed after cache update${NC}"
+    else
+        cd ..
+        echo -e "${RED}❌ Could not regenerate SQLx cache and cargo check failed!${NC}"
+        exit 1
+    fi
+else
+    echo -e "${GREEN}✅ Cargo check passed${NC}"
 fi
-echo -e "${GREEN}✅ Cargo check passed${NC}"
 
 # 2. Format check and auto-fix
 echo -e "\n${BLUE}🎨 Step 2/8: Checking and fixing code formatting...${NC}"
