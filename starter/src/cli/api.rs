@@ -17,8 +17,10 @@ impl CliApp {
 
     /// Parse and execute CLI commands
     pub async fn run() -> Result<(), Box<dyn std::error::Error>> {
-        // Initialize logging
-        tracing_subscriber::fmt::init();
+        // Initialize logging with info level by default
+        tracing_subscriber::fmt()
+            .with_env_filter(std::env::var("RUST_LOG").unwrap_or_else(|_| "info".to_string()))
+            .init();
 
         // Load environment variables
         dotenvy::dotenv().ok();

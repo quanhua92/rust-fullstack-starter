@@ -28,24 +28,25 @@ echo -e "${BLUE}📁 Working directory: $PROJECT_ROOT${NC}"
 
 # 1. Cargo check
 echo -e "\n${BLUE}🔍 Step 1/8: Running cargo check...${NC}"
-if ! cargo check --manifest-path starter/Cargo.toml --all-targets --all-features; then
+if ! cargo check --manifest-path starter/Cargo.toml --all --all-targets --all-features; then
     echo -e "${RED}❌ Cargo check failed!${NC}"
     exit 1
 fi
 echo -e "${GREEN}✅ Cargo check passed${NC}"
 
-# 2. Format check
-echo -e "\n${BLUE}🎨 Step 2/8: Checking code formatting...${NC}"
+# 2. Format check and auto-fix
+echo -e "\n${BLUE}🎨 Step 2/8: Checking and fixing code formatting...${NC}"
 if ! cargo fmt --manifest-path starter/Cargo.toml --all -- --check; then
-    echo -e "${RED}❌ Code formatting issues found!${NC}"
-    echo -e "${YELLOW}💡 Run 'cargo fmt --manifest-path starter/Cargo.toml --all' to fix${NC}"
-    exit 1
+    echo -e "${YELLOW}⚠️  Code formatting issues found, auto-fixing...${NC}"
+    cargo fmt --manifest-path starter/Cargo.toml --all
+    echo -e "${GREEN}✅ Code formatting fixed${NC}"
+else
+    echo -e "${GREEN}✅ Code formatting is correct${NC}"
 fi
-echo -e "${GREEN}✅ Code formatting is correct${NC}"
 
 # 3. Clippy linting (offline mode)
 echo -e "\n${BLUE}📎 Step 3/8: Running Clippy lints...${NC}"
-if ! SQLX_OFFLINE=true cargo clippy --manifest-path starter/Cargo.toml --all-targets --all-features -- -D warnings; then
+if ! SQLX_OFFLINE=true cargo clippy --manifest-path starter/Cargo.toml --all --all-targets --all-features -- -D warnings; then
     echo -e "${RED}❌ Clippy found issues!${NC}"
     echo -e "${YELLOW}💡 Fix the linting issues above${NC}"
     exit 1
@@ -76,7 +77,7 @@ cd "$PROJECT_ROOT"
 
 # 5. Unit tests
 echo -e "\n${BLUE}🧪 Step 5/8: Running unit tests...${NC}"
-if ! cargo test --manifest-path starter/Cargo.toml --lib; then
+if ! cargo test --manifest-path starter/Cargo.toml --all --lib; then
     echo -e "${RED}❌ Unit tests failed!${NC}"
     exit 1
 fi
