@@ -2,14 +2,69 @@
 
 *This guide explains how user authentication works, from concepts to implementation to usage.*
 
-## Why Session-Based Authentication?
+## 🤔 Why This Authentication Approach? (First Principles)
 
-This starter uses **session-based authentication** because it's:
-- **Simple to understand**: No complex JWT signing/verification
-- **Secure by design**: Server controls all session state
-- **Database-centric**: Fits our data-first architecture
-- **Easy to revoke**: Delete session = user logged out
-- **Stateless-friendly**: Sessions stored in database, not memory
+### The Fundamental Problem: Identity Verification
+
+**What authentication actually solves**:
+- How do we verify someone is who they claim to be?
+- How do we remember that verification across multiple requests?
+- How do we revoke access when needed?
+- How do we balance security with usability?
+
+### Authentication Approach Comparison
+
+| Approach | How It Works | Pros | Cons | When to Use |
+|----------|--------------|------|------|-------------|
+| **Basic Auth** | Username/password in every request | Simple, stateless | Credentials in every request | Internal APIs, development |
+| **JWT Tokens** | Signed tokens with user data | Stateless, scalable | Hard to revoke, token size | Microservices, mobile apps |
+| **OAuth 2.0** | Third-party identity providers | User doesn't create passwords | Complex flow, external dependency | Social login, enterprise SSO |
+| **API Keys** | Long-lived secret tokens | Simple for machines | Hard to rotate, no user context | Machine-to-machine |
+| **Session-Based** ⭐ | Server-stored session tokens | Easy to understand/revoke | Requires database lookup | Web applications, learning |
+
+### Why Session-Based for This Starter?
+
+**Our First Principles Decision**:
+
+**Principle 1: Understandability**
+- Clear flow: password → hash verification → session creation → token validation
+- No cryptographic complexity to distract from core concepts
+- Easy to debug with database queries
+
+**Principle 2: Security by Default**
+- Server controls all session state (can revoke instantly)
+- Passwords never stored in plaintext (Argon2 hashing)
+- Session expiration handled automatically
+- No client-side secret storage complexity
+
+**Principle 3: Real-World Patterns**
+- Similar to how GitHub, GitLab, many web apps work
+- Database-first approach matches our architecture
+- Scales well for typical web applications
+
+**Principle 4: Learning Value**
+- Shows proper password hashing techniques
+- Demonstrates session lifecycle management
+- Teaches authorization patterns (roles, permissions)
+
+### 🧠 Mental Model: Authentication as State Machine
+
+```mermaid
+stateDiagram-v2
+    [*] --> Anonymous
+    Anonymous --> Authenticating: Submit credentials
+    Authenticating --> Authenticated: Valid credentials
+    Authenticating --> Anonymous: Invalid credentials
+    Authenticated --> Authenticated: Make authorized requests
+    Authenticated --> Anonymous: Logout / Session expires
+    Authenticated --> Anonymous: Session revoked
+    
+    note right of Anonymous: No user context
+    note right of Authenticating: Temporary state
+    note right of Authenticated: User context available
+```
+
+**Key Insight**: Authentication is about transitioning from "unknown" to "known" user state and maintaining that state across requests.
 
 ## Core Concepts
 

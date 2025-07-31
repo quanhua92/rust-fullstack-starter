@@ -2,9 +2,82 @@
 
 *This guide shows you how to create your own background task types, from simple examples to advanced patterns.*
 
-## Understanding Task Types
+## 🤔 Why Custom Task Types? (First Principles)
 
-A **task type** is simply a string identifier that maps to a specific handler. When you create a task with `task_type: "my_custom_task"`, the worker system looks up the corresponding handler and executes it.
+### The Fundamental Problem: Code Organization and Extensibility
+
+**Without task type system**:
+- All background logic mixed in one giant handler
+- Hard to add new types of background work
+- No way to configure different behaviors per task type
+- Difficult to test individual task types
+
+**With task type system**:
+- Each type of work has its own focused handler
+- Easy to add new task types without changing existing code
+- Different retry strategies, timeouts per task type
+- Clear separation of concerns for testing
+
+### Task Organization Approaches
+
+| Approach | How It Works | Pros | Cons | When to Use |
+|----------|--------------|------|------|-------------|
+| **Single Handler** | One function handles all tasks | Very simple | Becomes unmaintainable | Proof of concepts only |
+| **If/Else Routing** | Switch statement on task type | Simple to understand | Hard to extend, test | Small number of types |
+| **Registry Pattern** ⭐ | Map task types to handler objects | Extensible, testable | More initial complexity | Production applications |
+| **Plugin System** | Dynamic loading of handlers | Ultimate flexibility | Complex, runtime errors | Large plugin ecosystems |
+
+### Why Registry Pattern for This Starter?
+
+**Our First Principles Decision**:
+
+**Principle 1: Extensibility**
+- Adding new task types doesn't require changing existing code
+- Each handler is self-contained and focused
+- Easy to enable/disable task types
+
+**Principle 2: Testability**
+- Each handler can be tested in isolation
+- Mock handlers for integration tests
+- Clear boundaries between different task logic
+
+**Principle 3: Production Patterns**
+- Similar to how job processing libraries work (Sidekiq, Celery)
+- Demonstrates common enterprise patterns
+- Shows proper separation of concerns
+
+### 🧠 Mental Model: Task Type as Contract
+
+```mermaid
+graph TB
+    subgraph "📝 Task Contract"
+        TYPE[🏷️ Task Type<br/>"email", "webhook", etc.]
+        PAYLOAD[📦 Payload Structure<br/>JSON with expected fields]
+        BEHAVIOR[⚙️ Expected Behavior<br/>What the task should do]
+    end
+    
+    subgraph "🔧 Handler Implementation"
+        VALIDATION[✅ Input Validation<br/>Check payload format]
+        PROCESSING[⚙️ Core Logic<br/>Do the actual work]
+        RESULT[📤 Result Handling<br/>Success/failure reporting]
+    end
+    
+    TYPE --> VALIDATION
+    PAYLOAD --> VALIDATION
+    BEHAVIOR --> PROCESSING
+    VALIDATION --> PROCESSING
+    PROCESSING --> RESULT
+    
+    classDef contract fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
+    classDef implementation fill:#e3f2fd,stroke:#0277bd,stroke-width:2px
+    
+    class TYPE,PAYLOAD,BEHAVIOR contract
+    class VALIDATION,PROCESSING,RESULT implementation
+```
+
+**Key Insight**: A task type is like a function signature - it defines what input is expected and what behavior will occur.
+
+## Understanding Task Types
 
 ```mermaid
 graph LR

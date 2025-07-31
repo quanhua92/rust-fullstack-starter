@@ -278,30 +278,166 @@ Comprehensive guides in **[`guides/`](guides/)**:
 - **[Project Customization](project-customization.md)** - Adapting the starter for your needs
 - **[Docker Hub Setup](docker-hub-setup.md)** - Container registry configuration
 
-## Learning Resources
+## 📚 Learning Paths: First Principles Approach
 
-This starter is designed for learning modern Rust web development:
+This starter is designed as the **best educational resource** for full-stack development. We teach **understanding over memorization** through first principles thinking.
 
-### Key Learning Areas
+> **[📖 Read Our Learning Philosophy](learning-philosophy.md)** - Why we prioritize "why" before "how"
 
-- **Async Rust** - Tokio, async/await patterns
-- **Web Development** - Axum framework, HTTP handling
-- **Database Integration** - SQLx, migrations, connection pooling
-- **Testing Strategies** - Integration testing, test isolation, Docker-based chaos testing
-- **Error Handling** - Result types, custom error types
-- **Security** - Authentication, session management
-- **Reliability Patterns** - Circuit breakers, retries, resilience testing
+### 🎯 Beginner Path: Foundations
+**Difficulty**: ⭐⭐☆☆☆ (Beginner)  
+**Goal**: Build fundamental mental models for full-stack development
 
-### Code Examples
+1. **[📖 Learning Philosophy](learning-philosophy.md)** *(⚡ Quick Read)*
+   - First principles thinking for developers
+   - Mental model building strategies
+   - Why before how methodology
 
-The codebase includes examples for:
-- User authentication and authorization
-- Background job processing with retries and dead letter queue
-- Database transactions and error handling
-- API documentation with OpenAPI
-- Docker containerization
-- Comprehensive testing patterns
-- Docker-based chaos testing and failure simulation
+2. **[🏗️ Architecture Overview](guides/01-architecture.md)** *(🏗️ Foundation)*
+   - **Why**: Single binary vs microservices tradeoffs
+   - **Mental Model**: Layer-based system thinking
+   - **Practice**: Trace a request through all layers
+
+3. **[🔐 Authentication System](guides/02-authentication.md)** *(🔐 Core Concept)*
+   - **Why**: Sessions vs JWT tradeoffs for this use case
+   - **Mental Model**: Identity verification and state management
+   - **Practice**: Implement user registration flow
+
+4. **[🌐 Full-Stack Integration](guides/09-web-frontend-integration.md)** *(🌐 Connection)*
+   - **Why**: OpenAPI-driven development approach
+   - **Mental Model**: Type-safe contract between frontend and backend
+   - **Practice**: Add a new API endpoint with frontend integration
+
+**Prerequisites**: Basic programming knowledge, comfort with terminal  
+**Success Criteria**: Can explain why each architectural choice was made
+
+### 🚀 Intermediate Path: Implementation
+**Difficulty**: ⭐⭐⭐☆☆ (Intermediate)  
+**Goal**: Master implementation patterns and testing strategies
+
+5. **[⚙️ Background Tasks](guides/04-background-tasks.md)** *(⚙️ Complex System)*
+   - **Why**: Async processing necessity and patterns
+   - **Mental Model**: Queue-based task processing
+   - **Practice**: Create custom task handlers
+
+6. **[📋 Task Registry](guides/06-task-registry.md)** *(📋 Organization)*
+   - **Why**: Organization and scalability patterns
+   - **Mental Model**: Domain-driven task organization
+   - **Practice**: Implement domain-specific task registry
+
+7. **[✅ Testing Strategy](guides/07-testing.md)** *(✅ Quality)*
+   - **Why**: Integration tests over unit tests for this architecture
+   - **Mental Model**: TestApp pattern and isolation strategies
+   - **Practice**: Write tests for your custom features
+
+8. **[🔧 Debugging & Troubleshooting](guides/10-debugging-and-troubleshooting.md)** *(🔧 Essential Skill)*
+   - **Why**: Systematic debugging from first principles
+   - **Mental Model**: Layer-based problem isolation
+   - **Practice**: Debug real issues in the application
+
+**Prerequisites**: Completed beginner path  
+**Success Criteria**: Can implement and test new features independently
+
+### 🔥 Advanced Path: Production
+**Difficulty**: ⭐⭐⭐⭐☆ (Advanced)  
+**Goal**: Production deployment and reliability engineering
+
+9. **[🚢 Production Deployment](production-deployment.md)** *(🚢 Infrastructure)*
+   - **Why**: Container orchestration and security considerations
+   - **Mental Model**: Infrastructure as code and deployment pipelines
+   - **Practice**: Deploy to staging environment
+
+10. **[🌪️ Chaos Engineering](guides/08-chaos-testing.md)** *(🌪️ Resilience)*
+    - **Why**: Building antifragile systems
+    - **Mental Model**: Controlled failure experimentation
+    - **Practice**: Design and run chaos experiments
+
+11. **[⚡ Performance & Monitoring](reliability.md)** *(⚡ Optimization)*
+    - **Why**: Observability and optimization strategies
+    - **Mental Model**: Performance bottleneck identification
+    - **Practice**: Implement monitoring and alerting
+
+12. **[🎓 Graduation: Beyond the Starter](project-customization.md)** *(🎓 Mastery)*
+    - **Why**: When and how to evolve beyond the starter patterns
+    - **Mental Model**: Technology selection and scaling decisions
+    - **Practice**: Plan your next architectural evolution
+
+**Prerequisites**: Completed intermediate path  
+**Success Criteria**: Ready to architect and deploy production systems
+
+### 📊 Quick Reference: Learning Progression
+
+```mermaid
+graph TD
+    subgraph "🎯 Beginner: Mental Models"
+        A1[📖 Learning Philosophy] --> A2[🏗️ Architecture]
+        A2 --> A3[🔐 Authentication]
+        A3 --> A4[🌐 Integration]
+    end
+    
+    subgraph "🚀 Intermediate: Implementation"
+        B1[⚙️ Background Tasks] --> B2[📋 Task Registry]
+        B2 --> B3[✅ Testing]
+        B3 --> B4[🔧 Debugging]
+    end
+    
+    subgraph "🔥 Advanced: Production"
+        C1[🚢 Deployment] --> C2[🌪️ Chaos Testing]
+        C2 --> C3[⚡ Performance]
+        C3 --> C4[🎓 Graduation]
+    end
+    
+    A4 --> B1
+    B4 --> C1
+    
+    classDef beginner fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
+    classDef intermediate fill:#e3f2fd,stroke:#0277bd,stroke-width:2px
+    classDef advanced fill:#ffebee,stroke:#c62828,stroke-width:2px
+    
+    class A1,A2,A3,A4 beginner
+    class B1,B2,B3,B4 intermediate
+    class C1,C2,C3,C4 advanced
+```
+
+### 🎯 Choose Your Starting Point
+
+| Background | Recommended Path | Skills to Build |
+|------------|------------------|-----------------|
+| **New to Full-Stack** | Start with Beginner Path | Foundations → Implementation → Production |
+| **Frontend Developer** | Start with Architecture (Step 2) | Backend patterns → Full-stack integration |
+| **Backend Developer** | Start with Integration (Step 4) | Frontend patterns → Type-safe APIs |
+| **Experienced Developer** | Jump to Intermediate Path | Advanced patterns → Production deployment |
+
+### Key Learning Areas Covered
+
+- **🧠 First Principles Thinking** - Understanding why, not just how
+- **⚛️ Modern React Patterns** - TanStack Router, Query, and type safety
+- **🦀 Production Rust** - Axum, SQLx, and async patterns
+- **🔒 Security Implementation** - Authentication, authorization, and session management
+- **🔄 Async Processing** - Background tasks with retry logic and dead letter queues
+- **✅ Testing Excellence** - Integration testing and chaos engineering
+- **🚀 Production Deployment** - Docker, Kubernetes, and monitoring
+- **🌐 Full-Stack Integration** - End-to-end type safety and error handling
+
+### Real-World Applications
+
+This starter demonstrates patterns used in production applications:
+- **Authentication flows** similar to GitHub, GitLab
+- **Background task processing** like Stripe webhooks, email queues
+- **API documentation** standards used by Stripe, Twilio
+- **Testing strategies** from Netflix, Spotify engineering teams
+- **Chaos engineering** principles from Netflix's Chaos Monkey
+- **Health monitoring** patterns from AWS, Google Cloud
+
+### Learning Outcomes
+
+After completing all paths, you will:
+
+✅ **Understand Systems Thinking** - See how components connect and influence each other  
+✅ **Debug from First Principles** - Systematically isolate and fix problems at any layer  
+✅ **Make Informed Architecture Decisions** - Choose technologies based on requirements, not hype  
+✅ **Build Production-Ready Applications** - Handle scale, failures, and security appropriately  
+✅ **Teach Others** - Explain complex concepts clearly because you understand the fundamentals
 
 ## Contributing
 
