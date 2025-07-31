@@ -2,6 +2,82 @@
 
 *This guide explains how user authentication works, from concepts to implementation to usage.*
 
+## ⚡ TL;DR - Working Authentication (5 minutes)
+
+**Want working auth right now?** Here's the copy-paste version:
+
+### Backend: Add Protected Endpoint
+```rust
+// Add to your handler
+use crate::auth::middleware::require_auth;
+
+pub async fn my_protected_endpoint(
+    Extension(user): Extension<User>, // User is already authenticated
+    State(state): State<AppState>,
+) -> Result<Json<ApiResponse<MyData>>, Error> {
+    // Your protected logic here
+    let data = get_user_data(&user).await?;
+    Ok(Json(ApiResponse::success(data)))
+}
+
+// Add to router with auth middleware
+Router::new()
+    .route("/my-endpoint", get(my_protected_endpoint))
+    .layer(middleware::from_fn_with_state(state.clone(), require_auth))
+```
+
+### Frontend: Use Authentication
+```typescript
+import { useAuth } from '@/lib/auth/context';
+
+function LoginForm() {
+  const { login } = useAuth();
+  
+  const handleLogin = async (credentials) => {
+    try {
+      await login(credentials); // Handles token storage automatically
+      // User is now logged in, redirects handled by AuthProvider
+    } catch (error) {
+      console.error('Login failed:', error.message);
+    }
+  };
+
+  return (
+    <form onSubmit={(e) => {
+      e.preventDefault();
+      handleLogin({ username: 'testuser', password: 'password' });
+    }}>
+      <button type="submit">Login</button>
+    </form>
+  );
+}
+
+function ProtectedComponent() {
+  const { user, authenticated } = useAuth();
+  
+  if (!authenticated) return <div>Please log in</div>;
+  
+  return <div>Welcome, {user.username}!</div>;
+}
+```
+
+### Test It Works
+```bash
+# Register new user
+curl -X POST http://localhost:3000/api/v1/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{"username":"testuser","email":"test@example.com","password":"SecurePass123!"}'
+
+# Login and get token
+curl -X POST http://localhost:3000/api/v1/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"username":"testuser","password":"SecurePass123!"}'
+```
+
+**That's it!** You now have working authentication. Want to understand why it works this way? Keep reading ↓
+
+---
+
 ## 🤔 Why This Authentication Approach? (First Principles)
 
 ### The Fundamental Problem: Identity Verification
