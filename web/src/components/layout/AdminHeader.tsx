@@ -50,7 +50,7 @@ const generateBreadcrumbs = (pathname: string) => {
 };
 
 export function AdminHeader() {
-	const { user, logout } = useAuth();
+	const { user, logout, logoutAll } = useAuth();
 	const location = useLocation();
 
 	const breadcrumbs = generateBreadcrumbs(location.pathname);
@@ -60,6 +60,14 @@ export function AdminHeader() {
 			await logout();
 		} catch (error) {
 			console.error("Logout failed:", error);
+		}
+	};
+
+	const handleLogoutAll = async () => {
+		try {
+			await logoutAll();
+		} catch (error) {
+			console.error("Logout all failed:", error);
 		}
 	};
 
@@ -94,11 +102,17 @@ export function AdminHeader() {
 			{/* Spacer */}
 			<div className="flex-1" />
 
-			{/* Search */}
-			<div className="relative w-64">
+			{/* Search - Hidden on mobile */}
+			<div className="relative w-64 hidden md:block">
 				<Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
 				<Input type="search" placeholder="Search..." className="pl-8" />
 			</div>
+
+			{/* Mobile Search Button */}
+			<Button variant="ghost" size="icon" className="md:hidden">
+				<Search className="h-4 w-4" />
+				<span className="sr-only">Search</span>
+			</Button>
 
 			{/* Notifications */}
 			<Button variant="ghost" size="icon">
@@ -132,6 +146,9 @@ export function AdminHeader() {
 					<DropdownMenuSeparator />
 					<DropdownMenuItem onClick={handleLogout} className="text-red-600">
 						Log out
+					</DropdownMenuItem>
+					<DropdownMenuItem onClick={handleLogoutAll} className="text-red-600">
+						Log out all devices
 					</DropdownMenuItem>
 				</DropdownMenuContent>
 			</DropdownMenu>

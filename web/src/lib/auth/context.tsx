@@ -24,7 +24,9 @@ interface AuthContextType {
 		password: string;
 	}) => Promise<void>;
 	logout: () => Promise<void>;
+	logoutAll: () => Promise<void>;
 	refreshUser: () => Promise<void>;
+	refreshToken: () => Promise<boolean>;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -68,6 +70,20 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
 		initAuth();
 	}, []);
+
+	// Automatic token refresh every 15 minutes
+	useEffect(() => {
+		if (!isAuthenticated) return;
+
+		const refreshInterval = setInterval(async () => {
+			const success = await refreshToken();
+			if (!success) {
+				console.log("Token refresh failed, user will be logged out");
+			}
+		}, 15 * 60 * 1000); // 15 minutes
+
+		return () => clearInterval(refreshInterval);
+	}, [isAuthenticated]);
 
 	const login = async (credentials: {
 		username_or_email: string;
@@ -114,6 +130,21 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 			// Continue with logout even if API call fails
 		} finally {
 			setUser(null);
+			setAuthToken(null);
+			setIsLoading(false);
+		}
+	};
+
+	const logoutAll = async () => {
+		setIsLoading(true);
+		try {
+			await apiClient.logoutAll();
+		} catch (error) {
+			console.error("Logout all failed:", error);
+			// Continue with logout even if API call fails
+		} finally {
+			setUser(null);
+			setAuthToken(null);
 			setIsLoading(false);
 		}
 	};
@@ -132,6 +163,24 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 		}
 	};
 
+	const refreshToken = async (): Promise<boolean> => {
+		try {
+			const response = await apiClient.refreshToken();
+			if (response.success) {
+				// Token is still valid, refresh user data
+				await refreshUser();
+				return true;
+			}
+			return false;
+		} catch (error) {
+			console.error("Token refresh failed:", error);
+			// Token is invalid, clear user data
+			setUser(null);
+			setAuthToken(null);
+			return false;
+		}
+	};
+
 	const value: AuthContextType = {
 		user,
 		isLoading,
@@ -139,7 +188,9 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 		login,
 		register,
 		logout,
+		logoutAll,
 		refreshUser,
+		refreshToken,
 	};
 
 	return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
