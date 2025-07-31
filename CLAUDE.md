@@ -105,7 +105,7 @@ This starter template includes comprehensive development infrastructure:
 4. **Commit Phase**: Commit completed phase without push to mark milestone
 5. **Next Phase**: Proceed to next development phase
 
-**Web Quality Checks**: `@web/scripts/check-web.sh`
+**Web Quality Checks**: `web/scripts/check-web.sh`
 - **Dependencies**: Validates pnpm dependencies and installation
 - **API Types**: Auto-generates TypeScript types from `../docs/openapi.json`
 - **TypeScript**: Full type checking with `tsc --noEmit`
