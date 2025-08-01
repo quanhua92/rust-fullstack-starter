@@ -242,6 +242,10 @@ cd rust-fullstack-starter
 # Start background task worker with log following
 ./scripts/worker.sh -f
 
+# Or multiple concurrent workers:
+# ./scripts/worker.sh --id 1 -f
+# ./scripts/worker.sh --id 2 -f
+
 # Verify
 curl http://localhost:3000/api/v1/health
 open http://localhost:3000/api-docs
@@ -304,6 +308,10 @@ Create and process async jobs with dead letter queue management:
 ```bash
 # Start worker process
 ./scripts/worker.sh
+
+# Or multiple concurrent workers:
+# ./scripts/worker.sh --id 1
+# ./scripts/worker.sh --id 2
 
 # Create task via API
 curl -X POST http://localhost:3000/api/v1/tasks \

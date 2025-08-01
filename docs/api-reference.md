@@ -1042,6 +1042,10 @@ The curl test script validates:
 ./scripts/server.sh 3000
 ./scripts/worker.sh
 
+# Optional: Multiple concurrent workers
+# ./scripts/worker.sh --id 1
+# ./scripts/worker.sh --id 2
+
 # 2. Register and login
 curl -X POST http://localhost:3000/api/v1/auth/register \
   -H "Content-Type: application/json" \

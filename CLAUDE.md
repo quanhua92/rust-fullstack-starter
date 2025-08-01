@@ -27,7 +27,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Server Management**: 
   - Start: `./scripts/server.sh [port] [-f]` (default port 3000, -f for foreground)
   - Stop: `./scripts/stop-server.sh [port]`
-  - Worker: `./scripts/worker.sh [-f]` (-f for foreground mode)
+  - Worker: `./scripts/worker.sh [--id ID] [-f]` (--id for concurrent workers, -f for foreground mode)
 
 ## Health Endpoints
 
@@ -52,7 +52,7 @@ Comprehensive OpenAPI documentation is available:
 Key development scripts in `/scripts/`:
 - `check.sh` - **Comprehensive quality checks (run before every commit)**
 - `server.sh` - Start development server with custom port
-- `worker.sh` - Start background task worker
+- `worker.sh` - Start background task worker (supports concurrent workers with --id)
 - `test-with-curl.sh` - Comprehensive API endpoint testing
 - `test-chaos.sh` - Chaos testing framework for resilience validation
 - `reset-all.sh` - Database reset (requires `--reset-database` flag)
@@ -84,6 +84,7 @@ This starter template includes comprehensive development infrastructure:
 1. **Start Services**: `./scripts/dev-server.sh 3000` (complete environment)
    - Or manually background: `./scripts/server.sh && ./scripts/worker.sh`
    - Or manually foreground: `./scripts/server.sh -f` + `./scripts/worker.sh -f` (separate terminals)
+   - Multiple workers: `./scripts/worker.sh --id 1` + `./scripts/worker.sh --id 2` (concurrent workers)
    - **IMPORTANT**: Workers must start to register task types before creating tasks
 2. **Quality Checks**: `./scripts/check.sh` (**MANDATORY before every commit**)
    - Validates: formatting, linting, compilation, SQLx, tests

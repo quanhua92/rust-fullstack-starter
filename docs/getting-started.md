@@ -27,6 +27,10 @@ This guide will help you set up and run the Rust Full-Stack Starter project loca
 
 # In a new terminal, start the background worker with log following
 ./scripts/worker.sh -f
+
+# Or run multiple concurrent workers (different terminals):
+# ./scripts/worker.sh --id 1 -f
+# ./scripts/worker.sh --id 2 -f
 ```
 
 ### Manual Step-by-Step Setup
@@ -117,6 +121,10 @@ The admin user will be created automatically when the server first starts.
 
 # In a new terminal, start the background worker with log following
 ./scripts/worker.sh -f
+
+# Or run multiple concurrent workers (different terminals):
+# ./scripts/worker.sh --id 1 -f
+# ./scripts/worker.sh --id 2 -f
 ```
 
 ### Stop Everything
@@ -194,6 +202,10 @@ Now that you have the system running, follow these guides to understand and exte
 
 # Start background worker with logs
 ./scripts/worker.sh -f
+
+# Or multiple workers:
+# ./scripts/worker.sh --id 1 -f
+# ./scripts/worker.sh --id 2
 
 # Start server with auto-restart
 ./scripts/server.sh [port]

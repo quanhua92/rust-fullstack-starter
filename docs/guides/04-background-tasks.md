@@ -986,9 +986,15 @@ curl -H "Authorization: Bearer $TOKEN" \
 # 3. Start worker (processes background tasks)
 ./scripts/worker.sh
 
+# Optional: Multiple concurrent workers
+# ./scripts/worker.sh --id 1
+# ./scripts/worker.sh --id 2
+
 # 4. Monitor logs
 tail -f /tmp/starter-server-3000.log
-tail -f /tmp/starter-worker.log
+tail -f /tmp/starter-worker-0.log   # Default worker (ID 0)
+# tail -f /tmp/starter-worker-1.log # Worker ID 1
+# tail -f /tmp/starter-worker-2.log # Worker ID 2
 ```
 
 ### Testing End-to-End
@@ -1117,6 +1123,11 @@ watch 'curl -s -H "Authorization: Bearer $TOKEN" \
 
 # Increase worker concurrency (carefully!)
 STARTER__WORKER__CONCURRENCY=8 ./scripts/worker.sh
+
+# Multiple concurrent workers (alternative to high concurrency)
+./scripts/worker.sh --id 1
+./scripts/worker.sh --id 2
+./scripts/worker.sh --id 3
 
 # Reduce poll interval for faster pickup
 STARTER__WORKER__POLL_INTERVAL_SECS=2 ./scripts/worker.sh

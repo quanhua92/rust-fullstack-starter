@@ -28,6 +28,10 @@ cd rust-fullstack-starter
 ```bash
 # Start background task worker with log following
 ./scripts/worker.sh -f
+
+# Or multiple concurrent workers
+./scripts/worker.sh --id 1 -f    # Terminal 1
+./scripts/worker.sh --id 2 -f    # Terminal 2
 ```
 
 ### 4. Try It Out
@@ -100,7 +104,9 @@ cargo nextest run                    # Integration tests (53 tests)
 ./scripts/check.sh                  # Format, lint, test (run before commits)
 
 # Background tasks
-./scripts/worker.sh -f              # Start task worker with logs
+./scripts/worker.sh -f              # Start task worker with logs (ID 0)
+./scripts/worker.sh --id 1 -f       # Start concurrent worker (ID 1)
+./scripts/worker.sh --id 2          # Start background worker (ID 2)
 
 # Admin commands (direct database access)
 cargo run -- admin task-stats       # Task statistics

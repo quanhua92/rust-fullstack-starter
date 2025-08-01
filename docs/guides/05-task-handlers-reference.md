@@ -716,9 +716,14 @@ cargo nextest run tasks::
 ./scripts/server.sh 3000
 ./scripts/worker.sh
 
+# Optional: Multiple concurrent workers
+# ./scripts/worker.sh --id 1
+# ./scripts/worker.sh --id 2
+
 # Alternative: Foreground mode (separate terminals)
 # Terminal 1: ./scripts/server.sh 3000 -f
 # Terminal 2: ./scripts/worker.sh -f
+# Terminal 3: ./scripts/worker.sh --id 1 -f
 
 # Register test user
 curl -X POST http://localhost:3000/api/v1/auth/register \
