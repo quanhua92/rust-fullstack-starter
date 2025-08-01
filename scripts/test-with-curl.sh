@@ -104,7 +104,7 @@ test_api "POST /api/v1/auth/register" "POST" "/api/v1/auth/register" "200" "" "$
 
 # Login user and extract token
 echo "🔑 Logging in to get session token..."
-LOGIN_DATA="{\"username_or_email\": \"test_$TIMESTAMP@example.com\", \"password\": \"SecurePass123\"}"
+LOGIN_DATA="{\"email\": \"test_$TIMESTAMP@example.com\", \"password\": \"SecurePass123\"}"
 LOGIN_RESPONSE=$(curl -s -X POST "$BASE_URL/api/v1/auth/login" -H "Content-Type: application/json" -d "$LOGIN_DATA")
 if echo "$LOGIN_RESPONSE" | grep -q '"success":true'; then
     USER_TOKEN=$(echo "$LOGIN_RESPONSE" | python3 -c "import json,sys; print(json.load(sys.stdin)['data']['session_token'])" 2>/dev/null || echo "")
@@ -342,7 +342,7 @@ echo -e "${YELLOW}❌ Error Response Testing${NC}"
 test_api "GET /api/v1/auth/me (no auth)" "GET" "/api/v1/auth/me" "401"
 
 # Test invalid login
-INVALID_LOGIN='{"username_or_email": "wrong", "password": "wrong"}'
+INVALID_LOGIN='{"username": "wrong", "password": "wrong"}'
 test_api "POST /api/v1/auth/login (invalid)" "POST" "/api/v1/auth/login" "401" "" "$INVALID_LOGIN"
 
 # Test validation error
@@ -378,7 +378,7 @@ if [ -n "$USER_TOKEN" ]; then
     NEW_USER_DATA="{\"username\": \"testuser2_$TIMESTAMP\", \"email\": \"test2_$TIMESTAMP@example.com\", \"password\": \"SecurePass123\"}"
     curl -s -X POST "$BASE_URL/api/v1/auth/register" -H "Content-Type: application/json" -d "$NEW_USER_DATA" > /dev/null
     
-    NEW_LOGIN_DATA="{\"username_or_email\": \"test2_$TIMESTAMP@example.com\", \"password\": \"SecurePass123\"}"
+    NEW_LOGIN_DATA="{\"email\": \"test2_$TIMESTAMP@example.com\", \"password\": \"SecurePass123\"}"
     NEW_LOGIN_RESPONSE=$(curl -s -X POST "$BASE_URL/api/v1/auth/login" -H "Content-Type: application/json" -d "$NEW_LOGIN_DATA")
     NEW_TOKEN=$(echo "$NEW_LOGIN_RESPONSE" | python3 -c "import json,sys; print(json.load(sys.stdin)['data']['session_token'])" 2>/dev/null || echo "")
     

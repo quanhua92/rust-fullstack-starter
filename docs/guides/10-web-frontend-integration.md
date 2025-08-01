@@ -181,7 +181,8 @@ export interface paths {
 export interface components {
   schemas: {
     LoginRequest: {
-      username_or_email: string;
+      username?: string;
+      email?: string;
       password: string;
     };
     LoginResponse: {

@@ -635,11 +635,13 @@ export interface components {
 			version: string;
 		};
 		LoginRequest: {
+			/** @example john@example.com */
+			email?: string | null;
 			/** @example securepassword123 */
 			password: string;
 			user_agent?: string | null;
 			/** @example johndoe */
-			username_or_email: string;
+			username?: string | null;
 		};
 		LoginResponse: {
 			/** Format: date-time */
@@ -1147,6 +1149,15 @@ export interface operations {
 					"application/json": components["schemas"]["ApiResponse_Vec_TaskResponse"];
 				};
 			};
+			/** @description Unauthorized */
+			401: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					"application/json": components["schemas"]["ErrorResponse"];
+				};
+			};
 		};
 	};
 	create_task: {
@@ -1180,6 +1191,15 @@ export interface operations {
 					"application/json": components["schemas"]["ErrorResponse"];
 				};
 			};
+			/** @description Unauthorized */
+			401: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					"application/json": components["schemas"]["ErrorResponse"];
+				};
+			};
 		};
 	};
 	get_dead_letter_queue: {
@@ -1203,6 +1223,15 @@ export interface operations {
 				};
 				content: {
 					"application/json": components["schemas"]["ApiResponse_Vec_TaskResponse"];
+				};
+			};
+			/** @description Unauthorized */
+			401: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					"application/json": components["schemas"]["ErrorResponse"];
 				};
 			};
 		};
@@ -1310,6 +1339,15 @@ export interface operations {
 					"application/json": components["schemas"]["ApiResponse_TaskResponse"];
 				};
 			};
+			/** @description Unauthorized */
+			401: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					"application/json": components["schemas"]["ErrorResponse"];
+				};
+			};
 			/** @description Task not found */
 			404: {
 				headers: {
@@ -1351,6 +1389,15 @@ export interface operations {
 					"application/json": components["schemas"]["ErrorResponse"];
 				};
 			};
+			/** @description Unauthorized */
+			401: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					"application/json": components["schemas"]["ErrorResponse"];
+				};
+			};
 			/** @description Task not found */
 			404: {
 				headers: {
@@ -1381,6 +1428,15 @@ export interface operations {
 				};
 				content: {
 					"application/json": components["schemas"]["ApiResponse_String"];
+				};
+			};
+			/** @description Unauthorized */
+			401: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					"application/json": components["schemas"]["ErrorResponse"];
 				};
 			};
 			/** @description Task not found */
@@ -1417,6 +1473,15 @@ export interface operations {
 			};
 			/** @description Task is not in failed status */
 			400: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					"application/json": components["schemas"]["ErrorResponse"];
+				};
+			};
+			/** @description Unauthorized */
+			401: {
 				headers: {
 					[name: string]: unknown;
 				};

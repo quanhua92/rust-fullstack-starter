@@ -102,7 +102,7 @@ if ! echo "$REGISTER_RESPONSE" | grep -q '"success":true'; then
 fi
 
 # Login and get token
-LOGIN_DATA="{\"username_or_email\": \"$EMAIL\", \"password\": \"$PASSWORD\"}"
+LOGIN_DATA="{\"email\": \"$EMAIL\", \"password\": \"$PASSWORD\"}"
 LOGIN_RESPONSE=$(curl -s -X POST "$BASE_URL/api/v1/auth/login" \
     -H "Content-Type: application/json" \
     -d "$LOGIN_DATA")

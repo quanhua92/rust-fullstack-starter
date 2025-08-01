@@ -154,10 +154,13 @@ pub async fn validate_session_with_user(
 pub async fn login(conn: &mut DbConn, req: LoginRequest) -> Result<LoginResponse> {
     req.validate()?;
 
-    let user = if req.username_or_email.contains('@') {
-        user_services::find_user_by_email(conn, &req.username_or_email).await?
-    } else {
-        user_services::find_user_by_username(conn, &req.username_or_email).await?
+    let user = match (&req.username, &req.email) {
+        (Some(username), None) => user_services::find_user_by_username(conn, username).await?,
+        (None, Some(email)) => user_services::find_user_by_email(conn, email).await?,
+        _ => {
+            // This should never happen due to validation, but handle it gracefully
+            return Err(Error::InvalidCredentials);
+        }
     };
 
     let user = user.ok_or(Error::InvalidCredentials)?;

@@ -16,7 +16,7 @@ curl -X POST http://localhost:3000/api/v1/auth/register \
 
 export TOKEN=$(curl -s -X POST http://localhost:3000/api/v1/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"username_or_email": "testuser", "password": "password123"}' \
+  -d '{"username": "testuser", "password": "password123"}' \
   | python3 -c "import json,sys; print(json.load(sys.stdin)['data']['session_token'])")
 
 echo "Token: $TOKEN"
@@ -735,7 +735,7 @@ curl -X POST http://localhost:3000/api/v1/auth/register \
 # Get authentication token
 TOKEN=$(curl -s -X POST http://localhost:3000/api/v1/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"username_or_email":"test","password":"password123"}' \
+  -d '{"username":"test","password":"password123"}' \
   | python3 -c "import json,sys; print(json.load(sys.stdin)['data']['session_token'])")
 
 # Test each handler...

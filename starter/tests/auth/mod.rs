@@ -30,7 +30,7 @@ async fn test_login_success() {
 
     // Login
     let login_data = json!({
-        "username_or_email": "testuser",
+        "username": "testuser",
         "password": "SecurePass123!"
     });
 
@@ -52,7 +52,7 @@ async fn test_login_invalid_credentials() {
 
     // Login with wrong password
     let login_data = json!({
-        "username_or_email": "testuser",
+        "username": "testuser",
         "password": "WrongPassword"
     });
 

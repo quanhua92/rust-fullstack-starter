@@ -374,7 +374,7 @@ Authenticate user and create session.
 **Request Body**:
 ```json
 {
-  "username_or_email": "user@example.com",
+  "username": "user@example.com",
   "password": "SecurePassword123!",
   "user_agent": "Mozilla/5.0..." // Optional
 }
@@ -974,7 +974,7 @@ curl -X POST http://localhost:3000/api/v1/auth/register \
 ```bash
 curl -X POST http://localhost:3000/api/v1/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"username_or_email": "test@example.com", "password": "SecurePass123!"}'
+  -d '{"username": "test@example.com", "password": "SecurePass123!"}'
 ```
 
 3. **Access protected endpoint**:
@@ -1053,7 +1053,7 @@ curl -X POST http://localhost:3000/api/v1/auth/register \
 
 TOKEN=$(curl -s -X POST http://localhost:3000/api/v1/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"username_or_email":"testuser","password":"password123"}' \
+  -d '{"username":"testuser","password":"password123"}' \
   | python3 -c "import json,sys; print(json.load(sys.stdin)['data']['session_token'])")
 
 # 3. Create and monitor task
@@ -1162,7 +1162,7 @@ curl -X POST http://localhost:3000/api/v1/auth/register \
 # Test login and extract token
 TOKEN=$(curl -X POST http://localhost:3000/api/v1/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"username_or_email": "testuser", "password": "SecurePass123!"}' \
+  -d '{"username": "testuser", "password": "SecurePass123!"}' \
   | jq -r '.data.session_token')
 ```
 

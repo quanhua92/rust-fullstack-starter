@@ -57,7 +57,7 @@ impl TestDataFactory {
 
         // Login to get token
         let login_data = json!({
-            "username_or_email": username,
+            "username": username,
             "password": "SecurePass123!"
         });
 

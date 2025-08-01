@@ -15,7 +15,8 @@ interface AuthContextType {
 	isLoading: boolean;
 	isAuthenticated: boolean;
 	login: (credentials: {
-		username_or_email: string;
+		username?: string;
+		email?: string;
 		password: string;
 	}) => Promise<void>;
 	register: (data: {
@@ -75,18 +76,22 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 	useEffect(() => {
 		if (!isAuthenticated) return;
 
-		const refreshInterval = setInterval(async () => {
-			const success = await refreshToken();
-			if (!success) {
-				console.log("Token refresh failed, user will be logged out");
-			}
-		}, 15 * 60 * 1000); // 15 minutes
+		const refreshInterval = setInterval(
+			async () => {
+				const success = await refreshToken();
+				if (!success) {
+					console.log("Token refresh failed, user will be logged out");
+				}
+			},
+			15 * 60 * 1000,
+		); // 15 minutes
 
 		return () => clearInterval(refreshInterval);
 	}, [isAuthenticated]);
 
 	const login = async (credentials: {
-		username_or_email: string;
+		username?: string;
+		email?: string;
 		password: string;
 	}) => {
 		setIsLoading(true);

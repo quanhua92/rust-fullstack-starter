@@ -25,7 +25,9 @@ impl Session {
 #[derive(Debug, Deserialize, utoipa::ToSchema)]
 pub struct LoginRequest {
     #[schema(example = "johndoe")]
-    pub username_or_email: String,
+    pub username: Option<String>,
+    #[schema(example = "john@example.com")]
+    pub email: Option<String>,
     #[schema(example = "securepassword123")]
     pub password: String,
     pub user_agent: Option<String>,
@@ -33,12 +35,34 @@ pub struct LoginRequest {
 
 impl LoginRequest {
     pub fn validate(&self) -> Result<()> {
-        if self.username_or_email.trim().is_empty() {
-            return Err(Error::validation(
-                "username_or_email",
-                "Username or email cannot be empty",
-            ));
+        // Ensure exactly one of username or email is provided
+        match (&self.username, &self.email) {
+            (Some(username), None) => {
+                if username.trim().is_empty() {
+                    return Err(Error::validation("username", "Username cannot be empty"));
+                }
+                crate::users::models::validate_username(username)?;
+            }
+            (None, Some(email)) => {
+                if email.trim().is_empty() {
+                    return Err(Error::validation("email", "Email cannot be empty"));
+                }
+                crate::users::models::validate_email(email)?;
+            }
+            (Some(_), Some(_)) => {
+                return Err(Error::validation(
+                    "login",
+                    "Provide either username or email, not both",
+                ));
+            }
+            (None, None) => {
+                return Err(Error::validation(
+                    "login",
+                    "Either username or email must be provided",
+                ));
+            }
         }
+
         if self.password.is_empty() {
             return Err(Error::validation("password", "Password cannot be empty"));
         }

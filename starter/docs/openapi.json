@@ -1842,10 +1842,16 @@
       "LoginRequest": {
         "type": "object",
         "required": [
-          "username_or_email",
           "password"
         ],
         "properties": {
+          "email": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "example": "john@example.com"
+          },
           "password": {
             "type": "string",
             "example": "securepassword123"
@@ -1856,8 +1862,11 @@
               "null"
             ]
           },
-          "username_or_email": {
-            "type": "string",
+          "username": {
+            "type": [
+              "string",
+              "null"
+            ],
             "example": "johndoe"
           }
         }

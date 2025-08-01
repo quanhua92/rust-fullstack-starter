@@ -258,7 +258,7 @@ curl -X POST http://localhost:3000/auth/register \
 # Login to get a session token
 curl -X POST http://localhost:3000/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"username_or_email": "testuser", "password": "password123"}'
+  -d '{"username": "testuser", "password": "password123"}'
 ```
 
 ## Testing

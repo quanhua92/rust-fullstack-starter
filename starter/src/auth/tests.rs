@@ -45,7 +45,7 @@ mod auth_tests {
 
         // Test login
         let login_payload = json!({
-            "username_or_email": "test@example.com",
+            "email": "test@example.com",
             "password": "password123"
         });
 

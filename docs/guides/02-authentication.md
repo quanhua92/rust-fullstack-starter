@@ -164,7 +164,7 @@ sequenceDiagram
     D-->>-A: ✅ User created
     A-->>-U: 📝 User profile (no password!)
     
-    U->>+A: POST /api/v1/auth/login<br/>{username_or_email, password}
+    U->>+A: POST /api/v1/auth/login<br/>{username OR email, password}
     A->>+D: Find user by username/email
     D-->>-A: 👤 User record
     A->>A: 🔍 Verify password vs hash
@@ -390,7 +390,7 @@ curl -X POST http://localhost:3000/api/v1/auth/register \
 curl -X POST http://localhost:3000/api/v1/auth/login \
   -H "Content-Type: application/json" \
   -d '{
-    "username_or_email": "alice",
+    "username": "alice",
     "password": "secure123"
   }'
 ```
@@ -542,7 +542,7 @@ curl -X POST http://localhost:3000/api/v1/auth/register \
 # 3. Login and save token
 TOKEN=$(curl -s -X POST http://localhost:3000/api/v1/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"username_or_email":"alice","password":"secure123"}' \
+  -d '{"username":"alice","password":"secure123"}' \
   | jq -r '.data.session_token')
 
 # 4. Use token for authenticated requests

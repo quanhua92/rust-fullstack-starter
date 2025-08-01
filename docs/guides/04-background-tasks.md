@@ -1023,7 +1023,7 @@ curl -X POST http://localhost:3000/api/v1/auth/register \
 
 TOKEN=$(curl -s -X POST http://localhost:3000/api/v1/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"username_or_email":"test","password":"password123"}' \
+  -d '{"username":"test","password":"password123"}' \
   | python3 -c "import json,sys; print(json.load(sys.stdin)['data']['session_token'])")
 
 # Create tasks
