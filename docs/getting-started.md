@@ -170,8 +170,9 @@ Now that you have the system running, follow these guides to understand and exte
 2. **[Authentication System](./guides/02-authentication.md)** - How secure user sessions work  
 3. **[Foundation Patterns](./guides/03-patterns.md)** - Circuit breakers, retry strategies, dead letter queues
 4. **[Background Tasks](./guides/04-background-tasks.md)** - Async task processing system
-5. **[Custom Task Types](./guides/05-task-types.md)** - Creating your own background tasks
-6. **[Task Registry](./guides/06-task-registry.md)** - Organizing and managing task handlers
+5. **[Task Handlers Reference](./guides/05-task-handlers-reference.md)** - Built-in task examples  
+6. **[Custom Task Types](./guides/06-task-types.md)** - Creating your own background tasks
+7. **[Task Registry](./guides/07-task-registry.md)** - Organizing and managing task handlers
 
 ### 🔧 Development Resources
 - **[Development Workflow](./development.md)** - Daily development process
@@ -343,7 +344,7 @@ async fn test_user_registration() {
 }
 ```
 
-See the **[Testing Guide](./guides/07-testing.md)** for detailed documentation on testing patterns and best practices.
+See the **[Testing Guide](./guides/08-testing.md)** for detailed documentation on testing patterns and best practices.
 
 ## Next Steps
 
@@ -353,7 +354,7 @@ Start exploring the guides based on your interests:
 - **[Authentication System](./guides/02-authentication.md)** - Learn the auth patterns
 - **[Reliability Patterns](./guides/03-patterns.md)** - Circuit breakers and retry strategies  
 - **[Background Tasks](./guides/04-background-tasks.md)** - Async job processing
-- **[Testing Guide](./guides/07-testing.md)** - Comprehensive testing strategies
+- **[Testing Guide](./guides/08-testing.md)** - Comprehensive testing strategies
 - **[Development Workflow](./development.md)** - Daily development practices
 
 ## Project Customization

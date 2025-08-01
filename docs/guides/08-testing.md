@@ -723,7 +723,7 @@ Consider adding:
 - Property-based tests for validation logic
 - Performance benchmarks for critical paths
 - Contract testing for API consumers
-- Chaos testing for reliability (see [Chaos Testing Guide](08-chaos-testing.md))
+- Chaos testing for reliability (see [Chaos Testing Guide](09-chaos-testing.md))
 
 ## Next Steps
 

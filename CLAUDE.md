@@ -207,7 +207,7 @@ Available chaos testing scenarios:
   - Tests system's ability to handle worker scaling operations while maintaining 100% task completion
   - Demonstrates resilience during resource constraints and validates scaling behavior
   - Success criteria: 100% completion within time limits (varies by difficulty: 300s→180s)
-  - **See detailed documentation**: `docs/guides/08-chaos-testing.md`
+  - **See detailed documentation**: `docs/guides/09-chaos-testing.md`
 
 ## Task Type Registration System
 

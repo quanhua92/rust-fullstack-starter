@@ -138,8 +138,8 @@ rust-fullstack-starter/
 ### Learning Guides
 - [Authentication System](docs/guides/02-authentication.md)
 - [Background Tasks](docs/guides/04-background-tasks.md)
-- [Testing Framework](docs/guides/07-testing.md)
-- [Chaos Testing](docs/guides/08-chaos-testing.md) - **Enhanced with 7 scenarios**
+- [Testing Framework](docs/guides/08-testing.md)
+- [Chaos Testing](docs/guides/09-chaos-testing.md) - **Enhanced with 7 scenarios**
 
 ## API Endpoints
 

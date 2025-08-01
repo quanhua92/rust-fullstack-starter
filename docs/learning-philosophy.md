@@ -339,8 +339,8 @@ The ultimate goal is to outgrow this starter. You'll know you're ready when:
 ## Next Steps
 
 1. **Start with Architecture** - Build the foundational mental model ([Architecture Guide](guides/01-architecture.md))
-2. **Practice Debugging** - Use the debugging guide for real problems ([Debugging Guide](guides/10-debugging-and-troubleshooting.md))
-3. **Connect Frontend and Backend** - Understand the full-stack flow ([Web Integration Guide](guides/09-web-frontend-integration.md))
+2. **Practice Debugging** - Use the debugging guide for real problems ([Debugging Guide](guides/11-debugging-and-troubleshooting.md))
+3. **Connect Frontend and Backend** - Understand the full-stack flow ([Web Integration Guide](guides/10-web-frontend-integration.md))
 4. **Apply to Real Projects** - Use these principles in your own applications
 
 ---

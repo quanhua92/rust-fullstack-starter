@@ -812,8 +812,8 @@ impl TaskHandler for ResourceIntensiveHandler {
 
 Now that you can create custom task types, learn how to organize them:
 
-- **[Task Registry →](./06-task-registry.md)** - Organize and manage task handlers
-- **[Built-in Handlers Reference →](../reference/task-handlers.md)** - Learn from existing examples
+- **[Task Registry →](./07-task-registry.md)** - Organize and manage task handlers
+- **[Built-in Handlers Reference →](./05-task-handlers-reference.md)** - Learn from existing examples
 
 ---
 *Custom task types let you extend the background task system for your specific needs while maintaining the same reliability and monitoring features.*

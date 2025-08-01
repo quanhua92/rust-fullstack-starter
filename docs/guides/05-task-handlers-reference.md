@@ -8,6 +8,20 @@
 
 Since tasks process asynchronously, use these methods to check outcomes:
 
+### 0. Get Authentication Token
+```bash
+curl -X POST http://localhost:3000/api/v1/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{"username": "testuser", "email": "test@example.com", "password": "password123"}'
+
+export TOKEN=$(curl -s -X POST http://localhost:3000/api/v1/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"username_or_email": "testuser", "password": "password123"}' \
+  | python3 -c "import json,sys; print(json.load(sys.stdin)['data']['session_token'])")
+
+echo "Token: $TOKEN"
+```
+
 ### 1. Check Task Status
 ```bash
 # Get specific task by ID
@@ -808,8 +822,8 @@ cargo run -- admin list-tasks --limit 1
 
 ## Next Steps
 
-- **[Custom Task Types →](../guides/05-task-types.md)** - Create your own task handlers
-- **[Task Registry →](../guides/06-task-registry.md)** - Organize multiple handlers
+- **[Custom Task Types →](./06-task-types.md)** - Create your own task handlers
+- **[Task Registry →](./07-task-registry.md)** - Organize multiple handlers
 - **[Troubleshooting →](../troubleshooting.md)** - Debug handler issues
 
 ---

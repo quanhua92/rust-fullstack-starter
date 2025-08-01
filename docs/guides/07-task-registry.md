@@ -793,8 +793,8 @@ impl TaskRegistry {
 
 Now that you understand handler organization and management:
 
-- **[Built-in Handlers Reference →](../reference/task-handlers.md)** - Detailed documentation of included handlers
-- **[Troubleshooting →](../reference/troubleshooting.md)** - Debug common registry and handler issues
+- **[Built-in Handlers Reference →](./05-task-handlers-reference.md)** - Detailed documentation of included handlers
+- **[Troubleshooting →](./11-debugging-and-troubleshooting.md)** - Debug common registry and handler issues
 
 ---
 *A well-organized task registry makes your background task system maintainable and scalable as your application grows.*
