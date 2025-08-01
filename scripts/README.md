@@ -53,15 +53,22 @@ Check status of all services, ports, PID files, and connectivity.
 
 ## 🖥️ Server Management
 
-### `server.sh [port]`
-Start HTTP API server in background with PID tracking and log management.
+### `server.sh [port] [-f|--foreground]`
+Start HTTP API server in background or foreground mode.
 - **Default port:** 3000
-- **PID file:** `/tmp/starter-server-{PORT}.pid`
-- **Log file:** `/tmp/starter-server-{PORT}.log` (auto-rotated at 50MB)
-- **Auto-cleanup:** Kills existing processes on port
+- **Background mode:** PID tracking, log files, process management
+- **Foreground mode (-f):** Direct exec, Ctrl+C kills process cleanly
+- **PID file:** `/tmp/starter-server-{PORT}.pid` (background only)
+- **Log file:** `/tmp/starter-server-{PORT}.log` (background only, auto-rotated at 50MB)
+- **Auto-cleanup:** Always kills existing processes on port first
 ```bash
-./scripts/server.sh         # Start on port 3000
-./scripts/server.sh 8080     # Start on port 8080
+# Background mode (default)
+./scripts/server.sh         # Start on port 3000, creates PID file
+./scripts/server.sh 8080     # Start on port 8080, creates PID file
+
+# Foreground mode (direct control)
+./scripts/server.sh -f       # Port 3000, direct exec, Ctrl+C to stop
+./scripts/server.sh 3000 -f  # Port 3000, direct exec, Ctrl+C to stop
 ```
 
 ### `stop-server.sh [port]`
@@ -78,13 +85,20 @@ Test server health endpoints with 30-second timeout.
 
 ## ⚙️ Background Worker Management
 
-### `worker.sh`
-Start background worker for task processing.
-- **PID file:** `/tmp/starter-worker.pid`
-- **Log file:** `/tmp/starter-worker.log` (auto-rotated at 50MB)
+### `worker.sh [-f|--foreground]`
+Start background task worker in background or foreground mode.
+- **Background mode:** PID tracking, log files, process management
+- **Foreground mode (-f):** Direct exec, Ctrl+C kills process cleanly
+- **PID file:** `/tmp/starter-worker.pid` (background only)
+- **Log file:** `/tmp/starter-worker.log` (background only, auto-rotated at 50MB)
+- **Auto-cleanup:** Always kills existing worker processes first
 - **Processes:** Email, data processing, webhooks, file cleanup, reports
 ```bash
-./scripts/worker.sh
+# Background mode (default)
+./scripts/worker.sh          # Creates PID file, logs to file
+
+# Foreground mode (direct control)
+./scripts/worker.sh -f       # Direct exec, Ctrl+C to stop
 ```
 
 ### `stop-worker.sh`
@@ -194,13 +208,20 @@ docker compose up --wait                  # Wait for services
 
 ### Daily Development
 ```bash
-# Start services
+# Option 1: Background mode (traditional)
 ./scripts/server.sh 3000
 ./scripts/worker.sh
 
 # Monitor logs
 tail -f /tmp/starter-server-3000.log
 tail -f /tmp/starter-worker.log
+
+# Option 2: Foreground mode (direct control)
+# Terminal 1: Server in foreground
+./scripts/server.sh 3000 -f
+
+# Terminal 2: Worker in foreground  
+./scripts/worker.sh -f
 
 # Test changes
 cargo nextest run

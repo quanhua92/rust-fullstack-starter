@@ -7,7 +7,7 @@ FOLLOW_LOGS=false
 # Parse arguments
 while [[ $# -gt 0 ]]; do
     case $1 in
-        -f|--follow)
+        -f|--foreground)
             FOLLOW_LOGS=true
             shift
             ;;
@@ -17,9 +17,9 @@ while [[ $# -gt 0 ]]; do
             ;;
         *)
             echo "Unknown option: $1"
-            echo "Usage: $0 [port] [-f|--follow]"
+            echo "Usage: $0 [port] [-f|--foreground]"
             echo "  port            Port number (default: 3000)"
-            echo "  -f, --follow    Follow logs after starting server"
+            echo "  -f, --foreground    Run in foreground mode (Ctrl+C to stop)"
             exit 1
             ;;
     esac
@@ -41,7 +41,11 @@ if [ ! -f "docker-compose.yaml" ] || [ ! -d "starter" ]; then
     exit 1
 fi
 
-echo "🔄 Starting $PROJECT_NAME server on port $PORT..."
+if [ "$FOLLOW_LOGS" = true ]; then
+    echo "🔄 Starting $PROJECT_NAME server on port $PORT in foreground mode..."
+else
+    echo "🔄 Starting $PROJECT_NAME server on port $PORT..."
+fi
 
 # Function to rotate log if it's too large
 rotate_log_if_needed() {
@@ -77,8 +81,17 @@ sleep 1
 # Rotate log if needed
 rotate_log_if_needed
 
-# Start the new server
-echo "🚀 Starting new server..."
+# Check if running in foreground mode
+if [ "$FOLLOW_LOGS" = true ]; then
+    echo "🚀 Starting server in foreground mode (Ctrl+C to exit)..."
+    echo "📋 Running directly with exec (no PID file or logs)"
+    echo "=================================="
+    cd starter
+    exec cargo run -- server --port $PORT
+fi
+
+# Background mode - start with PID tracking and logging
+echo "🚀 Starting new server in background..."
 echo "📝 Log file: $LOG_FILE"
 echo "📄 PID file: $PID_FILE"
 
@@ -103,12 +116,4 @@ if ! kill -0 $SERVER_PID 2>/dev/null; then
     exit 1
 else
     echo "🟢 Server running successfully"
-fi
-
-# Follow logs if requested
-if [ "$FOLLOW_LOGS" = true ]; then
-    echo ""
-    echo "📋 Following server logs (Ctrl+C to exit)..."
-    echo "=================================="
-    tail -f "$LOG_FILE"
 fi

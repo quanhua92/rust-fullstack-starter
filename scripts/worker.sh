@@ -10,14 +10,14 @@ FOLLOW_LOGS=false
 # Parse arguments
 while [[ $# -gt 0 ]]; do
     case $1 in
-        -f|--follow)
+        -f|--foreground)
             FOLLOW_LOGS=true
             shift
             ;;
         *)
             echo "Unknown option: $1"
-            echo "Usage: $0 [-f|--follow]"
-            echo "  -f, --follow    Follow logs after starting worker"
+            echo "Usage: $0 [-f|--foreground]"
+            echo "  -f, --foreground    Run in foreground mode (Ctrl+C to stop)"
             exit 1
             ;;
     esac
@@ -31,7 +31,11 @@ if [ ! -f "docker-compose.yaml" ] || [ ! -d "starter" ]; then
     exit 1
 fi
 
-echo "🔄 Starting $PROJECT_NAME background worker..."
+if [ "$FOLLOW_LOGS" = true ]; then
+    echo "🔄 Starting $PROJECT_NAME worker in foreground mode..."
+else
+    echo "🔄 Starting $PROJECT_NAME background worker..."
+fi
 
 # Function to rotate log if it's too large
 rotate_log_if_needed() {
@@ -71,7 +75,16 @@ sleep 1
 # Rotate log if needed
 rotate_log_if_needed
 
-# Start the worker
+# Check if running in foreground mode
+if [ "$FOLLOW_LOGS" = true ]; then
+    echo "🚀 Starting worker in foreground mode (Ctrl+C to exit)..."
+    echo "📋 Running directly with exec (no PID file or logs)"
+    echo "=================================="
+    cd starter
+    exec cargo run -- worker
+fi
+
+# Background mode - start with PID tracking and logging
 echo "🚀 Starting new background worker..."
 echo "📝 Log file: $LOG_FILE"
 echo "📄 PID file: $PID_FILE"
@@ -96,12 +109,4 @@ if ! kill -0 $WORKER_PID 2>/dev/null; then
     exit 1
 else
     echo "🟢 Worker running successfully"
-fi
-
-# Follow logs if requested
-if [ "$FOLLOW_LOGS" = true ]; then
-    echo ""
-    echo "📋 Following worker logs (Ctrl+C to exit)..."
-    echo "=================================="
-    tail -f "$LOG_FILE"
 fi

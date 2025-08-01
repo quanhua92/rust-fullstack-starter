@@ -712,9 +712,13 @@ cargo nextest run tasks::
 
 ### Manual Testing
 ```bash
-# Start services
+# Start services (background mode)
 ./scripts/server.sh 3000
 ./scripts/worker.sh
+
+# Alternative: Foreground mode (separate terminals)
+# Terminal 1: ./scripts/server.sh 3000 -f
+# Terminal 2: ./scripts/worker.sh -f
 
 # Register test user
 curl -X POST http://localhost:3000/api/v1/auth/register \

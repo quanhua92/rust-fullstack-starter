@@ -25,9 +25,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
   - Advanced: `./scripts/test-chaos.sh --difficulty 3 --scenarios "db-failure,task-flood"`
   - Output: Results saved to `/tmp/chaos-test-report.md` and `/tmp/api-test-*.txt`
 - **Server Management**: 
-  - Start: `./scripts/server.sh [port]` (default port 3000)
+  - Start: `./scripts/server.sh [port] [-f]` (default port 3000, -f for foreground)
   - Stop: `./scripts/stop-server.sh [port]`
-  - Worker: `./scripts/worker.sh`
+  - Worker: `./scripts/worker.sh [-f]` (-f for foreground mode)
 
 ## Health Endpoints
 
@@ -82,7 +82,8 @@ This starter template includes comprehensive development infrastructure:
 
 ### Backend Development (Rust API)
 1. **Start Services**: `./scripts/dev-server.sh 3000` (complete environment)
-   - Or manually: `./scripts/server.sh && ./scripts/worker.sh`
+   - Or manually background: `./scripts/server.sh && ./scripts/worker.sh`
+   - Or manually foreground: `./scripts/server.sh -f` + `./scripts/worker.sh -f` (separate terminals)
    - **IMPORTANT**: Workers must start to register task types before creating tasks
 2. **Quality Checks**: `./scripts/check.sh` (**MANDATORY before every commit**)
    - Validates: formatting, linting, compilation, SQLx, tests
