@@ -235,11 +235,26 @@ For complete setup instructions, see **[Getting Started Guide](./getting-started
 # Clone and start
 git clone https://github.com/quanhua92/rust-fullstack-starter.git
 cd rust-fullstack-starter
-./scripts/dev-server.sh 3000
+
+# Start database and HTTP server
+./scripts/dev-server.sh
+
+# Start background task worker with log following
+./scripts/worker.sh -f
 
 # Verify
 curl http://localhost:3000/api/v1/health
 open http://localhost:3000/api-docs
+
+# Register a new user
+curl -X POST http://localhost:3000/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{"username": "testuser", "email": "test@example.com", "password": "password123"}'
+
+# Login to get a session token
+curl -X POST http://localhost:3000/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"username_or_email": "testuser", "password": "password123"}'
 ```
 
 ## Testing
@@ -581,12 +596,12 @@ graph TD
 
 ### 🎯 Choose Your Starting Point
 
-| Background | Recommended Path | Skills to Build |
-|------------|------------------|-----------------|
-| **New to Full-Stack** | Start with Beginner Path | Foundations → Implementation → Production |
-| **Frontend Developer** | Start with Architecture (Step 2) | Backend patterns → Full-stack integration |
-| **Backend Developer** | Start with Integration (Step 4) | Frontend patterns → Type-safe APIs |
-| **Experienced Developer** | Jump to Intermediate Path | Advanced patterns → Production deployment |
+| Background                | Recommended Path                 | Skills to Build                           |
+| ------------------------- | -------------------------------- | ----------------------------------------- |
+| **New to Full-Stack**     | Start with Beginner Path         | Foundations → Implementation → Production |
+| **Frontend Developer**    | Start with Architecture (Step 2) | Backend patterns → Full-stack integration |
+| **Backend Developer**     | Start with Integration (Step 4)  | Frontend patterns → Type-safe APIs        |
+| **Experienced Developer** | Jump to Intermediate Path        | Advanced patterns → Production deployment |
 
 ### Key Learning Areas Covered
 

@@ -58,7 +58,11 @@ pub struct TaskTypeResponse {
     request_body = CreateTaskApiRequest,
     responses(
         (status = 200, description = "Task created", body = ApiResponse<TaskResponse>),
-        (status = 400, description = "Invalid request", body = ErrorResponse)
+        (status = 400, description = "Invalid request", body = ErrorResponse),
+        (status = 401, description = "Unauthorized", body = ErrorResponse)
+    ),
+    security(
+        ("bearer_auth" = [])
     )
 )]
 pub async fn create_task(
@@ -137,7 +141,11 @@ pub async fn create_task(
     ),
     responses(
         (status = 200, description = "Task found", body = ApiResponse<TaskResponse>),
-        (status = 404, description = "Task not found", body = ErrorResponse)
+        (status = 404, description = "Task not found", body = ErrorResponse),
+        (status = 401, description = "Unauthorized", body = ErrorResponse)
+    ),
+    security(
+        ("bearer_auth" = [])
     )
 )]
 pub async fn get_task(
@@ -168,7 +176,11 @@ pub async fn get_task(
         TaskQueryParams
     ),
     responses(
-        (status = 200, description = "List of tasks", body = ApiResponse<Vec<TaskResponse>>)
+        (status = 200, description = "List of tasks", body = ApiResponse<Vec<TaskResponse>>),
+        (status = 401, description = "Unauthorized", body = ErrorResponse)
+    ),
+    security(
+        ("bearer_auth" = [])
     )
 )]
 pub async fn list_tasks(
@@ -254,7 +266,11 @@ pub async fn get_stats(
     ),
     responses(
         (status = 200, description = "Task cancelled", body = ApiResponse<String>),
-        (status = 404, description = "Task not found", body = ErrorResponse)
+        (status = 404, description = "Task not found", body = ErrorResponse),
+        (status = 401, description = "Unauthorized", body = ErrorResponse)
+    ),
+    security(
+        ("bearer_auth" = [])
     )
 )]
 pub async fn cancel_task(
@@ -289,7 +305,11 @@ pub async fn cancel_task(
         ("offset" = Option<i64>, Query, description = "Number of tasks to skip")
     ),
     responses(
-        (status = 200, description = "Dead letter queue tasks", body = ApiResponse<Vec<TaskResponse>>)
+        (status = 200, description = "Dead letter queue tasks", body = ApiResponse<Vec<TaskResponse>>),
+        (status = 401, description = "Unauthorized", body = ErrorResponse)
+    ),
+    security(
+        ("bearer_auth" = [])
     )
 )]
 pub async fn get_dead_letter_queue(
@@ -324,7 +344,11 @@ pub async fn get_dead_letter_queue(
     responses(
         (status = 200, description = "Task retried successfully", body = ApiResponse<String>),
         (status = 404, description = "Task not found", body = ErrorResponse),
-        (status = 400, description = "Task is not in failed status", body = ErrorResponse)
+        (status = 400, description = "Task is not in failed status", body = ErrorResponse),
+        (status = 401, description = "Unauthorized", body = ErrorResponse)
+    ),
+    security(
+        ("bearer_auth" = [])
     )
 )]
 pub async fn retry_task(
@@ -362,7 +386,11 @@ pub async fn retry_task(
     responses(
         (status = 200, description = "Task deleted successfully", body = ApiResponse<String>),
         (status = 404, description = "Task not found", body = ErrorResponse),
-        (status = 400, description = "Task is not in a deletable status", body = ErrorResponse)
+        (status = 400, description = "Task is not in a deletable status", body = ErrorResponse),
+        (status = 401, description = "Unauthorized", body = ErrorResponse)
+    ),
+    security(
+        ("bearer_auth" = [])
     )
 )]
 pub async fn delete_task(

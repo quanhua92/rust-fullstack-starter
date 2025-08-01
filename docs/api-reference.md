@@ -14,9 +14,10 @@ The starter now includes **comprehensive OpenAPI documentation** with interactiv
 
 ### ✨ Features
 - **Complete API Schema**: All endpoints, request/response models, and validation rules
-- **Interactive Testing**: Test endpoints directly from the documentation
+- **Interactive Testing**: Test endpoints directly from the documentation with built-in Bearer token authentication
 - **Code Examples**: Request/response examples for all endpoints
-- **Authentication Support**: Built-in authentication testing for protected endpoints
+- **Bearer Authentication**: Properly defined security scheme for all protected endpoints
+- **Environment Variables**: Support for manual token configuration in API testing tools
 - **Type Definitions**: Full TypeScript-style type definitions for all models
 
 ### 🚀 Quick Access
@@ -37,10 +38,10 @@ graph TB
         DOCS[📚 /api-docs/*<br/>OpenAPI documentation]
     end
     
-    subgraph "🔒 Protected Endpoints (Auth Required)"
-        AUTH_PROT[🚪 /api/v1/auth/logout<br/>🚪 /api/v1/auth/me<br/>🔄 /api/v1/auth/refresh]
+    subgraph "🔒 Protected Endpoints (Bearer Token Required)"
+        AUTH_PROT[🚪 /api/v1/auth/logout<br/>🚪 /api/v1/auth/logout-all<br/>🚪 /api/v1/auth/me<br/>🔄 /api/v1/auth/refresh]
         USERS["👤 /api/v1/users/{id}<br/>User profiles"]
-        TASKS[⚙️ /api/v1/tasks<br/>📊 /api/v1/tasks/stats<br/>💀 /api/v1/tasks/dead-letter]
+        TASKS[⚙️ /api/v1/tasks<br/>POST: Create, GET: List<br/>📊 /api/v1/tasks/stats<br/>💀 /api/v1/tasks/dead-letter]
         TASK_OPS["🔧 /api/v1/tasks/{id}<br/>GET, DELETE<br/>🔄 /api/v1/tasks/{id}/retry<br/>🛑 /api/v1/tasks/{id}/cancel"]
     end
     
@@ -76,7 +77,14 @@ graph TB
 1. Start your server: `./scripts/server.sh 3000`
 2. Visit: `http://localhost:3000/api-docs`
 3. Click "🔧 Swagger UI (External)" for full interactive testing
-4. Or download the OpenAPI JSON for use with your preferred API client
+4. **Bearer Token Authentication**: The OpenAPI spec includes proper Bearer token security definitions
+   - Protected endpoints show 🔒 lock icons in Swagger UI
+   - Use "Authorize" button to set your Bearer token for testing
+   - All protected endpoints automatically include `Authorization: Bearer {token}` header
+5. **Environment Variable Support**: API clients can use custom environment variables
+   - Import the OpenAPI spec and create your own variables (e.g., `{{token}}`, `{{sessionToken}}`, etc.)
+   - The Bearer security scheme automatically applies your chosen variable to protected endpoints
+6. Or download the OpenAPI JSON for use with your preferred API client
 
 ---
 
@@ -115,6 +123,17 @@ Protected endpoints require a `Bearer` token in the `Authorization` header:
 ```
 Authorization: Bearer <session_token>
 ```
+
+**Getting a Bearer Token**:
+1. Register or login via `/api/v1/auth/login`
+2. Extract the `session_token` from the response
+3. Use this token in the `Authorization` header for protected endpoints
+
+**Using with API Testing Tools**:
+- **Postman/Insomnia**: Import the OpenAPI spec from `/api-docs/openapi.json`
+- **Environment Variables**: Create your own variables (e.g., `{{token}}` or `{{sessionToken}}`) in your testing environment
+- **Auto-Authorization**: The OpenAPI spec's Bearer security scheme automatically applies to protected endpoints
+- **Manual Setup**: Use "Authorization" tab → "Bearer Token" → enter your session token or variable
 
 ## Health Endpoints
 
@@ -386,7 +405,7 @@ Authenticate user and create session.
 
 Invalidate current user session.
 
-**Authentication**: Required
+**Authentication**: Required (Bearer token)
 
 **Request Body**: None
 
@@ -406,7 +425,7 @@ Invalidate current user session.
 
 Invalidate all sessions for the current user (all devices).
 
-**Authentication**: Required
+**Authentication**: Required (Bearer token)
 
 **Request Body**: None
 
@@ -428,7 +447,7 @@ Invalidate all sessions for the current user (all devices).
 
 Get current user profile.
 
-**Authentication**: Required
+**Authentication**: Required (Bearer token)
 
 **Response** (200 OK):
 ```json
@@ -450,7 +469,7 @@ Get current user profile.
 
 Validate current session (refresh token).
 
-**Authentication**: Required
+**Authentication**: Required (Bearer token)
 
 **Request Body**: None
 
@@ -473,7 +492,7 @@ Validate current session (refresh token).
 
 Get another user's profile (public information only).
 
-**Authentication**: Required
+**Authentication**: Required (Bearer token)
 
 **Parameters**:
 - `user_id` (path): UUID of the user
@@ -577,7 +596,7 @@ List all registered task types available for task creation.
 
 Create a background task for async processing.
 
-**Authentication**: Required
+**Authentication**: Required (Bearer token)
 
 **Request Body**:
 ```json
@@ -642,7 +661,7 @@ Create a background task for async processing.
 
 List your background tasks.
 
-**Authentication**: Required
+**Authentication**: Required (Bearer token)
 
 **Query Parameters**:
 - `task_type` (optional): Filter by task type
@@ -672,7 +691,7 @@ List your background tasks.
 
 Get details about a specific task.
 
-**Authentication**: Required
+**Authentication**: Required (Bearer token)
 
 **Parameters**:
 - `task_id` (path): UUID of the task
@@ -718,7 +737,7 @@ Get details about a specific task.
 
 Get basic task statistics.
 
-**Authentication**: Required
+**Authentication**: Required (Bearer token)
 
 **Response** (200 OK):
 ```json
@@ -740,7 +759,7 @@ Get basic task statistics.
 
 Get all failed tasks in the dead letter queue for debugging and manual recovery.
 
-**Authentication**: Required
+**Authentication**: Required (Bearer token)
 
 **Query Parameters**:
 - `limit` (optional): Maximum number of tasks to return (default: 100)
@@ -775,7 +794,7 @@ Get all failed tasks in the dead letter queue for debugging and manual recovery.
 
 Cancel a pending or retrying task.
 
-**Authentication**: Required
+**Authentication**: Required (Bearer token)
 
 **Parameters**:
 - `task_id` (path): UUID of the task
@@ -800,7 +819,7 @@ Cancel a pending or retrying task.
 
 Retry a failed task by resetting it to pending status.
 
-**Authentication**: Required
+**Authentication**: Required (Bearer token)
 
 **Parameters**:
 - `task_id` (path): UUID of the task
@@ -827,7 +846,7 @@ Retry a failed task by resetting it to pending status.
 
 Permanently delete a completed, failed, or cancelled task.
 
-**Authentication**: Required
+**Authentication**: Required (Bearer token)
 
 **Parameters**:
 - `task_id` (path): UUID of the task

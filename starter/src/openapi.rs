@@ -1,4 +1,7 @@
-use utoipa::OpenApi;
+use utoipa::{
+    Modify, OpenApi,
+    openapi::security::{HttpAuthScheme, HttpBuilder, SecurityScheme},
+};
 use utoipa_swagger_ui::SwaggerUi;
 
 use crate::auth::{
@@ -89,17 +92,28 @@ use crate::users::models::{User, UserProfile};
             DetailedHealthResponse,
         )
     ),
+    modifiers(&SecurityAddon),
     tags(
         (name = "Health", description = "Health check and monitoring endpoints"),
         (name = "Authentication", description = "User authentication and session management"),
         (name = "Users", description = "User management operations"),
         (name = "Tasks", description = "Background task management"),
-    ),
-    security(
-        ("bearer_auth" = [])
     )
 )]
 pub struct ApiDoc;
+
+struct SecurityAddon;
+
+impl Modify for SecurityAddon {
+    fn modify(&self, openapi: &mut utoipa::openapi::OpenApi) {
+        if let Some(components) = openapi.components.as_mut() {
+            components.add_security_scheme(
+                "bearer_auth",
+                SecurityScheme::Http(HttpBuilder::new().scheme(HttpAuthScheme::Bearer).build()),
+            )
+        }
+    }
+}
 
 /// Create Swagger UI service (to be added manually to server)
 pub fn create_swagger_ui() -> SwaggerUi {
