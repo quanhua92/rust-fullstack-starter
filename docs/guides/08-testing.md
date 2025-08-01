@@ -56,7 +56,7 @@ graph TD
     subgraph "🧪 Testing Strategy for Web Applications"
         E2E[🌐 E2E Tests<br/><i>Few, critical paths</i><br/>~5% of tests<br/>💡 User journeys]
         
-        INTEGRATION[🔌 Integration Tests<br/><b>Main focus - 95 tests</b><br/>~80% of tests<br/>💡 HTTP + Database + Business Logic]
+        INTEGRATION[🔌 Integration Tests<br/><b>Main focus - 119 tests</b><br/>~80% of tests<br/>💡 HTTP + Database + Business Logic]
         
         UNIT[⚙️ Unit Tests<br/><i>Pure functions only</i><br/>~15% of tests<br/>💡 Algorithms, validation]
     end
@@ -101,7 +101,7 @@ graph TD
     subgraph "🧪 Testing Strategy for Learning"
         E2E[🌐 E2E Tests<br/><i>Manual Testing</i><br/>🚫 Not automated<br/>💡 Too complex for starter]
         
-        INTEGRATION[🔌 Integration Tests<br/><b>95 comprehensive tests</b><br/>✅ Main focus<br/>💡 Test real interactions]
+        INTEGRATION[🔌 Integration Tests<br/><b>119 comprehensive tests</b><br/>✅ Main focus<br/>💡 Test real interactions]
         
         CHAOS[🔥 Chaos Tests<br/><b>7 resilience scenarios</b><br/>🐳 Docker-based testing<br/>💡 Test failure handling]
         

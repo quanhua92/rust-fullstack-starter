@@ -78,7 +78,7 @@ This starter includes everything needed for modern full-stack development:
 ### **Development Experience**
 - **Hot Reloading** - Frontend and backend restart on changes
 - **Type Safety** - End-to-end TypeScript from API to UI
-- **Testing** - 95 integration tests with isolated databases
+- **Testing** - 119 integration tests with isolated databases
 - **Quality Checks** - Automated linting, formatting, and validation
 - **Docker Support** - Development and production containers
 
@@ -127,7 +127,7 @@ cd web && pnpm run generate-api      # Regenerate API types
 cd web && ./scripts/check-web.sh     # Run quality checks
 
 # Testing
-cargo nextest run                    # Run 95 integration tests
+cargo nextest run                    # Run 119 integration tests
 ./scripts/test-with-curl.sh          # Test all API endpoints
 ./scripts/test-chaos.sh              # Resilience testing
 

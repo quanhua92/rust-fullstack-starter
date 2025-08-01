@@ -2,6 +2,8 @@ use crate::helpers::*;
 use reqwest::StatusCode;
 use serde_json::json;
 
+pub mod edge_cases;
+
 #[tokio::test]
 async fn test_user_registration_success() {
     let app = spawn_app().await;
