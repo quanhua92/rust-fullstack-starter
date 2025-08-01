@@ -7,6 +7,7 @@ use crate::{
 use argon2::password_hash::{SaltString, rand_core::OsRng};
 use argon2::{Argon2, PasswordHash, PasswordHasher, PasswordVerifier};
 use chrono::Utc;
+use sqlx::Acquire;
 use uuid::Uuid;
 
 pub async fn find_user_by_email(conn: &mut DbConn, email: &str) -> Result<Option<User>> {
@@ -178,37 +179,6 @@ pub async fn update_user_profile(
 ) -> Result<UserProfile> {
     req.validate()?;
 
-    // Check if username or email is already taken by another user
-    if let Some(ref username) = req.username {
-        let existing = sqlx::query_scalar!(
-            "SELECT COUNT(*) FROM users WHERE username = $1 AND id != $2",
-            username,
-            user_id
-        )
-        .fetch_one(&mut **conn)
-        .await
-        .map_err(Error::from_sqlx)?;
-
-        if existing.unwrap_or(0) > 0 {
-            return Err(Error::Conflict("Username already exists".to_string()));
-        }
-    }
-
-    if let Some(ref email) = req.email {
-        let existing = sqlx::query_scalar!(
-            "SELECT COUNT(*) FROM users WHERE email = $1 AND id != $2",
-            email,
-            user_id
-        )
-        .fetch_one(&mut **conn)
-        .await
-        .map_err(Error::from_sqlx)?;
-
-        if existing.unwrap_or(0) > 0 {
-            return Err(Error::Conflict("Email already exists".to_string()));
-        }
-    }
-
     // Update user profile
     let user = sqlx::query_as!(
         User,
@@ -298,12 +268,14 @@ pub async fn delete_user_account(
         return Err(Error::validation("password", "Invalid password"));
     }
 
+    let mut tx = conn.begin().await.map_err(Error::from_sqlx)?;
+
     // Soft delete user (deactivate)
     sqlx::query!(
         "UPDATE users SET is_active = false, updated_at = NOW() WHERE id = $1",
         user_id
     )
-    .execute(&mut **conn)
+    .execute(&mut *tx)
     .await
     .map_err(Error::from_sqlx)?;
 
@@ -312,9 +284,11 @@ pub async fn delete_user_account(
         "UPDATE sessions SET is_active = false WHERE user_id = $1",
         user_id
     )
-    .execute(&mut **conn)
+    .execute(&mut *tx)
     .await
     .map_err(Error::from_sqlx)?;
+
+    tx.commit().await.map_err(Error::from_sqlx)?;
 
     Ok(())
 }
@@ -325,37 +299,6 @@ pub async fn update_user_profile_admin(
     req: crate::users::models::UpdateUserProfileRequest,
 ) -> Result<UserProfile> {
     req.validate()?;
-
-    // Check if username or email is already taken by another user
-    if let Some(ref username) = req.username {
-        let existing = sqlx::query_scalar!(
-            "SELECT COUNT(*) FROM users WHERE username = $1 AND id != $2",
-            username,
-            user_id
-        )
-        .fetch_one(&mut **conn)
-        .await
-        .map_err(Error::from_sqlx)?;
-
-        if existing.unwrap_or(0) > 0 {
-            return Err(Error::Conflict("Username already exists".to_string()));
-        }
-    }
-
-    if let Some(ref email) = req.email {
-        let existing = sqlx::query_scalar!(
-            "SELECT COUNT(*) FROM users WHERE email = $1 AND id != $2",
-            email,
-            user_id
-        )
-        .fetch_one(&mut **conn)
-        .await
-        .map_err(Error::from_sqlx)?;
-
-        if existing.unwrap_or(0) > 0 {
-            return Err(Error::Conflict("Email already exists".to_string()));
-        }
-    }
 
     // Update user profile (admin can update email_verified)
     let user = sqlx::query_as!(
@@ -391,6 +334,8 @@ pub async fn update_user_status(
     user_id: Uuid,
     req: crate::users::models::UpdateUserStatusRequest,
 ) -> Result<UserProfile> {
+    let mut tx = conn.begin().await.map_err(Error::from_sqlx)?;
+
     let user = sqlx::query_as!(
         User,
         r#"
@@ -404,7 +349,7 @@ pub async fn update_user_status(
         user_id,
         req.is_active
     )
-    .fetch_optional(&mut **conn)
+    .fetch_optional(&mut *tx)
     .await
     .map_err(Error::from_sqlx)?;
 
@@ -416,13 +361,18 @@ pub async fn update_user_status(
                     "UPDATE sessions SET is_active = false WHERE user_id = $1",
                     user_id
                 )
-                .execute(&mut **conn)
+                .execute(&mut *tx)
                 .await
                 .map_err(Error::from_sqlx)?;
             }
+
+            tx.commit().await.map_err(Error::from_sqlx)?;
             Ok(user.to_profile())
         }
-        None => Err(Error::NotFound("User not found".to_string())),
+        None => {
+            tx.rollback().await.ok(); // Explicit rollback, ignore error
+            Err(Error::NotFound("User not found".to_string()))
+        }
     }
 }
 
@@ -468,13 +418,15 @@ pub async fn reset_user_password(
         .hash_password(req.new_password.as_bytes(), &salt)?
         .to_string();
 
+    let mut tx = conn.begin().await.map_err(Error::from_sqlx)?;
+
     // Update password
     sqlx::query!(
         "UPDATE users SET password_hash = $1, updated_at = NOW() WHERE id = $2",
         new_password_hash,
         user_id
     )
-    .execute(&mut **conn)
+    .execute(&mut *tx)
     .await
     .map_err(Error::from_sqlx)?;
 
@@ -483,9 +435,11 @@ pub async fn reset_user_password(
         "UPDATE sessions SET is_active = false WHERE user_id = $1",
         user_id
     )
-    .execute(&mut **conn)
+    .execute(&mut *tx)
     .await
     .map_err(Error::from_sqlx)?;
+
+    tx.commit().await.map_err(Error::from_sqlx)?;
 
     Ok(())
 }
@@ -497,21 +451,24 @@ pub async fn delete_user_admin(
 ) -> Result<()> {
     let hard_delete = req.hard_delete.unwrap_or(false);
 
+    let mut tx = conn.begin().await.map_err(Error::from_sqlx)?;
+
     if hard_delete {
         // Hard delete - permanently remove user and all related data
         // First delete sessions
         sqlx::query!("DELETE FROM sessions WHERE user_id = $1", user_id)
-            .execute(&mut **conn)
+            .execute(&mut *tx)
             .await
             .map_err(Error::from_sqlx)?;
 
         // Then delete user
         let result = sqlx::query!("DELETE FROM users WHERE id = $1", user_id)
-            .execute(&mut **conn)
+            .execute(&mut *tx)
             .await
             .map_err(Error::from_sqlx)?;
 
         if result.rows_affected() == 0 {
+            tx.rollback().await.ok(); // Explicit rollback, ignore error
             return Err(Error::NotFound("User not found".to_string()));
         }
     } else {
@@ -520,11 +477,12 @@ pub async fn delete_user_admin(
             "UPDATE users SET is_active = false, updated_at = NOW() WHERE id = $1",
             user_id
         )
-        .execute(&mut **conn)
+        .execute(&mut *tx)
         .await
         .map_err(Error::from_sqlx)?;
 
         if result.rows_affected() == 0 {
+            tx.rollback().await.ok(); // Explicit rollback, ignore error
             return Err(Error::NotFound("User not found".to_string()));
         }
 
@@ -533,10 +491,12 @@ pub async fn delete_user_admin(
             "UPDATE sessions SET is_active = false WHERE user_id = $1",
             user_id
         )
-        .execute(&mut **conn)
+        .execute(&mut *tx)
         .await
         .map_err(Error::from_sqlx)?;
     }
+
+    tx.commit().await.map_err(Error::from_sqlx)?;
 
     Ok(())
 }

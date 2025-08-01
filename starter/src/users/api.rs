@@ -161,15 +161,6 @@ pub async fn create_user(
         .await
         .map_err(Error::from_sqlx)?;
 
-    // Check if username/email already exists
-    if !user_services::is_username_available(&mut conn, &request.username).await? {
-        return Err(Error::Conflict("Username already exists".to_string()));
-    }
-
-    if !user_services::is_email_available(&mut conn, &request.email).await? {
-        return Err(Error::Conflict("Email already exists".to_string()));
-    }
-
     let user = user_services::create_user(&mut conn, request).await?;
 
     Ok(Json(ApiResponse::success(user)))
