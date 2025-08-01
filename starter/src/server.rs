@@ -82,7 +82,7 @@ async fn api_docs() -> impl IntoResponse {
                 <h3>Login:</h3>
                 <pre>curl -X POST http://localhost:3000/api/v1/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"username_or_email": "testuser", "password": "password123"}'</pre>
+  -d '{"username": "testuser", "password": "password123"}'</pre>
 
                 <h2>📖 API Endpoints</h2>
                 <ul>

@@ -30,9 +30,7 @@ echo -e "${BLUE}📁 Working directory: $PROJECT_ROOT${NC}"
 echo -e "\n${BLUE}🔍 Step 1/8: Running cargo check...${NC}"
 if ! SQLX_OFFLINE=true cargo check --manifest-path starter/Cargo.toml --all --all-targets --all-features; then
     echo -e "${YELLOW}⚠️  Offline cargo check failed, attempting to regenerate SQLx cache...${NC}"
-    cd starter
-    if cargo sqlx prepare --all -- --all-targets; then
-        cd ..
+    if ./scripts/prepare-sqlx.sh 2>/dev/null; then
         echo -e "${BLUE}🔄 Retrying cargo check with updated cache...${NC}"
         if ! SQLX_OFFLINE=true cargo check --manifest-path starter/Cargo.toml --all --all-targets --all-features; then
             echo -e "${RED}❌ Cargo check failed even after updating SQLx cache!${NC}"
@@ -40,7 +38,6 @@ if ! SQLX_OFFLINE=true cargo check --manifest-path starter/Cargo.toml --all --al
         fi
         echo -e "${GREEN}✅ Cargo check passed after cache update${NC}"
     else
-        cd ..
         echo -e "${YELLOW}⚠️  SQLx prepare failed, attempting to restart Docker services...${NC}"
         
         # Try to restart Docker services
@@ -73,9 +70,7 @@ if ! SQLX_OFFLINE=true cargo check --manifest-path starter/Cargo.toml --all --al
         # If Docker was restarted, try SQLx prepare again
         if [ "${DOCKER_RESTARTED:-false}" = true ]; then
             echo -e "${BLUE}🔄 Retrying SQLx prepare after Docker restart...${NC}"
-            cd starter
-            if cargo sqlx prepare --all -- --all-targets 2>/dev/null; then
-                cd ..
+            if ./scripts/prepare-sqlx.sh 2>/dev/null; then
                 echo -e "${BLUE}🔄 Retrying cargo check with updated cache...${NC}"
                 if ! SQLX_OFFLINE=true cargo check --manifest-path starter/Cargo.toml --all --all-targets --all-features; then
                     echo -e "${RED}❌ Cargo check failed even after Docker restart and SQLx cache update!${NC}"
@@ -83,7 +78,6 @@ if ! SQLX_OFFLINE=true cargo check --manifest-path starter/Cargo.toml --all --al
                 fi
                 echo -e "${GREEN}✅ Cargo check passed after Docker restart and cache update${NC}"
             else
-                cd ..
                 echo -e "${RED}❌ SQLx prepare still failed after Docker restart!${NC}"
                 exit 1
             fi
@@ -115,27 +109,27 @@ if ! SQLX_OFFLINE=true cargo clippy --manifest-path starter/Cargo.toml --all --a
 fi
 echo -e "${GREEN}✅ Clippy checks passed${NC}"
 
-# 4. Check if database is available for SQLx prepare
-echo -e "\n${BLUE}🗄️  Step 4/8: Checking database availability for SQLx prepare...${NC}"
-cd starter
+# 4. SQLx prepare using dedicated script
+echo -e "\n${BLUE}🗄️  Step 4/8: Running SQLx prepare...${NC}"
 
-# Check if we can connect to database
+# Check if we can connect to database first
+cd starter
 if ! cargo sqlx prepare --check 2>/dev/null; then
-    echo -e "${YELLOW}⚠️  Database not available or SQLx cache outdated${NC}"
-    echo -e "${BLUE}🔄 Running SQLx prepare to update query cache...${NC}"
+    cd "$PROJECT_ROOT"
+    echo -e "${BLUE}🔄 Running SQLx prepare script to update query cache...${NC}"
     
-    # Try to prepare with database connection
-    if cargo sqlx prepare -- --all-targets 2>/dev/null; then
-        echo -e "${GREEN}✅ SQLx prepare completed with database${NC}"
+    # Use the dedicated prepare-sqlx.sh script
+    if ./scripts/prepare-sqlx.sh 2>/dev/null; then
+        echo -e "${GREEN}✅ SQLx prepare completed successfully${NC}"
     else
-        echo -e "${YELLOW}⚠️  Could not connect to database for SQLx prepare${NC}"
-        echo -e "${YELLOW}   Using existing query cache (run with database to update)${NC}"
+        echo -e "${YELLOW}⚠️  SQLx prepare script failed${NC}"
+        echo -e "${YELLOW}   Database may not be available - using existing query cache${NC}"
+        echo -e "${YELLOW}   Run 'docker compose up -d' to start database if needed${NC}"
     fi
 else
+    cd "$PROJECT_ROOT"
     echo -e "${GREEN}✅ SQLx queries are up to date${NC}"
 fi
-
-cd "$PROJECT_ROOT"
 
 # 5. Unit tests
 echo -e "\n${BLUE}🧪 Step 5/8: Running unit tests...${NC}"

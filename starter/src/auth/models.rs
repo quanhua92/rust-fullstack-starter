@@ -12,6 +12,7 @@ pub struct Session {
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
     pub last_activity_at: Option<DateTime<Utc>>,
+    pub last_refreshed_at: Option<DateTime<Utc>>,
     pub user_agent: Option<String>,
     pub is_active: bool,
 }
@@ -20,12 +21,35 @@ impl Session {
     pub fn is_expired(&self) -> bool {
         Utc::now() > self.expires_at
     }
+
+    /// Check if session can be refreshed (not expired and not too recently refreshed)
+    pub fn can_refresh(&self, min_refresh_interval_minutes: i64) -> bool {
+        if self.is_expired() {
+            return false;
+        }
+
+        if let Some(last_refreshed_at) = self.last_refreshed_at {
+            let min_next_refresh =
+                last_refreshed_at + chrono::Duration::minutes(min_refresh_interval_minutes);
+            Utc::now() >= min_next_refresh
+        } else {
+            // Never refreshed before, can refresh
+            true
+        }
+    }
+
+    /// Calculate new expiration time for refresh
+    pub fn calculate_refresh_expiration(&self, extend_hours: i64) -> DateTime<Utc> {
+        Utc::now() + chrono::Duration::hours(extend_hours)
+    }
 }
 
 #[derive(Debug, Deserialize, utoipa::ToSchema)]
 pub struct LoginRequest {
     #[schema(example = "johndoe")]
-    pub username_or_email: String,
+    pub username: Option<String>,
+    #[schema(example = "john@example.com")]
+    pub email: Option<String>,
     #[schema(example = "securepassword123")]
     pub password: String,
     pub user_agent: Option<String>,
@@ -33,12 +57,34 @@ pub struct LoginRequest {
 
 impl LoginRequest {
     pub fn validate(&self) -> Result<()> {
-        if self.username_or_email.trim().is_empty() {
-            return Err(Error::validation(
-                "username_or_email",
-                "Username or email cannot be empty",
-            ));
+        // Ensure exactly one of username or email is provided
+        match (&self.username, &self.email) {
+            (Some(username), None) => {
+                if username.trim().is_empty() {
+                    return Err(Error::validation("username", "Username cannot be empty"));
+                }
+                crate::users::models::validate_username(username)?;
+            }
+            (None, Some(email)) => {
+                if email.trim().is_empty() {
+                    return Err(Error::validation("email", "Email cannot be empty"));
+                }
+                crate::users::models::validate_email(email)?;
+            }
+            (Some(_), Some(_)) => {
+                return Err(Error::validation(
+                    "login",
+                    "Provide either username or email, not both",
+                ));
+            }
+            (None, None) => {
+                return Err(Error::validation(
+                    "login",
+                    "Either username or email must be provided",
+                ));
+            }
         }
+
         if self.password.is_empty() {
             return Err(Error::validation("password", "Password cannot be empty"));
         }
@@ -70,4 +116,10 @@ pub struct LoginResponse {
     pub session_token: String,
     pub expires_at: DateTime<Utc>,
     pub user: crate::users::models::UserProfile,
+}
+
+#[derive(Debug, Serialize, utoipa::ToSchema)]
+pub struct RefreshResponse {
+    pub expires_at: DateTime<Utc>,
+    pub refreshed_at: DateTime<Utc>,
 }

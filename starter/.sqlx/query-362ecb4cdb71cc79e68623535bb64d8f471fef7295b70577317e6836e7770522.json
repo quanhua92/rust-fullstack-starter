@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        INSERT INTO tasks (id, task_type, status, payload, priority, scheduled_at, created_at, updated_at, created_by)\n        VALUES ($1, 'system_maintenance', 'pending', '{\"type\": \"system\"}', 'normal', NOW(), NOW(), NOW(), NULL)\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "362ecb4cdb71cc79e68623535bb64d8f471fef7295b70577317e6836e7770522"
+}

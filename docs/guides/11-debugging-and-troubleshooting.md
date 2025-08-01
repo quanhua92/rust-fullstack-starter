@@ -637,7 +637,8 @@ WHERE NOT blocked_locks.GRANTED;
    ps aux | grep starter | grep worker
    
    # Check worker logs
-   tail -f /tmp/starter-worker.log
+   tail -f /tmp/starter-worker-0.log   # Default worker (ID 0)
+   # tail -f /tmp/starter-worker-*.log # All workers
    ```
 
 2. **Database investigation**:
@@ -972,9 +973,9 @@ Create these problems intentionally to practice debugging:
 - Identify areas where better tooling would help
 
 **Related Guides**:
-- [Web Frontend Integration](09-web-frontend-integration.md) - Full-stack debugging strategies
-- [Testing Guide](07-testing.md) - Testing approaches that prevent bugs
-- [Chaos Testing](08-chaos-testing.md) - Proactive failure discovery
+- [Web Frontend Integration](10-web-frontend-integration.md) - Full-stack debugging strategies
+- [Testing Guide](08-testing.md) - Testing approaches that prevent bugs
+- [Chaos Testing](09-chaos-testing.md) - Proactive failure discovery
 - [Production Deployment](../production-deployment.md) - Production debugging tools
 
 ---

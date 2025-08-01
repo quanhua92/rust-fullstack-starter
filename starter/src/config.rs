@@ -41,6 +41,8 @@ pub struct DatabaseConfig {
 pub struct AuthConfig {
     pub session_duration_hours: u64,
     pub cleanup_interval_secs: u64,
+    pub refresh_extend_hours: u64,
+    pub refresh_min_interval_minutes: u64,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -204,6 +206,16 @@ impl AppConfig {
     pub fn retry_backoff_base(&self) -> Duration {
         Duration::from_secs(self.worker.retry_backoff_base_secs)
     }
+
+    /// Get refresh extend hours
+    pub fn refresh_extend_hours(&self) -> i64 {
+        self.auth.refresh_extend_hours as i64
+    }
+
+    /// Get refresh minimum interval minutes
+    pub fn refresh_min_interval_minutes(&self) -> i64 {
+        self.auth.refresh_min_interval_minutes as i64
+    }
 }
 
 impl Default for AppConfig {
@@ -229,7 +241,9 @@ impl Default for AppConfig {
             },
             auth: AuthConfig {
                 session_duration_hours: 24,
-                cleanup_interval_secs: 3600, // 1 hour
+                cleanup_interval_secs: 3600,     // 1 hour
+                refresh_extend_hours: 24,        // Default 24 hours extension
+                refresh_min_interval_minutes: 5, // Default 5 minutes minimum between refreshes
             },
             worker: WorkerConfig {
                 concurrency: 4,

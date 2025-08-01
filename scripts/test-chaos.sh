@@ -13,7 +13,7 @@ DIFFICULTY="${DIFFICULTY:-1}"
 SCENARIOS="${SCENARIOS:-all}"
 OUTPUT_DIR="${OUTPUT_DIR:-/tmp}"
 VERBOSE="${VERBOSE:-false}"
-RESET_DATABASE="${RESET_DATABASE:-false}"
+RESET_DATABASE="${RESET_DATABASE:-true}"
 NO_CLEANUP="${NO_CLEANUP:-false}"
 
 # Color codes
@@ -90,7 +90,7 @@ usage() {
     echo "  -d, --difficulty LEVEL Difficulty level 1-6 (default: $DIFFICULTY)"
     echo "  -s, --scenarios LIST   Scenarios to run (default: all)"
     echo "  -o, --output DIR       Output directory (default: /tmp)"
-    echo "  -r, --reset-database   Reset database before testing (clean slate)"
+    echo "  -k, --keep-database    Keep existing database data (default: reset for clean slate)"
     echo "  -n, --no-cleanup       Keep containers running after test (for debugging)"
     echo "  -v, --verbose          Verbose output"
     echo "  -h, --help             Show this help"
@@ -121,7 +121,7 @@ usage() {
     echo "  $0 --difficulty 3 --port 8080         # Advanced testing on port 8080"
     echo "  $0 --scenarios \"db-failure,task-flood\" # Specific scenarios only"
     echo "  $0 --difficulty 5 --verbose           # Extreme testing with logs"
-    echo "  $0 --reset-database --scenarios baseline # Clean database baseline test"
+    echo "  $0 --keep-database --scenarios baseline   # Keep database data for baseline test"
     echo "  $0 --scenarios baseline --no-cleanup    # Keep containers for debugging"
 }
 
@@ -145,8 +145,8 @@ while [[ $# -gt 0 ]]; do
             OUTPUT_DIR="$2"
             shift 2
             ;;
-        -r|--reset-database)
-            RESET_DATABASE=true
+        -k|--keep-database)
+            RESET_DATABASE=false
             shift
             ;;
         -n|--no-cleanup)
@@ -1296,10 +1296,10 @@ cleanup_existing_environment() {
     log "INFO" "Environment cleanup completed"
 }
 
-# Reset database if requested
+# Reset database (default behavior)
 reset_database_if_requested() {
     if [ "$RESET_DATABASE" = true ]; then
-        log "INFO" "🗑️  Resetting database for clean testing environment..."
+        log "INFO" "🗑️  Resetting database for clean testing environment (default)..."
         
         # Start containers first if not running (needed for database reset)
         if ! docker ps --format '{{.Names}}' | grep -q "$POSTGRES_CONTAINER_NAME"; then
@@ -1365,7 +1365,7 @@ check_unfinished_tasks() {
             
             if [ "$total_unfinished" -gt 0 ]; then
                 log "WARN" "⚠️  Found $total_unfinished unfinished tasks from previous runs"
-                log "WARN" "This may cause inaccurate results. Consider using --reset-database for clean testing"
+                log "WARN" "This may cause inaccurate results. Use default behavior (database reset) for clean testing"
                 log "WARN" "Pending: $pending_count, Running: $running_count"
             else
                 log "INFO" "✅ No unfinished tasks detected"

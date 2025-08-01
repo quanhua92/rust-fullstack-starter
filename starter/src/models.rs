@@ -148,35 +148,6 @@ impl CreateUserRequest {
 }
 
 #[derive(Debug, Deserialize)]
-pub struct LoginRequest {
-    pub username_or_email: String,
-    pub password: String,
-    pub user_agent: Option<String>,
-}
-
-impl LoginRequest {
-    pub fn validate(&self) -> Result<()> {
-        if self.username_or_email.trim().is_empty() {
-            return Err(Error::validation(
-                "username_or_email",
-                "Username or email cannot be empty",
-            ));
-        }
-        if self.password.is_empty() {
-            return Err(Error::validation("password", "Password cannot be empty"));
-        }
-        Ok(())
-    }
-}
-
-#[derive(Debug, Serialize)]
-pub struct LoginResponse {
-    pub session_token: String,
-    pub expires_at: DateTime<Utc>,
-    pub user: UserProfile,
-}
-
-#[derive(Debug, Deserialize)]
 pub struct CreateTaskRequest {
     pub task_type: String,
     pub payload: serde_json::Value,

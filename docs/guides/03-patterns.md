@@ -701,7 +701,7 @@ RetryStrategy::Exponential {
 Now that you understand these reliability patterns, see how they're implemented:
 
 - **[Background Tasks →](./04-background-tasks.md)** - Real implementation in the task system
-- **[Custom Task Types →](./05-task-types.md)** - Applying patterns to your own tasks
+- **[Custom Task Types →](./06-task-types.md)** - Applying patterns to your own tasks
 
 ---
 *These patterns form the reliability foundation for building robust, fault-tolerant systems. The concepts here apply far beyond this starter - use them in any distributed system you build.*

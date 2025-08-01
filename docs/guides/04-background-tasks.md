@@ -986,9 +986,15 @@ curl -H "Authorization: Bearer $TOKEN" \
 # 3. Start worker (processes background tasks)
 ./scripts/worker.sh
 
+# Optional: Multiple concurrent workers
+# ./scripts/worker.sh --id 1
+# ./scripts/worker.sh --id 2
+
 # 4. Monitor logs
 tail -f /tmp/starter-server-3000.log
-tail -f /tmp/starter-worker.log
+tail -f /tmp/starter-worker-0.log   # Default worker (ID 0)
+# tail -f /tmp/starter-worker-1.log # Worker ID 1
+# tail -f /tmp/starter-worker-2.log # Worker ID 2
 ```
 
 ### Testing End-to-End
@@ -1017,7 +1023,7 @@ curl -X POST http://localhost:3000/api/v1/auth/register \
 
 TOKEN=$(curl -s -X POST http://localhost:3000/api/v1/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"username_or_email":"test","password":"password123"}' \
+  -d '{"username":"test","password":"password123"}' \
   | python3 -c "import json,sys; print(json.load(sys.stdin)['data']['session_token'])")
 
 # Create tasks
@@ -1075,7 +1081,8 @@ impl Default for RetryStrategy {
 ps aux | grep starter-worker
 
 # Check worker logs for startup errors
-tail -f /tmp/starter-worker.log
+tail -f /tmp/starter-worker-0.log   # Default worker (ID 0)
+# tail -f /tmp/starter-worker-1.log # Worker ID 1
 
 # Verify task types are registered
 curl http://localhost:3000/api/v1/tasks/types
@@ -1099,7 +1106,8 @@ curl -H "Authorization: Bearer $TOKEN" \
   jq '.data[].last_error' | sort | uniq -c
 
 # Check circuit breaker status in logs
-grep "Circuit breaker" /tmp/starter-worker.log
+grep "Circuit breaker" /tmp/starter-worker-0.log
+# grep "Circuit breaker" /tmp/starter-worker-*.log  # All workers
 
 # Test external services manually
 curl -X POST webhook-endpoint-that-keeps-failing.com
@@ -1117,6 +1125,11 @@ watch 'curl -s -H "Authorization: Bearer $TOKEN" \
 
 # Increase worker concurrency (carefully!)
 STARTER__WORKER__CONCURRENCY=8 ./scripts/worker.sh
+
+# Multiple concurrent workers (alternative to high concurrency)
+./scripts/worker.sh --id 1
+./scripts/worker.sh --id 2
+./scripts/worker.sh --id 3
 
 # Reduce poll interval for faster pickup
 STARTER__WORKER__POLL_INTERVAL_SECS=2 ./scripts/worker.sh
@@ -1141,10 +1154,11 @@ STARTER__WORKER__POLL_INTERVAL_SECS=2 ./scripts/worker.sh
 
 Now that you understand the background task system, explore related concepts:
 
-- **[Custom Task Types →](./05-task-types.md)** - Create your own task handlers for specific use cases
-- **[Task Registry →](./06-task-registry.md)** - Organize and manage task handlers
-- **[Testing Guide →](./07-testing.md)** - Learn how to test your task handlers with the comprehensive testing framework
-- **[Chaos Testing →](./08-chaos-testing.md)** - Test task system resilience under failure conditions
+- **[Built-in Task Handlers →](./05-task-handlers-reference.md)** - See working examples before creating custom ones
+- **[Custom Task Types →](./06-task-types.md)** - Create your own task handlers for specific use cases
+- **[Task Registry →](./07-task-registry.md)** - Organize and manage task handlers
+- **[Testing Guide →](./08-testing.md)** - Learn how to test your task handlers with the comprehensive testing framework
+- **[Chaos Testing →](./09-chaos-testing.md)** - Test task system resilience under failure conditions
 - **[Reliability Patterns →](../reliability.md)** - Understand the circuit breakers and retry strategies used by the task system
 
 ## Testing Your Tasks

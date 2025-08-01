@@ -1,4 +1,5 @@
 use axum::{
+    Extension,
     extract::{Path, Query, State},
     response::Json,
 };
@@ -6,6 +7,7 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use crate::{
+    auth::AuthUser,
     error::Error,
     tasks::{
         processor::TaskProcessor,
@@ -58,11 +60,16 @@ pub struct TaskTypeResponse {
     request_body = CreateTaskApiRequest,
     responses(
         (status = 200, description = "Task created", body = ApiResponse<TaskResponse>),
-        (status = 400, description = "Invalid request", body = ErrorResponse)
+        (status = 400, description = "Invalid request", body = ErrorResponse),
+        (status = 401, description = "Unauthorized", body = ErrorResponse)
+    ),
+    security(
+        ("bearer_auth" = [])
     )
 )]
 pub async fn create_task(
     State(app_state): State<AppState>,
+    Extension(auth_user): Extension<AuthUser>,
     Json(payload): Json<CreateTaskApiRequest>,
 ) -> Result<Json<ApiResponse<crate::tasks::types::TaskResponse>>, Error> {
     use crate::tasks::types::TaskPriority;
@@ -103,6 +110,7 @@ pub async fn create_task(
     let mut request = CreateTaskRequest::new(payload.task_type, payload.payload)
         .with_priority(priority)
         .with_scheduled_at(payload.scheduled_at.unwrap_or_else(chrono::Utc::now))
+        .with_created_by(auth_user.id) // Set the user who created this task
         .with_metadata("api_created", serde_json::json!(true));
 
     // Add user-provided metadata
@@ -137,12 +145,17 @@ pub async fn create_task(
     ),
     responses(
         (status = 200, description = "Task found", body = ApiResponse<TaskResponse>),
-        (status = 404, description = "Task not found", body = ErrorResponse)
+        (status = 404, description = "Task not found", body = ErrorResponse),
+        (status = 401, description = "Unauthorized", body = ErrorResponse)
+    ),
+    security(
+        ("bearer_auth" = [])
     )
 )]
 pub async fn get_task(
     State(app_state): State<AppState>,
     Path(task_id): Path<Uuid>,
+    Extension(auth_user): Extension<AuthUser>,
 ) -> Result<Json<ApiResponse<Option<crate::tasks::types::TaskResponse>>>, Error> {
     let processor = TaskProcessor::new(
         app_state.database.clone(),
@@ -153,6 +166,18 @@ pub async fn get_task(
         .get_task(task_id)
         .await
         .map_err(|e| Error::Internal(format!("Failed to get task: {e}")))?;
+
+    // Check ownership - only allow access to tasks created by the authenticated user
+    if let Some(ref task_data) = task {
+        if let Some(created_by) = task_data.created_by {
+            if created_by != auth_user.id {
+                return Err(Error::NotFound("Task not found".to_string())); // Return NotFound to prevent user enumeration
+            }
+        } else {
+            // Tasks without created_by are system tasks, deny access to regular users
+            return Err(Error::NotFound("Task not found".to_string()));
+        }
+    }
 
     Ok(Json(ApiResponse::success(task.map(|t| t.into()))))
 }
@@ -168,12 +193,17 @@ pub async fn get_task(
         TaskQueryParams
     ),
     responses(
-        (status = 200, description = "List of tasks", body = ApiResponse<Vec<TaskResponse>>)
+        (status = 200, description = "List of tasks", body = ApiResponse<Vec<TaskResponse>>),
+        (status = 401, description = "Unauthorized", body = ErrorResponse)
+    ),
+    security(
+        ("bearer_auth" = [])
     )
 )]
 pub async fn list_tasks(
     State(app_state): State<AppState>,
     Query(params): Query<TaskQueryParams>,
+    Extension(auth_user): Extension<AuthUser>,
 ) -> Result<Json<ApiResponse<Vec<crate::tasks::types::TaskResponse>>>, Error> {
     let status = match params.status.as_deref() {
         Some("pending") => Some(TaskStatus::Pending),
@@ -188,8 +218,8 @@ pub async fn list_tasks(
     let filter = TaskFilter {
         task_type: params.task_type,
         status,
-        priority: None, // TODO: Parse priority string if needed
-        created_by: None,
+        priority: None,                 // TODO: Parse priority string if needed
+        created_by: Some(auth_user.id), // Only list tasks created by the authenticated user
         created_after: None,
         created_before: None,
         limit: params.limit,
@@ -254,17 +284,39 @@ pub async fn get_stats(
     ),
     responses(
         (status = 200, description = "Task cancelled", body = ApiResponse<String>),
-        (status = 404, description = "Task not found", body = ErrorResponse)
+        (status = 404, description = "Task not found", body = ErrorResponse),
+        (status = 401, description = "Unauthorized", body = ErrorResponse)
+    ),
+    security(
+        ("bearer_auth" = [])
     )
 )]
 pub async fn cancel_task(
     State(app_state): State<AppState>,
     Path(task_id): Path<Uuid>,
+    Extension(auth_user): Extension<AuthUser>,
 ) -> Result<Json<ApiResponse<String>>, Error> {
     let processor = TaskProcessor::new(
         app_state.database.clone(),
         crate::tasks::processor::ProcessorConfig::default(),
     );
+
+    // First, get the task to check ownership
+    let task = processor
+        .get_task(task_id)
+        .await
+        .map_err(|e| Error::Internal(format!("Failed to get task: {e}")))?
+        .ok_or(Error::NotFound("Task not found".to_string()))?;
+
+    // Check ownership - only allow cancelling tasks created by the authenticated user
+    if let Some(created_by) = task.created_by {
+        if created_by != auth_user.id {
+            return Err(Error::NotFound("Task not found".to_string())); // Return NotFound to prevent user enumeration
+        }
+    } else {
+        // Tasks without created_by are system tasks, deny access to regular users
+        return Err(Error::NotFound("Task not found".to_string()));
+    }
 
     processor
         .cancel_task(task_id)
@@ -289,12 +341,17 @@ pub async fn cancel_task(
         ("offset" = Option<i64>, Query, description = "Number of tasks to skip")
     ),
     responses(
-        (status = 200, description = "Dead letter queue tasks", body = ApiResponse<Vec<TaskResponse>>)
+        (status = 200, description = "Dead letter queue tasks", body = ApiResponse<Vec<TaskResponse>>),
+        (status = 401, description = "Unauthorized", body = ErrorResponse)
+    ),
+    security(
+        ("bearer_auth" = [])
     )
 )]
 pub async fn get_dead_letter_queue(
     State(app_state): State<AppState>,
     Query(params): Query<TaskQueryParams>,
+    Extension(auth_user): Extension<AuthUser>,
 ) -> Result<Json<ApiResponse<Vec<crate::tasks::types::TaskResponse>>>, Error> {
     let processor = TaskProcessor::new(
         app_state.database.clone(),
@@ -306,9 +363,14 @@ pub async fn get_dead_letter_queue(
         .await
         .map_err(|e| Error::Internal(format!("Failed to get dead letter queue: {e}")))?;
 
-    let task_responses: Vec<crate::tasks::types::TaskResponse> =
-        tasks.into_iter().map(|t| t.into()).collect();
-    Ok(Json(ApiResponse::success(task_responses)))
+    // Filter tasks to only show those created by the authenticated user
+    let user_tasks: Vec<crate::tasks::types::TaskResponse> = tasks
+        .into_iter()
+        .filter(|task| task.created_by == Some(auth_user.id))
+        .map(|t| t.into())
+        .collect();
+
+    Ok(Json(ApiResponse::success(user_tasks)))
 }
 
 /// Retry a failed task
@@ -324,17 +386,39 @@ pub async fn get_dead_letter_queue(
     responses(
         (status = 200, description = "Task retried successfully", body = ApiResponse<String>),
         (status = 404, description = "Task not found", body = ErrorResponse),
-        (status = 400, description = "Task is not in failed status", body = ErrorResponse)
+        (status = 400, description = "Task is not in failed status", body = ErrorResponse),
+        (status = 401, description = "Unauthorized", body = ErrorResponse)
+    ),
+    security(
+        ("bearer_auth" = [])
     )
 )]
 pub async fn retry_task(
     State(app_state): State<AppState>,
     Path(task_id): Path<Uuid>,
+    Extension(auth_user): Extension<AuthUser>,
 ) -> Result<Json<ApiResponse<String>>, Error> {
     let processor = TaskProcessor::new(
         app_state.database.clone(),
         crate::tasks::processor::ProcessorConfig::default(),
     );
+
+    // First, get the task to check ownership
+    let task = processor
+        .get_task(task_id)
+        .await
+        .map_err(|e| Error::Internal(format!("Failed to get task: {e}")))?
+        .ok_or(Error::NotFound("Task not found".to_string()))?;
+
+    // Check ownership - only allow retrying tasks created by the authenticated user
+    if let Some(created_by) = task.created_by {
+        if created_by != auth_user.id {
+            return Err(Error::NotFound("Task not found".to_string())); // Return NotFound to prevent user enumeration
+        }
+    } else {
+        // Tasks without created_by are system tasks, deny access to regular users
+        return Err(Error::NotFound("Task not found".to_string()));
+    }
 
     processor.retry_task(task_id).await.map_err(|e| match e {
         crate::tasks::types::TaskError::NotFound(_) => {
@@ -362,17 +446,39 @@ pub async fn retry_task(
     responses(
         (status = 200, description = "Task deleted successfully", body = ApiResponse<String>),
         (status = 404, description = "Task not found", body = ErrorResponse),
-        (status = 400, description = "Task is not in a deletable status", body = ErrorResponse)
+        (status = 400, description = "Task is not in a deletable status", body = ErrorResponse),
+        (status = 401, description = "Unauthorized", body = ErrorResponse)
+    ),
+    security(
+        ("bearer_auth" = [])
     )
 )]
 pub async fn delete_task(
     State(app_state): State<AppState>,
     Path(task_id): Path<Uuid>,
+    Extension(auth_user): Extension<AuthUser>,
 ) -> Result<Json<ApiResponse<String>>, Error> {
     let processor = TaskProcessor::new(
         app_state.database.clone(),
         crate::tasks::processor::ProcessorConfig::default(),
     );
+
+    // First, get the task to check ownership
+    let task = processor
+        .get_task(task_id)
+        .await
+        .map_err(|e| Error::Internal(format!("Failed to get task: {e}")))?
+        .ok_or(Error::NotFound("Task not found".to_string()))?;
+
+    // Check ownership - only allow deleting tasks created by the authenticated user
+    if let Some(created_by) = task.created_by {
+        if created_by != auth_user.id {
+            return Err(Error::NotFound("Task not found".to_string())); // Return NotFound to prevent user enumeration
+        }
+    } else {
+        // Tasks without created_by are system tasks, deny access to regular users
+        return Err(Error::NotFound("Task not found".to_string()));
+    }
 
     processor.delete_task(task_id).await.map_err(|e| match e {
         crate::tasks::types::TaskError::NotFound(_) => {

@@ -181,7 +181,8 @@ export interface paths {
 export interface components {
   schemas: {
     LoginRequest: {
-      username_or_email: string;
+      username?: string;
+      email?: string;
       password: string;
     };
     LoginResponse: {
@@ -281,6 +282,7 @@ interface AuthContextType {
   user: User | null;
   loading: boolean;
   authenticated: boolean;
+  tokenExpiration: string | null;
   login: (credentials: LoginRequest) => Promise<void>;
   logout: () => Promise<void>;
   logoutAll: () => Promise<void>;
@@ -290,6 +292,7 @@ interface AuthContextType {
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [tokenExpiration, setTokenExpiration] = useState<string | null>(null);
   
   // Auto-initialize from localStorage
   useEffect(() => {
@@ -310,28 +313,57 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     initializeAuth();
   }, []);
   
-  // Auto-refresh every 15 minutes
+  // Smart token refresh based on expiration time
   useEffect(() => {
-    if (!user) return;
-    
-    const interval = setInterval(async () => {
-      try {
-        await refresh();
-      } catch (error) {
-        console.error('Token refresh failed:', error);
-        await logout();
+    if (!user || !tokenExpiration) return;
+
+    const scheduleRefresh = () => {
+      const expirationTime = new Date(tokenExpiration).getTime();
+      const currentTime = Date.now();
+      const timeUntilExpiration = expirationTime - currentTime;
+
+      // Refresh when 75% of token lifetime has passed, with minimum 5 minutes before expiration
+      const refreshTime = Math.max(
+        timeUntilExpiration * 0.25, // 25% before expiration (75% of lifetime passed)
+        5 * 60 * 1000, // At least 5 minutes before expiration
+      );
+
+      // Don't schedule if token expires very soon
+      if (timeUntilExpiration <= 60 * 1000) {
+        console.log("Token expires very soon, forcing refresh now");
+        refresh();
+        return;
       }
-    }, 15 * 60 * 1000); // 15 minutes
-    
-    return () => clearInterval(interval);
-  }, [user]);
+
+      console.log(
+        `Scheduling token refresh in ${Math.round(refreshTime / 1000 / 60)} minutes`,
+      );
+
+      const timeoutId = setTimeout(async () => {
+        try {
+          await refresh();
+        } catch (error) {
+          console.error('Token refresh failed:', error);
+          await logout();
+        }
+      }, refreshTime);
+
+      return timeoutId;
+    };
+
+    const timeoutId = scheduleRefresh();
+    return () => {
+      if (timeoutId) clearTimeout(timeoutId);
+    };
+  }, [user, tokenExpiration]);
   
   const login = async (credentials: LoginRequest) => {
     const response = await authApi.login(credentials);
     
-    // Store token and user
+    // Store token and user data
     localStorage.setItem('session_token', response.session_token);
     setUser(response.user);
+    setTokenExpiration(response.expires_at);
   };
   
   const logout = async () => {
@@ -346,7 +378,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   
   return (
     <AuthContext.Provider value={{
-      user, loading, authenticated: !!user,
+      user, loading, authenticated: !!user, tokenExpiration,
       login, logout, logoutAll, refresh
     }}>
       {children}
@@ -1016,7 +1048,7 @@ Now that you understand the full-stack integration:
 - [Architecture Overview](01-architecture.md) - System design principles
 - [Authentication Guide](02-authentication.md) - Security implementation details
 - [Background Tasks](04-background-tasks.md) - Async processing patterns
-- [Testing Guide](07-testing.md) - Testing strategies for full-stack apps
+- [Testing Guide](08-testing.md) - Testing strategies for full-stack apps
 
 ---
 

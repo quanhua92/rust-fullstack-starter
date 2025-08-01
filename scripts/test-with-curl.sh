@@ -104,7 +104,7 @@ test_api "POST /api/v1/auth/register" "POST" "/api/v1/auth/register" "200" "" "$
 
 # Login user and extract token
 echo "🔑 Logging in to get session token..."
-LOGIN_DATA="{\"username_or_email\": \"test_$TIMESTAMP@example.com\", \"password\": \"SecurePass123\"}"
+LOGIN_DATA="{\"email\": \"test_$TIMESTAMP@example.com\", \"password\": \"SecurePass123\"}"
 LOGIN_RESPONSE=$(curl -s -X POST "$BASE_URL/api/v1/auth/login" -H "Content-Type: application/json" -d "$LOGIN_DATA")
 if echo "$LOGIN_RESPONSE" | grep -q '"success":true'; then
     USER_TOKEN=$(echo "$LOGIN_RESPONSE" | python3 -c "import json,sys; print(json.load(sys.stdin)['data']['session_token'])" 2>/dev/null || echo "")
@@ -125,6 +125,22 @@ fi
 if [ -n "$USER_TOKEN" ]; then
     test_api "GET /api/v1/auth/me" "GET" "/api/v1/auth/me" "200" "$USER_TOKEN"
     test_api "POST /api/v1/auth/refresh" "POST" "/api/v1/auth/refresh" "200" "$USER_TOKEN"
+    
+    # Test refresh rate limiting (should fail on immediate second request)
+    sleep 1 # Brief pause to ensure we're testing rate limiting
+    REFRESH_RATE_RESPONSE=$(curl -s -w 'HTTP_STATUS:%{http_code}' -X POST "$BASE_URL/api/v1/auth/refresh" -H "Authorization: Bearer $USER_TOKEN")
+    REFRESH_RATE_STATUS=$(echo "$REFRESH_RATE_RESPONSE" | grep -o 'HTTP_STATUS:[0-9]*' | cut -d: -f2)
+    if [ "$REFRESH_RATE_STATUS" = "409" ]; then
+        echo -e "${GREEN}✅ PASS${NC} POST /api/v1/auth/refresh (rate limited) (Status: $REFRESH_RATE_STATUS - expected 409 CONFLICT)"
+        PASSED_TESTS=$((PASSED_TESTS + 1))
+    else
+        echo -e "${RED}❌ FAIL${NC} POST /api/v1/auth/refresh (rate limited) (Expected: 409, Got: $REFRESH_RATE_STATUS)"
+        REFRESH_RATE_BODY=$(echo "$REFRESH_RATE_RESPONSE" | sed 's/HTTP_STATUS:[0-9]*$//')
+        if [ -n "$REFRESH_RATE_BODY" ]; then
+            echo "    Response: $REFRESH_RATE_BODY"
+        fi
+    fi
+    TOTAL_TESTS=$((TOTAL_TESTS + 1))
     
     echo ""
     echo -e "${YELLOW}👤 User Management${NC}"
@@ -342,7 +358,7 @@ echo -e "${YELLOW}❌ Error Response Testing${NC}"
 test_api "GET /api/v1/auth/me (no auth)" "GET" "/api/v1/auth/me" "401"
 
 # Test invalid login
-INVALID_LOGIN='{"username_or_email": "wrong", "password": "wrong"}'
+INVALID_LOGIN='{"username": "wrong", "password": "wrong"}'
 test_api "POST /api/v1/auth/login (invalid)" "POST" "/api/v1/auth/login" "401" "" "$INVALID_LOGIN"
 
 # Test validation error
@@ -378,7 +394,7 @@ if [ -n "$USER_TOKEN" ]; then
     NEW_USER_DATA="{\"username\": \"testuser2_$TIMESTAMP\", \"email\": \"test2_$TIMESTAMP@example.com\", \"password\": \"SecurePass123\"}"
     curl -s -X POST "$BASE_URL/api/v1/auth/register" -H "Content-Type: application/json" -d "$NEW_USER_DATA" > /dev/null
     
-    NEW_LOGIN_DATA="{\"username_or_email\": \"test2_$TIMESTAMP@example.com\", \"password\": \"SecurePass123\"}"
+    NEW_LOGIN_DATA="{\"email\": \"test2_$TIMESTAMP@example.com\", \"password\": \"SecurePass123\"}"
     NEW_LOGIN_RESPONSE=$(curl -s -X POST "$BASE_URL/api/v1/auth/login" -H "Content-Type: application/json" -d "$NEW_LOGIN_DATA")
     NEW_TOKEN=$(echo "$NEW_LOGIN_RESPONSE" | python3 -c "import json,sys; print(json.load(sys.stdin)['data']['session_token'])" 2>/dev/null || echo "")
     

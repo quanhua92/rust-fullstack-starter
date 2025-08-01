@@ -29,6 +29,7 @@ export type HealthResponse =
 	components["schemas"]["ApiResponse_HealthResponse"];
 export type DetailedHealthResponse =
 	components["schemas"]["ApiResponse_DetailedHealthResponse"];
+export type RefreshResponse = components["schemas"]["ApiResponse_RefreshResponse"];
 export type BasicResponse = components["schemas"]["ApiResponse_String"];
 
 // Token management
@@ -142,8 +143,8 @@ class ApiClient {
 		return this.request<AuthUserResponse>("/auth/me");
 	}
 
-	async refreshToken(): Promise<BasicResponse> {
-		return this.request<BasicResponse>("/auth/refresh", {
+	async refreshToken(): Promise<RefreshResponse> {
+		return this.request<RefreshResponse>("/auth/refresh", {
 			method: "POST",
 		});
 	}

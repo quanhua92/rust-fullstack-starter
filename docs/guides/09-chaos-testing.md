@@ -1012,7 +1012,7 @@ The chaos testing framework provides a foundation for building confidence in you
 
 - **Circuit Breaker Pattern**: [Reliability Patterns Guide](../reliability.md)
 - **Background Tasks**: [Background Tasks Guide](04-background-tasks.md)
-- **API Testing**: [Testing Guide](07-testing.md)
+- **API Testing**: [Testing Guide](08-testing.md)
 - **Health Monitoring**: [API Reference - Health Endpoints](../api-reference.md)
 - **System Architecture**: [Architecture Guide](01-architecture.md)
 

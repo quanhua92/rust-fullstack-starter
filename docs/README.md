@@ -235,11 +235,30 @@ For complete setup instructions, see **[Getting Started Guide](./getting-started
 # Clone and start
 git clone https://github.com/quanhua92/rust-fullstack-starter.git
 cd rust-fullstack-starter
-./scripts/dev-server.sh 3000
+
+# Start database and HTTP server
+./scripts/dev-server.sh
+
+# Start background task worker with log following
+./scripts/worker.sh -f
+
+# Or multiple concurrent workers:
+# ./scripts/worker.sh --id 1 -f
+# ./scripts/worker.sh --id 2 -f
 
 # Verify
 curl http://localhost:3000/api/v1/health
 open http://localhost:3000/api-docs
+
+# Register a new user
+curl -X POST http://localhost:3000/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{"username": "testuser", "email": "test@example.com", "password": "password123"}'
+
+# Login to get a session token
+curl -X POST http://localhost:3000/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"username": "testuser", "password": "password123"}'
 ```
 
 ## Testing
@@ -289,6 +308,10 @@ Create and process async jobs with dead letter queue management:
 ```bash
 # Start worker process
 ./scripts/worker.sh
+
+# Or multiple concurrent workers:
+# ./scripts/worker.sh --id 1
+# ./scripts/worker.sh --id 2
 
 # Create task via API
 curl -X POST http://localhost:3000/api/v1/tasks \
@@ -415,10 +438,13 @@ Comprehensive guides in **[`guides/`](guides/)**:
 - **[02 - Authentication](guides/02-authentication.md)** - User management and security
 - **[03 - Design Patterns](guides/03-patterns.md)** - Service layer and architectural patterns
 - **[04 - Background Tasks](guides/04-background-tasks.md)** - Async job processing system
-- **[05 - Task Types](guides/05-task-types.md)** - Creating custom task handlers
-- **[06 - Task Registry](guides/06-task-registry.md)** - Organizing and managing tasks
-- **[07 - Testing](guides/07-testing.md)** - Comprehensive testing framework
-- **[08 - Chaos Testing](guides/08-chaos-testing.md)** - Resilience testing and failure simulation
+- **[05 - Task Handlers Reference](guides/05-task-handlers-reference.md)** - Built-in task type examples
+- **[06 - Custom Task Types](guides/06-task-types.md)** - Creating custom task handlers
+- **[07 - Task Registry](guides/07-task-registry.md)** - Organizing and managing tasks
+- **[08 - Testing](guides/08-testing.md)** - Comprehensive testing framework
+- **[09 - Chaos Testing](guides/09-chaos-testing.md)** - Resilience testing and failure simulation
+- **[10 - Web Frontend Integration](guides/10-web-frontend-integration.md)** - React ↔ Rust patterns
+- **[11 - Debugging & Troubleshooting](guides/11-debugging-and-troubleshooting.md)** - Systematic problem solving
 
 ### Reference Documentation
 - **[Task Handlers](reference/task-handlers.md)** - Built-in task type reference
@@ -436,12 +462,12 @@ Comprehensive guides in **[`guides/`](guides/)**:
 - **[System Overview](#system-overview)** - Architecture and component relationships
 - **[Authentication Guide](guides/02-authentication.md)** - Secure user management patterns
 - **[Background Tasks](guides/04-background-tasks.md)** - Async job processing system
-- **[Web Integration](guides/09-web-frontend-integration.md)** - React ↔ Rust patterns
+- **[Web Integration](guides/10-web-frontend-integration.md)** - React ↔ Rust patterns
 
 ### 🚢 **Ready for Production?**
 - **[Production Deployment](production-deployment.md)** - Docker, Kubernetes, security
-- **[Testing Strategy](guides/07-testing.md)** - 53 integration tests + chaos testing
-- **[Debugging Guide](guides/10-debugging-and-troubleshooting.md)** - Systematic problem solving
+- **[Testing Strategy](guides/08-testing.md)** - 53 integration tests + chaos testing
+- **[Debugging Guide](guides/11-debugging-and-troubleshooting.md)** - Systematic problem solving
 - **[Performance & Monitoring](reliability.md)** - Optimization and observability
 
 ### 🎓 **Master Full-Stack Development** *(Advanced)*
@@ -483,7 +509,7 @@ This starter includes comprehensive educational content for deep learning:
    - **Mental Model**: Identity verification and state management
    - **Practice**: Implement user registration flow
 
-4. **[🌐 Full-Stack Integration](guides/09-web-frontend-integration.md)** *(🌐 Connection)*
+4. **[🌐 Full-Stack Integration](guides/10-web-frontend-integration.md)** *(🌐 Connection)*
    - **Why**: OpenAPI-driven development approach
    - **Mental Model**: Type-safe contract between frontend and backend
    - **Practice**: Add a new API endpoint with frontend integration
@@ -500,17 +526,17 @@ This starter includes comprehensive educational content for deep learning:
    - **Mental Model**: Queue-based task processing
    - **Practice**: Create custom task handlers
 
-6. **[📋 Task Registry](guides/06-task-registry.md)** *(📋 Organization)*
+6. **[📋 Task Registry](guides/07-task-registry.md)** *(📋 Organization)*
    - **Why**: Organization and scalability patterns
    - **Mental Model**: Domain-driven task organization
    - **Practice**: Implement domain-specific task registry
 
-7. **[✅ Testing Strategy](guides/07-testing.md)** *(✅ Quality)*
+7. **[✅ Testing Strategy](guides/08-testing.md)** *(✅ Quality)*
    - **Why**: Integration tests over unit tests for this architecture
    - **Mental Model**: TestApp pattern and isolation strategies
    - **Practice**: Write tests for your custom features
 
-8. **[🔧 Debugging & Troubleshooting](guides/10-debugging-and-troubleshooting.md)** *(🔧 Essential Skill)*
+8. **[🔧 Debugging & Troubleshooting](guides/11-debugging-and-troubleshooting.md)** *(🔧 Essential Skill)*
    - **Why**: Systematic debugging from first principles
    - **Mental Model**: Layer-based problem isolation
    - **Practice**: Debug real issues in the application
@@ -527,7 +553,7 @@ This starter includes comprehensive educational content for deep learning:
    - **Mental Model**: Infrastructure as code and deployment pipelines
    - **Practice**: Deploy to staging environment
 
-10. **[🌪️ Chaos Engineering](guides/08-chaos-testing.md)** *(🌪️ Resilience)*
+10. **[🌪️ Chaos Engineering](guides/09-chaos-testing.md)** *(🌪️ Resilience)*
     - **Why**: Building antifragile systems
     - **Mental Model**: Controlled failure experimentation
     - **Practice**: Design and run chaos experiments
@@ -581,12 +607,12 @@ graph TD
 
 ### 🎯 Choose Your Starting Point
 
-| Background | Recommended Path | Skills to Build |
-|------------|------------------|-----------------|
-| **New to Full-Stack** | Start with Beginner Path | Foundations → Implementation → Production |
-| **Frontend Developer** | Start with Architecture (Step 2) | Backend patterns → Full-stack integration |
-| **Backend Developer** | Start with Integration (Step 4) | Frontend patterns → Type-safe APIs |
-| **Experienced Developer** | Jump to Intermediate Path | Advanced patterns → Production deployment |
+| Background                | Recommended Path                 | Skills to Build                           |
+| ------------------------- | -------------------------------- | ----------------------------------------- |
+| **New to Full-Stack**     | Start with Beginner Path         | Foundations → Implementation → Production |
+| **Frontend Developer**    | Start with Architecture (Step 2) | Backend patterns → Full-stack integration |
+| **Backend Developer**     | Start with Integration (Step 4)  | Frontend patterns → Type-safe APIs        |
+| **Experienced Developer** | Jump to Intermediate Path        | Advanced patterns → Production deployment |
 
 ### Key Learning Areas Covered
 

@@ -4,1476 +4,1556 @@
  */
 
 export interface paths {
-	"/auth/login": {
-		parameters: {
-			query?: never;
-			header?: never;
-			path?: never;
-			cookie?: never;
-		};
-		get?: never;
-		put?: never;
-		/**
-		 * User login
-		 * @description Authenticate user with username/email and password
-		 */
-		post: operations["login"];
-		delete?: never;
-		options?: never;
-		head?: never;
-		patch?: never;
-		trace?: never;
-	};
-	"/auth/logout": {
-		parameters: {
-			query?: never;
-			header?: never;
-			path?: never;
-			cookie?: never;
-		};
-		get?: never;
-		put?: never;
-		/**
-		 * User logout
-		 * @description Logout current user and end all sessions
-		 */
-		post: operations["logout"];
-		delete?: never;
-		options?: never;
-		head?: never;
-		patch?: never;
-		trace?: never;
-	};
-	"/auth/logout-all": {
-		parameters: {
-			query?: never;
-			header?: never;
-			path?: never;
-			cookie?: never;
-		};
-		get?: never;
-		put?: never;
-		/**
-		 * Logout from all devices
-		 * @description Logout current user from all devices and end all sessions
-		 */
-		post: operations["logout_all"];
-		delete?: never;
-		options?: never;
-		head?: never;
-		patch?: never;
-		trace?: never;
-	};
-	"/auth/me": {
-		parameters: {
-			query?: never;
-			header?: never;
-			path?: never;
-			cookie?: never;
-		};
-		/**
-		 * Get current user
-		 * @description Get current authenticated user information
-		 */
-		get: operations["me"];
-		put?: never;
-		post?: never;
-		delete?: never;
-		options?: never;
-		head?: never;
-		patch?: never;
-		trace?: never;
-	};
-	"/auth/refresh": {
-		parameters: {
-			query?: never;
-			header?: never;
-			path?: never;
-			cookie?: never;
-		};
-		get?: never;
-		put?: never;
-		/**
-		 * Refresh token
-		 * @description Validate current session token (refresh endpoint)
-		 */
-		post: operations["refresh"];
-		delete?: never;
-		options?: never;
-		head?: never;
-		patch?: never;
-		trace?: never;
-	};
-	"/auth/register": {
-		parameters: {
-			query?: never;
-			header?: never;
-			path?: never;
-			cookie?: never;
-		};
-		get?: never;
-		put?: never;
-		/**
-		 * User registration
-		 * @description Register a new user account
-		 */
-		post: operations["register"];
-		delete?: never;
-		options?: never;
-		head?: never;
-		patch?: never;
-		trace?: never;
-	};
-	"/health": {
-		parameters: {
-			query?: never;
-			header?: never;
-			path?: never;
-			cookie?: never;
-		};
-		/**
-		 * Basic health check
-		 * @description Returns basic application health status with version and uptime
-		 */
-		get: operations["health"];
-		put?: never;
-		post?: never;
-		delete?: never;
-		options?: never;
-		head?: never;
-		patch?: never;
-		trace?: never;
-	};
-	"/health/detailed": {
-		parameters: {
-			query?: never;
-			header?: never;
-			path?: never;
-			cookie?: never;
-		};
-		/**
-		 * Detailed health check
-		 * @description Returns comprehensive health status including database and dependencies
-		 */
-		get: operations["detailed_health"];
-		put?: never;
-		post?: never;
-		delete?: never;
-		options?: never;
-		head?: never;
-		patch?: never;
-		trace?: never;
-	};
-	"/health/live": {
-		parameters: {
-			query?: never;
-			header?: never;
-			path?: never;
-			cookie?: never;
-		};
-		/**
-		 * Liveness probe
-		 * @description Kubernetes liveness probe endpoint. Returns 200 if application is running.
-		 */
-		get: operations["health_live"];
-		put?: never;
-		post?: never;
-		delete?: never;
-		options?: never;
-		head?: never;
-		patch?: never;
-		trace?: never;
-	};
-	"/health/ready": {
-		parameters: {
-			query?: never;
-			header?: never;
-			path?: never;
-			cookie?: never;
-		};
-		/**
-		 * Readiness probe
-		 * @description Kubernetes readiness probe endpoint. Returns 200 only if all dependencies are ready.
-		 */
-		get: operations["health_ready"];
-		put?: never;
-		post?: never;
-		delete?: never;
-		options?: never;
-		head?: never;
-		patch?: never;
-		trace?: never;
-	};
-	"/health/startup": {
-		parameters: {
-			query?: never;
-			header?: never;
-			path?: never;
-			cookie?: never;
-		};
-		/**
-		 * Startup probe
-		 * @description Kubernetes startup probe endpoint. Returns 200 when initialization is complete.
-		 */
-		get: operations["health_startup"];
-		put?: never;
-		post?: never;
-		delete?: never;
-		options?: never;
-		head?: never;
-		patch?: never;
-		trace?: never;
-	};
-	"/tasks": {
-		parameters: {
-			query?: never;
-			header?: never;
-			path?: never;
-			cookie?: never;
-		};
-		/**
-		 * List tasks
-		 * @description List tasks with optional filtering
-		 */
-		get: operations["list_tasks"];
-		put?: never;
-		/**
-		 * Create task
-		 * @description Create a new background task
-		 */
-		post: operations["create_task"];
-		delete?: never;
-		options?: never;
-		head?: never;
-		patch?: never;
-		trace?: never;
-	};
-	"/tasks/dead-letter": {
-		parameters: {
-			query?: never;
-			header?: never;
-			path?: never;
-			cookie?: never;
-		};
-		/**
-		 * Get dead letter queue
-		 * @description Get all failed tasks in the dead letter queue
-		 */
-		get: operations["get_dead_letter_queue"];
-		put?: never;
-		post?: never;
-		delete?: never;
-		options?: never;
-		head?: never;
-		patch?: never;
-		trace?: never;
-	};
-	"/tasks/stats": {
-		parameters: {
-			query?: never;
-			header?: never;
-			path?: never;
-			cookie?: never;
-		};
-		/**
-		 * Get task statistics
-		 * @description Get statistics about tasks (total, pending, completed, failed, etc.)
-		 */
-		get: operations["get_stats"];
-		put?: never;
-		post?: never;
-		delete?: never;
-		options?: never;
-		head?: never;
-		patch?: never;
-		trace?: never;
-	};
-	"/tasks/types": {
-		parameters: {
-			query?: never;
-			header?: never;
-			path?: never;
-			cookie?: never;
-		};
-		/**
-		 * List task types
-		 * @description List all registered task types
-		 */
-		get: operations["list_task_types"];
-		put?: never;
-		/**
-		 * Register task type
-		 * @description Register a new task type that workers can handle
-		 */
-		post: operations["register_task_type"];
-		delete?: never;
-		options?: never;
-		head?: never;
-		patch?: never;
-		trace?: never;
-	};
-	"/tasks/{id}": {
-		parameters: {
-			query?: never;
-			header?: never;
-			path?: never;
-			cookie?: never;
-		};
-		/**
-		 * Get task
-		 * @description Get a task by its ID
-		 */
-		get: operations["get_task"];
-		put?: never;
-		post?: never;
-		/**
-		 * Delete task
-		 * @description Permanently delete a completed, failed, or cancelled task
-		 */
-		delete: operations["delete_task"];
-		options?: never;
-		head?: never;
-		patch?: never;
-		trace?: never;
-	};
-	"/tasks/{id}/cancel": {
-		parameters: {
-			query?: never;
-			header?: never;
-			path?: never;
-			cookie?: never;
-		};
-		get?: never;
-		put?: never;
-		/**
-		 * Cancel task
-		 * @description Cancel a running or pending task
-		 */
-		post: operations["cancel_task"];
-		delete?: never;
-		options?: never;
-		head?: never;
-		patch?: never;
-		trace?: never;
-	};
-	"/tasks/{id}/retry": {
-		parameters: {
-			query?: never;
-			header?: never;
-			path?: never;
-			cookie?: never;
-		};
-		get?: never;
-		put?: never;
-		/**
-		 * Retry failed task
-		 * @description Retry a failed task by resetting it to pending status
-		 */
-		post: operations["retry_task"];
-		delete?: never;
-		options?: never;
-		head?: never;
-		patch?: never;
-		trace?: never;
-	};
-	"/users/{id}": {
-		parameters: {
-			query?: never;
-			header?: never;
-			path?: never;
-			cookie?: never;
-		};
-		/**
-		 * Get user by ID
-		 * @description Get user information by user ID
-		 */
-		get: operations["get_user_by_id"];
-		put?: never;
-		post?: never;
-		delete?: never;
-		options?: never;
-		head?: never;
-		patch?: never;
-		trace?: never;
-	};
+    "/auth/login": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * User login
+         * @description Authenticate user with username/email and password
+         */
+        post: operations["login"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/logout": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * User logout
+         * @description Logout current user and end all sessions
+         */
+        post: operations["logout"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/logout-all": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Logout from all devices
+         * @description Logout current user from all devices and end all sessions
+         */
+        post: operations["logout_all"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get current user
+         * @description Get current authenticated user information
+         */
+        get: operations["me"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/refresh": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Refresh token
+         * @description Refresh session token by extending its expiration time
+         */
+        post: operations["refresh"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/register": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * User registration
+         * @description Register a new user account
+         */
+        post: operations["register"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/health": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Basic health check
+         * @description Returns basic application health status with version and uptime
+         */
+        get: operations["health"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/health/detailed": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Detailed health check
+         * @description Returns comprehensive health status including database and dependencies
+         */
+        get: operations["detailed_health"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/health/live": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Liveness probe
+         * @description Kubernetes liveness probe endpoint. Returns 200 if application is running.
+         */
+        get: operations["health_live"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/health/ready": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Readiness probe
+         * @description Kubernetes readiness probe endpoint. Returns 200 only if all dependencies are ready.
+         */
+        get: operations["health_ready"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/health/startup": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Startup probe
+         * @description Kubernetes startup probe endpoint. Returns 200 when initialization is complete.
+         */
+        get: operations["health_startup"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/tasks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List tasks
+         * @description List tasks with optional filtering
+         */
+        get: operations["list_tasks"];
+        put?: never;
+        /**
+         * Create task
+         * @description Create a new background task
+         */
+        post: operations["create_task"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/tasks/dead-letter": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get dead letter queue
+         * @description Get all failed tasks in the dead letter queue
+         */
+        get: operations["get_dead_letter_queue"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/tasks/stats": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get task statistics
+         * @description Get statistics about tasks (total, pending, completed, failed, etc.)
+         */
+        get: operations["get_stats"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/tasks/types": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List task types
+         * @description List all registered task types
+         */
+        get: operations["list_task_types"];
+        put?: never;
+        /**
+         * Register task type
+         * @description Register a new task type that workers can handle
+         */
+        post: operations["register_task_type"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/tasks/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get task
+         * @description Get a task by its ID
+         */
+        get: operations["get_task"];
+        put?: never;
+        post?: never;
+        /**
+         * Delete task
+         * @description Permanently delete a completed, failed, or cancelled task
+         */
+        delete: operations["delete_task"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/tasks/{id}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Cancel task
+         * @description Cancel a running or pending task
+         */
+        post: operations["cancel_task"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/tasks/{id}/retry": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Retry failed task
+         * @description Retry a failed task by resetting it to pending status
+         */
+        post: operations["retry_task"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/users/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get user by ID
+         * @description Get user information by user ID
+         */
+        get: operations["get_user_by_id"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
-	schemas: {
-		ApiResponse_AuthUser: {
-			data?: {
-				email: string;
-				/** Format: uuid */
-				id: string;
-				role: string;
-				username: string;
-			};
-			message?: string | null;
-			success: boolean;
-		};
-		ApiResponse_DetailedHealthResponse: {
-			data?: {
-				checks: {
-					[key: string]: components["schemas"]["ComponentHealth"];
-				};
-				status: string;
-				/** Format: date-time */
-				timestamp: string;
-			};
-			message?: string | null;
-			success: boolean;
-		};
-		ApiResponse_HealthResponse: {
-			data?: {
-				status: string;
-				/** Format: double */
-				uptime: number;
-				version: string;
-			};
-			message?: string | null;
-			success: boolean;
-		};
-		ApiResponse_LoginResponse: {
-			data?: {
-				/** Format: date-time */
-				expires_at: string;
-				session_token: string;
-				user: components["schemas"]["UserProfile"];
-			};
-			message?: string | null;
-			success: boolean;
-		};
-		ApiResponse_String: {
-			data?: string;
-			message?: string | null;
-			success: boolean;
-		};
-		ApiResponse_TaskResponse: {
-			data?: {
-				/** Format: date-time */
-				completed_at?: string | null;
-				/** Format: date-time */
-				created_at: string;
-				/** Format: uuid */
-				created_by?: string | null;
-				/** Format: int32 */
-				current_attempt: number;
-				/** Format: uuid */
-				id: string;
-				last_error?: string | null;
-				/** Format: int32 */
-				max_attempts: number;
-				metadata?: {
-					[key: string]: unknown;
-				};
-				priority: components["schemas"]["TaskPriority"];
-				/** Format: date-time */
-				scheduled_at?: string | null;
-				/** Format: date-time */
-				started_at?: string | null;
-				status: components["schemas"]["TaskStatus"];
-				task_type: string;
-				/** Format: date-time */
-				updated_at: string;
-			};
-			message?: string | null;
-			success: boolean;
-		};
-		ApiResponse_TaskStats: {
-			data?: {
-				/** Format: int64 */
-				cancelled: number;
-				/** Format: int64 */
-				completed: number;
-				/** Format: int64 */
-				failed: number;
-				/** Format: int64 */
-				pending: number;
-				/** Format: int64 */
-				retrying: number;
-				/** Format: int64 */
-				running: number;
-				/** Format: int64 */
-				total: number;
-			};
-			message?: string | null;
-			success: boolean;
-		};
-		ApiResponse_TaskTypeResponse: {
-			data?: {
-				/** Format: date-time */
-				created_at: string;
-				description?: string | null;
-				is_active: boolean;
-				task_type: string;
-				/** Format: date-time */
-				updated_at: string;
-			};
-			message?: string | null;
-			success: boolean;
-		};
-		ApiResponse_UserProfile: {
-			data?: {
-				/** Format: date-time */
-				created_at: string;
-				email: string;
-				email_verified: boolean;
-				/** Format: uuid */
-				id: string;
-				is_active: boolean;
-				/** Format: date-time */
-				last_login_at?: string | null;
-				role: string;
-				username: string;
-			};
-			message?: string | null;
-			success: boolean;
-		};
-		ApiResponse_Value: {
-			data?: unknown;
-			message?: string | null;
-			success: boolean;
-		};
-		ApiResponse_Vec_TaskResponse: {
-			data?: {
-				/** Format: date-time */
-				completed_at?: string | null;
-				/** Format: date-time */
-				created_at: string;
-				/** Format: uuid */
-				created_by?: string | null;
-				/** Format: int32 */
-				current_attempt: number;
-				/** Format: uuid */
-				id: string;
-				last_error?: string | null;
-				/** Format: int32 */
-				max_attempts: number;
-				metadata?: {
-					[key: string]: unknown;
-				};
-				priority: components["schemas"]["TaskPriority"];
-				/** Format: date-time */
-				scheduled_at?: string | null;
-				/** Format: date-time */
-				started_at?: string | null;
-				status: components["schemas"]["TaskStatus"];
-				task_type: string;
-				/** Format: date-time */
-				updated_at: string;
-			}[];
-			message?: string | null;
-			success: boolean;
-		};
-		ApiResponse_Vec_TaskTypeResponse: {
-			data?: {
-				/** Format: date-time */
-				created_at: string;
-				description?: string | null;
-				is_active: boolean;
-				task_type: string;
-				/** Format: date-time */
-				updated_at: string;
-			}[];
-			message?: string | null;
-			success: boolean;
-		};
-		AuthUser: {
-			email: string;
-			/** Format: uuid */
-			id: string;
-			role: string;
-			username: string;
-		};
-		ComponentHealth: {
-			details?: unknown;
-			message?: string | null;
-			status: string;
-		};
-		CreateTaskApiRequest: {
-			metadata?: {
-				[key: string]: unknown;
-			};
-			payload: unknown;
-			priority?: string | null;
-			/** Format: date-time */
-			scheduled_at?: string | null;
-			task_type: string;
-		};
-		CreateTaskRequest: {
-			/** Format: uuid */
-			created_by?: string | null;
-			metadata?: {
-				[key: string]: unknown;
-			};
-			payload: unknown;
-			priority?: components["schemas"]["TaskPriority"];
-			retry_strategy?: components["schemas"]["RetryStrategy"];
-			/** Format: date-time */
-			scheduled_at?: string | null;
-			task_type: string;
-		};
-		DetailedHealthResponse: {
-			checks: {
-				[key: string]: components["schemas"]["ComponentHealth"];
-			};
-			status: string;
-			/** Format: date-time */
-			timestamp: string;
-		};
-		ErrorDetail: {
-			code: string;
-			message: string;
-		};
-		ErrorResponse: {
-			error: components["schemas"]["ErrorDetail"];
-		};
-		HealthResponse: {
-			status: string;
-			/** Format: double */
-			uptime: number;
-			version: string;
-		};
-		LoginRequest: {
-			/** @example securepassword123 */
-			password: string;
-			user_agent?: string | null;
-			/** @example johndoe */
-			username_or_email: string;
-		};
-		LoginResponse: {
-			/** Format: date-time */
-			expires_at: string;
-			session_token: string;
-			user: components["schemas"]["UserProfile"];
-		};
-		RegisterRequest: {
-			/** @example john@example.com */
-			email: string;
-			/** @example securepassword123 */
-			password: string;
-			/** @example johndoe */
-			username: string;
-		};
-		RegisterTaskTypeRequest: {
-			description: string;
-			task_type: string;
-		};
-		RetryStrategy:
-			| {
-					/** @description Exponential backoff: delay = base_delay * multiplier^attempt */
-					Exponential: {
-						base_delay: string;
-						/** Format: int32 */
-						max_attempts: number;
-						max_delay: string;
-						/** Format: double */
-						multiplier: number;
-					};
-			  }
-			| {
-					/** @description Linear backoff: delay = base_delay + (increment * attempt) */
-					Linear: {
-						base_delay: string;
-						increment: string;
-						/** Format: int32 */
-						max_attempts: number;
-						max_delay: string;
-					};
-			  }
-			| {
-					/** @description Fixed interval: delay = interval for each retry */
-					Fixed: {
-						interval: string;
-						/** Format: int32 */
-						max_attempts: number;
-					};
-			  }
-			| "None";
-		/** @enum {string} */
-		TaskPriority: "Low" | "Normal" | "High" | "Critical";
-		TaskQueryParams: {
-			/** Format: int64 */
-			limit?: number | null;
-			/** Format: int64 */
-			offset?: number | null;
-			status?: string | null;
-			task_type?: string | null;
-		};
-		TaskResponse: {
-			/** Format: date-time */
-			completed_at?: string | null;
-			/** Format: date-time */
-			created_at: string;
-			/** Format: uuid */
-			created_by?: string | null;
-			/** Format: int32 */
-			current_attempt: number;
-			/** Format: uuid */
-			id: string;
-			last_error?: string | null;
-			/** Format: int32 */
-			max_attempts: number;
-			metadata?: {
-				[key: string]: unknown;
-			};
-			priority: components["schemas"]["TaskPriority"];
-			/** Format: date-time */
-			scheduled_at?: string | null;
-			/** Format: date-time */
-			started_at?: string | null;
-			status: components["schemas"]["TaskStatus"];
-			task_type: string;
-			/** Format: date-time */
-			updated_at: string;
-		};
-		TaskStats: {
-			/** Format: int64 */
-			cancelled: number;
-			/** Format: int64 */
-			completed: number;
-			/** Format: int64 */
-			failed: number;
-			/** Format: int64 */
-			pending: number;
-			/** Format: int64 */
-			retrying: number;
-			/** Format: int64 */
-			running: number;
-			/** Format: int64 */
-			total: number;
-		};
-		/** @enum {string} */
-		TaskStatus:
-			| "Pending"
-			| "Running"
-			| "Completed"
-			| "Failed"
-			| "Cancelled"
-			| "Retrying";
-		TaskTypeResponse: {
-			/** Format: date-time */
-			created_at: string;
-			description?: string | null;
-			is_active: boolean;
-			task_type: string;
-			/** Format: date-time */
-			updated_at: string;
-		};
-		User: {
-			/** Format: date-time */
-			created_at: string;
-			email: string;
-			email_verified: boolean;
-			/** Format: uuid */
-			id: string;
-			is_active: boolean;
-			/** Format: date-time */
-			last_login_at?: string | null;
-			role: string;
-			/** Format: date-time */
-			updated_at: string;
-			username: string;
-		};
-		UserProfile: {
-			/** Format: date-time */
-			created_at: string;
-			email: string;
-			email_verified: boolean;
-			/** Format: uuid */
-			id: string;
-			is_active: boolean;
-			/** Format: date-time */
-			last_login_at?: string | null;
-			role: string;
-			username: string;
-		};
-	};
-	responses: never;
-	parameters: never;
-	requestBodies: never;
-	headers: never;
-	pathItems: never;
+    schemas: {
+        ApiResponse_AuthUser: {
+            data?: {
+                email: string;
+                /** Format: uuid */
+                id: string;
+                role: string;
+                username: string;
+            };
+            message?: string | null;
+            success: boolean;
+        };
+        ApiResponse_DetailedHealthResponse: {
+            data?: {
+                checks: {
+                    [key: string]: components["schemas"]["ComponentHealth"];
+                };
+                status: string;
+                /** Format: date-time */
+                timestamp: string;
+            };
+            message?: string | null;
+            success: boolean;
+        };
+        ApiResponse_HealthResponse: {
+            data?: {
+                status: string;
+                /** Format: double */
+                uptime: number;
+                version: string;
+            };
+            message?: string | null;
+            success: boolean;
+        };
+        ApiResponse_LoginResponse: {
+            data?: {
+                /** Format: date-time */
+                expires_at: string;
+                session_token: string;
+                user: components["schemas"]["UserProfile"];
+            };
+            message?: string | null;
+            success: boolean;
+        };
+        ApiResponse_RefreshResponse: {
+            data?: {
+                /** Format: date-time */
+                expires_at: string;
+                /** Format: date-time */
+                refreshed_at: string;
+            };
+            message?: string | null;
+            success: boolean;
+        };
+        ApiResponse_String: {
+            data?: string;
+            message?: string | null;
+            success: boolean;
+        };
+        ApiResponse_TaskResponse: {
+            data?: {
+                /** Format: date-time */
+                completed_at?: string | null;
+                /** Format: date-time */
+                created_at: string;
+                /** Format: uuid */
+                created_by?: string | null;
+                /** Format: int32 */
+                current_attempt: number;
+                /** Format: uuid */
+                id: string;
+                last_error?: string | null;
+                /** Format: int32 */
+                max_attempts: number;
+                metadata?: {
+                    [key: string]: unknown;
+                };
+                priority: components["schemas"]["TaskPriority"];
+                /** Format: date-time */
+                scheduled_at?: string | null;
+                /** Format: date-time */
+                started_at?: string | null;
+                status: components["schemas"]["TaskStatus"];
+                task_type: string;
+                /** Format: date-time */
+                updated_at: string;
+            };
+            message?: string | null;
+            success: boolean;
+        };
+        ApiResponse_TaskStats: {
+            data?: {
+                /** Format: int64 */
+                cancelled: number;
+                /** Format: int64 */
+                completed: number;
+                /** Format: int64 */
+                failed: number;
+                /** Format: int64 */
+                pending: number;
+                /** Format: int64 */
+                retrying: number;
+                /** Format: int64 */
+                running: number;
+                /** Format: int64 */
+                total: number;
+            };
+            message?: string | null;
+            success: boolean;
+        };
+        ApiResponse_TaskTypeResponse: {
+            data?: {
+                /** Format: date-time */
+                created_at: string;
+                description?: string | null;
+                is_active: boolean;
+                task_type: string;
+                /** Format: date-time */
+                updated_at: string;
+            };
+            message?: string | null;
+            success: boolean;
+        };
+        ApiResponse_UserProfile: {
+            data?: {
+                /** Format: date-time */
+                created_at: string;
+                email: string;
+                email_verified: boolean;
+                /** Format: uuid */
+                id: string;
+                is_active: boolean;
+                /** Format: date-time */
+                last_login_at?: string | null;
+                role: string;
+                username: string;
+            };
+            message?: string | null;
+            success: boolean;
+        };
+        ApiResponse_Value: {
+            data?: unknown;
+            message?: string | null;
+            success: boolean;
+        };
+        ApiResponse_Vec_TaskResponse: {
+            data?: {
+                /** Format: date-time */
+                completed_at?: string | null;
+                /** Format: date-time */
+                created_at: string;
+                /** Format: uuid */
+                created_by?: string | null;
+                /** Format: int32 */
+                current_attempt: number;
+                /** Format: uuid */
+                id: string;
+                last_error?: string | null;
+                /** Format: int32 */
+                max_attempts: number;
+                metadata?: {
+                    [key: string]: unknown;
+                };
+                priority: components["schemas"]["TaskPriority"];
+                /** Format: date-time */
+                scheduled_at?: string | null;
+                /** Format: date-time */
+                started_at?: string | null;
+                status: components["schemas"]["TaskStatus"];
+                task_type: string;
+                /** Format: date-time */
+                updated_at: string;
+            }[];
+            message?: string | null;
+            success: boolean;
+        };
+        ApiResponse_Vec_TaskTypeResponse: {
+            data?: {
+                /** Format: date-time */
+                created_at: string;
+                description?: string | null;
+                is_active: boolean;
+                task_type: string;
+                /** Format: date-time */
+                updated_at: string;
+            }[];
+            message?: string | null;
+            success: boolean;
+        };
+        AuthUser: {
+            email: string;
+            /** Format: uuid */
+            id: string;
+            role: string;
+            username: string;
+        };
+        ComponentHealth: {
+            details?: unknown;
+            message?: string | null;
+            status: string;
+        };
+        CreateTaskApiRequest: {
+            metadata?: {
+                [key: string]: unknown;
+            };
+            payload: unknown;
+            priority?: string | null;
+            /** Format: date-time */
+            scheduled_at?: string | null;
+            task_type: string;
+        };
+        CreateTaskRequest: {
+            /** Format: uuid */
+            created_by?: string | null;
+            metadata?: {
+                [key: string]: unknown;
+            };
+            payload: unknown;
+            priority?: components["schemas"]["TaskPriority"];
+            retry_strategy?: components["schemas"]["RetryStrategy"];
+            /** Format: date-time */
+            scheduled_at?: string | null;
+            task_type: string;
+        };
+        DetailedHealthResponse: {
+            checks: {
+                [key: string]: components["schemas"]["ComponentHealth"];
+            };
+            status: string;
+            /** Format: date-time */
+            timestamp: string;
+        };
+        ErrorDetail: {
+            code: string;
+            message: string;
+        };
+        ErrorResponse: {
+            error: components["schemas"]["ErrorDetail"];
+        };
+        HealthResponse: {
+            status: string;
+            /** Format: double */
+            uptime: number;
+            version: string;
+        };
+        LoginRequest: {
+            /** @example john@example.com */
+            email?: string | null;
+            /** @example securepassword123 */
+            password: string;
+            user_agent?: string | null;
+            /** @example johndoe */
+            username?: string | null;
+        };
+        LoginResponse: {
+            /** Format: date-time */
+            expires_at: string;
+            session_token: string;
+            user: components["schemas"]["UserProfile"];
+        };
+        RefreshResponse: {
+            /** Format: date-time */
+            expires_at: string;
+            /** Format: date-time */
+            refreshed_at: string;
+        };
+        RegisterRequest: {
+            /** @example john@example.com */
+            email: string;
+            /** @example securepassword123 */
+            password: string;
+            /** @example johndoe */
+            username: string;
+        };
+        RegisterTaskTypeRequest: {
+            description: string;
+            task_type: string;
+        };
+        RetryStrategy: {
+            /** @description Exponential backoff: delay = base_delay * multiplier^attempt */
+            Exponential: {
+                base_delay: string;
+                /** Format: int32 */
+                max_attempts: number;
+                max_delay: string;
+                /** Format: double */
+                multiplier: number;
+            };
+        } | {
+            /** @description Linear backoff: delay = base_delay + (increment * attempt) */
+            Linear: {
+                base_delay: string;
+                increment: string;
+                /** Format: int32 */
+                max_attempts: number;
+                max_delay: string;
+            };
+        } | {
+            /** @description Fixed interval: delay = interval for each retry */
+            Fixed: {
+                interval: string;
+                /** Format: int32 */
+                max_attempts: number;
+            };
+        } | "None";
+        /** @enum {string} */
+        TaskPriority: "Low" | "Normal" | "High" | "Critical";
+        TaskQueryParams: {
+            /** Format: int64 */
+            limit?: number | null;
+            /** Format: int64 */
+            offset?: number | null;
+            status?: string | null;
+            task_type?: string | null;
+        };
+        TaskResponse: {
+            /** Format: date-time */
+            completed_at?: string | null;
+            /** Format: date-time */
+            created_at: string;
+            /** Format: uuid */
+            created_by?: string | null;
+            /** Format: int32 */
+            current_attempt: number;
+            /** Format: uuid */
+            id: string;
+            last_error?: string | null;
+            /** Format: int32 */
+            max_attempts: number;
+            metadata?: {
+                [key: string]: unknown;
+            };
+            priority: components["schemas"]["TaskPriority"];
+            /** Format: date-time */
+            scheduled_at?: string | null;
+            /** Format: date-time */
+            started_at?: string | null;
+            status: components["schemas"]["TaskStatus"];
+            task_type: string;
+            /** Format: date-time */
+            updated_at: string;
+        };
+        TaskStats: {
+            /** Format: int64 */
+            cancelled: number;
+            /** Format: int64 */
+            completed: number;
+            /** Format: int64 */
+            failed: number;
+            /** Format: int64 */
+            pending: number;
+            /** Format: int64 */
+            retrying: number;
+            /** Format: int64 */
+            running: number;
+            /** Format: int64 */
+            total: number;
+        };
+        /** @enum {string} */
+        TaskStatus: "Pending" | "Running" | "Completed" | "Failed" | "Cancelled" | "Retrying";
+        TaskTypeResponse: {
+            /** Format: date-time */
+            created_at: string;
+            description?: string | null;
+            is_active: boolean;
+            task_type: string;
+            /** Format: date-time */
+            updated_at: string;
+        };
+        User: {
+            /** Format: date-time */
+            created_at: string;
+            email: string;
+            email_verified: boolean;
+            /** Format: uuid */
+            id: string;
+            is_active: boolean;
+            /** Format: date-time */
+            last_login_at?: string | null;
+            role: string;
+            /** Format: date-time */
+            updated_at: string;
+            username: string;
+        };
+        UserProfile: {
+            /** Format: date-time */
+            created_at: string;
+            email: string;
+            email_verified: boolean;
+            /** Format: uuid */
+            id: string;
+            is_active: boolean;
+            /** Format: date-time */
+            last_login_at?: string | null;
+            role: string;
+            username: string;
+        };
+    };
+    responses: never;
+    parameters: never;
+    requestBodies: never;
+    headers: never;
+    pathItems: never;
 }
 export type $defs = Record<string, never>;
 export interface operations {
-	login: {
-		parameters: {
-			query?: never;
-			header?: never;
-			path?: never;
-			cookie?: never;
-		};
-		requestBody: {
-			content: {
-				"application/json": components["schemas"]["LoginRequest"];
-			};
-		};
-		responses: {
-			/** @description Login successful */
-			200: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content: {
-					"application/json": components["schemas"]["ApiResponse_LoginResponse"];
-				};
-			};
-			/** @description Invalid credentials */
-			401: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content: {
-					"application/json": components["schemas"]["ErrorResponse"];
-				};
-			};
-		};
-	};
-	logout: {
-		parameters: {
-			query?: never;
-			header?: never;
-			path?: never;
-			cookie?: never;
-		};
-		requestBody?: never;
-		responses: {
-			/** @description Logout successful */
-			200: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content: {
-					"application/json": components["schemas"]["ApiResponse_String"];
-				};
-			};
-			/** @description Unauthorized */
-			401: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content: {
-					"application/json": components["schemas"]["ErrorResponse"];
-				};
-			};
-		};
-	};
-	logout_all: {
-		parameters: {
-			query?: never;
-			header?: never;
-			path?: never;
-			cookie?: never;
-		};
-		requestBody?: never;
-		responses: {
-			/** @description Logout successful */
-			200: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content: {
-					"application/json": components["schemas"]["ApiResponse_String"];
-				};
-			};
-			/** @description Unauthorized */
-			401: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content: {
-					"application/json": components["schemas"]["ErrorResponse"];
-				};
-			};
-		};
-	};
-	me: {
-		parameters: {
-			query?: never;
-			header?: never;
-			path?: never;
-			cookie?: never;
-		};
-		requestBody?: never;
-		responses: {
-			/** @description Current user information */
-			200: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content: {
-					"application/json": components["schemas"]["ApiResponse_AuthUser"];
-				};
-			};
-			/** @description Unauthorized */
-			401: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content: {
-					"application/json": components["schemas"]["ErrorResponse"];
-				};
-			};
-		};
-	};
-	refresh: {
-		parameters: {
-			query?: never;
-			header?: never;
-			path?: never;
-			cookie?: never;
-		};
-		requestBody?: never;
-		responses: {
-			/** @description Token is valid */
-			200: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content: {
-					"application/json": components["schemas"]["ApiResponse_String"];
-				};
-			};
-			/** @description Unauthorized */
-			401: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content: {
-					"application/json": components["schemas"]["ErrorResponse"];
-				};
-			};
-		};
-	};
-	register: {
-		parameters: {
-			query?: never;
-			header?: never;
-			path?: never;
-			cookie?: never;
-		};
-		requestBody: {
-			content: {
-				"application/json": components["schemas"]["RegisterRequest"];
-			};
-		};
-		responses: {
-			/** @description Registration successful */
-			200: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content: {
-					"application/json": components["schemas"]["ApiResponse_UserProfile"];
-				};
-			};
-			/** @description Validation error */
-			400: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content: {
-					"application/json": components["schemas"]["ErrorResponse"];
-				};
-			};
-			/** @description User already exists */
-			409: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content: {
-					"application/json": components["schemas"]["ErrorResponse"];
-				};
-			};
-		};
-	};
-	health: {
-		parameters: {
-			query?: never;
-			header?: never;
-			path?: never;
-			cookie?: never;
-		};
-		requestBody?: never;
-		responses: {
-			/** @description Application is healthy */
-			200: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content: {
-					"application/json": components["schemas"]["ApiResponse_HealthResponse"];
-				};
-			};
-			/** @description Application is unhealthy */
-			503: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content: {
-					"application/json": components["schemas"]["ErrorResponse"];
-				};
-			};
-		};
-	};
-	detailed_health: {
-		parameters: {
-			query?: never;
-			header?: never;
-			path?: never;
-			cookie?: never;
-		};
-		requestBody?: never;
-		responses: {
-			/** @description All services healthy */
-			200: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content: {
-					"application/json": components["schemas"]["ApiResponse_DetailedHealthResponse"];
-				};
-			};
-			/** @description One or more services unhealthy */
-			503: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content: {
-					"application/json": components["schemas"]["ApiResponse_DetailedHealthResponse"];
-				};
-			};
-		};
-	};
-	health_live: {
-		parameters: {
-			query?: never;
-			header?: never;
-			path?: never;
-			cookie?: never;
-		};
-		requestBody?: never;
-		responses: {
-			/** @description Application is alive */
-			200: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content: {
-					"application/json": components["schemas"]["ApiResponse_Value"];
-				};
-			};
-		};
-	};
-	health_ready: {
-		parameters: {
-			query?: never;
-			header?: never;
-			path?: never;
-			cookie?: never;
-		};
-		requestBody?: never;
-		responses: {
-			/** @description Application is ready */
-			200: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content: {
-					"application/json": components["schemas"]["ApiResponse_Value"];
-				};
-			};
-			/** @description Application is not ready */
-			503: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content: {
-					"application/json": components["schemas"]["ApiResponse_Value"];
-				};
-			};
-		};
-	};
-	health_startup: {
-		parameters: {
-			query?: never;
-			header?: never;
-			path?: never;
-			cookie?: never;
-		};
-		requestBody?: never;
-		responses: {
-			/** @description Application has started */
-			200: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content: {
-					"application/json": components["schemas"]["ApiResponse_Value"];
-				};
-			};
-			/** @description Application is still starting */
-			503: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content: {
-					"application/json": components["schemas"]["ApiResponse_Value"];
-				};
-			};
-		};
-	};
-	list_tasks: {
-		parameters: {
-			query?: {
-				task_type?: string | null;
-				status?: string | null;
-				limit?: number | null;
-				offset?: number | null;
-			};
-			header?: never;
-			path?: never;
-			cookie?: never;
-		};
-		requestBody?: never;
-		responses: {
-			/** @description List of tasks */
-			200: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content: {
-					"application/json": components["schemas"]["ApiResponse_Vec_TaskResponse"];
-				};
-			};
-		};
-	};
-	create_task: {
-		parameters: {
-			query?: never;
-			header?: never;
-			path?: never;
-			cookie?: never;
-		};
-		requestBody: {
-			content: {
-				"application/json": components["schemas"]["CreateTaskApiRequest"];
-			};
-		};
-		responses: {
-			/** @description Task created */
-			200: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content: {
-					"application/json": components["schemas"]["ApiResponse_TaskResponse"];
-				};
-			};
-			/** @description Invalid request */
-			400: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content: {
-					"application/json": components["schemas"]["ErrorResponse"];
-				};
-			};
-		};
-	};
-	get_dead_letter_queue: {
-		parameters: {
-			query?: {
-				/** @description Maximum number of tasks to return */
-				limit?: number;
-				/** @description Number of tasks to skip */
-				offset?: number;
-			};
-			header?: never;
-			path?: never;
-			cookie?: never;
-		};
-		requestBody?: never;
-		responses: {
-			/** @description Dead letter queue tasks */
-			200: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content: {
-					"application/json": components["schemas"]["ApiResponse_Vec_TaskResponse"];
-				};
-			};
-		};
-	};
-	get_stats: {
-		parameters: {
-			query?: never;
-			header?: never;
-			path?: never;
-			cookie?: never;
-		};
-		requestBody?: never;
-		responses: {
-			/** @description Task statistics */
-			200: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content: {
-					"application/json": components["schemas"]["ApiResponse_TaskStats"];
-				};
-			};
-			/** @description Unauthorized */
-			401: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content: {
-					"application/json": components["schemas"]["ErrorResponse"];
-				};
-			};
-		};
-	};
-	list_task_types: {
-		parameters: {
-			query?: never;
-			header?: never;
-			path?: never;
-			cookie?: never;
-		};
-		requestBody?: never;
-		responses: {
-			/** @description List of task types */
-			200: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content: {
-					"application/json": components["schemas"]["ApiResponse_Vec_TaskTypeResponse"];
-				};
-			};
-		};
-	};
-	register_task_type: {
-		parameters: {
-			query?: never;
-			header?: never;
-			path?: never;
-			cookie?: never;
-		};
-		requestBody: {
-			content: {
-				"application/json": components["schemas"]["RegisterTaskTypeRequest"];
-			};
-		};
-		responses: {
-			/** @description Task type registered */
-			200: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content: {
-					"application/json": components["schemas"]["ApiResponse_TaskTypeResponse"];
-				};
-			};
-			/** @description Invalid request */
-			400: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content: {
-					"application/json": components["schemas"]["ErrorResponse"];
-				};
-			};
-		};
-	};
-	get_task: {
-		parameters: {
-			query?: never;
-			header?: never;
-			path: {
-				/** @description Task ID */
-				id: string;
-			};
-			cookie?: never;
-		};
-		requestBody?: never;
-		responses: {
-			/** @description Task found */
-			200: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content: {
-					"application/json": components["schemas"]["ApiResponse_TaskResponse"];
-				};
-			};
-			/** @description Task not found */
-			404: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content: {
-					"application/json": components["schemas"]["ErrorResponse"];
-				};
-			};
-		};
-	};
-	delete_task: {
-		parameters: {
-			query?: never;
-			header?: never;
-			path: {
-				/** @description Task ID */
-				id: string;
-			};
-			cookie?: never;
-		};
-		requestBody?: never;
-		responses: {
-			/** @description Task deleted successfully */
-			200: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content: {
-					"application/json": components["schemas"]["ApiResponse_String"];
-				};
-			};
-			/** @description Task is not in a deletable status */
-			400: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content: {
-					"application/json": components["schemas"]["ErrorResponse"];
-				};
-			};
-			/** @description Task not found */
-			404: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content: {
-					"application/json": components["schemas"]["ErrorResponse"];
-				};
-			};
-		};
-	};
-	cancel_task: {
-		parameters: {
-			query?: never;
-			header?: never;
-			path: {
-				/** @description Task ID */
-				id: string;
-			};
-			cookie?: never;
-		};
-		requestBody?: never;
-		responses: {
-			/** @description Task cancelled */
-			200: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content: {
-					"application/json": components["schemas"]["ApiResponse_String"];
-				};
-			};
-			/** @description Task not found */
-			404: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content: {
-					"application/json": components["schemas"]["ErrorResponse"];
-				};
-			};
-		};
-	};
-	retry_task: {
-		parameters: {
-			query?: never;
-			header?: never;
-			path: {
-				/** @description Task ID */
-				id: string;
-			};
-			cookie?: never;
-		};
-		requestBody?: never;
-		responses: {
-			/** @description Task retried successfully */
-			200: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content: {
-					"application/json": components["schemas"]["ApiResponse_String"];
-				};
-			};
-			/** @description Task is not in failed status */
-			400: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content: {
-					"application/json": components["schemas"]["ErrorResponse"];
-				};
-			};
-			/** @description Task not found */
-			404: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content: {
-					"application/json": components["schemas"]["ErrorResponse"];
-				};
-			};
-		};
-	};
-	get_user_by_id: {
-		parameters: {
-			query?: never;
-			header?: never;
-			path: {
-				/** @description User ID */
-				id: string;
-			};
-			cookie?: never;
-		};
-		requestBody?: never;
-		responses: {
-			/** @description User found */
-			200: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content: {
-					"application/json": components["schemas"]["ApiResponse_UserProfile"];
-				};
-			};
-			/** @description Unauthorized */
-			401: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content: {
-					"application/json": components["schemas"]["ErrorResponse"];
-				};
-			};
-			/** @description User not found */
-			404: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content: {
-					"application/json": components["schemas"]["ErrorResponse"];
-				};
-			};
-		};
-	};
+    login: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LoginRequest"];
+            };
+        };
+        responses: {
+            /** @description Login successful */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponse_LoginResponse"];
+                };
+            };
+            /** @description Invalid credentials */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    logout: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Logout successful */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponse_String"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    logout_all: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Logout successful */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponse_String"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    me: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Current user information */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponse_AuthUser"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    refresh: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Token refreshed successfully */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponse_RefreshResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Cannot refresh yet */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    register: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RegisterRequest"];
+            };
+        };
+        responses: {
+            /** @description Registration successful */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponse_UserProfile"];
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description User already exists */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    health: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Application is healthy */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponse_HealthResponse"];
+                };
+            };
+            /** @description Application is unhealthy */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    detailed_health: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description All services healthy */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponse_DetailedHealthResponse"];
+                };
+            };
+            /** @description One or more services unhealthy */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponse_DetailedHealthResponse"];
+                };
+            };
+        };
+    };
+    health_live: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Application is alive */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponse_Value"];
+                };
+            };
+        };
+    };
+    health_ready: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Application is ready */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponse_Value"];
+                };
+            };
+            /** @description Application is not ready */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponse_Value"];
+                };
+            };
+        };
+    };
+    health_startup: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Application has started */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponse_Value"];
+                };
+            };
+            /** @description Application is still starting */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponse_Value"];
+                };
+            };
+        };
+    };
+    list_tasks: {
+        parameters: {
+            query?: {
+                task_type?: string | null;
+                status?: string | null;
+                limit?: number | null;
+                offset?: number | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description List of tasks */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponse_Vec_TaskResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    create_task: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateTaskApiRequest"];
+            };
+        };
+        responses: {
+            /** @description Task created */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponse_TaskResponse"];
+                };
+            };
+            /** @description Invalid request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    get_dead_letter_queue: {
+        parameters: {
+            query?: {
+                /** @description Maximum number of tasks to return */
+                limit?: number;
+                /** @description Number of tasks to skip */
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Dead letter queue tasks */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponse_Vec_TaskResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    get_stats: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Task statistics */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponse_TaskStats"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    list_task_types: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description List of task types */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponse_Vec_TaskTypeResponse"];
+                };
+            };
+        };
+    };
+    register_task_type: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RegisterTaskTypeRequest"];
+            };
+        };
+        responses: {
+            /** @description Task type registered */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponse_TaskTypeResponse"];
+                };
+            };
+            /** @description Invalid request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    get_task: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Task ID */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Task found */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponse_TaskResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Task not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    delete_task: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Task ID */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Task deleted successfully */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponse_String"];
+                };
+            };
+            /** @description Task is not in a deletable status */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Task not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    cancel_task: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Task ID */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Task cancelled */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponse_String"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Task not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    retry_task: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Task ID */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Task retried successfully */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponse_String"];
+                };
+            };
+            /** @description Task is not in failed status */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Task not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    get_user_by_id: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description User ID */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description User found */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponse_UserProfile"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description User not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
 }

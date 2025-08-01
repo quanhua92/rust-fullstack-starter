@@ -28,6 +28,10 @@ cd rust-fullstack-starter
 ```bash
 # Start background task worker with log following
 ./scripts/worker.sh -f
+
+# Or multiple concurrent workers
+./scripts/worker.sh --id 1 -f    # Terminal 1
+./scripts/worker.sh --id 2 -f    # Terminal 2
 ```
 
 ### 4. Try It Out
@@ -57,7 +61,7 @@ curl -X POST http://localhost:3000/auth/register \
 # Login to get a session token
 curl -X POST http://localhost:3000/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"username_or_email": "testuser", "password": "password123"}'
+  -d '{"username": "testuser", "password": "password123"}'
 ```
 
 **Create and monitor a background task:**
@@ -76,7 +80,7 @@ curl -H "Authorization: Bearer TOKEN" http://localhost:3000/tasks
 
 - **API Docs**: http://localhost:3000/api-docs (Interactive Swagger UI)
 - **Health Check**: http://localhost:3000/health (System status)
-- **Worker Logs**: Check `/tmp/starter-worker.log` for task processing
+- **Worker Logs**: Check `/tmp/starter-worker-0.log` for task processing (or `/tmp/starter-worker-{ID}.log` for specific worker ID)
 
 ## Key Features
 
@@ -100,7 +104,9 @@ cargo nextest run                    # Integration tests (53 tests)
 ./scripts/check.sh                  # Format, lint, test (run before commits)
 
 # Background tasks
-./scripts/worker.sh -f              # Start task worker with logs
+./scripts/worker.sh -f              # Start task worker with logs (ID 0)
+./scripts/worker.sh --id 1 -f       # Start concurrent worker (ID 1)
+./scripts/worker.sh --id 2          # Start background worker (ID 2)
 
 # Admin commands (direct database access)
 cargo run -- admin task-stats       # Task statistics
@@ -138,8 +144,8 @@ rust-fullstack-starter/
 ### Learning Guides
 - [Authentication System](docs/guides/02-authentication.md)
 - [Background Tasks](docs/guides/04-background-tasks.md)
-- [Testing Framework](docs/guides/07-testing.md)
-- [Chaos Testing](docs/guides/08-chaos-testing.md) - **Enhanced with 7 scenarios**
+- [Testing Framework](docs/guides/08-testing.md)
+- [Chaos Testing](docs/guides/09-chaos-testing.md) - **Enhanced with 7 scenarios**
 
 ## API Endpoints
 

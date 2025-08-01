@@ -53,15 +53,22 @@ Check status of all services, ports, PID files, and connectivity.
 
 ## 🖥️ Server Management
 
-### `server.sh [port]`
-Start HTTP API server in background with PID tracking and log management.
+### `server.sh [port] [-f|--foreground]`
+Start HTTP API server in background or foreground mode.
 - **Default port:** 3000
-- **PID file:** `/tmp/starter-server-{PORT}.pid`
-- **Log file:** `/tmp/starter-server-{PORT}.log` (auto-rotated at 50MB)
-- **Auto-cleanup:** Kills existing processes on port
+- **Background mode:** PID tracking, log files, process management
+- **Foreground mode (-f):** Direct exec, Ctrl+C kills process cleanly
+- **PID file:** `/tmp/starter-server-{PORT}.pid` (background only)
+- **Log file:** `/tmp/starter-server-{PORT}.log` (background only, auto-rotated at 50MB)
+- **Auto-cleanup:** Always kills existing processes on port first
 ```bash
-./scripts/server.sh         # Start on port 3000
-./scripts/server.sh 8080     # Start on port 8080
+# Background mode (default)
+./scripts/server.sh         # Start on port 3000, creates PID file
+./scripts/server.sh 8080     # Start on port 8080, creates PID file
+
+# Foreground mode (direct control)
+./scripts/server.sh -f       # Port 3000, direct exec, Ctrl+C to stop
+./scripts/server.sh 3000 -f  # Port 3000, direct exec, Ctrl+C to stop
 ```
 
 ### `stop-server.sh [port]`
@@ -78,20 +85,61 @@ Test server health endpoints with 30-second timeout.
 
 ## ⚙️ Background Worker Management
 
-### `worker.sh`
-Start background worker for task processing.
-- **PID file:** `/tmp/starter-worker.pid`
-- **Log file:** `/tmp/starter-worker.log` (auto-rotated at 50MB)
+### `worker.sh [--id ID] [-f|--foreground]`
+Start background task worker in background or foreground mode with support for concurrent workers.
+- **Background mode:** PID tracking, log files, process management
+- **Foreground mode (-f):** Direct exec, Ctrl+C kills process cleanly
+- **Concurrent workers (--id):** Run multiple workers with different IDs (default: 0)
+- **PID file:** `/tmp/starter-worker-{ID}.pid` (background only)
+- **Log file:** `/tmp/starter-worker-{ID}.log` (background only, auto-rotated at 50MB)
+- **Auto-cleanup:** Always kills existing worker processes with same ID first
 - **Processes:** Email, data processing, webhooks, file cleanup, reports
 ```bash
-./scripts/worker.sh
+# Background mode (default, ID 0)
+./scripts/worker.sh          # Creates PID file, logs to file
+
+# Concurrent workers with different IDs
+./scripts/worker.sh --id 1   # Worker ID 1
+./scripts/worker.sh --id 2   # Worker ID 2 (runs alongside ID 1)
+
+# Foreground mode (direct control)
+./scripts/worker.sh -f       # Direct exec, Ctrl+C to stop
+./scripts/worker.sh --id 3 -f # Foreground worker with ID 3
 ```
 
-### `stop-worker.sh`
-Gracefully stop background worker.
+### `stop-worker.sh [--id ID] [--all]`
+Gracefully stop background worker(s).
+- **Specific worker:** Stop worker with specific ID (default: 0)
+- **All workers:** Stop all workers by finding all PID files
 ```bash
+# Stop default worker (ID 0)
 ./scripts/stop-worker.sh
+
+# Stop specific worker by ID
+./scripts/stop-worker.sh --id 1
+./scripts/stop-worker.sh --id 2
+
+# Stop all workers
+./scripts/stop-worker.sh --all
 ```
+
+## 🔧 Database Management
+
+### `prepare-sqlx.sh`
+**Update SQLx query cache for offline compilation.**
+- **Purpose:** Generates query metadata for offline Rust compilation
+- **Requirement:** Database must be running (use `docker compose up -d`)
+- **Auto-directory:** Changes to starter/ directory automatically
+- **Comprehensive:** Uses `--all -- --all-targets` for complete caching
+```bash
+./scripts/prepare-sqlx.sh      # Update SQLx query cache
+```
+
+**When to use:**
+- After adding/modifying database queries in your code
+- Before committing changes (ensures offline compilation works)
+- When SQLx compilation fails with "no cached data" errors
+- After database schema changes or migrations
 
 ## 🧪 Testing & Integration
 
@@ -187,20 +235,31 @@ cargo nextest run                         # Complete system test
 docker compose up -d postgres             # Start database
 docker compose up --wait                  # Wait for services
 ./scripts/server.sh 3000                  # Start server
-./scripts/worker.sh                       # Start worker
+./scripts/worker.sh                       # Start worker (ID 0)
+./scripts/worker.sh --id 1                # Start concurrent worker (ID 1)
 ./scripts/test-server.sh 3000             # Test health
 ./scripts/status.sh                       # Check everything
 ```
 
 ### Daily Development
 ```bash
-# Start services
+# Option 1: Background mode (traditional)
 ./scripts/server.sh 3000
-./scripts/worker.sh
+./scripts/worker.sh                       # Worker ID 0
+./scripts/worker.sh --id 1                # Worker ID 1 (concurrent)
 
 # Monitor logs
 tail -f /tmp/starter-server-3000.log
-tail -f /tmp/starter-worker.log
+tail -f /tmp/starter-worker-0.log   # Default worker (ID 0)
+# tail -f /tmp/starter-worker-1.log # Worker ID 1
+
+# Option 2: Foreground mode (direct control)
+# Terminal 1: Server in foreground
+./scripts/server.sh 3000 -f
+
+# Terminal 2: Worker in foreground  
+./scripts/worker.sh -f                    # Worker ID 0 foreground
+# Or: ./scripts/worker.sh --id 1 -f       # Worker ID 1 foreground
 
 # Test changes
 cargo nextest run
@@ -211,7 +270,9 @@ curl -X POST http://localhost:3000/api/v1/tasks \
 
 # Stop when done
 ./scripts/stop-server.sh 3000
-./scripts/stop-worker.sh
+./scripts/stop-worker.sh                  # Stop default worker (ID 0)
+./scripts/stop-worker.sh --id 1           # Stop worker ID 1
+./scripts/stop-worker.sh --all            # Stop all workers
 ```
 
 ### Debugging
@@ -221,7 +282,8 @@ curl -X POST http://localhost:3000/api/v1/tasks \
 
 # View logs
 tail -f /tmp/starter-server-3000.log
-tail -f /tmp/starter-worker.log
+tail -f /tmp/starter-worker-0.log   # Default worker (ID 0)
+# tail -f /tmp/starter-worker-*.log # All workers
 
 # Clean reset if issues
 ./scripts/reset-all.sh

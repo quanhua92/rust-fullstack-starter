@@ -2,17 +2,69 @@
 
 *Complete reference for all included task handlers with payload schemas, configuration options, and usage examples.*
 
+> **⚠️ Important**: All tasks are processed **asynchronously**. The API immediately returns task metadata (ID, status, timestamps) and processing happens later in the background worker. Task results are not returned in the API response.
+
+## 📋 How to Monitor Task Results
+
+Since tasks process asynchronously, use these methods to check outcomes:
+
+### 0. Get Authentication Token
+```bash
+curl -X POST http://localhost:3000/api/v1/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{"username": "testuser", "email": "test@example.com", "password": "password123"}'
+
+export TOKEN=$(curl -s -X POST http://localhost:3000/api/v1/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"username": "testuser", "password": "password123"}' \
+  | python3 -c "import json,sys; print(json.load(sys.stdin)['data']['session_token'])")
+
+echo "Token: $TOKEN"
+```
+
+### 1. Check Task Status
+```bash
+# Get specific task by ID
+curl -H "Authorization: Bearer $TOKEN" \
+  "http://localhost:3000/api/v1/tasks/TASK_ID_HERE"
+
+# List recent tasks with status filter
+curl -H "Authorization: Bearer $TOKEN" \
+  "http://localhost:3000/api/v1/tasks?status=completed&limit=10"
+```
+
+### 2. Monitor Worker Logs
+```bash
+# Follow worker logs to see processing details
+tail -f /tmp/starter-worker-0.log   # Default worker (ID 0)
+# tail -f /tmp/starter-worker-1.log # Worker ID 1
+
+# Search for specific task processing
+grep "Task TASK_ID_HERE" /tmp/starter-worker-0.log
+# grep "Task TASK_ID_HERE" /tmp/starter-worker-*.log  # All workers
+```
+
+### 3. Use Admin CLI (Bypasses API Auth)
+```bash
+# Check task statistics
+cargo run -- admin task-stats
+
+# List recent tasks with details
+cargo run -- admin list-tasks --limit 5 --verbose
+```
+
 ## Overview
 
-The starter includes 5 built-in task handlers that demonstrate common background task patterns:
+The starter includes 6 built-in task handlers that demonstrate common background task patterns:
 
-| Handler | Task Type | Purpose | Complexity |
-|---------|-----------|---------|------------|
-| EmailTaskHandler | `email` | Send email notifications | Simple |
-| DataProcessingTaskHandler | `data_processing` | Process data arrays | Simple |
-| WebhookTaskHandler | `webhook` | Send HTTP requests | Medium |
-| FileCleanupTaskHandler | `file_cleanup` | Clean up old files | Medium |
-| ReportGenerationTaskHandler | `report_generation` | Generate reports | Complex |
+| Handler | Task Type | Purpose | Complexity | Status |
+|---------|-----------|---------|------------|---------|
+| EmailTaskHandler | `email` | Send email notifications | Simple | 🟡 Logs Only |
+| DataProcessingTaskHandler | `data_processing` | Process data arrays | Simple | ✅ Working |
+| WebhookTaskHandler | `webhook` | Send HTTP requests | Medium | ✅ Working |
+| FileCleanupTaskHandler | `file_cleanup` | Clean up old files | Medium | 🟡 Simulated |
+| ReportGenerationTaskHandler | `report_generation` | Generate reports | Complex | 🟡 Simulated |
+| DelayTaskHandler | `delay_task` | Chaos testing delays | Simple | ✅ Working |
 
 ## EmailTaskHandler
 
@@ -79,6 +131,12 @@ curl -X POST http://localhost:3000/api/v1/tasks \
 - **Missing required fields**: Returns `InvalidPayload` error
 - **Body contains "fail"**: Simulated failure for testing
 - **Empty recipient**: Returns `InvalidPayload` error
+
+### Expected Worker Log Output
+```
+INFO starter::tasks::handlers: Sending email to: user@example.com, subject: Welcome!
+INFO starter::tasks::processor: Task TASK_ID completed successfully
+```
 
 ### Implementation Details
 ```rust
@@ -151,14 +209,25 @@ curl -X POST http://localhost:3000/api/v1/tasks \
 - **Empty data array**: Returns `InvalidPayload` error
 - **Non-numeric data**: Returns `InvalidPayload` error
 
-### Output Format
+### API Response
+The API returns standard task metadata immediately:
 ```json
 {
-  "operation": "sum",
-  "result": 150,
-  "input_count": 5,
-  "processed_at": "2024-01-01T12:00:00Z"
+  "id": "task-uuid-here",
+  "task_type": "data_processing",
+  "status": "Pending",
+  "priority": "Normal",
+  "created_at": "2024-01-01T12:00:00Z",
+  "scheduled_at": "2024-01-01T12:00:00Z"
 }
+```
+
+Processing happens asynchronously in the background worker.
+
+### Expected Worker Log Output
+```
+INFO starter::tasks::handlers: Processing data with operation: sum  
+INFO starter::tasks::processor: Task TASK_ID completed successfully
 ```
 
 ---
@@ -245,6 +314,12 @@ curl -X POST http://localhost:3000/api/v1/tasks \
 - **URL contains "fail"**: Simulated failure for testing
 - **Network timeout**: Returns `ExternalService` error
 
+### Expected Worker Log Output
+```
+INFO starter::tasks::handlers: Sending webhook POST to: https://httpbin.org/post
+INFO starter::tasks::processor: Task TASK_ID completed successfully
+```
+
 ### Implementation Details
 ```rust
 // Currently simulates HTTP requests (replace with actual HTTP client)
@@ -330,15 +405,25 @@ curl -X POST http://localhost:3000/api/v1/tasks \
 - **Permission denied**: Returns `ExternalService` error
 - **Zero max_age_hours**: Returns `InvalidPayload` error
 
-### Output Format
+### API Response
+The API returns standard task metadata immediately:
 ```json
 {
-  "files_deleted": 15,
-  "bytes_freed": 1048576,
-  "directories_processed": 3,
-  "dry_run": false,
-  "patterns_used": ["*.tmp", "*.cache"]
+  "id": "task-uuid-here",
+  "task_type": "file_cleanup",
+  "status": "Pending",
+  "priority": "Normal",
+  "created_at": "2024-01-01T12:00:00Z",
+  "scheduled_at": "2024-01-01T12:00:00Z"
 }
+```
+
+File cleanup happens asynchronously in the background worker.
+
+### Expected Worker Log Output
+```
+INFO starter::tasks::handlers: Cleaning up files in path: /tmp/uploads, max age: 24 hours
+INFO starter::tasks::processor: Task TASK_ID completed successfully
 ```
 
 ### Implementation Details
@@ -469,18 +554,25 @@ curl -X POST http://localhost:3000/api/v1/tasks \
 - **Unsupported format**: Returns `InvalidPayload` error
 - **Invalid date format**: Returns `InvalidPayload` error
 
-### Output Format
+### API Response
+The API returns standard task metadata immediately:
 ```json
 {
-  "report_url": "https://storage.example.com/reports/sales-2024-01.pdf",
-  "report_size": 2048576,
-  "format": "pdf",
-  "generated_at": "2024-01-01T12:00:00Z",
-  "record_count": 1500,
-  "filters_applied": {
-    "region": "US"
-  }
+  "id": "task-uuid-here",
+  "task_type": "report_generation",
+  "status": "Pending",
+  "priority": "Normal",
+  "created_at": "2024-01-01T12:00:00Z",
+  "scheduled_at": "2024-01-01T12:00:00Z"
 }
+```
+
+Report generation happens asynchronously in the background worker.
+
+### Expected Worker Log Output
+```
+INFO starter::tasks::handlers: Generating sales report from 2024-01-01 to 2024-01-31
+INFO starter::tasks::processor: Task TASK_ID completed successfully
 ```
 
 ### Implementation Details
@@ -488,6 +580,94 @@ curl -X POST http://localhost:3000/api/v1/tasks \
 // Currently simulates report generation (replace with actual report engine)
 // Returns simulated report URL and metadata
 // Processing time varies by report complexity
+```
+
+---
+
+## DelayTaskHandler
+
+### Purpose
+Simulates work with configurable delays, primarily used for chaos testing and load testing scenarios.
+
+### Task Type
+`delay_task`
+
+### Payload Schema
+```json
+{
+  "delay_seconds": 5,                           // Required: delay duration
+  "task_id": "test-task-001",                  // Optional: task identifier
+  "test_scenario": "worker-restart",           // Optional: test scenario name
+  "deadline": "2024-01-01T12:05:00Z"          // Optional: task deadline (RFC3339)
+}
+```
+
+### Usage Examples
+
+**Basic Delay Task:**
+```bash
+curl -X POST http://localhost:3000/api/v1/tasks \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "task_type": "delay_task",
+    "payload": {
+      "delay_seconds": 3,
+      "task_id": "simple-delay-test"
+    }
+  }'
+```
+
+**Chaos Testing with Deadline:**
+```bash
+curl -X POST http://localhost:3000/api/v1/tasks \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "task_type": "delay_task",
+    "payload": {
+      "delay_seconds": 10,
+      "task_id": "chaos-test-001",
+      "test_scenario": "multi-worker-chaos",
+      "deadline": "2024-01-01T12:05:00Z"
+    }
+  }'
+```
+
+### Error Conditions
+- **Past deadline**: Returns `Execution` error if current time exceeds deadline
+- **Insufficient time**: Returns `Execution` error if remaining time < delay_seconds
+- **Invalid deadline format**: Ignores malformed deadline strings
+
+### API Response
+The API returns standard task metadata immediately:
+```json
+{
+  "id": "task-uuid-here",
+  "task_type": "delay_task",
+  "status": "Pending",
+  "priority": "Normal",
+  "created_at": "2024-01-01T12:00:00Z",
+  "scheduled_at": "2024-01-01T12:00:00Z"
+}
+```
+
+Delay processing happens asynchronously in the background worker.
+
+### Expected Worker Log Output
+```
+INFO starter::tasks::handlers: Processing delay task: test-delay (scenario: general, delay: 2s, attempt: 0)
+INFO starter::tasks::handlers: Task test-delay starting 2s delay work...
+INFO starter::tasks::handlers: Task test-delay completed successfully after 2s
+INFO starter::tasks::processor: Task TASK_ID completed successfully
+```
+
+### Implementation Details
+```rust
+// Deadline-aware task processing
+// Checks deadline before and after work
+// Used extensively in chaos testing scenarios
+// Supports multi-attempt scenarios with attempt tracking
 ```
 
 ---
@@ -534,9 +714,18 @@ cargo nextest run tasks::
 
 ### Manual Testing
 ```bash
-# Start services
+# Start services (background mode)
 ./scripts/server.sh 3000
 ./scripts/worker.sh
+
+# Optional: Multiple concurrent workers
+# ./scripts/worker.sh --id 1
+# ./scripts/worker.sh --id 2
+
+# Alternative: Foreground mode (separate terminals)
+# Terminal 1: ./scripts/server.sh 3000 -f
+# Terminal 2: ./scripts/worker.sh -f
+# Terminal 3: ./scripts/worker.sh --id 1 -f
 
 # Register test user
 curl -X POST http://localhost:3000/api/v1/auth/register \
@@ -546,7 +735,7 @@ curl -X POST http://localhost:3000/api/v1/auth/register \
 # Get authentication token
 TOKEN=$(curl -s -X POST http://localhost:3000/api/v1/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"username_or_email":"test","password":"password123"}' \
+  -d '{"username":"test","password":"password123"}' \
   | python3 -c "import json,sys; print(json.load(sys.stdin)['data']['session_token'])")
 
 # Test each handler...
@@ -610,11 +799,44 @@ impl ConfigurableEmailHandler {
 }
 ```
 
+## Complete Workflow Example
+
+Here's a complete example showing how to create a task and monitor its completion:
+
+```bash
+# 1. Create a task
+RESPONSE=$(curl -s -X POST http://localhost:3000/api/v1/tasks \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "task_type": "data_processing",
+    "payload": {
+      "operation": "sum",
+      "data": [10, 20, 30, 40, 50]
+    }
+  }')
+
+# 2. Extract task ID
+TASK_ID=$(echo "$RESPONSE" | python3 -c "import json,sys; print(json.load(sys.stdin)['data']['id'])")
+echo "Created task: $TASK_ID"
+
+# 3. Monitor in real-time (in another terminal)
+tail -f /tmp/starter-worker-0.log | grep "$TASK_ID"
+# tail -f /tmp/starter-worker-*.log | grep "$TASK_ID"  # All workers
+
+# 4. Check final status
+curl -H "Authorization: Bearer $TOKEN" \
+  "http://localhost:3000/api/v1/tasks/$TASK_ID"
+
+# 5. Alternative: Use admin CLI
+cargo run -- admin list-tasks --limit 1
+```
+
 ## Next Steps
 
-- **[Custom Task Types →](../guides/05-task-types.md)** - Create your own task handlers
-- **[Task Registry →](../guides/06-task-registry.md)** - Organize multiple handlers
-- **[Troubleshooting →](./troubleshooting.md)** - Debug handler issues
+- **[Custom Task Types →](./06-task-types.md)** - Create your own task handlers
+- **[Task Registry →](./07-task-registry.md)** - Organize multiple handlers
+- **[Troubleshooting →](../troubleshooting.md)** - Debug handler issues
 
 ---
 *These built-in handlers provide working examples and starting points for your own background task implementations.*

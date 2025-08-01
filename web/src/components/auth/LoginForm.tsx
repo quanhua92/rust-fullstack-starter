@@ -24,9 +24,16 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 
 const loginSchema = z.object({
-	username_or_email: z.string().min(1, "Username or email is required"),
+	username: z.string().optional(),
+	email: z.string().email().optional(),
 	password: z.string().min(1, "Password is required"),
-});
+}).refine(
+	(data) => data.username || data.email,
+	{
+		message: "Either username or email is required",
+		path: ["username"],
+	}
+);
 
 type LoginFormData = z.infer<typeof loginSchema>;
 
@@ -40,7 +47,8 @@ export const LoginForm = () => {
 	const form = useForm<LoginFormData>({
 		resolver: zodResolver(loginSchema),
 		defaultValues: {
-			username_or_email: "",
+			username: "",
+			email: "",
 			password: "",
 		},
 	});
@@ -79,14 +87,33 @@ export const LoginForm = () => {
 						<form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
 							<FormField
 								control={form.control}
-								name="username_or_email"
+								name="username"
 								render={({ field }) => (
 									<FormItem>
-										<FormLabel>Username or Email</FormLabel>
+										<FormLabel>Username</FormLabel>
 										<FormControl>
 											<Input
 												{...field}
-												placeholder="Enter your username or email"
+												placeholder="Enter your username"
+												disabled={isLoading}
+											/>
+										</FormControl>
+										<FormMessage />
+									</FormItem>
+								)}
+							/>
+
+							<FormField
+								control={form.control}
+								name="email"
+								render={({ field }) => (
+									<FormItem>
+										<FormLabel>Email</FormLabel>
+										<FormControl>
+											<Input
+												{...field}
+												type="email"
+												placeholder="Enter your email"
 												disabled={isLoading}
 											/>
 										</FormControl>

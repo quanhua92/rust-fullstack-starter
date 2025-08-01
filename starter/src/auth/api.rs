@@ -1,6 +1,6 @@
 use crate::auth::{
     AuthUser,
-    models::{LoginRequest, LoginResponse, RegisterRequest},
+    models::{LoginRequest, LoginResponse, RefreshResponse, RegisterRequest},
     services as auth_services,
 };
 use crate::users::models::UserProfile;
@@ -9,7 +9,7 @@ use crate::{
     types::{ApiResponse, AppState, ErrorResponse},
 };
 use axum::{
-    extract::{Extension, State},
+    extract::{Extension, Request, State},
     response::Json,
 };
 
@@ -153,18 +153,54 @@ pub async fn me(Extension(auth_user): Extension<AuthUser>) -> Json<ApiResponse<A
     path = "/auth/refresh",
     tag = "Authentication",
     summary = "Refresh token",
-    description = "Validate current session token (refresh endpoint)",
+    description = "Refresh session token by extending its expiration time",
     responses(
-        (status = 200, description = "Token is valid", body = ApiResponse<String>),
-        (status = 401, description = "Unauthorized", body = ErrorResponse)
+        (status = 200, description = "Token refreshed successfully", body = ApiResponse<RefreshResponse>),
+        (status = 401, description = "Unauthorized", body = ErrorResponse),
+        (status = 409, description = "Cannot refresh yet", body = ErrorResponse)
     ),
     security(
         ("bearer_auth" = [])
     )
 )]
-pub async fn refresh(Extension(_auth_user): Extension<AuthUser>) -> Json<ApiResponse<String>> {
-    Json(ApiResponse::success_with_message(
-        "Token is still valid".to_string(),
-        "Current session remains active".to_string(),
-    ))
+pub async fn refresh(
+    State(app_state): State<AppState>,
+    Extension(_auth_user): Extension<AuthUser>,
+    req: Request,
+) -> Result<Json<ApiResponse<crate::auth::models::RefreshResponse>>, Error> {
+    // Extract token from Authorization header
+    let token = req
+        .headers()
+        .get("authorization")
+        .and_then(|header| header.to_str().ok())
+        .and_then(|auth_header| auth_header.strip_prefix("Bearer "))
+        .ok_or(Error::Unauthorized)?;
+
+    let mut conn = app_state
+        .database
+        .pool
+        .acquire()
+        .await
+        .map_err(Error::from_sqlx)?;
+
+    let refreshed_session = auth_services::refresh_session_token(
+        &mut conn,
+        token,
+        Some(app_state.config.refresh_extend_hours()),
+        Some(app_state.config.refresh_min_interval_minutes()),
+    )
+    .await?;
+
+    match refreshed_session {
+        Some(session) => {
+            let refresh_response = crate::auth::models::RefreshResponse {
+                expires_at: session.expires_at,
+                refreshed_at: session.last_refreshed_at.unwrap_or(session.updated_at),
+            };
+            Ok(Json(ApiResponse::success(refresh_response)))
+        }
+        None => Err(Error::conflict(
+            "Cannot refresh token yet. Please wait before requesting another refresh.",
+        )),
+    }
 }
