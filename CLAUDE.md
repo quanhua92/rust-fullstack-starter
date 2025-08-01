@@ -21,8 +21,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
   - HTTPS: `./scripts/test-with-curl.sh api.example.com 443`
   - **NEW**: Includes task type registration testing (`POST/GET /api/v1/tasks/types`)
 - **Chaos Testing**: `./scripts/test-chaos.sh [options]` (Docker-based resilience testing with automatic image building)
-  - Basic: `./scripts/test-chaos.sh` (difficulty 1, all scenarios)
+  - Basic: `./scripts/test-chaos.sh` (difficulty 1, all scenarios, clean database by default)
   - Advanced: `./scripts/test-chaos.sh --difficulty 3 --scenarios "db-failure,task-flood"`
+  - Keep Data: `./scripts/test-chaos.sh --keep-database` (preserve existing database state)
   - Output: Results saved to `/tmp/chaos-test-report.md` and `/tmp/api-test-*.txt`
 - **Server Management**: 
   - Start: `./scripts/server.sh [port] [-f]` (default port 3000, -f for foreground)
