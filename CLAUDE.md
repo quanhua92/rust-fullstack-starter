@@ -14,12 +14,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
   - Runs: cargo check, fmt, clippy, sqlx prepare, unit tests, integration tests
   - ~30-60 seconds for complete validation
   - Required for all commits to maintain code quality
-- **Integration Tests**: `cd starter && cargo nextest run` (53 tests, ~12 seconds)
-- **API Testing**: `./scripts/test-with-curl.sh [host] [port]` (40+ endpoint tests)
+- **Integration Tests**: `cd starter && cargo nextest run` (95 tests, ~12 seconds)
+- **API Testing**: `./scripts/test-with-curl.sh [host] [port]` (44+ endpoint tests)
   - Default: `./scripts/test-with-curl.sh` (localhost:3000)
   - Custom: `./scripts/test-with-curl.sh localhost 8080`
   - HTTPS: `./scripts/test-with-curl.sh api.example.com 443`
-  - **NEW**: Includes task type registration testing (`POST/GET /api/v1/tasks/types`)
+  - **NEW**: Includes task type registration and comprehensive user management testing (`POST/GET /api/v1/tasks/types`, user lifecycle endpoints)
 - **Chaos Testing**: `./scripts/test-chaos.sh [options]` (Docker-based resilience testing with automatic image building)
   - Basic: `./scripts/test-chaos.sh` (difficulty 1, all scenarios, clean database by default)
   - Advanced: `./scripts/test-chaos.sh --difficulty 3 --scenarios "db-failure,task-flood"`
@@ -281,5 +281,80 @@ Available chaos testing scenarios:
 
 ### Impact on Development:
 - **Start workers before creating tasks** - API will reject tasks for unregistered types
-- **Tests updated** - All 53 integration tests pass with new validation
+- **Tests updated** - All 95 integration tests pass with new validation
 - **Docker-based chaos testing** - All scenarios now run in isolated containers with proper resource limits
+
+## User Management System
+
+**NEW**: Comprehensive user lifecycle management with 12 endpoints for profile management, administration, and analytics.
+
+### User Management Features
+- **Profile Self-Management** - Users control their own data (update profile, change password, delete account)
+- **Hierarchical Administration** - Moderators manage users, admins manage moderators and system
+- **Comprehensive Analytics** - Detailed user statistics for operational insights
+- **Security-First Design** - Password verification, audit trails, and data privacy
+- **RBAC Enforcement** - Demonstrates three authorization patterns (ownership, hierarchy, cross-user)
+- **Soft Delete Protection** - Data preservation with recovery options
+
+### User Management Endpoints (12 total)
+| Endpoint | Method | Access Level | Description |
+|----------|--------|-------------|-------------|
+| **Profile Management** | | | |
+| `/api/v1/users/me/profile` | PUT | User | Update own profile (username, email) |
+| `/api/v1/users/me/password` | PUT | User | Change own password with verification |
+| `/api/v1/users/me` | DELETE | User | Delete own account (soft delete) |
+| **User Administration** | | | |
+| `/api/v1/users` | GET | Moderator+ | List all users (paginated) |
+| `/api/v1/users` | POST | Admin | Create new user account |
+| `/api/v1/users/{id}` | GET | Owner/Moderator+ | Get user profile by ID |
+| `/api/v1/users/{id}/profile` | PUT | Admin | Update any user's profile |
+| `/api/v1/users/{id}/status` | PUT | Moderator+ | Activate/deactivate user accounts |
+| `/api/v1/users/{id}/role` | PUT | Admin | Change user roles |
+| `/api/v1/users/{id}/reset-password` | POST | Moderator+ | Force password reset |
+| `/api/v1/users/{id}` | DELETE | Admin | Delete user account (admin) |
+| **Analytics** | | | |
+| `/api/v1/admin/users/stats` | GET | Admin | Comprehensive user statistics |
+
+### User Management Module Architecture
+
+The user management system is organized in `starter/src/users/`:
+- **`api.rs`** - HTTP endpoints (12 user management handlers)
+- **`models.rs`** - Request/response types with validation
+- **`services.rs`** - Business logic (password hashing, RBAC checks)
+- **`mod.rs`** - Module exports and organization
+
+### User Management Testing
+- **Integration Tests**: `starter/tests/users/mod.rs` (17 comprehensive tests)
+- **Total Coverage**: User management tests cover all 12 endpoints with positive/negative cases
+- **RBAC Testing**: Role-based access control enforcement validation
+- **Security Testing**: Password verification, confirmations, and audit trails
+
+### User Management Development Patterns
+
+**Profile Self-Management Pattern:**
+```rust
+// Users can always update their own resources
+pub async fn update_own_profile(
+    Extension(auth_user): Extension<AuthUser>,
+    Json(request): Json<UpdateProfileRequest>,
+) -> Result<Json<ApiResponse<UserProfile>>, Error> {
+    // No additional auth needed - user owns the resource
+    let user = user_services::update_user_profile(&mut conn, auth_user.id, request).await?;
+    Ok(Json(ApiResponse::success(user)))
+}
+```
+
+**Administrative Management Pattern:**
+```rust
+// Admin operations with proper authorization checks
+pub async fn create_user(
+    Extension(auth_user): Extension<AuthUser>,
+    Json(request): Json<CreateUserRequest>,
+) -> Result<Json<ApiResponse<UserProfile>>, Error> {
+    rbac_services::require_admin(&auth_user)?;
+    let user = user_services::create_user(&mut conn, request).await?;
+    Ok(Json(ApiResponse::success(user)))
+}
+```
+
+**Documentation**: Comprehensive user management documentation available at `docs/guides/12-user-management.md`

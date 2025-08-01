@@ -139,7 +139,7 @@ This starter includes a comprehensive integration testing framework that helps y
 # Install cargo-nextest for faster testing (optional but recommended)
 cargo install cargo-nextest
 
-# Run all integration tests (~12 seconds for 53 tests)
+# Run all integration tests (~12 seconds for 119 tests)
 cargo nextest run
 
 # Run without stopping on failures (see all results)

@@ -7,6 +7,7 @@ use std::str::FromStr;
 #[derive(
     Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize, utoipa::ToSchema,
 )]
+#[serde(rename_all = "lowercase")]
 pub enum UserRole {
     /// Regular user - can only access their own resources
     User = 1,

@@ -1,6 +1,6 @@
 # Rust Full-Stack Starter
 
-A modern Rust web application starter template with authentication, background tasks, and comprehensive testing. Built with Axum, SQLx, and PostgreSQL for learning and rapid prototyping.
+A modern Rust web application starter template with authentication, user management, background tasks, and comprehensive testing. Built with Axum, SQLx, and PostgreSQL for learning and rapid prototyping.
 
 ## Quick Start
 
@@ -51,17 +51,23 @@ open http://localhost:3000/api-docs
 - 📋 **[Interactive Swagger UI](https://petstore.swagger.io/?url=https://raw.githubusercontent.com/quanhua92/rust-fullstack-starter/refs/heads/main/docs/openapi.json)**
 - 📄 **OpenAPI Schema**: [docs/openapi.json](docs/openapi.json)
 
-**Create a user and test authentication:**
+**Register and test user management:**
 ```bash
 # Register a new user
-curl -X POST http://localhost:3000/auth/register \
+curl -X POST http://localhost:3000/api/v1/auth/register \
   -H "Content-Type: application/json" \
-  -d '{"username": "testuser", "email": "test@example.com", "password": "password123"}'
+  -d '{"username": "testuser", "email": "test@example.com", "password": "SecurePass123!"}'
 
 # Login to get a session token
-curl -X POST http://localhost:3000/auth/login \
+curl -X POST http://localhost:3000/api/v1/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"username": "testuser", "password": "password123"}'
+  -d '{"username": "testuser", "password": "SecurePass123!"}'
+
+# Update your profile (using token from login)
+curl -X PUT http://localhost:3000/api/v1/users/me/profile \
+  -H "Authorization: Bearer YOUR_TOKEN_HERE" \
+  -H "Content-Type: application/json" \
+  -d '{"email": "updated@example.com"}'
 ```
 
 **Create and monitor a background task:**
@@ -85,10 +91,11 @@ curl -H "Authorization: Bearer TOKEN" http://localhost:3000/api/v1/tasks
 ## Key Features
 
 - **🔐 Authentication & Authorization** - Session-based auth with Role-Based Access Control (RBAC)
-- **👥 Role-Based Access Control** - Three-tier system (User/Moderator/Admin) with hierarchical permissions
+- **👥 User Management System** - Complete user lifecycle with 12 endpoints (profile, admin, analytics)
+- **🔑 Role-Based Access Control** - Three-tier system (User/Moderator/Admin) with hierarchical permissions
 - **⚙️ Background Tasks** - Async job processing with retry logic and dead letter queue
 - **📊 API Documentation** - Interactive OpenAPI/Swagger docs
-- **🧪 Testing Framework** - 53 integration tests + API endpoint testing
+- **🧪 Testing Framework** - 95 integration tests + comprehensive API endpoint testing
 - **🔥 Chaos Testing** - Docker-based resilience testing with 7 scenarios
 - **⚙️ Admin CLI** - Direct database access for monitoring and maintenance
 - **🐳 Docker Support** - Development and production containers
@@ -97,8 +104,8 @@ curl -H "Authorization: Bearer TOKEN" http://localhost:3000/api/v1/tasks
 
 ```bash
 # Run tests
-cargo nextest run                    # Integration tests (53 tests)
-./scripts/test-with-curl.sh         # API endpoint tests (44 tests)
+cargo nextest run                    # Integration tests (95 tests)
+./scripts/test-with-curl.sh         # API endpoint tests (44+ tests)
 ./scripts/test-chaos.sh             # Chaos testing (7 scenarios)
 
 # Quality checks
@@ -110,25 +117,28 @@ cargo nextest run                    # Integration tests (53 tests)
 ./scripts/worker.sh --id 2          # Start background worker (ID 2)
 
 # Admin commands (direct database access)
-cargo run -- admin task-stats       # Task statistics
-cargo run -- admin list-tasks       # List recent tasks
+cargo run -- admin task-stats       # Task statistics (bypasses API auth)
+cargo run -- admin list-tasks       # List recent tasks (all users)
+cargo run -- admin clear-completed  # Cleanup maintenance
 ```
 
 ## Project Structure
 
 ```
 rust-fullstack-starter/
-├── scripts/          # Development automation
-├── docs/            # Comprehensive documentation
-└── starter/         # Main application
+├── scripts/          # Development automation (13 scripts + helpers)
+├── docs/            # Comprehensive documentation (12 guides + references)
+├── web/             # React/TypeScript frontend (TanStack Router + shadcn/ui)
+└── starter/         # Main Rust application
     ├── src/
-    │   ├── auth/     # Authentication
-    │   ├── cli/      # Command-line interface
-    │   ├── users/    # User management
-    │   ├── tasks/    # Background jobs
-    │   └── ...
-    ├── migrations/   # Database schema
-    └── tests/        # Integration tests
+    │   ├── auth/     # Session-based authentication
+    │   ├── users/    # User management (12 endpoints)
+    │   ├── rbac/     # Role-based access control
+    │   ├── cli/      # Admin command-line interface
+    │   ├── tasks/    # Background job processing
+    │   └── ...       # Health, errors, database, server
+    ├── migrations/   # Database schema evolution
+    └── tests/        # Integration tests (95 tests)
 ```
 
 ## Documentation
@@ -144,6 +154,7 @@ rust-fullstack-starter/
 
 ### Learning Guides
 - [Authentication & Authorization](docs/guides/02-authentication-and-authorization.md) - **Session-based auth with RBAC**
+- [User Management System](docs/guides/12-user-management.md) - **Complete user lifecycle with 12 endpoints**
 - [Background Tasks](docs/guides/04-background-tasks.md)
 - [Testing Framework](docs/guides/08-testing.md)
 - [Chaos Testing](docs/guides/09-chaos-testing.md) - **Enhanced with 7 scenarios**
@@ -152,11 +163,24 @@ rust-fullstack-starter/
 
 Key endpoints (see [full API docs](http://localhost:3000/api-docs)):
 
-- `POST /auth/register` - User registration
-- `POST /auth/login` - Authentication
-- `POST /tasks` - Create background task
-- `GET /tasks/dead-letter` - Failed task queue
-- `GET /health` - Health check
+**Authentication:**
+- `POST /api/v1/auth/register` - User registration
+- `POST /api/v1/auth/login` - Authentication
+- `POST /api/v1/auth/refresh` - Token refresh
+
+**User Management:**
+- `PUT /api/v1/users/me/profile` - Update own profile
+- `PUT /api/v1/users/me/password` - Change password
+- `GET /api/v1/users` - List users (Moderator+)
+- `GET /api/v1/admin/users/stats` - User analytics (Admin)
+
+**Tasks:**
+- `POST /api/v1/tasks` - Create background task
+- `GET /api/v1/tasks/dead-letter` - Failed task queue
+- `GET /api/v1/tasks/types` - Task type registry
+
+**System:**
+- `GET /api/v1/health` - Health check
 
 ## Configuration
 

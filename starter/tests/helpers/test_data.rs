@@ -137,6 +137,27 @@ impl TestDataFactory {
         (user, token)
     }
 
+    /// Creates a moderator user and returns an authenticated token
+    pub async fn create_authenticated_moderator(&self, username: &str) -> (User, AuthToken) {
+        // Create moderator user
+        let user = self
+            .create_user_with_role(username, UserRole::Moderator)
+            .await;
+
+        // Login to get token
+        let login_data = json!({
+            "username": username,
+            "password": "SecurePass123!"
+        });
+
+        let response = self.app.post_json("/api/v1/auth/login", &login_data).await;
+        assert_eq!(response.status(), 200);
+
+        let token = self.app.extract_auth_token(response).await;
+
+        (user, token)
+    }
+
     /// Creates multiple users for testing pagination
     pub async fn create_multiple_users(&self, count: usize) -> Vec<User> {
         let mut users = Vec::new();

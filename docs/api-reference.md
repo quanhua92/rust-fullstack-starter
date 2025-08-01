@@ -40,13 +40,19 @@ graph TB
     
     subgraph "🔒 Protected Endpoints (Bearer Token + RBAC)"
         AUTH_PROT[🚪 /api/v1/auth/logout<br/>🚪 /api/v1/auth/logout-all<br/>🚪 /api/v1/auth/me<br/>🔄 /api/v1/auth/refresh]
-        USERS["👤 /api/v1/users/{id}<br/>User profiles<br/>Moderator: All users<br/>User: Own profile only"]
+        USER_SELF[👤 /api/v1/users/me/*<br/>PUT: Update profile<br/>PUT: Change password<br/>DELETE: Delete account<br/>All users: Own profile only]
+        USERS_READ["👥 /api/v1/users<br/>GET: List users<br/>GET: /users/{id}<br/>Moderator+: All users<br/>User: Own profile only"]
         TASKS[⚙️ /api/v1/tasks<br/>POST: Create, GET: List<br/>📊 /api/v1/tasks/stats<br/>💀 /api/v1/tasks/dead-letter<br/>Moderator/Admin: All tasks<br/>User: Own tasks only]
         TASK_OPS["🔧 /api/v1/tasks/{id}<br/>GET, DELETE<br/>🔄 /api/v1/tasks/{id}/retry<br/>🛑 /api/v1/tasks/{id}/cancel<br/>Role-based access applies"]
     end
     
-    subgraph "👑 Admin Only"
+    subgraph "👨‍💼 Moderator+ Endpoints"
+        USER_MOD[👮 /api/v1/users/{id}/status<br/>PUT: Activate/deactivate<br/>POST: /users/{id}/reset-password<br/>Force password reset<br/>Moderator/Admin only]
+    end
+    
+    subgraph "👑 Admin Only Endpoints"
         ADMIN[🔧 /api/v1/admin/health<br/>Detailed system status]
+        USER_ADMIN[👑 /api/v1/users<br/>POST: Create users<br/>PUT: /users/{id}/role<br/>PUT: /users/{id}/profile<br/>DELETE: /users/{id}<br/>GET: /admin/users/stats<br/>Admin only]
     end
     
     subgraph "🔑 Authentication Flow"
@@ -57,19 +63,24 @@ graph TB
     AUTH_PUB --> BEARER
     BEARER --> MIDDLEWARE
     MIDDLEWARE --> AUTH_PROT
-    MIDDLEWARE --> USERS
+    MIDDLEWARE --> USER_SELF
+    MIDDLEWARE --> USERS_READ
     MIDDLEWARE --> TASKS
     MIDDLEWARE --> TASK_OPS
+    MIDDLEWARE --> USER_MOD
     MIDDLEWARE --> ADMIN
+    MIDDLEWARE --> USER_ADMIN
     
     classDef publicBox fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
     classDef protectedBox fill:#e3f2fd,stroke:#0277bd,stroke-width:2px
+    classDef moderatorBox fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px
     classDef adminBox fill:#fff3e0,stroke:#e65100,stroke-width:2px
     classDef authBox fill:#f3e5f5,stroke:#4a148c,stroke-width:2px
     
     class HEALTH,AUTH_PUB,TYPES_PUB,DOCS publicBox
-    class AUTH_PROT,USERS,TASKS,TASK_OPS protectedBox
-    class ADMIN adminBox
+    class AUTH_PROT,USER_SELF,USERS_READ,TASKS,TASK_OPS protectedBox
+    class USER_MOD moderatorBox
+    class ADMIN,USER_ADMIN adminBox
     class BEARER,MIDDLEWARE authBox
 ```
 
@@ -531,12 +542,59 @@ Refresh session token by extending its expiration time.
 
 ## User Management Endpoints
 
+### GET /api/v1/users
+
+List all users in the system (Moderator/Admin only).
+
+**Authentication**: Required (Bearer token) - Moderator or Admin role
+
+**Query Parameters**:
+- `limit` (optional): Maximum number of users to return (default: 50, max: 100)
+- `offset` (optional): Number of users to skip for pagination (default: 0)
+
+**Response** (200 OK):
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": "uuid-here",
+      "username": "user1",
+      "email": "user1@example.com",
+      "role": "user",
+      "is_active": true,
+      "email_verified": true,
+      "created_at": "2024-01-01T00:00:00Z",
+      "last_login_at": "2024-01-01T10:00:00Z"
+    },
+    {
+      "id": "uuid-here-2",
+      "username": "user2",
+      "email": "user2@example.com",
+      "role": "moderator",
+      "is_active": true,
+      "email_verified": false,
+      "created_at": "2024-01-02T00:00:00Z",
+      "last_login_at": null
+    }
+  ]
+}
+```
+
+**Error Responses**:
+- `401` - Invalid or expired token
+- `403` - Insufficient permissions (User role cannot access)
 
 ### GET /api/v1/users/{user_id}
 
 Get another user's profile (public information only).
 
 **Authentication**: Required (Bearer token)
+
+**RBAC Access Control**:
+- **User**: Can only access own profile
+- **Moderator**: Can access any user profile
+- **Admin**: Can access any user profile
 
 **Parameters**:
 - `user_id` (path): UUID of the user
@@ -560,7 +618,365 @@ Get another user's profile (public information only).
 
 **Error Responses**:
 - `401` - Invalid or expired token
+- `404` - User not found (or access denied for Users accessing other profiles)
+
+### POST /api/v1/users
+
+Create a new user account (Admin only).
+
+**Authentication**: Required (Bearer token) - Admin role
+
+**Request Body**:
+```json
+{
+  "username": "newuser",
+  "email": "newuser@example.com",
+  "password": "SecurePassword123!",
+  "role": "user"
+}
+```
+
+**Available Roles**: `user`, `moderator`, `admin`
+
+**Response** (200 OK):
+```json
+{
+  "success": true,
+  "data": {
+    "id": "uuid-here",
+    "username": "newuser",
+    "email": "newuser@example.com",
+    "role": "user",
+    "is_active": true,
+    "email_verified": false,
+    "created_at": "2024-01-01T00:00:00Z",
+    "last_login_at": null
+  }
+}
+```
+
+**Error Responses**:
+- `400` - Validation error (invalid username, email, or password)
+- `401` - Invalid or expired token
+- `403` - Insufficient permissions (Non-admin user)
+- `409` - Username or email already exists
+
+### PUT /api/v1/users/me/profile
+
+Update own user profile.
+
+**Authentication**: Required (Bearer token)
+
+**Request Body**:
+```json
+{
+  "username": "updated_username",
+  "email": "updated@example.com"
+}
+```
+
+**Response** (200 OK):
+```json
+{
+  "success": true,
+  "data": {
+    "id": "uuid-here",
+    "username": "updated_username",
+    "email": "updated@example.com",
+    "role": "user",
+    "is_active": true,
+    "email_verified": false,
+    "created_at": "2024-01-01T00:00:00Z",
+    "last_login_at": "2024-01-01T10:00:00Z"
+  }
+}
+```
+
+**Error Responses**:
+- `400` - Validation error
+- `401` - Invalid or expired token
+- `409` - Username or email already exists
+
+### PUT /api/v1/users/me/password
+
+Change own password.
+
+**Authentication**: Required (Bearer token)
+
+**Request Body**:
+```json
+{
+  "current_password": "CurrentPassword123!",
+  "new_password": "NewPassword123!"
+}
+```
+
+**Response** (200 OK):
+```json
+{
+  "success": true,
+  "data": "Password updated successfully",
+  "message": "Password has been changed. All existing sessions remain active."
+}
+```
+
+**Error Responses**:
+- `400` - Validation error (password too short/long)
+- `401` - Invalid or expired token, or incorrect current password
+- `422` - New password same as current password
+
+### DELETE /api/v1/users/me
+
+Delete own user account (soft delete).
+
+**Authentication**: Required (Bearer token)
+
+**Request Body**:
+```json
+{
+  "password": "CurrentPassword123!",
+  "confirmation": "DELETE"
+}
+```
+
+**Response** (200 OK):
+```json
+{
+  "success": true,
+  "data": "Account deleted successfully",
+  "message": "Your account has been deactivated. All data will be retained for 30 days."
+}
+```
+
+**Error Responses**:
+- `400` - Missing confirmation or incorrect password
+- `401` - Invalid or expired token
+
+### PUT /api/v1/users/{user_id}/profile
+
+Update any user's profile (Admin only).
+
+**Authentication**: Required (Bearer token) - Admin role
+
+**Parameters**:
+- `user_id` (path): UUID of the user to update
+
+**Request Body**:
+```json
+{
+  "username": "updated_username",
+  "email": "updated@example.com",
+  "email_verified": true
+}
+```
+
+**Response** (200 OK):
+```json
+{
+  "success": true,
+  "data": {
+    "id": "uuid-here",
+    "username": "updated_username",
+    "email": "updated@example.com",
+    "role": "user",
+    "is_active": true,
+    "email_verified": true,
+    "created_at": "2024-01-01T00:00:00Z",
+    "last_login_at": "2024-01-01T10:00:00Z"
+  }
+}
+```
+
+**Error Responses**:
+- `400` - Validation error
+- `401` - Invalid or expired token
+- `403` - Insufficient permissions (Non-admin user)
 - `404` - User not found
+- `409` - Username or email already exists
+
+### PUT /api/v1/users/{user_id}/status
+
+Activate or deactivate a user account (Moderator/Admin).
+
+**Authentication**: Required (Bearer token) - Moderator or Admin role
+
+**Parameters**:
+- `user_id` (path): UUID of the user
+
+**Request Body**:
+```json
+{
+  "is_active": false,
+  "reason": "Account suspended for policy violation"
+}
+```
+
+**Response** (200 OK):
+```json
+{
+  "success": true,
+  "data": {
+    "id": "uuid-here",
+    "username": "username",
+    "email": "user@example.com",
+    "role": "user",
+    "is_active": false,
+    "email_verified": true,
+    "created_at": "2024-01-01T00:00:00Z",
+    "last_login_at": "2024-01-01T10:00:00Z"
+  },
+  "message": "User account status updated"
+}
+```
+
+**Error Responses**:
+- `400` - Invalid request (missing is_active field)
+- `401` - Invalid or expired token
+- `403` - Insufficient permissions (User role cannot access)
+- `404` - User not found
+
+### PUT /api/v1/users/{user_id}/role
+
+Change a user's role (Admin only).
+
+**Authentication**: Required (Bearer token) - Admin role
+
+**Parameters**:
+- `user_id` (path): UUID of the user
+
+**Request Body**:
+```json
+{
+  "role": "moderator",
+  "reason": "Promoted to moderator for community management"
+}
+```
+
+**Available Roles**: `user`, `moderator`, `admin`
+
+**Response** (200 OK):
+```json
+{
+  "success": true,
+  "data": {
+    "id": "uuid-here",
+    "username": "username",
+    "email": "user@example.com",
+    "role": "moderator",
+    "is_active": true,
+    "email_verified": true,
+    "created_at": "2024-01-01T00:00:00Z",
+    "last_login_at": "2024-01-01T10:00:00Z"
+  },
+  "message": "User role updated successfully"
+}
+```
+
+**Error Responses**:
+- `400` - Invalid role value
+- `401` - Invalid or expired token
+- `403` - Insufficient permissions (Non-admin user)
+- `404` - User not found
+
+### POST /api/v1/users/{user_id}/reset-password
+
+Force password reset for a user (Moderator/Admin).
+
+**Authentication**: Required (Bearer token) - Moderator or Admin role
+
+**Parameters**:
+- `user_id` (path): UUID of the user
+
+**Request Body**:
+```json
+{
+  "new_password": "TemporaryPassword123!",
+  "require_change": true,
+  "reason": "Password reset requested by user"
+}
+```
+
+**Response** (200 OK):
+```json
+{
+  "success": true,
+  "data": "Password reset successfully",
+  "message": "User's password has been updated. All existing sessions have been invalidated."
+}
+```
+
+**Error Responses**:
+- `400` - Invalid password (too short/long)
+- `401` - Invalid or expired token
+- `403` - Insufficient permissions (User role cannot access)
+- `404` - User not found
+
+### DELETE /api/v1/users/{user_id}
+
+Delete a user account (Admin only).
+
+**Authentication**: Required (Bearer token) - Admin role
+
+**Parameters**:
+- `user_id` (path): UUID of the user
+
+**Request Body**:
+```json
+{
+  "reason": "Account deletion requested by user",
+  "hard_delete": false
+}
+```
+
+**Response** (200 OK):
+```json
+{
+  "success": true,
+  "data": "User account deleted successfully",
+  "message": "User account has been deactivated. Data retained for 30 days for recovery."
+}
+```
+
+**Error Responses**:
+- `400` - Cannot delete own account via this endpoint
+- `401` - Invalid or expired token
+- `403` - Insufficient permissions (Non-admin user)
+- `404` - User not found
+
+### GET /api/v1/admin/users/stats
+
+Get user statistics (Admin only).
+
+**Authentication**: Required (Bearer token) - Admin role
+
+**Response** (200 OK):
+```json
+{
+  "success": true,
+  "data": {
+    "total_users": 1250,
+    "active_users": 1180,
+    "inactive_users": 70,
+    "email_verified": 950,
+    "email_unverified": 300,
+    "by_role": {
+      "user": 1200,
+      "moderator": 45,
+      "admin": 5
+    },
+    "recent_registrations": {
+      "last_24h": 12,
+      "last_7d": 85,
+      "last_30d": 320
+    },
+    "last_updated": "2024-01-01T12:00:00Z"
+  }
+}
+```
+
+**Error Responses**:
+- `401` - Invalid or expired token
+- `403` - Insufficient permissions (Non-admin user)
 
 ## Task Management Endpoints
 

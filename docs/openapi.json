@@ -2404,9 +2404,9 @@
         "type": "string",
         "description": "User roles with hierarchy: User < Moderator < Admin",
         "enum": [
-          "User",
-          "Moderator",
-          "Admin"
+          "user",
+          "moderator",
+          "admin"
         ]
       }
     },

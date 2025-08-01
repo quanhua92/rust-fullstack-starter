@@ -5,6 +5,7 @@ use crate::{
     types::{DbConn, Result},
 };
 use chrono::{Duration, Utc};
+use sqlx::Acquire;
 use uuid::Uuid;
 
 fn generate_session_token() -> String {
@@ -175,9 +176,51 @@ pub async fn login(conn: &mut DbConn, req: LoginRequest) -> Result<LoginResponse
         return Err(Error::InvalidCredentials);
     }
 
-    let session = create_session(conn, user.id, req.user_agent.as_deref()).await?;
+    let mut tx = conn.begin().await.map_err(Error::from_sqlx)?;
 
-    user_services::update_last_login(conn, user.id).await?;
+    // Create session within transaction
+    let token = generate_session_token();
+    let expires_at = Utc::now() + Duration::hours(24);
+
+    let session = sqlx::query!(
+        r#"
+        INSERT INTO sessions (user_id, token, expires_at, user_agent)
+        VALUES ($1, $2, $3, $4)
+        RETURNING id, user_id, token, expires_at, created_at, updated_at,
+                  last_activity_at, last_refreshed_at, user_agent, is_active
+        "#,
+        user.id,
+        token,
+        expires_at,
+        req.user_agent.as_deref()
+    )
+    .fetch_one(&mut *tx)
+    .await
+    .map_err(Error::from_sqlx)?;
+
+    // Update last login within transaction
+    sqlx::query!(
+        "UPDATE users SET last_login_at = NOW() WHERE id = $1",
+        user.id
+    )
+    .execute(&mut *tx)
+    .await
+    .map_err(Error::from_sqlx)?;
+
+    tx.commit().await.map_err(Error::from_sqlx)?;
+
+    let session = Session {
+        id: session.id,
+        user_id: session.user_id,
+        token: session.token,
+        expires_at: session.expires_at,
+        created_at: session.created_at,
+        updated_at: session.updated_at,
+        last_activity_at: Some(session.last_activity_at),
+        last_refreshed_at: session.last_refreshed_at,
+        user_agent: session.user_agent,
+        is_active: session.is_active,
+    };
 
     Ok(LoginResponse {
         session_token: session.token,

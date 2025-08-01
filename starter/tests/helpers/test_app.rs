@@ -191,6 +191,23 @@ impl TestApp {
             .expect("Failed to execute DELETE request")
     }
 
+    // DELETE with JSON body and auth token
+    pub async fn delete_json_auth<T: serde::Serialize>(
+        &self,
+        path: &str,
+        json: &T,
+        token: &str,
+    ) -> reqwest::Response {
+        let url = format!("{}{}", self.address, path);
+        self.client
+            .delete(url)
+            .header("Authorization", format!("Bearer {token}"))
+            .json(json)
+            .send()
+            .await
+            .expect("Failed to execute DELETE request")
+    }
+
     // Extract auth token from login response
     pub async fn extract_auth_token(&self, response: reqwest::Response) -> AuthToken {
         let json: serde_json::Value = response
