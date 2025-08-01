@@ -2,7 +2,7 @@ import { AdminLayout } from "@/components/layout/AdminLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { apiClient } from "@/lib/api/client";
 import { useAuth } from "@/lib/auth/context";
-import { getRoleDisplayName, getRoleColor } from "@/lib/rbac/types";
+import { getRoleDisplayName, getRoleColor, type UserRole } from "@/lib/rbac/types";
 import { Badge } from "@/components/ui/badge";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
@@ -232,9 +232,9 @@ function UserAnalyticsPage() {
 														<div className="flex items-center space-x-2">
 															<Badge
 																variant="outline"
-																className={`text-${getRoleColor(role as any)} border-${getRoleColor(role as any)}`}
+																className={`text-${getRoleColor(role as UserRole)} border-${getRoleColor(role as UserRole)}`}
 															>
-																{getRoleDisplayName(role as any)}
+																{getRoleDisplayName(role as UserRole)}
 															</Badge>
 														</div>
 														<div className="text-right">

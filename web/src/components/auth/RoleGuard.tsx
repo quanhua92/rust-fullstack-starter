@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { useAuth } from "@/lib/auth/context";
-import type { UserRole, Resource, Permission } from "@/lib/rbac/types";
+import type { UserRole, Resource, Permission, AuthUser } from "@/lib/rbac/types";
 import {
 	hasRoleOrHigher,
 	canAccessResource,
@@ -17,7 +17,7 @@ interface RoleGuardProps {
 	/** For user-specific resources */
 	targetUserId?: string;
 	/** Custom permission check function */
-	customCheck?: (user: any) => boolean;
+	customCheck?: (user: AuthUser) => boolean;
 	/** What to render when access is denied */
 	fallback?: ReactNode;
 	/** Show loading state */

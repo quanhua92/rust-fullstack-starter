@@ -376,6 +376,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/users": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List users
+         * @description List all users in the system (Admin/Moderator only)
+         */
+        get: operations["list_users"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/users/{id}": {
         parameters: {
             query?: never;
@@ -588,12 +608,33 @@ export interface components {
             message?: string | null;
             success: boolean;
         };
+        ApiResponse_Vec_UserProfile: {
+            data?: {
+                /** Format: date-time */
+                created_at: string;
+                email: string;
+                email_verified: boolean;
+                /** Format: uuid */
+                id: string;
+                is_active: boolean;
+                /** Format: date-time */
+                last_login_at?: string | null;
+                role: components["schemas"]["UserRole"];
+                username: string;
+            }[];
+            message?: string | null;
+            success: boolean;
+        };
         AuthUser: {
             email: string;
             /** Format: uuid */
             id: string;
             role: components["schemas"]["UserRole"];
             username: string;
+        };
+        ChangePasswordRequest: {
+            current_password: string;
+            new_password: string;
         };
         ComponentHealth: {
             details?: unknown;
@@ -622,6 +663,20 @@ export interface components {
             /** Format: date-time */
             scheduled_at?: string | null;
             task_type: string;
+        };
+        CreateUserRequest: {
+            email: string;
+            password: string;
+            role?: null | components["schemas"]["UserRole"];
+            username: string;
+        };
+        DeleteAccountRequest: {
+            confirmation: string;
+            password: string;
+        };
+        DeleteUserRequest: {
+            hard_delete?: boolean | null;
+            reason?: string | null;
         };
         DetailedHealthResponse: {
             checks: {
@@ -659,6 +714,14 @@ export interface components {
             session_token: string;
             user: components["schemas"]["UserProfile"];
         };
+        RecentRegistrations: {
+            /** Format: int64 */
+            last_24h: number;
+            /** Format: int64 */
+            last_30d: number;
+            /** Format: int64 */
+            last_7d: number;
+        };
         RefreshResponse: {
             /** Format: date-time */
             expires_at: string;
@@ -676,6 +739,11 @@ export interface components {
         RegisterTaskTypeRequest: {
             description: string;
             task_type: string;
+        };
+        ResetPasswordRequest: {
+            new_password: string;
+            reason?: string | null;
+            require_change?: boolean | null;
         };
         RetryStrategy: {
             /** @description Exponential backoff: delay = base_delay * multiplier^attempt */
@@ -768,6 +836,23 @@ export interface components {
             /** Format: date-time */
             updated_at: string;
         };
+        UpdateProfileRequest: {
+            email?: string | null;
+            username?: string | null;
+        };
+        UpdateUserProfileRequest: {
+            email?: string | null;
+            email_verified?: boolean | null;
+            username?: string | null;
+        };
+        UpdateUserRoleRequest: {
+            reason?: string | null;
+            role: components["schemas"]["UserRole"];
+        };
+        UpdateUserStatusRequest: {
+            is_active: boolean;
+            reason?: string | null;
+        };
         User: {
             /** Format: date-time */
             created_at: string;
@@ -801,6 +886,30 @@ export interface components {
          * @enum {string}
          */
         UserRole: "user" | "moderator" | "admin";
+        UserRoleStats: {
+            /** Format: int64 */
+            admin: number;
+            /** Format: int64 */
+            moderator: number;
+            /** Format: int64 */
+            user: number;
+        };
+        UserStats: {
+            /** Format: int64 */
+            active_users: number;
+            by_role: components["schemas"]["UserRoleStats"];
+            /** Format: int64 */
+            email_unverified: number;
+            /** Format: int64 */
+            email_verified: number;
+            /** Format: int64 */
+            inactive_users: number;
+            /** Format: date-time */
+            last_updated: string;
+            recent_registrations: components["schemas"]["RecentRegistrations"];
+            /** Format: int64 */
+            total_users: number;
+        };
     };
     responses: never;
     parameters: never;
@@ -1511,6 +1620,49 @@ export interface operations {
             };
             /** @description Task not found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    list_users: {
+        parameters: {
+            query?: {
+                /** @description Maximum number of users to return */
+                limit?: number;
+                /** @description Number of users to skip */
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description List of users */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponse_Vec_UserProfile"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden - Moderator access required */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };

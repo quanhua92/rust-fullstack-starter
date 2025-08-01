@@ -18,7 +18,7 @@ import {
 	SidebarRail,
 } from "@/components/ui/sidebar";
 import { useAuth } from "@/lib/auth/context";
-import { getRoleDisplayName, getRoleColor } from "@/lib/rbac/types";
+import { getRoleDisplayName, getRoleColor, type UserRole } from "@/lib/rbac/types";
 import { Link, useLocation } from "@tanstack/react-router";
 import {
 	BarChart3,
@@ -31,7 +31,21 @@ import {
 	UserCheck,
 } from "lucide-react";
 
-const getMenuItems = (isModeratorOrHigher: boolean, isAdmin: boolean) =>
+interface MenuItem {
+	title: string;
+	url?: string;
+	icon: React.ComponentType<{ className?: string }>;
+	visible?: boolean;
+	items?: SubMenuItem[];
+}
+
+interface SubMenuItem {
+	title: string;
+	url: string;
+	visible?: boolean;
+}
+
+const getMenuItems = (isModeratorOrHigher: boolean, isAdmin: boolean): MenuItem[] =>
 	[
 		{
 			title: "Dashboard",
@@ -159,8 +173,8 @@ export function AdminSidebar() {
 									{item.items && (
 										<SidebarMenuSub>
 											{item.items
-												.filter((subItem: any) => subItem.visible !== false)
-												.map((subItem: any) => (
+												.filter((subItem) => subItem.visible !== false)
+												.map((subItem) => (
 													<SidebarMenuSubItem key={subItem.title}>
 														<SidebarMenuSubButton
 															asChild
@@ -199,9 +213,9 @@ export function AdminSidebar() {
 									<div className="flex items-center gap-2">
 										<Badge
 											variant="outline"
-											className={`text-${getRoleColor(user?.role as any)} border-${getRoleColor(user?.role as any)} text-xs`}
+											className={`text-${getRoleColor(user?.role as UserRole)} border-${getRoleColor(user?.role as UserRole)} text-xs`}
 										>
-											{getRoleDisplayName(user?.role as any)}
+											{getRoleDisplayName(user?.role as UserRole)}
 										</Badge>
 									</div>
 								</div>

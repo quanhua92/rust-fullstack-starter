@@ -21,7 +21,7 @@ import {
 import { apiClient } from "@/lib/api/client";
 import { useAuth } from "@/lib/auth/context";
 import { RoleGuard } from "@/components/auth/RoleGuard";
-import { getRoleDisplayName, getRoleColor } from "@/lib/rbac/types";
+import { getRoleDisplayName, getRoleColor, type UserRole } from "@/lib/rbac/types";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
@@ -77,7 +77,7 @@ function UsersPage() {
 			});
 			queryClient.invalidateQueries({ queryKey: ["admin", "users"] });
 		},
-		onError: (error: any) => {
+		onError: (error: Error) => {
 			toast({
 				title: "Failed to update user status",
 				description:
@@ -97,7 +97,7 @@ function UsersPage() {
 				description: "User password has been reset successfully.",
 			});
 		},
-		onError: (error: any) => {
+		onError: (error: Error) => {
 			toast({
 				title: "Failed to reset password",
 				description:
@@ -118,7 +118,7 @@ function UsersPage() {
 			});
 			queryClient.invalidateQueries({ queryKey: ["admin", "users"] });
 		},
-		onError: (error: any) => {
+		onError: (error: Error) => {
 			toast({
 				title: "Failed to delete user",
 				description: error.message || "An error occurred while deleting user.",
@@ -161,9 +161,9 @@ function UsersPage() {
 		return (
 			<Badge
 				variant="outline"
-				className={`text-${getRoleColor(role as any)} border-${getRoleColor(role as any)}`}
+				className={`text-${getRoleColor(role as UserRole)} border-${getRoleColor(role as UserRole)}`}
 			>
-				{getRoleDisplayName(role as any)}
+				{getRoleDisplayName(role as UserRole)}
 			</Badge>
 		);
 	};
