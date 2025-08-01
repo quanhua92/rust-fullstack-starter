@@ -1,4 +1,5 @@
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import {
 	Sidebar,
@@ -17,6 +18,7 @@ import {
 	SidebarRail,
 } from "@/components/ui/sidebar";
 import { useAuth } from "@/lib/auth/context";
+import { getRoleDisplayName, getRoleColor } from "@/lib/rbac/types";
 import { Link, useLocation } from "@tanstack/react-router";
 import {
 	BarChart3,
@@ -26,9 +28,10 @@ import {
 	Home,
 	LogOut,
 	Users,
+	UserCheck,
 } from "lucide-react";
 
-const menuItems = [
+const getMenuItems = (isModeratorOrHigher: boolean, isAdmin: boolean) => [
 	{
 		title: "Dashboard",
 		url: "/admin",
@@ -37,6 +40,7 @@ const menuItems = [
 	{
 		title: "Tasks",
 		icon: CheckSquare,
+		visible: true, // All authenticated users can see tasks
 		items: [
 			{
 				title: "All Tasks",
@@ -49,13 +53,30 @@ const menuItems = [
 			{
 				title: "Dead Letter Queue",
 				url: "/admin/tasks/dead-letter",
+				visible: isModeratorOrHigher, // Only moderator+ can see dead letter queue
 			},
 		],
 	},
 	{
 		title: "Users",
-		url: "/admin/users",
 		icon: Users,
+		visible: isModeratorOrHigher, // Only moderator+ can see user management
+		items: [
+			{
+				title: "All Users",
+				url: "/admin/users",
+			},
+			{
+				title: "Create User",
+				url: "/admin/users/new",
+				visible: isAdmin, // Only admin can create users
+			},
+			{
+				title: "User Analytics",
+				url: "/admin/users/analytics",
+				visible: isAdmin, // Only admin can see analytics
+			},
+		],
 	},
 	{
 		title: "Health & Monitoring",
@@ -71,12 +92,15 @@ const menuItems = [
 		title: "Analytics",
 		url: "/admin/analytics",
 		icon: BarChart3,
+		visible: isAdmin, // Only admin can see main analytics
 	},
-];
+].filter(item => item.visible !== false);
 
 export function AdminSidebar() {
 	const location = useLocation();
-	const { user, logout } = useAuth();
+	const { user, logout, isModeratorOrHigher, isAdmin } = useAuth();
+	
+	const menuItems = getMenuItems(isModeratorOrHigher(), isAdmin());
 
 	const handleLogout = async () => {
 		try {
@@ -133,18 +157,20 @@ export function AdminSidebar() {
 									)}
 									{item.items && (
 										<SidebarMenuSub>
-											{item.items.map((subItem) => (
-												<SidebarMenuSubItem key={subItem.title}>
-													<SidebarMenuSubButton
-														asChild
-														isActive={location.pathname === subItem.url}
-													>
-														<Link to={subItem.url}>
-															<span>{subItem.title}</span>
-														</Link>
-													</SidebarMenuSubButton>
-												</SidebarMenuSubItem>
-											))}
+											{item.items
+												.filter((subItem: any) => subItem.visible !== false)
+												.map((subItem: any) => (
+													<SidebarMenuSubItem key={subItem.title}>
+														<SidebarMenuSubButton
+															asChild
+															isActive={location.pathname === subItem.url}
+														>
+															<Link to={subItem.url}>
+																<span>{subItem.title}</span>
+															</Link>
+														</SidebarMenuSubButton>
+													</SidebarMenuSubItem>
+												))}
 										</SidebarMenuSub>
 									)}
 								</SidebarMenuItem>
@@ -157,21 +183,29 @@ export function AdminSidebar() {
 			<SidebarFooter>
 				<SidebarMenu>
 					<SidebarMenuItem>
-						<div className="flex items-center gap-2 px-2 py-1">
-							<Avatar className="h-8 w-8">
-								<AvatarFallback>
-									{user?.username?.charAt(0).toUpperCase() || "U"}
-								</AvatarFallback>
-							</Avatar>
-							<div className="flex-1 min-w-0">
-								<p className="text-sm font-medium truncate">
-									{user?.username || "User"}
-								</p>
-								<p className="text-xs text-muted-foreground truncate">
-									{user?.role || "user"}
-								</p>
-							</div>
-						</div>
+						<SidebarMenuButton asChild size="lg">
+							<Link to="/admin">{/* Changed to existing route for now */}
+								<Avatar className="h-8 w-8">
+									<AvatarFallback>
+										{user?.username?.charAt(0).toUpperCase() || "U"}
+									</AvatarFallback>
+								</Avatar>
+								<div className="flex-1 min-w-0">
+									<p className="text-sm font-medium truncate">
+										{user?.username || "User"}
+									</p>
+									<div className="flex items-center gap-2">
+										<Badge 
+											variant="outline" 
+											className={`text-${getRoleColor(user?.role as any)} border-${getRoleColor(user?.role as any)} text-xs`}
+										>
+											{getRoleDisplayName(user?.role as any)}
+										</Badge>
+									</div>
+								</div>
+								<UserCheck className="size-4" />
+							</Link>
+						</SidebarMenuButton>
 						<Separator className="my-2" />
 						<SidebarMenuButton onClick={handleLogout} className="text-red-600">
 							<LogOut className="size-4" />

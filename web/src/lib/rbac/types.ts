@@ -115,11 +115,13 @@ export function canAccessResource(
 				// Moderator+ can manage all tasks, users can manage their own
 				return isModeratorOrHigher(user);
 			}
-			return false;
+			break;
 
 		default:
-			return false;
+			break;
 	}
+	
+	return false;
 }
 
 /**

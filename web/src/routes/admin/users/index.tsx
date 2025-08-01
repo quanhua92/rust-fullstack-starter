@@ -42,12 +42,12 @@ import { useState } from "react";
 
 function UsersPage() {
 	const [searchTerm, setSearchTerm] = useState("");
-	const { user: currentUser, isModeratorOrHigher, isAdmin } = useAuth();
+	const { user: currentUser, isModeratorOrHigher } = useAuth();
 	const { toast } = useToast();
 	const queryClient = useQueryClient();
 
 	// Fetch users list with RBAC check
-	const { data: users = [], isLoading, error } = useQuery({
+	const { data: users = [], isLoading } = useQuery({
 		queryKey: ["admin", "users"],
 		queryFn: async () => {
 			const response = await apiClient.getUsers();
@@ -376,16 +376,6 @@ function UsersPage() {
 														<RoleGuard requiredRole="admin">
 															{user.id !== currentUser?.id && (
 																<>
-																	<DropdownMenuItem asChild>
-																		<Link
-																			to="/admin/users/$userId/edit"
-																			params={{ userId: user.id }}
-																		>
-																			<Settings className="mr-2 h-4 w-4" />
-																			Edit Profile
-																		</Link>
-																	</DropdownMenuItem>
-
 																	<DropdownMenuSeparator />
 																	<DropdownMenuItem
 																		onClick={() =>
