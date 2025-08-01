@@ -206,11 +206,12 @@ Docker-based resilience testing with 6 difficulty levels and container isolation
 - **Deadline Enforcement**: Validates system performance under time pressure
 - **Container Failure Injection**: Systematic container kills and automatic restarts
 - **Comprehensive Reporting**: Detailed logs, statistics, and failure analysis
-- **Admin CLI Integration**: Direct database monitoring bypassing API authentication  
+- **Admin CLI Integration**: Direct database monitoring bypassing API authentication (RBAC-aware)
 - **Foundation Checks**: Pre-scenario validation ensuring monitoring infrastructure works
 - **Fail-Fast Patterns**: Early exit on detected failures to save testing time
 - **Enhanced Baseline**: Fixed degradation from 100% to 58% success rate
 - **ANSI-Aware Parsing**: Proper handling of colored CLI output for accurate statistics
+- **RBAC Testing**: Validates role-based access controls under chaos conditions
 
 **Docker Container Features:**
 - **Container Isolation**: Each service runs in isolated Docker containers for realistic testing
@@ -354,9 +355,11 @@ The background worker system processes tasks asynchronously:
 - `POST /tasks/types` - Register task type
 
 **Admin CLI Commands (Direct Database Access):**
-- `admin task-stats` - Task statistics bypassing API
-- `admin list-tasks` - List tasks with verbose details
-- `admin clear-completed` - Maintenance operations
+- `admin task-stats` - Task statistics bypassing API (shows all tasks regardless of ownership)
+- `admin task-stats --tag "baseline"` - Filter task statistics by metadata tag
+- `admin list-tasks` - List tasks with verbose details (shows all users' tasks)
+- `admin list-tasks --verbose` - Include detailed task information and user context
+- `admin clear-completed` - Maintenance operations (cleans completed tasks from all users)
 
 ## 🗄️ Database Notes
 

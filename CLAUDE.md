@@ -125,7 +125,7 @@ This starter template includes comprehensive development infrastructure:
 - TanStack Query for server state management
 - shadcn/ui@canary components with Tailwind CSS 4
 - TypeScript with auto-generated API types
-- Authentication system with JWT tokens
+- Authentication system with session-based auth and RBAC
 - Admin portal with sidebar navigation and dashboard
 - Comprehensive quality checking and production build validation
 
@@ -150,28 +150,81 @@ The application uses a modular CLI structure located in `starter/src/cli/`:
 For direct database access (useful during chaos testing and debugging):
 
 ```bash
-# Task statistics (bypasses API authentication)
+# Task statistics (bypasses API authentication, shows all tasks regardless of user ownership)
 cargo run -- admin task-stats
 
 # Task statistics with tag filter
 cargo run -- admin task-stats --tag "baseline"
 
-# List recent tasks
+# List recent tasks (shows all users' tasks - RBAC-aware)
 cargo run -- admin list-tasks --limit 10
 
-# List tasks with verbose details
+# List tasks with verbose details (includes user context and role information)
 cargo run -- admin list-tasks --verbose
 
-# Clear old completed tasks (dry run)
+# Clear old completed tasks (cleans tasks from all users - dry run)
 cargo run -- admin clear-completed --dry-run
 
-# Clear completed tasks older than 7 days
+# Clear completed tasks older than 7 days (across all users)
 cargo run -- admin clear-completed
 ```
 
-**CLI Architecture**: The CLI functionality follows the same modular pattern as `auth/` and `users/` modules with dedicated `api.rs`, `models.rs`, and `services.rs` files. The main application entry point (`main.rs`) has been simplified to just 6 lines, delegating all CLI logic to the dedicated CLI module.
+**CLI Architecture**: The CLI functionality follows the same modular pattern as `auth/`, `users/`, and `rbac/` modules with dedicated `api.rs`, `models.rs`, and `services.rs` files. The main application entry point (`main.rs`) has been simplified to just 6 lines, delegating all CLI logic to the dedicated CLI module.
 
-**Note**: Admin commands access the database directly, bypassing API authentication. Useful for monitoring during chaos testing when API may be unreliable.
+**Note**: Admin commands access the database directly, bypassing API authentication and RBAC checks. Commands show data from all users regardless of ownership. Useful for monitoring during chaos testing when API may be unreliable.
+
+## Role-Based Access Control (RBAC) System
+
+This project implements comprehensive three-tier RBAC with hierarchical permissions:
+
+### Role Hierarchy
+- **User (Level 1)**: Can only access own tasks and profile
+- **Moderator (Level 2)**: Can manage all user tasks and view all profiles  
+- **Admin (Level 3)**: Full system access including admin-only endpoints
+
+### RBAC Development Patterns
+
+**Using RBAC in API handlers:**
+```rust
+use crate::rbac::services as rbac_services;
+
+// Check task access permissions
+rbac_services::can_access_task(&auth_user, task.created_by)?;
+
+// Require moderator or higher
+rbac_services::require_moderator_or_higher(&auth_user)?;
+
+// Check specific permissions
+rbac_services::check_permission(&auth_user, Resource::Tasks, Permission::Write)?;
+```
+
+**Role-based middleware for routes:**
+```rust
+// Moderator routes
+let moderator_routes = Router::new()
+    .route("/users", get(users_api::list_users))
+    .layer(middleware::from_fn(moderator_middleware));
+
+// Admin routes  
+let admin_routes = Router::new()
+    .route("/admin/settings", get(admin_settings))
+    .layer(middleware::from_fn(admin_middleware));
+```
+
+### Admin Account Setup
+
+Set `STARTER__INITIAL_ADMIN_PASSWORD` in `.env` to automatically create admin account:
+- Username: `admin`
+- Email: `admin@example.com`
+- Role: `Admin` (full system access)
+
+### RBAC Module Architecture
+
+The RBAC system is organized in `starter/src/rbac/`:
+- **`models.rs`** - UserRole enum, Permission/Resource definitions, SQLx integration
+- **`services.rs`** - Authorization business logic and permission checking
+- **`middleware.rs`** - Role-based route protection middleware
+- **`mod.rs`** - Module organization and public exports
 
 ## Pre-Commit Requirements
 

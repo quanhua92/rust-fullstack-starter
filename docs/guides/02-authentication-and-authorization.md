@@ -123,6 +123,12 @@ curl -X POST http://localhost:3000/api/v1/auth/login \
 - Demonstrates session lifecycle management
 - Teaches authorization patterns (roles, permissions)
 
+**Principle 5: Operational Simplicity**
+- Server-side state = server controls everything
+- Easy to debug: "Is user logged in?" = database query
+- Simple revocation: delete session = immediate logout
+- Audit trail: all session events are in database
+
 ### 🧠 Mental Model: Authentication as State Machine
 
 ```mermaid
@@ -150,25 +156,39 @@ stateDiagram-v2
 
 ### 2. Role-Based Access Control (RBAC)
 
+**The Authorization Problem**: Once we know who someone is (authentication), we need to decide what they can do (authorization). RBAC solves this by grouping permissions into roles, making security decisions both scalable and auditable.
+
+**Why RBAC over alternatives?**
+- **Attribute-Based (ABAC)**: More flexible but complex to reason about
+- **Access Control Lists (ACL)**: Fine-grained but doesn't scale with users
+- **Role-Based (RBAC)** ⭐: Perfect balance of flexibility, simplicity, and auditability
+
 This starter implements a comprehensive three-tier role system:
 
-#### Role Hierarchy
-```
-Admin (Level 3)
-├── Full system access
-├── Can manage all users and tasks
-└── Access to admin-only endpoints
+#### Role Hierarchy: The Principle of Hierarchical Authority
 
-Moderator (Level 2)  
-├── Can manage all user tasks
-├── Can view all user profiles
-└── Cannot access admin endpoints
+**Mental Model**: Think of roles like organizational hierarchy - higher levels inherit all lower-level capabilities plus additional privileges.
 
-User (Level 1)
-├── Can only access own tasks
-├── Can only view own profile
-└── No access to other users' data
 ```
+Admin (Level 3) - "System Owner"
+├── Inherits: All Moderator + User capabilities
+├── Plus: Admin-only endpoints (/admin/health)
+├── Plus: User role management (future: create/modify users)
+└── Philosophy: Full system authority for operational needs
+
+Moderator (Level 2) - "Content Manager"  
+├── Inherits: All User capabilities
+├── Plus: Access to ALL user tasks (cross-user visibility)
+├── Plus: View all user profiles (for moderation)
+└── Philosophy: Community management without system access
+
+User (Level 1) - "Data Owner"
+├── Core: Own tasks (create, read, update, delete)
+├── Core: Own profile (read, update)
+└── Philosophy: Principle of least privilege - own data only
+```
+
+**Key Insight**: Hierarchical roles reduce complexity by ensuring higher roles can always do what lower roles can do, plus more. This prevents privilege escalation bugs and makes authorization logic predictable.
 
 #### Permission Model
 Each role grants specific permissions on resources:
@@ -181,20 +201,31 @@ Each role grants specific permissions on resources:
 | **Other Profiles** | ❌ | Read | Read/Write |
 | **Admin Endpoints** | ❌ | ❌ | Full Access |
 
-#### Task Access Examples
+#### RBAC in Action: Task Access Scenarios
+
+**Security Philosophy**: "Fail closed" - when in doubt, deny access. Users get 404 (not 403) to avoid information leakage about resource existence.
+
 ```rust
-// Admin can access ANY task
-GET /api/v1/tasks/123 (any task ID) ✅
+// SCENARIO 1: Admin accessing any task
+GET /api/v1/tasks/123 (created by user_456) ✅ 200 OK
+// Logic: Admin role >= required access level, shows full task details
 
-// Moderator can access ANY task  
-GET /api/v1/tasks/123 (any task ID) ✅
+// SCENARIO 2: Moderator accessing cross-user task  
+GET /api/v1/tasks/123 (created by user_456) ✅ 200 OK
+// Logic: Moderator can manage all user content
 
-// User can only access their own tasks
-GET /api/v1/tasks/123 (their task) ✅
-GET /api/v1/tasks/456 (other's task) ❌ 404 Not Found
+// SCENARIO 3: User accessing their own task
+GET /api/v1/tasks/123 (created by current_user) ✅ 200 OK
+// Logic: Owner always has access to own resources
+
+// SCENARIO 4: User attempting cross-user access
+GET /api/v1/tasks/456 (created by different_user) ❌ 404 Not Found
+// Logic: Fail closed - pretend resource doesn't exist to prevent enumeration
 ```
 
-### 2. Session Token Flow
+**Implementation Insight**: The same API endpoint behaves differently based on role - this reduces API surface area while maintaining security boundaries.
+
+### 3. Session Token Flow: The Authentication Journey
 
 ```mermaid
 sequenceDiagram
@@ -235,11 +266,29 @@ sequenceDiagram
     A-->>-U: 👋 Logged out successfully
 ```
 
-### 3. Security Principles
-- **Password Hashing**: Never store plain passwords (using Argon2)
-- **Secure Tokens**: Cryptographically random session tokens
-- **Expiration**: Sessions expire automatically (24 hours)
-- **Validation**: Every request validates the session
+### 4. Security Principles: Defense in Depth
+
+**Security Philosophy**: Multiple independent layers of protection, so failure of one layer doesn't compromise the entire system.
+
+**Layer 1: Password Protection**
+- **Never store plaintext**: Passwords are hashed with Argon2 immediately
+- **Salt uniqueness**: Each password gets a unique salt to prevent rainbow table attacks
+- **Memory-hard hashing**: Argon2 uses significant memory, making GPU attacks expensive
+
+**Layer 2: Token Security**
+- **Cryptographic randomness**: 64-character tokens with ~380 bits of entropy
+- **Database uniqueness**: Unique constraints prevent token collisions
+- **Time-bounded validity**: Automatic expiration limits exposure window
+
+**Layer 3: Request Validation**
+- **Every request validated**: No trust in client-side state
+- **Bearer token extraction**: Standardized Authorization header parsing
+- **Database verification**: Real-time session lookup ensures revocation works
+
+**Layer 4: Information Disclosure Prevention**
+- **404 vs 403**: Hide resource existence from unauthorized users
+- **Minimal error details**: Prevent information leakage through error messages
+- **Role-based filtering**: Users only see data they're authorized to access
 
 ## Data Model
 
@@ -250,7 +299,7 @@ users (
   username VARCHAR UNIQUE,
   email VARCHAR UNIQUE, 
   password_hash VARCHAR,  -- Argon2 hash, never plain text
-  role VARCHAR,           -- "admin" or "user"
+  role VARCHAR CHECK (role IN ('user', 'moderator', 'admin')), -- RBAC role with database constraint
   is_active BOOLEAN,
   email_verified BOOLEAN,
   created_at TIMESTAMPTZ,
@@ -273,11 +322,27 @@ sessions (
 )
 ```
 
-**Why Separate Tables?**
-- **Multiple Sessions**: User can be logged in on multiple devices
-- **Session Management**: Can revoke specific sessions
-- **Audit Trail**: Track when/where users log in
-- **Clean Data**: User data separate from session data
+**Why Separate Tables? (Database Design Principles)**
+
+**Principle 1: Single Responsibility**
+- Users table: Identity and profile data
+- Sessions table: Authentication state management
+- Each table has one clear purpose
+
+**Principle 2: Operational Flexibility**
+- **Multiple Sessions**: User can be logged in on multiple devices simultaneously
+- **Selective Revocation**: Can terminate specific sessions (e.g., "logout from phone")
+- **Bulk Operations**: Easy to revoke all sessions for a user (`logout-all`)
+
+**Principle 3: Auditability**
+- **Session History**: When/where users logged in
+- **User Agent Tracking**: Detect unusual access patterns
+- **Temporal Data**: Creation, refresh, and expiration timestamps
+
+**Principle 4: Performance**
+- **Targeted Queries**: Session validation doesn't need full user data
+- **Efficient Cleanup**: Can bulk-delete expired sessions without touching users
+- **Indexing Strategy**: Sessions indexed by token, users by username/email
 
 ## Implementation Deep Dive
 
@@ -411,6 +476,70 @@ pub async fn auth_middleware<B>(
 - **Consistent**: Same validation logic everywhere
 - **Extensible**: Easy to add role-based checks
 - **Clean**: Business logic doesn't handle auth details
+
+### 4. RBAC Implementation: From Theory to Code
+
+**The Authorization Decision Point**: After authentication succeeds, we need to make authorization decisions. Here's how RBAC translates to Rust:
+
+```rust
+// UserRole enum with hierarchical comparison
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+pub enum UserRole {
+    User = 1,      // Lowest privilege
+    Moderator = 2, // Medium privilege  
+    Admin = 3,     // Highest privilege
+}
+
+// The magic: PartialOrd enables hierarchical comparisons
+// user_role >= required_role naturally expresses "has sufficient privilege"
+```
+
+**Permission Checking Patterns:**
+
+```rust
+// Pattern 1: Resource Ownership Check
+pub fn can_access_task(auth_user: &AuthUser, task_owner_id: Uuid) -> Result<(), Error> {
+    match auth_user.role {
+        UserRole::Admin | UserRole::Moderator => Ok(()), // Can access any task
+        UserRole::User => {
+            if auth_user.id == task_owner_id {
+                Ok(()) // Can access own task
+            } else {
+                Err(Error::NotFound("Task not found".to_string())) // Fail closed with 404
+            }
+        }
+    }
+}
+
+// Pattern 2: Minimum Role Requirement
+pub fn require_moderator_or_higher(auth_user: &AuthUser) -> Result<(), Error> {
+    if auth_user.role >= UserRole::Moderator {
+        Ok(())
+    } else {
+        Err(Error::Forbidden("Insufficient privileges".to_string()))
+    }
+}
+
+// Pattern 3: Resource + Permission Matrix
+pub fn check_permission(
+    auth_user: &AuthUser, 
+    resource: Resource, 
+    permission: Permission
+) -> Result<(), Error> {
+    match (auth_user.role, resource, permission) {
+        (UserRole::Admin, _, _) => Ok(()), // Admin can do anything
+        (UserRole::Moderator, Resource::Tasks, _) => Ok(()), // Moderator can manage tasks
+        (UserRole::Moderator, Resource::Users, Permission::Read) => Ok(()), // Moderator can read users
+        (UserRole::User, Resource::Tasks, _) if /* owns resource */ => Ok(()), // User owns resource
+        _ => Err(Error::Forbidden("Access denied".to_string()))
+    }
+}
+```
+
+**Key Insights:**
+- **Rust's type system**: Enums + pattern matching make authorization logic exhaustive and bug-resistant
+- **Hierarchical ordering**: `PartialOrd` on roles enables natural privilege comparisons
+- **Fail closed**: Default case always denies access, preventing accidental privilege escalation
 
 ## API Flow Examples
 
@@ -581,11 +710,33 @@ if (!success) {
 - **Replay Attacks**: Tokens expire automatically
 - **Database Leaks**: Passwords are hashed, not plaintext
 
-### What This Doesn't Protect Against
-- **XSS Attacks**: Client must store token securely
-- **CSRF**: Need CSRF tokens for state-changing operations
-- **Phishing**: Users can still be tricked into giving credentials
-- **Insider Threats**: Database admins can see user data
+### What This Doesn't Protect Against (And How to Mitigate)
+
+**Client-Side Vulnerabilities:**
+- **XSS Attacks**: Malicious JavaScript can steal tokens from localStorage
+  - *Mitigation*: Use httpOnly cookies (but complicates SPA architecture)
+  - *Detection*: Monitor for unusual API patterns
+- **CSRF**: Forged requests from malicious sites  
+  - *Mitigation*: SameSite cookies, CSRF tokens for state changes
+  - *Why less critical*: Bearer tokens in headers (not cookies) reduce CSRF risk
+
+**Social Engineering:**
+- **Phishing**: Users tricked into entering credentials on fake sites
+  - *Mitigation*: User education, 2FA, suspicious login detection
+- **Credential Stuffing**: Reused passwords from other breaches
+  - *Mitigation*: Password strength requirements, breach monitoring
+
+**Insider/Infrastructure Threats:**
+- **Database Access**: DBAs can theoretically access hashed passwords
+  - *Mitigation*: Audit database access, rotate keys, principle of least privilege
+- **Memory Dumps**: Running processes contain plaintext passwords briefly
+  - *Mitigation*: Clear sensitive data promptly, encrypt memory (advanced)
+
+**Implementation Bugs:**
+- **Authorization Bypass**: Logic errors in RBAC implementation
+  - *Mitigation*: Comprehensive tests, code review, fail-closed defaults
+- **Timing Attacks**: Password comparison timing reveals information
+  - *Mitigation*: Constant-time comparison (Argon2 handles this)
 
 ### Best Practices Implemented
 - **Principle of Least Privilege**: Users only see their own data

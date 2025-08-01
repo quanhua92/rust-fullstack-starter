@@ -1046,7 +1046,7 @@ Now that you understand the full-stack integration:
 
 **Related Guides**:
 - [Architecture Overview](01-architecture.md) - System design principles
-- [Authentication Guide](02-authentication.md) - Security implementation details
+- [Authentication & Authorization Guide](02-authentication-and-authorization.md) - Security and RBAC implementation details
 - [Background Tasks](04-background-tasks.md) - Async processing patterns
 - [Testing Guide](08-testing.md) - Testing strategies for full-stack apps
 

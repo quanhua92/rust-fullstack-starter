@@ -378,7 +378,7 @@ The framework provides 6 scientifically-designed difficulty levels with logical 
 The enhanced chaos testing framework includes admin CLI capabilities for reliable monitoring during API disruptions:
 
 ```bash
-# Task statistics (bypasses API authentication)
+# Task statistics (bypasses API authentication and RBAC, shows all users' tasks)
 cargo run -- admin task-stats
 cargo run -- admin task-stats --tag "multiworker"
 
@@ -520,7 +520,7 @@ This ensures the monitoring infrastructure is working before chaos begins.
 
 **Enhanced features**:
 - Uses delay tasks instead of simple tasks for realistic load
-- Admin CLI bypass for reliable monitoring during API stress
+- Admin CLI bypass for reliable monitoring during API stress (ignores RBAC)
 - Fail-fast exits when no progress detected after 30s
 - ANSI color code parsing for accurate statistics
 - Bold warnings for critical failures
@@ -568,7 +568,7 @@ This ensures the monitoring infrastructure is working before chaos begins.
 
 **Enhanced features**:
 - Docker container isolation for realistic failures
-- Admin CLI monitoring bypasses API authentication issues
+- Admin CLI monitoring bypasses API authentication and RBAC issues
 - Enhanced fail-fast patterns detect stuck scenarios
 - Fixed worker service name mismatch (worker → workers)
 - Proper ANSI parsing for accurate progress tracking
@@ -986,7 +986,7 @@ echo "✅ All chaos tests passed - ready for deployment"
 curl -X GET http://localhost:3000/api/v1/health
 curl -X GET http://localhost:3000/api/v1/tasks/stats
 
-# Admin CLI direct access (bypasses API authentication)
+# Admin CLI direct access (bypasses API authentication and RBAC checks)
 cargo run -- admin task-stats --verbose
 cargo run -- admin list-tasks --limit 5 --verbose
 

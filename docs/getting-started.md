@@ -109,7 +109,10 @@ STARTER__INITIAL_ADMIN_PASSWORD=YourSecureAdminPassword123!
 
 **Security Note**: Remove or comment out this line after first startup for security.
 
-The admin user will be created automatically when the server first starts.
+The admin user will be created automatically when the server first starts with:
+- **Username**: `admin`
+- **Email**: `admin@example.com`  
+- **Role**: `Admin` (full system access including RBAC permissions)
 
 ## Development Workflow
 
@@ -175,7 +178,7 @@ Now that you have the system running, follow these guides to understand and exte
 
 ### 📚 Learning Path (Read in Order)
 1. **[Architecture Overview](./guides/01-architecture.md)** - System design and why it's built this way
-2. **[Authentication System](./guides/02-authentication.md)** - How secure user sessions work  
+2. **[Authentication & Authorization](./guides/02-authentication-and-authorization.md)** - How secure user sessions and RBAC work  
 3. **[Foundation Patterns](./guides/03-patterns.md)** - Circuit breakers, retry strategies, dead letter queues
 4. **[Background Tasks](./guides/04-background-tasks.md)** - Async task processing system
 5. **[Task Handlers Reference](./guides/05-task-handlers-reference.md)** - Built-in task examples  
@@ -310,7 +313,7 @@ TEST_LOG=1 cargo test -- --nocapture
 
 ### Admin CLI Commands
 
-Direct database access for monitoring and maintenance (bypasses API authentication):
+Direct database access for monitoring and maintenance (bypasses API authentication and RBAC checks, shows all users' data):
 
 ```bash
 # Task monitoring and statistics
@@ -363,7 +366,7 @@ See the **[Testing Guide](./guides/08-testing.md)** for detailed documentation o
 Start exploring the guides based on your interests:
 
 - **[Architecture Overview](./guides/01-architecture.md)** - Understand the overall system design
-- **[Authentication System](./guides/02-authentication.md)** - Learn the auth patterns
+- **[Authentication & Authorization](./guides/02-authentication-and-authorization.md)** - Learn the auth and RBAC patterns
 - **[Reliability Patterns](./guides/03-patterns.md)** - Circuit breakers and retry strategies  
 - **[Background Tasks](./guides/04-background-tasks.md)** - Async job processing
 - **[Testing Guide](./guides/08-testing.md)** - Comprehensive testing strategies
