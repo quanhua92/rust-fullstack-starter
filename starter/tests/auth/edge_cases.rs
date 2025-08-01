@@ -12,22 +12,30 @@ async fn test_registration_json_type_mismatches() {
 
     // Test various JSON type mismatches - should return 422 for JSON deserialization errors
     let type_mismatch_cases = vec![
-        (json!({"username": 123, "email": "test@example.com", "password": "ValidPass123!"}), "number username"),
-        (json!({"email": true, "password": "password"}), "boolean email"),
+        (
+            json!({"username": 123, "email": "test@example.com", "password": "ValidPass123!"}),
+            "number username",
+        ),
+        (
+            json!({"email": true, "password": "password"}),
+            "boolean email",
+        ),
         // Note: Arrays are sometimes accepted by some servers, so this might return 200
         // (json!(["username", "email@example.com", "password"]), "array instead of object"),
-        (json!({"user": {"username": "testuser", "email": "test@example.com", "password": "ValidPass123!"}}), "nested object"),
+        (
+            json!({"user": {"username": "testuser", "email": "test@example.com", "password": "ValidPass123!"}}),
+            "nested object",
+        ),
     ];
 
     for (invalid_data, description) in type_mismatch_cases {
         let response = app.post_json("/api/v1/auth/register", &invalid_data).await;
-        
+
         // JSON type mismatches should return 422 for deserialization errors
         let status = response.status();
         assert!(
             status == StatusCode::UNPROCESSABLE_ENTITY || status == StatusCode::BAD_REQUEST,
-            "Type mismatch '{}': Expected 422 or 400, got {status}",
-            description
+            "Type mismatch '{description}': Expected 422 or 400, got {status}"
         );
     }
 }
@@ -46,7 +54,9 @@ async fn test_registration_with_extra_fields() {
         "nested_extra": {"field": "value"}
     });
 
-    let response = app.post_json("/api/v1/auth/register", &data_with_extras).await;
+    let response = app
+        .post_json("/api/v1/auth/register", &data_with_extras)
+        .await;
 
     let status = response.status();
     assert!(
@@ -72,7 +82,7 @@ async fn test_password_operations_with_wrong_types() {
         .await;
     assert_status(&response, StatusCode::UNPROCESSABLE_ENTITY);
 
-    // Test account deletion with wrong confirmation type - should return 422  
+    // Test account deletion with wrong confirmation type - should return 422
     let (_user2, token2) = factory.create_authenticated_user("delete_test").await;
     let invalid_delete_data = json!({
         "password": "SecurePass123!",
@@ -120,7 +130,7 @@ async fn test_http_edge_cases_and_malformed_requests() {
     // Test unicode edge cases
     let unicode_data = json!({
         "username": "test\u{0000}user", // Null character
-        "email": "test\u{FEFF}@example.com", // BOM character  
+        "email": "test\u{FEFF}@example.com", // BOM character
         "password": "Pass\u{200B}word123!" // Zero-width space
     });
     let response = app.post_json("/api/v1/auth/register", &unicode_data).await;

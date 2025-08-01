@@ -15,7 +15,10 @@ async fn test_authorization_header_edge_cases() {
         ("", "empty authorization header"),
         ("Bearer ", "Bearer without token"),
         ("Bearer not-a-valid-uuid-format", "invalid UUID format"),
-        ("01234567-89ab-cdef-0123-456789abcdef", "properly formatted but expired token"),
+        (
+            "01234567-89ab-cdef-0123-456789abcdef",
+            "properly formatted but expired token",
+        ),
         ("Bearer", "just 'Bearer' without space or token"),
         ("bearer valid-token", "lowercase 'bearer'"),
         ("BEARER valid-token", "uppercase 'BEARER'"),
@@ -110,10 +113,22 @@ async fn test_role_validation_comprehensive() {
     // Test various invalid role values and null/missing fields
     let invalid_scenarios = vec![
         (json!({"role": "", "reason": "empty string"}), "empty role"),
-        (json!({"role": "ADMIN", "reason": "uppercase"}), "uppercase role"),
-        (json!({"role": "invalid_role", "reason": "invalid"}), "invalid role"),
-        (json!({"role": "admin ", "reason": "trailing space"}), "trailing space"),
-        (json!({"role": " moderator", "reason": "leading space"}), "leading space"),
+        (
+            json!({"role": "ADMIN", "reason": "uppercase"}),
+            "uppercase role",
+        ),
+        (
+            json!({"role": "invalid_role", "reason": "invalid"}),
+            "invalid role",
+        ),
+        (
+            json!({"role": "admin ", "reason": "trailing space"}),
+            "trailing space",
+        ),
+        (
+            json!({"role": " moderator", "reason": "leading space"}),
+            "leading space",
+        ),
         (json!({"role": null, "reason": "null role"}), "null role"),
         (json!({"reason": "missing role field"}), "missing role"),
     ];
@@ -130,8 +145,7 @@ async fn test_role_validation_comprehensive() {
         let status = response.status();
         assert!(
             status == StatusCode::BAD_REQUEST || status == StatusCode::UNPROCESSABLE_ENTITY,
-            "Role validation '{}': Expected 400 or 422, got {status}",
-            description
+            "Role validation '{description}': Expected 400 or 422, got {status}"
         );
     }
 }
@@ -143,7 +157,7 @@ async fn test_unicode_and_concurrent_operations() {
 
     // Test unicode characters
     let (_user, token) = factory.create_authenticated_user("unicode_test").await;
-    
+
     let unicode_data = json!({"email": "test🚀@example.com"});
     let response = app
         .put_json_auth("/api/v1/users/me/profile", &unicode_data, &token.token)
@@ -165,8 +179,12 @@ async fn test_unicode_and_concurrent_operations() {
 
     // Test concurrent role updates
     let user = factory.create_user("concurrent_test_user").await;
-    let (_admin1, token1) = factory.create_authenticated_admin("concurrent_admin1").await;
-    let (_admin2, token2) = factory.create_authenticated_admin("concurrent_admin2").await;
+    let (_admin1, token1) = factory
+        .create_authenticated_admin("concurrent_admin1")
+        .await;
+    let (_admin2, token2) = factory
+        .create_authenticated_admin("concurrent_admin2")
+        .await;
 
     let role_data1 = json!({"role": "moderator", "reason": "First concurrent update"});
     let role_data2 = json!({"role": "admin", "reason": "Second concurrent update"});

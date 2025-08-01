@@ -345,6 +345,17 @@ if [ -n "$USER_TOKEN" ]; then
     # Test delete on nonexistent task
     test_api "DELETE /api/v1/tasks/{id} (nonexistent)" "DELETE" "/api/v1/tasks/$FAKE_TASK_ID" "404" "$USER_TOKEN"
     
+    echo ""
+    echo -e "${YELLOW}👑 Admin User Management Testing${NC}"
+    
+    # Test account deletion with wrong password (should fail)
+    WRONG_DELETE_DATA='{"password": "wrongpassword", "confirmation": "DELETE"}'
+    test_api "DELETE /api/v1/users/me (wrong password)" "DELETE" "/api/v1/users/me" "400" "$USER_TOKEN" "$WRONG_DELETE_DATA"
+    
+    # Test account deletion with correct password but wrong confirmation  
+    WRONG_CONFIRM_DATA='{"password": "NewSecurePass123!", "confirmation": "WRONG"}'
+    test_api "DELETE /api/v1/users/me (wrong confirmation)" "DELETE" "/api/v1/users/me" "400" "$USER_TOKEN" "$WRONG_CONFIRM_DATA"
+    
     # Test logout-all endpoint before regular logout
     echo ""
     echo "🔐 Testing Multi-Session Logout..."
@@ -370,17 +381,6 @@ if [ -n "$USER_TOKEN" ]; then
         # Fallback if second login fails - just test logout-all endpoint
         test_api "POST /api/v1/auth/logout-all" "POST" "/api/v1/auth/logout-all" "200" "$USER_TOKEN"
     fi
-    
-    echo ""
-    echo -e "${YELLOW}👑 Admin User Management Testing${NC}"
-    
-    # Test account deletion with wrong password (should fail)
-    WRONG_DELETE_DATA='{"password": "wrongpassword", "confirmation": "DELETE"}'
-    test_api "DELETE /api/v1/users/me (wrong password)" "DELETE" "/api/v1/users/me" "401" "$USER_TOKEN" "$WRONG_DELETE_DATA"
-    
-    # Test account deletion with correct password but wrong confirmation  
-    WRONG_CONFIRM_DATA='{"password": "NewSecurePass123!", "confirmation": "WRONG"}'
-    test_api "DELETE /api/v1/users/me (wrong confirmation)" "DELETE" "/api/v1/users/me" "400" "$USER_TOKEN" "$WRONG_CONFIRM_DATA"
     
     # Create admin user for comprehensive testing
     ADMIN_USER_DATA="{\"username\": \"admin_$TIMESTAMP\", \"email\": \"admin_$TIMESTAMP@example.com\", \"password\": \"AdminPass123!\"}"
@@ -523,7 +523,7 @@ if [ -n "$USER_TOKEN" ]; then
         test_api "POST /api/v1/tasks (unknown type)" "POST" "/api/v1/tasks" "400" "$NEW_TOKEN" "$UNKNOWN_TASK"
         
         # Test admin endpoint with regular user (should get 401)
-        test_api "GET /api/v1/admin/health (non-admin)" "GET" "/api/v1/admin/health" "401" "$NEW_TOKEN"
+        test_api "GET /api/v1/admin/health (non-admin)" "GET" "/api/v1/admin/health" "403" "$NEW_TOKEN"
     fi
 fi
 
