@@ -1,7 +1,7 @@
 use axum::{
+    Extension,
     extract::{Path, Query, State},
     response::Json,
-    Extension,
 };
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
@@ -218,7 +218,7 @@ pub async fn list_tasks(
     let filter = TaskFilter {
         task_type: params.task_type,
         status,
-        priority: None, // TODO: Parse priority string if needed
+        priority: None,                 // TODO: Parse priority string if needed
         created_by: Some(auth_user.id), // Only list tasks created by the authenticated user
         created_after: None,
         created_before: None,
@@ -366,12 +366,10 @@ pub async fn get_dead_letter_queue(
     // Filter tasks to only show those created by the authenticated user
     let user_tasks: Vec<crate::tasks::types::TaskResponse> = tasks
         .into_iter()
-        .filter(|task| {
-            task.created_by == Some(auth_user.id)
-        })
+        .filter(|task| task.created_by == Some(auth_user.id))
         .map(|t| t.into())
         .collect();
-    
+
     Ok(Json(ApiResponse::success(user_tasks)))
 }
 
