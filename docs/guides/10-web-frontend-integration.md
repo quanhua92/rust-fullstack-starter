@@ -1035,21 +1035,254 @@ function useOfflineSync() {
 - **Health Checks**: Kubernetes/Docker health probes
 - **Logging**: Structured logging across the stack
 
+## RBAC Frontend Implementation
+
+### Role-Based Access Control Integration
+
+The frontend includes a comprehensive RBAC system that works seamlessly with the backend:
+
+**RBAC Context and Types** (`web/src/lib/rbac/types.ts`):
+```typescript
+export interface AuthUser {
+  id: string;
+  username: string;
+  email: string;
+  role: UserRole;
+  // ... other user properties
+}
+
+export type UserRole = 'user' | 'moderator' | 'admin';
+export type Resource = 'self' | 'users' | 'tasks' | 'admin';
+export type Permission = 'read' | 'write' | 'manage' | 'delete';
+
+// Role hierarchy - higher numbers have more privileges
+export const ROLE_HIERARCHY: Record<UserRole, number> = {
+  user: 1,
+  moderator: 2, 
+  admin: 3,
+} as const;
+
+// Permission checking functions
+export function canAccessResource(
+  user: AuthUser,
+  resource: Resource,
+  permission: Permission,
+  targetUserId?: string,
+): boolean {
+  // Admin can do everything
+  if (isAdmin(user)) return true;
+  
+  // Resource-specific logic based on role hierarchy and ownership
+  switch (resource) {
+    case 'users':
+      if (permission === 'read') {
+        return isModeratorOrHigher(user) || 
+               Boolean(targetUserId && user.id === targetUserId);
+      }
+      // Additional permission logic...
+  }
+}
+```
+
+**RoleGuard Component** (`web/src/components/auth/RoleGuard.tsx`):
+```typescript
+interface RoleGuardProps {
+  children: ReactNode;
+  requiredRole?: UserRole;
+  resource?: Resource;
+  permission?: Permission;
+  targetUserId?: string;
+  customCheck?: (user: AuthUser) => boolean;
+  fallback?: ReactNode;
+}
+
+export function RoleGuard({ 
+  children, 
+  requiredRole, 
+  resource, 
+  permission,
+  targetUserId,
+  customCheck,
+  fallback = null 
+}: RoleGuardProps) {
+  const { user, authenticated } = useAuth();
+  
+  if (!authenticated || !user) return <>{fallback}</>;
+  
+  let hasAccess = false;
+  
+  if (customCheck) {
+    hasAccess = customCheck(user);
+  } else if (requiredRole) {
+    hasAccess = hasRoleOrHigher(user.role, requiredRole);
+  } else if (resource && permission) {
+    hasAccess = canAccessResource(user, resource, permission, targetUserId);
+  }
+  
+  return hasAccess ? <>{children}</> : <>{fallback}</>;
+}
+```
+
+**Usage Examples**:
+```typescript
+// Simple role-based access
+<RoleGuard requiredRole="admin">
+  <AdminOnlyButton />
+</RoleGuard>
+
+// Resource-based permissions
+<RoleGuard resource="users" permission="manage">
+  <UserManagementTools />
+</RoleGuard>
+
+// User-specific access
+<RoleGuard resource="users" permission="read" targetUserId={userId}>
+  <UserProfile />
+</RoleGuard>
+
+// Custom permission logic
+<RoleGuard customCheck={(user) => user.id === ownerId}>
+  <EditButton />
+</RoleGuard>
+```
+
+### User Management Interface
+
+**Admin User Management** (`web/src/routes/admin/users/index.tsx`):
+- Complete user list with search and filtering
+- Role-based action menus (moderator vs admin capabilities)
+- Status management (activate/deactivate users)
+- Password reset functionality
+- User deletion with confirmation
+
+**User Analytics Dashboard** (`web/src/routes/admin/analytics.tsx`):
+- Role distribution analysis
+- Account status breakdown
+- Registration trends and metrics
+- Real-time statistics with auto-refresh
+
+**Self-Service Profile Management**:
+- Users can update their own profiles
+- Password change with current password verification
+- Account deletion with confirmation requirements
+
+### Enhanced Authentication Context
+
+**Extended Auth Context** (`web/src/lib/auth/context.tsx`):
+```typescript
+interface AuthContextType {
+  user: AuthUser | null;
+  authenticated: boolean;
+  loading: boolean;
+  
+  // Role checking helpers
+  hasRole: (role: UserRole) => boolean;
+  isAdmin: () => boolean;
+  isModerator: () => boolean;
+  isModeratorOrHigher: () => boolean;
+  
+  // Standard auth methods
+  login: (credentials: LoginRequest) => Promise<void>;
+  logout: () => Promise<void>;
+  refresh: () => Promise<void>;
+}
+
+export function AuthProvider({ children }: { children: ReactNode }) {
+  // ... state and effects ...
+  
+  const hasRole = (requiredRole: UserRole): boolean => {
+    if (!user) return false;
+    return hasRoleOrHigher(user.role, requiredRole);
+  };
+  
+  const isAdmin = (): boolean => hasRole('admin');
+  const isModerator = (): boolean => hasRole('moderator');
+  const isModeratorOrHigher = (): boolean => hasRole('moderator');
+  
+  return (
+    <AuthContext.Provider value={{
+      user, authenticated, loading,
+      hasRole, isAdmin, isModerator, isModeratorOrHigher,
+      login, logout, refresh
+    }}>
+      {children}
+    </AuthContext.Provider>
+  );
+}
+```
+
+### Navigation and UI Integration
+
+**Role-Based Navigation** (`web/src/components/layout/AdminSidebar.tsx`):
+```typescript
+const getMenuItems = (isModeratorOrHigher: boolean, isAdmin: boolean): MenuItem[] => [
+  {
+    title: "Tasks",
+    icon: CheckSquare,
+    items: [
+      { title: "All Tasks", url: "/admin/tasks" },
+      { title: "Create Task", url: "/admin/tasks/new" },
+      { 
+        title: "Dead Letter Queue", 
+        url: "/admin/tasks/dead-letter",
+        visible: isModeratorOrHigher // Only moderator+ can see
+      },
+    ],
+  },
+  {
+    title: "Users",
+    icon: Users,
+    visible: isModeratorOrHigher, // Only moderator+ can see user management
+    items: [
+      { title: "All Users", url: "/admin/users" },
+      { 
+        title: "Create User", 
+        url: "/admin/users/new",
+        visible: isAdmin // Only admin can create users
+      },
+      { 
+        title: "User Analytics", 
+        url: "/admin/users/analytics",
+        visible: isAdmin // Only admin can see analytics
+      },
+    ],
+  },
+  {
+    title: "Analytics",
+    url: "/admin/analytics",
+    icon: BarChart3,
+    visible: isAdmin, // Only admin can see main analytics
+  },
+];
+```
+
+**Dynamic Role Badges**:
+```typescript
+<Badge 
+  variant="outline" 
+  className={`text-${getRoleColor(user.role)} border-${getRoleColor(user.role)}`}
+>
+  {getRoleDisplayName(user.role)}
+</Badge>
+```
+
 ## Next Steps
 
-Now that you understand the full-stack integration:
+Now that you understand the full-stack integration with RBAC:
 
 1. **Experiment**: Make changes to see how types propagate through the stack
 2. **Extend**: Add new endpoints and see the workflow in action
 3. **Debug**: Practice debugging issues at different layers
 4. **Optimize**: Implement caching and performance improvements
+5. **Customize RBAC**: Modify roles and permissions for your specific needs
 
 **Related Guides**:
 - [Architecture Overview](01-architecture.md) - System design principles
 - [Authentication & Authorization Guide](02-authentication-and-authorization.md) - Security and RBAC implementation details
+- [User Management System](12-user-management.md) - Complete user lifecycle management
 - [Background Tasks](04-background-tasks.md) - Async processing patterns
 - [Testing Guide](08-testing.md) - Testing strategies for full-stack apps
 
 ---
 
-*This integration approach provides type safety, excellent developer experience, and maintainable code while demonstrating production-ready patterns that scale with your application.*
+*This integration approach provides type safety, excellent developer experience, and maintainable code while demonstrating production-ready patterns that scale with your application. The RBAC system shows how to implement sophisticated authorization patterns in full-stack applications.*
