@@ -1,3 +1,4 @@
+use crate::rbac::UserRole;
 use crate::users::models::{CreateUserRequest, User, UserProfile};
 use crate::{
     error::Error,
@@ -85,7 +86,7 @@ pub async fn create_user(conn: &mut DbConn, req: CreateUserRequest) -> Result<Us
         req.username,
         req.email,
         password_hash,
-        req.role.unwrap_or_else(|| "user".to_string())
+        req.role.unwrap_or(UserRole::User).to_string()
     )
     .fetch_one(&mut **conn)
     .await
@@ -136,4 +137,33 @@ pub fn verify_password(password: &str, password_hash: &str) -> Result<bool> {
     Ok(Argon2::default()
         .verify_password(password.as_bytes(), &parsed_hash)
         .is_ok())
+}
+
+pub async fn list_users(
+    conn: &mut DbConn,
+    limit: Option<i64>,
+    offset: Option<i64>,
+) -> Result<Vec<UserProfile>> {
+    let limit = limit.unwrap_or(50).min(100); // Default 50, max 100
+    let offset = offset.unwrap_or(0);
+
+    let users = sqlx::query_as!(
+        User,
+        r#"
+        SELECT id, username, email, password_hash,
+               role, is_active, email_verified,
+               created_at, updated_at, last_login_at
+        FROM users 
+        WHERE is_active = true
+        ORDER BY created_at DESC
+        LIMIT $1 OFFSET $2
+        "#,
+        limit,
+        offset
+    )
+    .fetch_all(&mut **conn)
+    .await
+    .map_err(Error::from_sqlx)?;
+
+    Ok(users.into_iter().map(|u| u.to_profile()).collect())
 }

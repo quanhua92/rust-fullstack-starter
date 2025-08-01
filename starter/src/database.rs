@@ -54,6 +54,7 @@ impl Database {
 
     /// Ensure initial admin user exists if configured
     pub async fn ensure_initial_admin(&self, config: &AppConfig) -> Result<()> {
+        use crate::rbac::UserRole;
         use secrecy::ExposeSecret;
 
         // Check if any admin users exist
@@ -77,14 +78,16 @@ impl Database {
                     .map_err(|e| Error::internal(&format!("Password hashing failed: {e}")))?
                     .to_string();
 
-                // Create admin user
+                // Create admin user with UserRole::Admin
+                let admin_role = UserRole::Admin;
                 sqlx::query(
                     r#"
                     INSERT INTO users (username, email, password_hash, role, is_active, email_verified)
-                    VALUES ('admin', 'admin@example.com', $1, 'admin', true, true)
+                    VALUES ('admin', 'admin@example.com', $1, $2, true, true)
                     "#
                 )
                 .bind(password_hash)
+                .bind(admin_role)
                 .execute(&self.pool)
                 .await
                 .map_err(Error::Database)?;

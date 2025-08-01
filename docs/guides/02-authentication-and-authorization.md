@@ -1,6 +1,6 @@
-# Authentication System
+# Authentication and Authorization System
 
-*This guide explains how user authentication works, from concepts to implementation to usage.*
+*This guide explains how user authentication and role-based access control (RBAC) work, from concepts to implementation to usage.*
 
 ## ⚡ TL;DR - Working Authentication (5 minutes)
 
@@ -147,6 +147,52 @@ stateDiagram-v2
 ### 1. Authentication vs Authorization
 - **Authentication**: "Who are you?" (login with password)
 - **Authorization**: "What can you do?" (role-based permissions)
+
+### 2. Role-Based Access Control (RBAC)
+
+This starter implements a comprehensive three-tier role system:
+
+#### Role Hierarchy
+```
+Admin (Level 3)
+├── Full system access
+├── Can manage all users and tasks
+└── Access to admin-only endpoints
+
+Moderator (Level 2)  
+├── Can manage all user tasks
+├── Can view all user profiles
+└── Cannot access admin endpoints
+
+User (Level 1)
+├── Can only access own tasks
+├── Can only view own profile
+└── No access to other users' data
+```
+
+#### Permission Model
+Each role grants specific permissions on resources:
+
+| Resource | User | Moderator | Admin |
+|----------|------|-----------|-------|
+| **Own Tasks** | Read/Write/Delete | Read/Write/Delete | Read/Write/Delete |
+| **Other Tasks** | ❌ | Read/Write/Delete | Read/Write/Delete |
+| **Own Profile** | Read/Write | Read/Write | Read/Write |
+| **Other Profiles** | ❌ | Read | Read/Write |
+| **Admin Endpoints** | ❌ | ❌ | Full Access |
+
+#### Task Access Examples
+```rust
+// Admin can access ANY task
+GET /api/v1/tasks/123 (any task ID) ✅
+
+// Moderator can access ANY task  
+GET /api/v1/tasks/123 (any task ID) ✅
+
+// User can only access their own tasks
+GET /api/v1/tasks/123 (their task) ✅
+GET /api/v1/tasks/456 (other's task) ❌ 404 Not Found
+```
 
 ### 2. Session Token Flow
 
@@ -650,7 +696,34 @@ A: Balances security (shorter is better) with usability (longer is convenient). 
 A: Yes! Each device/browser can have its own session. Use `/auth/logout-all` to end all sessions.
 
 **Q: How do I add role-based permissions?**
-A: The `user.role` field is already in place. Add authorization checks in your API handlers or create role-based middleware.
+A: The RBAC system is fully implemented! Use the provided middleware and authorization functions:
+
+```rust
+// In your API handler
+use crate::rbac::services as rbac_services;
+
+// Check if user can access a specific task
+rbac_services::can_access_task(&auth_user, task.created_by)?;
+
+// Require moderator or higher
+rbac_services::require_moderator_or_higher(&auth_user)?;
+
+// Check specific permissions
+rbac_services::check_permission(&auth_user, Resource::Tasks, Permission::Write)?;
+```
+
+Or use middleware for entire routes:
+```rust
+// Moderator routes
+let moderator_routes = Router::new()
+    .route("/users", get(users_api::list_users))
+    .layer(middleware::from_fn(moderator_middleware));
+
+// Admin routes  
+let admin_routes = Router::new()
+    .route("/admin/settings", get(admin_settings))
+    .layer(middleware::from_fn(admin_middleware));
+```
 
 **Q: How does token refresh work?**
 A: Token refresh extends the expiration time of existing tokens without requiring re-authentication. The frontend automatically schedules refreshes, and there's rate limiting to prevent abuse.

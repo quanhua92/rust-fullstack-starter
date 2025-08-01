@@ -2,7 +2,7 @@ use crate::{
     api::health,
     auth::{
         api as auth_api,
-        middleware::{admin_middleware, auth_middleware},
+        middleware::{admin_middleware, auth_middleware, moderator_middleware},
     },
     config::AppConfig,
     database::Database,
@@ -138,6 +138,15 @@ pub fn create_router(state: AppState) -> Router {
             auth_middleware,
         ));
 
+    // Moderator routes (moderator role or higher required)
+    let moderator_routes = Router::new()
+        .route("/users", get(users_api::list_users))
+        .layer(middleware::from_fn(moderator_middleware))
+        .layer(middleware::from_fn_with_state(
+            state.clone(),
+            auth_middleware,
+        ));
+
     // Admin routes (admin role required)
     let admin_routes = Router::new()
         .route("/admin/health", get(health::detailed_health))
@@ -151,6 +160,7 @@ pub fn create_router(state: AppState) -> Router {
     Router::new()
         .merge(public_routes)
         .merge(protected_routes)
+        .merge(moderator_routes)
         .merge(admin_routes)
         .fallback(not_found_handler)
         .with_state(state)

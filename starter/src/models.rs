@@ -1,4 +1,5 @@
 use crate::error::Error;
+use crate::rbac::UserRole;
 use crate::types::Result;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
@@ -12,7 +13,7 @@ pub struct User {
     pub email: String,
     #[serde(skip_serializing)] // Never serialize password hash
     pub password_hash: String,
-    pub role: String,
+    pub role: UserRole,
     pub is_active: bool,
     pub email_verified: bool,
     pub created_at: DateTime<Utc>,
@@ -21,11 +22,12 @@ pub struct User {
 }
 
 impl User {
-    pub const ROLE_ADMIN: &'static str = "admin";
-    pub const ROLE_USER: &'static str = "user";
-
     pub fn is_admin(&self) -> bool {
-        self.role == Self::ROLE_ADMIN
+        self.role == UserRole::Admin
+    }
+
+    pub fn is_moderator_or_higher(&self) -> bool {
+        self.role.has_role_or_higher(UserRole::Moderator)
     }
 
     /// Convert User to UserProfile (removes sensitive data)
@@ -34,7 +36,7 @@ impl User {
             id: self.id,
             username: self.username.clone(),
             email: self.email.clone(),
-            role: self.role.clone(),
+            role: self.role,
             is_active: self.is_active,
             email_verified: self.email_verified,
             created_at: self.created_at,
@@ -49,7 +51,7 @@ pub struct UserProfile {
     pub id: Uuid,
     pub username: String,
     pub email: String,
-    pub role: String,
+    pub role: UserRole,
     pub is_active: bool,
     pub email_verified: bool,
     pub created_at: DateTime<Utc>,
@@ -135,7 +137,7 @@ pub struct CreateUserRequest {
     pub username: String,
     pub email: String,
     pub password: String,
-    pub role: Option<String>,
+    pub role: Option<UserRole>,
 }
 
 impl CreateUserRequest {

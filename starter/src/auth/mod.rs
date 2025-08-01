@@ -7,4 +7,6 @@ pub mod services;
 #[cfg(test)]
 mod tests;
 
-pub use middleware::{AuthUser, admin_middleware, auth_middleware};
+pub use middleware::{
+    AuthUser, admin_middleware, auth_middleware, moderator_middleware, require_role,
+};

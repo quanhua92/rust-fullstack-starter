@@ -21,6 +21,9 @@ pub enum Error {
     #[error("Unauthorized access")]
     Unauthorized,
 
+    #[error("Forbidden: {0}")]
+    Forbidden(String),
+
     #[error("Invalid credentials")]
     InvalidCredentials,
 
@@ -143,6 +146,7 @@ impl IntoResponse for Error {
                 "Unauthorized access".to_string(),
                 "UNAUTHORIZED",
             ),
+            Error::Forbidden(msg) => (StatusCode::FORBIDDEN, msg.clone(), "FORBIDDEN"),
             Error::InvalidCredentials => (
                 StatusCode::UNAUTHORIZED,
                 "Invalid credentials".to_string(),
