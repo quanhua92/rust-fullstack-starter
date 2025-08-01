@@ -248,7 +248,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 	};
 
 	const isModerator = (): boolean => {
-		return hasRole("moderator");
+		if (!user) return false;
+		return user.role === "moderator";
 	};
 
 	const isModeratorOrHigher = (): boolean => {

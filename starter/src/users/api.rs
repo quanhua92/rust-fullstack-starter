@@ -19,6 +19,22 @@ use axum::{
 use serde::Deserialize;
 use uuid::Uuid;
 
+#[utoipa::path(
+    get,
+    path = "/users/me/profile",
+    tag = "Users",
+    summary = "Get own profile",
+    description = "Get current user's profile information",
+    responses(
+        (status = 200, description = "User profile retrieved successfully", body = ApiResponse<UserProfile>),
+        (status = 401, description = "Unauthorized"),
+        (status = 404, description = "User profile not found"),
+        (status = 500, description = "Internal server error")
+    ),
+    security(
+        ("bearer_auth" = [])
+    )
+)]
 pub async fn get_profile(
     State(app_state): State<AppState>,
     Extension(auth_user): Extension<AuthUser>,

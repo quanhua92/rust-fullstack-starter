@@ -2,7 +2,7 @@ import { AdminLayout } from "@/components/layout/AdminLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { apiClient } from "@/lib/api/client";
 import { useAuth } from "@/lib/auth/context";
-import { getRoleDisplayName, getRoleColor, type UserRole } from "@/lib/rbac/types";
+import { getRoleDisplayName, getRoleColorClasses, type UserRole } from "@/lib/rbac/types";
 import { Badge } from "@/components/ui/badge";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
@@ -188,7 +188,7 @@ function UserAnalyticsPage() {
 								</CardHeader>
 								<CardContent>
 									<div className="text-2xl font-bold">
-										{userStats?.recent_registrations ||
+										{userStats?.recent_registrations?.last_30d ||
 											additionalMetrics?.recentUsers ||
 											0}
 									</div>
@@ -205,7 +205,9 @@ function UserAnalyticsPage() {
 								</CardHeader>
 								<CardContent>
 									<div className="text-2xl font-bold">
-										{additionalMetrics?.weeklyUsers || 0}
+										{userStats?.recent_registrations?.last_7d ||
+											additionalMetrics?.weeklyUsers ||
+											0}
 									</div>
 									<p className="text-xs text-muted-foreground">
 										New users this week
@@ -222,31 +224,34 @@ function UserAnalyticsPage() {
 								</CardHeader>
 								<CardContent>
 									<div className="space-y-4">
-										{userStats?.users_by_role ? (
-											Object.entries(userStats.users_by_role).map(
-												([role, count]) => (
-													<div
-														key={role}
-														className="flex items-center justify-between"
-													>
-														<div className="flex items-center space-x-2">
-															<Badge
-																variant="outline"
-																className={`text-${getRoleColor(role as UserRole)} border-${getRoleColor(role as UserRole)}`}
-															>
-																{getRoleDisplayName(role as UserRole)}
-															</Badge>
-														</div>
-														<div className="text-right">
-															<div className="text-2xl font-bold">{count}</div>
-															<div className="text-xs text-muted-foreground">
-																{userStats.total_users > 0
-																	? `${((count / userStats.total_users) * 100).toFixed(1)}%`
-																	: "0%"}
+										{userStats?.by_role ? (
+											Object.entries(userStats.by_role).map(
+												([role, count]) => {
+													const roleCount = count as number;
+													return (
+														<div
+															key={role}
+															className="flex items-center justify-between"
+														>
+															<div className="flex items-center space-x-2">
+																<Badge
+																	variant="outline"
+																	className={`${getRoleColorClasses(role as UserRole).text} ${getRoleColorClasses(role as UserRole).border}`}
+																>
+																	{getRoleDisplayName(role as UserRole)}
+																</Badge>
+															</div>
+															<div className="text-right">
+																<div className="text-2xl font-bold">{roleCount}</div>
+																<div className="text-xs text-muted-foreground">
+																	{userStats.total_users > 0
+																		? `${((roleCount / userStats.total_users) * 100).toFixed(1)}%`
+																		: "0%"}
+																</div>
 															</div>
 														</div>
-													</div>
-												),
+													);
+												},
 											)
 										) : (
 											<p className="text-muted-foreground text-center py-4">

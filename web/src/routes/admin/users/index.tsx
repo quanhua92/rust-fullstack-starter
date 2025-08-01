@@ -21,7 +21,7 @@ import {
 import { apiClient } from "@/lib/api/client";
 import { useAuth } from "@/lib/auth/context";
 import { RoleGuard } from "@/components/auth/RoleGuard";
-import { getRoleDisplayName, getRoleColor, type UserRole } from "@/lib/rbac/types";
+import { getRoleDisplayName, getRoleColorClasses, type UserRole } from "@/lib/rbac/types";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
@@ -158,10 +158,11 @@ function UsersPage() {
 	};
 
 	const getUserRoleBadge = (role: string) => {
+		const colorClasses = getRoleColorClasses(role as UserRole);
 		return (
 			<Badge
 				variant="outline"
-				className={`text-${getRoleColor(role as UserRole)} border-${getRoleColor(role as UserRole)}`}
+				className={`${colorClasses.text} ${colorClasses.border}`}
 			>
 				{getRoleDisplayName(role as UserRole)}
 			</Badge>

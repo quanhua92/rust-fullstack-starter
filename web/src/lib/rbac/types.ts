@@ -109,7 +109,10 @@ export function canAccessResource(
 		case "tasks":
 			if (permission === "read") {
 				// Moderator+ can read all tasks, users can read their own
-				return isModeratorOrHigher(user);
+				return (
+					isModeratorOrHigher(user) ||
+					Boolean(targetUserId && user.id === targetUserId)
+				);
 			}
 			if (permission === "write") {
 				// All authenticated users can create tasks
@@ -117,7 +120,10 @@ export function canAccessResource(
 			}
 			if (permission === "manage" || permission === "delete") {
 				// Moderator+ can manage all tasks, users can manage their own
-				return isModeratorOrHigher(user);
+				return (
+					isModeratorOrHigher(user) ||
+					Boolean(targetUserId && user.id === targetUserId)
+				);
 			}
 			break;
 
@@ -145,7 +151,39 @@ export function getRoleDisplayName(role: UserRole): string {
 }
 
 /**
- * Get user role color for UI
+ * Get user role color classes for UI
+ */
+export function getRoleColorClasses(role: UserRole): {
+	text: string;
+	border: string;
+} {
+	switch (role) {
+		case "user":
+			return {
+				text: "text-blue-600 dark:text-blue-400",
+				border: "border-blue-300 dark:border-blue-600",
+			};
+		case "moderator":
+			return {
+				text: "text-purple-600 dark:text-purple-400",
+				border: "border-purple-300 dark:border-purple-600",
+			};
+		case "admin":
+			return {
+				text: "text-red-600 dark:text-red-400",
+				border: "border-red-300 dark:border-red-600",
+			};
+		default:
+			return {
+				text: "text-gray-600 dark:text-gray-400",
+				border: "border-gray-300 dark:border-gray-600",
+			};
+	}
+}
+
+/**
+ * @deprecated Use getRoleColorClasses instead for proper Tailwind JIT compilation
+ * Get user role color for UI (legacy)
  */
 export function getRoleColor(role: UserRole): string {
 	switch (role) {

@@ -129,7 +129,8 @@ export function usePermissions() {
 	};
 
 	const isModerator = (): boolean => {
-		return checkRole("moderator");
+		if (!authenticated || !user) return false;
+		return user.role === "moderator";
 	};
 
 	const isModeratorOrHigher = (): boolean => {

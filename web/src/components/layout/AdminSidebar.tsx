@@ -18,7 +18,7 @@ import {
 	SidebarRail,
 } from "@/components/ui/sidebar";
 import { useAuth } from "@/lib/auth/context";
-import { getRoleDisplayName, getRoleColor, type UserRole } from "@/lib/rbac/types";
+import { getRoleDisplayName, getRoleColorClasses, type UserRole } from "@/lib/rbac/types";
 import { Link, useLocation } from "@tanstack/react-router";
 import {
 	BarChart3,
@@ -213,7 +213,7 @@ export function AdminSidebar() {
 									<div className="flex items-center gap-2">
 										<Badge
 											variant="outline"
-											className={`text-${getRoleColor(user?.role as UserRole)} border-${getRoleColor(user?.role as UserRole)} text-xs`}
+											className={`${getRoleColorClasses(user?.role as UserRole).text} ${getRoleColorClasses(user?.role as UserRole).border} text-xs`}
 										>
 											{getRoleDisplayName(user?.role as UserRole)}
 										</Badge>

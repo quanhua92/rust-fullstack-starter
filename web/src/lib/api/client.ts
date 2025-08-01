@@ -308,7 +308,7 @@ class ApiClient {
 	async getUsers(params?: {
 		limit?: number;
 		offset?: number;
-	}): Promise<{ data: UserProfile[] }> {
+	}): Promise<components["schemas"]["ApiResponse_Vec_UserProfile"]> {
 		const searchParams = new URLSearchParams();
 		if (params?.limit) searchParams.set("limit", params.limit.toString());
 		if (params?.offset) searchParams.set("offset", params.offset.toString());
@@ -316,7 +316,7 @@ class ApiClient {
 		const query = searchParams.toString();
 		const endpoint = query ? `/users?${query}` : "/users";
 
-		return this.request<{ data: UserProfile[] }>(endpoint);
+		return this.request<components["schemas"]["ApiResponse_Vec_UserProfile"]>(endpoint);
 	}
 
 	async updateUserStatus(
@@ -387,20 +387,14 @@ class ApiClient {
 	}
 
 	async getUserStats(): Promise<{
-		data: {
-			total_users: number;
-			active_users: number;
-			users_by_role: Record<string, number>;
-			recent_registrations: number;
-		};
+		data: components["schemas"]["UserStats"];
+		success: boolean;
+		message?: string | null;
 	}> {
 		return this.request<{
-			data: {
-				total_users: number;
-				active_users: number;
-				users_by_role: Record<string, number>;
-				recent_registrations: number;
-			};
+			data: components["schemas"]["UserStats"];
+			success: boolean;
+			message?: string | null;
 		}>("/admin/users/stats");
 	}
 }
