@@ -1,6 +1,9 @@
 use crate::helpers::test_app::{AuthToken, TestApp};
 use serde_json::json;
-use starter::models::{CreateUserRequest, User};
+use starter::{
+    models::{CreateUserRequest, User},
+    rbac::UserRole,
+};
 
 pub struct TestDataFactory {
     pub app: TestApp,
@@ -41,7 +44,53 @@ impl TestDataFactory {
             username: user_data["username"].as_str().unwrap().to_string(),
             email: user_data["email"].as_str().unwrap().to_string(),
             password_hash: "".to_string(), // Not returned in response
-            role: user_data["role"].as_str().unwrap().to_string(),
+            role: user_data["role"].as_str().unwrap().to_string().into(),
+            is_active: user_data["is_active"].as_bool().unwrap(),
+            email_verified: user_data["email_verified"].as_bool().unwrap(),
+            created_at: chrono::Utc::now(), // Parse from response if needed
+            updated_at: chrono::Utc::now(),
+            last_login_at: None,
+        }
+    }
+
+    /// Creates a user with a specific role
+    pub async fn create_user_with_role(&self, username: &str, role: UserRole) -> User {
+        // First create a regular user (role parameter is ignored by API - this is correct for security)
+        let user_data = json!({
+            "username": username,
+            "email": format!("{}@example.com", username),
+            "password": "SecurePass123!"
+        });
+
+        let response = self
+            .app
+            .post_json("/api/v1/auth/register", &user_data)
+            .await;
+        assert_eq!(response.status(), 200);
+
+        let json_response: serde_json::Value = response.json().await.unwrap();
+        let user_data = &json_response["data"];
+        let user_id = user_data["id"].as_str().unwrap();
+
+        // Now update the role directly in the database (since this is for testing)
+        if role != UserRole::User {
+            let mut conn = self.app.db().await;
+            sqlx::query!(
+                "UPDATE users SET role = $1 WHERE id = $2",
+                role.to_string(),
+                uuid::Uuid::parse_str(user_id).unwrap()
+            )
+            .execute(&mut *conn)
+            .await
+            .expect("Failed to update user role in database");
+        }
+
+        User {
+            id: uuid::Uuid::parse_str(user_id).unwrap(),
+            username: user_data["username"].as_str().unwrap().to_string(),
+            email: user_data["email"].as_str().unwrap().to_string(),
+            password_hash: "".to_string(), // Not returned in response
+            role, // Use the requested role, not the API response (which would be "user")
             is_active: user_data["is_active"].as_bool().unwrap(),
             email_verified: user_data["email_verified"].as_bool().unwrap(),
             created_at: chrono::Utc::now(), // Parse from response if needed
@@ -54,6 +103,25 @@ impl TestDataFactory {
     pub async fn create_authenticated_user(&self, username: &str) -> (User, AuthToken) {
         // Create user
         let user = self.create_user(username).await;
+
+        // Login to get token
+        let login_data = json!({
+            "username": username,
+            "password": "SecurePass123!"
+        });
+
+        let response = self.app.post_json("/api/v1/auth/login", &login_data).await;
+        assert_eq!(response.status(), 200);
+
+        let token = self.app.extract_auth_token(response).await;
+
+        (user, token)
+    }
+
+    /// Creates an admin user and returns an authenticated token
+    pub async fn create_authenticated_admin(&self, username: &str) -> (User, AuthToken) {
+        // Create admin user
+        let user = self.create_user_with_role(username, UserRole::Admin).await;
 
         // Login to get token
         let login_data = json!({
@@ -185,13 +253,13 @@ impl TestDataFactory {
 
 /// Test data builders for creating custom requests  
 pub mod builders {
-    use starter::models::CreateUserRequest;
+    use starter::{models::CreateUserRequest, rbac::UserRole};
 
     pub struct UserBuilder {
         username: String,
         email: String,
         password: String,
-        role: Option<String>,
+        role: Option<UserRole>,
     }
 
     impl Default for UserBuilder {
@@ -225,8 +293,8 @@ pub mod builders {
             self
         }
 
-        pub fn with_role(mut self, role: &str) -> Self {
-            self.role = Some(role.to_string());
+        pub fn with_role(mut self, role: UserRole) -> Self {
+            self.role = Some(role);
             self
         }
 

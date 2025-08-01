@@ -1063,7 +1063,7 @@
                 "format": "uuid"
               },
               "role": {
-                "type": "string"
+                "$ref": "#/components/schemas/UserRole"
               },
               "username": {
                 "type": "string"
@@ -1504,7 +1504,7 @@
                 "format": "date-time"
               },
               "role": {
-                "type": "string"
+                "$ref": "#/components/schemas/UserRole"
               },
               "username": {
                 "type": "string"
@@ -1713,7 +1713,7 @@
             "format": "uuid"
           },
           "role": {
-            "type": "string"
+            "$ref": "#/components/schemas/UserRole"
           },
           "username": {
             "type": "string"
@@ -2345,7 +2345,7 @@
             "format": "date-time"
           },
           "role": {
-            "type": "string"
+            "$ref": "#/components/schemas/UserRole"
           },
           "updated_at": {
             "type": "string",
@@ -2393,12 +2393,21 @@
             "format": "date-time"
           },
           "role": {
-            "type": "string"
+            "$ref": "#/components/schemas/UserRole"
           },
           "username": {
             "type": "string"
           }
         }
+      },
+      "UserRole": {
+        "type": "string",
+        "description": "User roles with hierarchy: User < Moderator < Admin",
+        "enum": [
+          "User",
+          "Moderator",
+          "Admin"
+        ]
       }
     },
     "securitySchemes": {

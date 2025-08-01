@@ -38,11 +38,11 @@ graph TB
         DOCS[📚 /api-docs/*<br/>OpenAPI documentation]
     end
     
-    subgraph "🔒 Protected Endpoints (Bearer Token Required)"
+    subgraph "🔒 Protected Endpoints (Bearer Token + RBAC)"
         AUTH_PROT[🚪 /api/v1/auth/logout<br/>🚪 /api/v1/auth/logout-all<br/>🚪 /api/v1/auth/me<br/>🔄 /api/v1/auth/refresh]
-        USERS["👤 /api/v1/users/{id}<br/>User profiles"]
-        TASKS[⚙️ /api/v1/tasks<br/>POST: Create, GET: List<br/>📊 /api/v1/tasks/stats<br/>💀 /api/v1/tasks/dead-letter]
-        TASK_OPS["🔧 /api/v1/tasks/{id}<br/>GET, DELETE<br/>🔄 /api/v1/tasks/{id}/retry<br/>🛑 /api/v1/tasks/{id}/cancel"]
+        USERS["👤 /api/v1/users/{id}<br/>User profiles<br/>Moderator: All users<br/>User: Own profile only"]
+        TASKS[⚙️ /api/v1/tasks<br/>POST: Create, GET: List<br/>📊 /api/v1/tasks/stats<br/>💀 /api/v1/tasks/dead-letter<br/>Moderator/Admin: All tasks<br/>User: Own tasks only]
+        TASK_OPS["🔧 /api/v1/tasks/{id}<br/>GET, DELETE<br/>🔄 /api/v1/tasks/{id}/retry<br/>🛑 /api/v1/tasks/{id}/cancel<br/>Role-based access applies"]
     end
     
     subgraph "👑 Admin Only"
@@ -72,6 +72,31 @@ graph TB
     class ADMIN adminBox
     class BEARER,MIDDLEWARE authBox
 ```
+
+## 🛡️ Role-Based Access Control (RBAC)
+
+The API implements a three-tier RBAC system that affects endpoint access:
+
+| Role | Level | Task Access | User Access | Admin Access |
+|------|-------|-------------|-------------|--------------|
+| **User** | 1 | Own tasks only | Own profile only | ❌ |
+| **Moderator** | 2 | All user tasks | All user profiles | ❌ |
+| **Admin** | 3 | All user tasks | All user profiles | ✅ Full access |
+
+### RBAC Examples
+
+```bash
+# User role: Can only see their own tasks
+GET /api/v1/tasks → Returns only tasks created by the authenticated user
+
+# Moderator role: Can see all tasks
+GET /api/v1/tasks → Returns all tasks from all users
+
+# Admin role: Full system access
+GET /api/v1/admin/health → Detailed system status (admin-only endpoint)
+```
+
+For detailed authentication and authorization information, see the [Authentication & Authorization Guide](./guides/02-authentication-and-authorization.md).
 
 ### 📖 Using the Interactive Docs
 1. Start your server: `./scripts/server.sh 3000`

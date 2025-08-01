@@ -637,7 +637,7 @@ graph TD
 
 Now that you understand the overall architecture, dive into specific systems:
 
-- **[Authentication System →](./02-authentication.md)** - How secure sessions work
+- **[Authentication & Authorization →](./02-authentication-and-authorization.md)** - How secure sessions and RBAC work
 - **[Foundation Patterns →](./03-patterns.md)** - Reliability patterns used throughout
 - **[Background Tasks →](./04-background-tasks.md)** - Async task processing system
 

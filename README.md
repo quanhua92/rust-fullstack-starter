@@ -67,13 +67,13 @@ curl -X POST http://localhost:3000/auth/login \
 **Create and monitor a background task:**
 ```bash
 # Create a task (replace TOKEN with your session token from login)
-curl -X POST http://localhost:3000/tasks \
+curl -X POST http://localhost:3000/api/v1/tasks \
   -H "Authorization: Bearer TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"task_type": "email", "payload": {"to": "user@example.com", "subject": "Hello", "body": "Test email"}}'
 
-# Check task status
-curl -H "Authorization: Bearer TOKEN" http://localhost:3000/tasks
+# Check task status (users see only their tasks, admins/moderators see all)
+curl -H "Authorization: Bearer TOKEN" http://localhost:3000/api/v1/tasks
 ```
 
 ### 5. Explore More
@@ -84,7 +84,8 @@ curl -H "Authorization: Bearer TOKEN" http://localhost:3000/tasks
 
 ## Key Features
 
-- **🔐 Authentication System** - Registration, login, session management
+- **🔐 Authentication & Authorization** - Session-based auth with Role-Based Access Control (RBAC)
+- **👥 Role-Based Access Control** - Three-tier system (User/Moderator/Admin) with hierarchical permissions
 - **⚙️ Background Tasks** - Async job processing with retry logic and dead letter queue
 - **📊 API Documentation** - Interactive OpenAPI/Swagger docs
 - **🧪 Testing Framework** - 53 integration tests + API endpoint testing
@@ -142,7 +143,7 @@ rust-fullstack-starter/
 - **[Production Deployment](docs/production-deployment.md)** - Docker deployment
 
 ### Learning Guides
-- [Authentication System](docs/guides/02-authentication.md)
+- [Authentication & Authorization](docs/guides/02-authentication-and-authorization.md) - **Session-based auth with RBAC**
 - [Background Tasks](docs/guides/04-background-tasks.md)
 - [Testing Framework](docs/guides/08-testing.md)
 - [Chaos Testing](docs/guides/09-chaos-testing.md) - **Enhanced with 7 scenarios**
@@ -165,6 +166,25 @@ Copy `.env.example` to `.env` and set your admin password:
 cp .env.example .env
 # Edit .env and set STARTER__INITIAL_ADMIN_PASSWORD
 ```
+
+### Admin Account Setup
+
+The system automatically creates an admin account on first startup if `STARTER__INITIAL_ADMIN_PASSWORD` is set:
+
+```bash
+# In .env file
+STARTER__INITIAL_ADMIN_PASSWORD=your_secure_admin_password
+
+# Admin account will be created with:
+# Username: admin
+# Email: admin@example.com  
+# Role: Admin (full system access)
+```
+
+**Admin Capabilities:**
+- Access all user tasks and profiles
+- Use admin-only endpoints
+- Full RBAC permissions for system management
 
 ## Admin CLI Commands
 

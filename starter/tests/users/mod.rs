@@ -27,9 +27,9 @@ async fn test_get_user_by_id() {
     let unique_username = format!("testuser_{}", &uuid::Uuid::new_v4().to_string()[..8]);
     let user = factory.create_user(&unique_username).await;
 
-    // Need auth to access user endpoint
+    // Need admin auth to access another user's profile
     let (_auth_user, token) = factory
-        .create_authenticated_user(&format!("auth_{}", &unique_username))
+        .create_authenticated_admin(&format!("admin_{}", &unique_username))
         .await;
     let response = app
         .get_auth(&format!("/api/v1/users/{}", user.id), &token.token)

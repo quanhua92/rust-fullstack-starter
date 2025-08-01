@@ -1,5 +1,6 @@
 use crate::auth::services;
 use crate::error::Error;
+use crate::rbac::UserRole;
 use crate::types::AppState;
 use axum::{
     extract::{Request, State},
@@ -13,7 +14,7 @@ pub struct AuthUser {
     pub id: Uuid,
     pub username: String,
     pub email: String,
-    pub role: String,
+    pub role: UserRole,
 }
 
 /// Extract Bearer token from Authorization header
@@ -116,9 +117,9 @@ pub async fn admin_middleware(req: Request, next: Next) -> Result<Response, Erro
         .ok_or(Error::Unauthorized)?;
 
     // Check if user is admin
-    if auth_user.role != "admin" {
+    if auth_user.role != UserRole::Admin {
         tracing::debug!("User {} attempted to access admin endpoint", auth_user.id);
-        return Err(Error::Unauthorized);
+        return Err(Error::Forbidden("Admin access required".to_string()));
     }
 
     Ok(next.run(req).await)

@@ -9,6 +9,7 @@ use uuid::Uuid;
 use crate::{
     auth::AuthUser,
     error::Error,
+    rbac::services as rbac_services,
     tasks::{
         processor::TaskProcessor,
         types::{CreateTaskRequest, TaskFilter, TaskResponse, TaskStats, TaskStatus},
@@ -167,16 +168,9 @@ pub async fn get_task(
         .await
         .map_err(|e| Error::Internal(format!("Failed to get task: {e}")))?;
 
-    // Check ownership - only allow access to tasks created by the authenticated user
+    // Check RBAC authorization - Admin/Moderator can access any task, users only their own
     if let Some(ref task_data) = task {
-        if let Some(created_by) = task_data.created_by {
-            if created_by != auth_user.id {
-                return Err(Error::NotFound("Task not found".to_string())); // Return NotFound to prevent user enumeration
-            }
-        } else {
-            // Tasks without created_by are system tasks, deny access to regular users
-            return Err(Error::NotFound("Task not found".to_string()));
-        }
+        rbac_services::can_access_task(&auth_user, task_data.created_by)?;
     }
 
     Ok(Json(ApiResponse::success(task.map(|t| t.into()))))
@@ -215,11 +209,18 @@ pub async fn list_tasks(
         _ => None,
     };
 
+    // Determine task filtering based on user role
+    let created_by_filter =
+        match rbac_services::has_role_or_higher(&auth_user, crate::rbac::UserRole::Moderator) {
+            true => None,                // Admin/Moderator can see all tasks
+            false => Some(auth_user.id), // Regular users only see their own tasks
+        };
+
     let filter = TaskFilter {
         task_type: params.task_type,
         status,
-        priority: None,                 // TODO: Parse priority string if needed
-        created_by: Some(auth_user.id), // Only list tasks created by the authenticated user
+        priority: None, // TODO: Parse priority string if needed
+        created_by: created_by_filter,
         created_after: None,
         created_before: None,
         limit: params.limit,
@@ -258,6 +259,7 @@ pub async fn list_tasks(
 )]
 pub async fn get_stats(
     State(app_state): State<AppState>,
+    Extension(_auth_user): Extension<AuthUser>,
 ) -> Result<Json<ApiResponse<TaskStats>>, Error> {
     let processor = TaskProcessor::new(
         app_state.database.clone(),
@@ -308,15 +310,8 @@ pub async fn cancel_task(
         .map_err(|e| Error::Internal(format!("Failed to get task: {e}")))?
         .ok_or(Error::NotFound("Task not found".to_string()))?;
 
-    // Check ownership - only allow cancelling tasks created by the authenticated user
-    if let Some(created_by) = task.created_by {
-        if created_by != auth_user.id {
-            return Err(Error::NotFound("Task not found".to_string())); // Return NotFound to prevent user enumeration
-        }
-    } else {
-        // Tasks without created_by are system tasks, deny access to regular users
-        return Err(Error::NotFound("Task not found".to_string()));
-    }
+    // Check RBAC authorization - Admin/Moderator can cancel any task, users only their own
+    rbac_services::can_access_task(&auth_user, task.created_by)?;
 
     processor
         .cancel_task(task_id)
@@ -363,14 +358,17 @@ pub async fn get_dead_letter_queue(
         .await
         .map_err(|e| Error::Internal(format!("Failed to get dead letter queue: {e}")))?;
 
-    // Filter tasks to only show those created by the authenticated user
-    let user_tasks: Vec<crate::tasks::types::TaskResponse> = tasks
+    // Filter tasks based on user role - Admin/Moderator see all, users see only their own
+    let filtered_tasks: Vec<crate::tasks::types::TaskResponse> = tasks
         .into_iter()
-        .filter(|task| task.created_by == Some(auth_user.id))
+        .filter(|task| {
+            rbac_services::has_role_or_higher(&auth_user, crate::rbac::UserRole::Moderator)
+                || task.created_by == Some(auth_user.id)
+        })
         .map(|t| t.into())
         .collect();
 
-    Ok(Json(ApiResponse::success(user_tasks)))
+    Ok(Json(ApiResponse::success(filtered_tasks)))
 }
 
 /// Retry a failed task
@@ -410,15 +408,8 @@ pub async fn retry_task(
         .map_err(|e| Error::Internal(format!("Failed to get task: {e}")))?
         .ok_or(Error::NotFound("Task not found".to_string()))?;
 
-    // Check ownership - only allow retrying tasks created by the authenticated user
-    if let Some(created_by) = task.created_by {
-        if created_by != auth_user.id {
-            return Err(Error::NotFound("Task not found".to_string())); // Return NotFound to prevent user enumeration
-        }
-    } else {
-        // Tasks without created_by are system tasks, deny access to regular users
-        return Err(Error::NotFound("Task not found".to_string()));
-    }
+    // Check RBAC authorization - Admin/Moderator can retry any task, users only their own
+    rbac_services::can_access_task(&auth_user, task.created_by)?;
 
     processor.retry_task(task_id).await.map_err(|e| match e {
         crate::tasks::types::TaskError::NotFound(_) => {
@@ -470,15 +461,8 @@ pub async fn delete_task(
         .map_err(|e| Error::Internal(format!("Failed to get task: {e}")))?
         .ok_or(Error::NotFound("Task not found".to_string()))?;
 
-    // Check ownership - only allow deleting tasks created by the authenticated user
-    if let Some(created_by) = task.created_by {
-        if created_by != auth_user.id {
-            return Err(Error::NotFound("Task not found".to_string())); // Return NotFound to prevent user enumeration
-        }
-    } else {
-        // Tasks without created_by are system tasks, deny access to regular users
-        return Err(Error::NotFound("Task not found".to_string()));
-    }
+    // Check RBAC authorization - Admin/Moderator can delete any task, users only their own
+    rbac_services::can_access_task(&auth_user, task.created_by)?;
 
     processor.delete_task(task_id).await.map_err(|e| match e {
         crate::tasks::types::TaskError::NotFound(_) => {
