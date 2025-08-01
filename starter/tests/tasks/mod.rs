@@ -948,3 +948,394 @@ fn assert_metadata_preserved(
         "chaos_test metadata must be preserved"
     );
 }
+
+// =====================================
+// IDOR SECURITY TESTS
+// =====================================
+// These tests verify that the Insecure Direct Object Reference (IDOR) 
+// vulnerabilities identified in code review have been properly fixed.
+
+#[tokio::test]
+async fn test_idor_protection_get_task_different_user() {
+    let app = spawn_app().await;
+    let factory = TestDataFactory::new_with_task_types(app.clone()).await;
+
+    // Create User A and their task
+    let unique_username_a = format!("user_a_{}", &uuid::Uuid::new_v4().to_string()[..8]);
+    let (_user_a, token_a) = factory.create_authenticated_user(&unique_username_a).await;
+
+    let task_data = json!({
+        "task_type": "email",
+        "payload": {
+            "to": "user_a@example.com",
+            "subject": "User A's Task",
+            "body": "This belongs to User A"
+        }
+    });
+
+    let task_response = app
+        .post_json_auth("/api/v1/tasks", &task_data, &token_a.token)
+        .await;
+    assert_eq!(task_response.status(), 200);
+    let task_json: serde_json::Value = task_response.json().await.unwrap();
+    let task_id = task_json["data"]["id"].as_str().unwrap();
+
+    // Create User B
+    let unique_username_b = format!("user_b_{}", &uuid::Uuid::new_v4().to_string()[..8]);
+    let (_user_b, token_b) = factory.create_authenticated_user(&unique_username_b).await;
+
+    // IDOR Attack: User B tries to access User A's task
+    let response = app
+        .get_auth(&format!("/api/v1/tasks/{task_id}"), &token_b.token)
+        .await;
+
+    // Should return 404 (not 403) to prevent user enumeration
+    assert_status(&response, StatusCode::NOT_FOUND);
+}
+
+#[tokio::test]
+async fn test_idor_protection_modify_task_different_user() {
+    let app = spawn_app().await;
+    let factory = TestDataFactory::new_with_task_types(app.clone()).await;
+
+    // Create User A and their task
+    let unique_username_a = format!("user_a_{}", &uuid::Uuid::new_v4().to_string()[..8]);
+    let (_user_a, token_a) = factory.create_authenticated_user(&unique_username_a).await;
+
+    let task_data = json!({
+        "task_type": "email",
+        "payload": {
+            "to": "user_a@example.com",
+            "subject": "User A's Task",
+            "body": "This belongs to User A"
+        }
+    });
+
+    let task_response = app
+        .post_json_auth("/api/v1/tasks", &task_data, &token_a.token)
+        .await;
+    assert_eq!(task_response.status(), 200);
+    let task_json: serde_json::Value = task_response.json().await.unwrap();
+    let task_id = task_json["data"]["id"].as_str().unwrap();
+
+    // Create User B
+    let unique_username_b = format!("user_b_{}", &uuid::Uuid::new_v4().to_string()[..8]);
+    let (_user_b, token_b) = factory.create_authenticated_user(&unique_username_b).await;
+
+    // IDOR Attack: User B tries to cancel User A's task
+    let cancel_response = app
+        .post_auth(&format!("/api/v1/tasks/{task_id}/cancel"), &token_b.token)
+        .await;
+    assert_status(&cancel_response, StatusCode::NOT_FOUND);
+
+    // IDOR Attack: User B tries to retry User A's task  
+    let retry_response = app
+        .post_auth(&format!("/api/v1/tasks/{task_id}/retry"), &token_b.token)
+        .await;
+    assert_status(&retry_response, StatusCode::NOT_FOUND);
+
+    // IDOR Attack: User B tries to delete User A's task
+    let delete_response = app
+        .delete_auth(&format!("/api/v1/tasks/{task_id}"), &token_b.token)
+        .await;
+    assert_status(&delete_response, StatusCode::NOT_FOUND);
+}
+
+#[tokio::test]
+async fn test_idor_protection_task_listing_isolation() {
+    let app = spawn_app().await;
+    let factory = TestDataFactory::new_with_task_types(app.clone()).await;
+
+    // Create User A and their tasks
+    let unique_username_a = format!("user_a_{}", &uuid::Uuid::new_v4().to_string()[..8]);
+    let (_user_a, token_a) = factory.create_authenticated_user(&unique_username_a).await;
+
+    let task_a1_data = json!({
+        "task_type": "email",
+        "payload": {"to": "user_a_task1@example.com", "subject": "A Task 1"}
+    });
+    let task_a2_data = json!({
+        "task_type": "email", 
+        "payload": {"to": "user_a_task2@example.com", "subject": "A Task 2"}
+    });
+
+    let task_a1_response = app.post_json_auth("/api/v1/tasks", &task_a1_data, &token_a.token).await;
+    let task_a2_response = app.post_json_auth("/api/v1/tasks", &task_a2_data, &token_a.token).await;
+    assert_eq!(task_a1_response.status(), 200);
+    assert_eq!(task_a2_response.status(), 200);
+
+    let task_a1_json: serde_json::Value = task_a1_response.json().await.unwrap();
+    let task_a2_json: serde_json::Value = task_a2_response.json().await.unwrap();
+    let task_a1_id = task_a1_json["data"]["id"].as_str().unwrap();
+    let task_a2_id = task_a2_json["data"]["id"].as_str().unwrap();
+
+    // Create User B and their tasks  
+    let unique_username_b = format!("user_b_{}", &uuid::Uuid::new_v4().to_string()[..8]);
+    let (_user_b, token_b) = factory.create_authenticated_user(&unique_username_b).await;
+
+    let task_b1_data = json!({
+        "task_type": "email",
+        "payload": {"to": "user_b_task1@example.com", "subject": "B Task 1"}
+    });
+
+    let task_b1_response = app.post_json_auth("/api/v1/tasks", &task_b1_data, &token_b.token).await;
+    assert_eq!(task_b1_response.status(), 200);
+    let task_b1_json: serde_json::Value = task_b1_response.json().await.unwrap();
+    let task_b1_id = task_b1_json["data"]["id"].as_str().unwrap();
+
+    // User A should only see their own tasks
+    let response_a = app.get_auth("/api/v1/tasks", &token_a.token).await;
+    assert_status(&response_a, StatusCode::OK);
+    let json_a: serde_json::Value = response_a.json().await.unwrap();
+    let tasks_a = json_a["data"].as_array().unwrap();
+
+    let task_ids_a: Vec<&str> = tasks_a
+        .iter()
+        .filter_map(|task| task["id"].as_str())
+        .collect();
+
+    assert!(task_ids_a.contains(&task_a1_id), "User A should see their own task A1");
+    assert!(task_ids_a.contains(&task_a2_id), "User A should see their own task A2"); 
+    assert!(!task_ids_a.contains(&task_b1_id), "User A should NOT see User B's task");
+
+    // User B should only see their own tasks
+    let response_b = app.get_auth("/api/v1/tasks", &token_b.token).await;
+    assert_status(&response_b, StatusCode::OK);
+    let json_b: serde_json::Value = response_b.json().await.unwrap();
+    let tasks_b = json_b["data"].as_array().unwrap();
+
+    let task_ids_b: Vec<&str> = tasks_b
+        .iter()
+        .filter_map(|task| task["id"].as_str())
+        .collect();
+
+    assert!(task_ids_b.contains(&task_b1_id), "User B should see their own task");
+    assert!(!task_ids_b.contains(&task_a1_id), "User B should NOT see User A's task A1");
+    assert!(!task_ids_b.contains(&task_a2_id), "User B should NOT see User A's task A2");
+}
+
+#[tokio::test]
+async fn test_idor_protection_dead_letter_queue_isolation() {
+    let app = spawn_app().await;
+    let factory = TestDataFactory::new_with_task_types(app.clone()).await;
+
+    // Create User A and their failed task
+    let unique_username_a = format!("user_a_{}", &uuid::Uuid::new_v4().to_string()[..8]);
+    let (_user_a, token_a) = factory.create_authenticated_user(&unique_username_a).await;
+
+    let task_a_data = json!({
+        "task_type": "email",
+        "payload": {"to": "user_a@example.com", "subject": "A Failed Task"}
+    });
+
+    let task_a_response = app.post_json_auth("/api/v1/tasks", &task_a_data, &token_a.token).await;
+    assert_eq!(task_a_response.status(), 200);
+    let task_a_json: serde_json::Value = task_a_response.json().await.unwrap();
+    let task_a_id = task_a_json["data"]["id"].as_str().unwrap();
+
+    // Create User B and their failed task
+    let unique_username_b = format!("user_b_{}", &uuid::Uuid::new_v4().to_string()[..8]);
+    let (_user_b, token_b) = factory.create_authenticated_user(&unique_username_b).await;
+
+    let task_b_data = json!({
+        "task_type": "email",
+        "payload": {"to": "user_b@example.com", "subject": "B Failed Task"}
+    });
+
+    let task_b_response = app.post_json_auth("/api/v1/tasks", &task_b_data, &token_b.token).await;
+    assert_eq!(task_b_response.status(), 200);
+    let task_b_json: serde_json::Value = task_b_response.json().await.unwrap();
+    let task_b_id = task_b_json["data"]["id"].as_str().unwrap();
+
+    // Mark both tasks as failed
+    let db = &app.db_pool;
+    sqlx::query!(
+        "UPDATE tasks SET status = 'failed', last_error = 'Test failure', completed_at = NOW() WHERE id = $1 OR id = $2",
+        uuid::Uuid::parse_str(task_a_id).unwrap(),
+        uuid::Uuid::parse_str(task_b_id).unwrap()
+    )
+    .execute(db)
+    .await
+    .unwrap();
+
+    // User A should only see their own failed tasks in dead letter queue
+    let response_a = app.get_auth("/api/v1/tasks/dead-letter", &token_a.token).await;
+    assert_status(&response_a, StatusCode::OK);
+    let json_a: serde_json::Value = response_a.json().await.unwrap();
+    let dead_tasks_a = json_a["data"].as_array().unwrap();
+
+    let dead_task_ids_a: Vec<&str> = dead_tasks_a
+        .iter()
+        .filter_map(|task| task["id"].as_str())
+        .collect();
+
+    assert!(dead_task_ids_a.contains(&task_a_id), "User A should see their own failed task");
+    assert!(!dead_task_ids_a.contains(&task_b_id), "User A should NOT see User B's failed task");
+
+    // User B should only see their own failed tasks in dead letter queue
+    let response_b = app.get_auth("/api/v1/tasks/dead-letter", &token_b.token).await;
+    assert_status(&response_b, StatusCode::OK);
+    let json_b: serde_json::Value = response_b.json().await.unwrap();
+    let dead_tasks_b = json_b["data"].as_array().unwrap();
+
+    let dead_task_ids_b: Vec<&str> = dead_tasks_b
+        .iter()
+        .filter_map(|task| task["id"].as_str())
+        .collect();
+
+    assert!(dead_task_ids_b.contains(&task_b_id), "User B should see their own failed task");
+    assert!(!dead_task_ids_b.contains(&task_a_id), "User B should NOT see User A's failed task");
+}
+
+#[tokio::test]
+async fn test_idor_protection_unauthenticated_access() {
+    let app = spawn_app().await;
+    let factory = TestDataFactory::new_with_task_types(app.clone()).await;
+
+    // Create a task with authentication
+    let unique_username = format!("user_{}", &uuid::Uuid::new_v4().to_string()[..8]);
+    let (_user, token) = factory.create_authenticated_user(&unique_username).await;
+
+    let task_data = json!({
+        "task_type": "email",
+        "payload": {"to": "test@example.com", "subject": "Protected Task"}
+    });
+
+    let task_response = app.post_json_auth("/api/v1/tasks", &task_data, &token.token).await;
+    assert_eq!(task_response.status(), 200);
+    let task_json: serde_json::Value = task_response.json().await.unwrap();
+    let task_id = task_json["data"]["id"].as_str().unwrap();
+
+    // Try to access endpoints without authentication - should get 401 Unauthorized
+    let unauthenticated_responses = vec![
+        app.get(&format!("/api/v1/tasks/{task_id}")).await,
+        app.get("/api/v1/tasks").await,
+        app.post_json("/api/v1/tasks", &task_data).await,
+        app.client.post(&format!("{}/api/v1/tasks/{task_id}/cancel", app.address)).send().await.unwrap(),
+        app.client.post(&format!("{}/api/v1/tasks/{task_id}/retry", app.address)).send().await.unwrap(),
+        app.client.delete(&format!("{}/api/v1/tasks/{task_id}", app.address)).send().await.unwrap(),
+        app.get("/api/v1/tasks/dead-letter").await,
+    ];
+
+    for response in unauthenticated_responses {
+        assert_status(&response, StatusCode::UNAUTHORIZED);
+    }
+}
+
+#[tokio::test]
+async fn test_idor_protection_own_task_access_allowed() {
+    let app = spawn_app().await;
+    let factory = TestDataFactory::new_with_task_types(app.clone()).await;
+
+    // Create user and their task
+    let unique_username = format!("user_{}", &uuid::Uuid::new_v4().to_string()[..8]);
+    let (_user, token) = factory.create_authenticated_user(&unique_username).await;
+
+    let task_data = json!({
+        "task_type": "email",
+        "payload": {"to": "test@example.com", "subject": "Own Task"}
+    });
+
+    let task_response = app.post_json_auth("/api/v1/tasks", &task_data, &token.token).await;
+    assert_eq!(task_response.status(), 200);
+    let task_json: serde_json::Value = task_response.json().await.unwrap();
+    let task_id = task_json["data"]["id"].as_str().unwrap();
+
+    // User should be able to access their own task
+    let get_response = app.get_auth(&format!("/api/v1/tasks/{task_id}"), &token.token).await;
+    assert_status(&get_response, StatusCode::OK);
+    let get_json: serde_json::Value = get_response.json().await.unwrap();
+    assert_eq!(get_json["data"]["id"].as_str().unwrap(), task_id);
+
+    // User should be able to cancel their own task
+    let cancel_response = app.post_auth(&format!("/api/v1/tasks/{task_id}/cancel"), &token.token).await;
+    assert_status(&cancel_response, StatusCode::OK);
+
+    // Create another task for retry/delete tests
+    let task_data2 = json!({
+        "task_type": "email",
+        "payload": {"to": "test2@example.com", "subject": "Own Task 2"}
+    });
+
+    let task_response2 = app.post_json_auth("/api/v1/tasks", &task_data2, &token.token).await;
+    let task_json2: serde_json::Value = task_response2.json().await.unwrap();
+    let task_id2 = task_json2["data"]["id"].as_str().unwrap();
+
+    // Mark as failed so we can retry
+    let db = &app.db_pool;
+    sqlx::query!(
+        "UPDATE tasks SET status = 'failed', last_error = 'Test failure', completed_at = NOW() WHERE id = $1",
+        uuid::Uuid::parse_str(task_id2).unwrap()
+    )
+    .execute(db)
+    .await
+    .unwrap();
+
+    // User should be able to retry their own failed task
+    let retry_response = app.post_auth(&format!("/api/v1/tasks/{task_id2}/retry"), &token.token).await;
+    assert_status(&retry_response, StatusCode::OK);
+
+    // Mark as completed so we can delete
+    sqlx::query!(
+        "UPDATE tasks SET status = 'completed', completed_at = NOW() WHERE id = $1",
+        uuid::Uuid::parse_str(task_id2).unwrap()
+    )
+    .execute(db)
+    .await
+    .unwrap();
+
+    // User should be able to delete their own completed task
+    let delete_response = app.delete_auth(&format!("/api/v1/tasks/{task_id2}"), &token.token).await;
+    assert_status(&delete_response, StatusCode::OK);
+}
+
+#[tokio::test]
+async fn test_idor_protection_system_tasks_denied() {
+    let app = spawn_app().await;
+    let factory = TestDataFactory::new_with_task_types(app.clone()).await;
+
+    // Create a regular user
+    let unique_username = format!("user_{}", &uuid::Uuid::new_v4().to_string()[..8]);
+    let (_user, token) = factory.create_authenticated_user(&unique_username).await;
+
+    // Manually create a system task (created_by = NULL) in the database
+    let db = &app.db_pool;
+    let system_task_id = uuid::Uuid::new_v4();
+    
+    sqlx::query!(
+        r#"
+        INSERT INTO tasks (id, task_type, status, payload, priority, scheduled_at, created_at, updated_at, created_by)
+        VALUES ($1, 'system_maintenance', 'pending', '{"type": "system"}', 'normal', NOW(), NOW(), NOW(), NULL)
+        "#,
+        system_task_id
+    )
+    .execute(db)
+    .await
+    .unwrap();
+
+    // Regular user should not be able to access system tasks (created_by = NULL)
+    let get_response = app.get_auth(&format!("/api/v1/tasks/{system_task_id}"), &token.token).await;
+    assert_status(&get_response, StatusCode::NOT_FOUND);
+
+    // Regular user should not be able to modify system tasks
+    let cancel_response = app.post_auth(&format!("/api/v1/tasks/{system_task_id}/cancel"), &token.token).await;
+    assert_status(&cancel_response, StatusCode::NOT_FOUND);
+
+    let retry_response = app.post_auth(&format!("/api/v1/tasks/{system_task_id}/retry"), &token.token).await;
+    assert_status(&retry_response, StatusCode::NOT_FOUND);
+
+    let delete_response = app.delete_auth(&format!("/api/v1/tasks/{system_task_id}"), &token.token).await;
+    assert_status(&delete_response, StatusCode::NOT_FOUND);
+
+    // System tasks should not appear in user's task listing
+    let list_response = app.get_auth("/api/v1/tasks", &token.token).await;
+    assert_status(&list_response, StatusCode::OK);
+    let list_json: serde_json::Value = list_response.json().await.unwrap();
+    let tasks = list_json["data"].as_array().unwrap();
+
+    let system_task_in_list = tasks
+        .iter()
+        .any(|task| task["id"].as_str() == Some(&system_task_id.to_string()));
+    
+    assert!(!system_task_in_list, "System tasks should not appear in user task listings");
+}
