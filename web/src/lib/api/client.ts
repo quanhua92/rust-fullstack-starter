@@ -333,7 +333,7 @@ class ApiClient {
 
 	async resetUserPassword(
 		id: string,
-		data: { reason?: string },
+		data: { new_password: string; reason?: string },
 	): Promise<BasicResponse> {
 		return this.request<BasicResponse>(`/users/${id}/reset-password`, {
 			method: "POST",

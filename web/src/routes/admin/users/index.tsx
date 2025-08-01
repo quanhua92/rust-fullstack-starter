@@ -115,14 +115,29 @@ function UsersPage() {
 		},
 	});
 
+	// Generate secure random password
+	const generateSecurePassword = (length: number = 12): string => {
+		const charset = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*";
+		let password = "";
+		for (let i = 0; i < length; i++) {
+			password += charset.charAt(Math.floor(Math.random() * charset.length));
+		}
+		return password;
+	};
+
 	// Password reset mutation (Moderator+)
 	const resetPasswordMutation = useMutation({
-		mutationFn: ({ id, reason }: { id: string; reason?: string }) =>
-			apiClient.resetUserPassword(id, { reason }),
-		onSuccess: () => {
+		mutationFn: ({ id, reason }: { id: string; reason?: string }) => {
+			const newPassword = generateSecurePassword();
+			return apiClient.resetUserPassword(id, { new_password: newPassword, reason }).then(response => ({
+				...response,
+				newPassword, // Return the generated password for display
+			}));
+		},
+		onSuccess: (data) => {
 			toast({
-				title: "Password reset",
-				description: "User password has been reset successfully.",
+				title: "Password reset successful",
+				description: `New password: ${data.newPassword} (Please copy this and share with the user)`,
 			});
 		},
 		onError: (error: Error) => {
