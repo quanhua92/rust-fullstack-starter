@@ -80,7 +80,7 @@ curl -H "Authorization: Bearer TOKEN" http://localhost:3000/tasks
 
 - **API Docs**: http://localhost:3000/api-docs (Interactive Swagger UI)
 - **Health Check**: http://localhost:3000/health (System status)
-- **Worker Logs**: Check `/tmp/starter-worker.log` for task processing
+- **Worker Logs**: Check `/tmp/starter-worker-0.log` for task processing (or `/tmp/starter-worker-{ID}.log` for specific worker ID)
 
 ## Key Features
 

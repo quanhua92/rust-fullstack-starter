@@ -1081,7 +1081,8 @@ impl Default for RetryStrategy {
 ps aux | grep starter-worker
 
 # Check worker logs for startup errors
-tail -f /tmp/starter-worker.log
+tail -f /tmp/starter-worker-0.log   # Default worker (ID 0)
+# tail -f /tmp/starter-worker-1.log # Worker ID 1
 
 # Verify task types are registered
 curl http://localhost:3000/api/v1/tasks/types
@@ -1105,7 +1106,8 @@ curl -H "Authorization: Bearer $TOKEN" \
   jq '.data[].last_error' | sort | uniq -c
 
 # Check circuit breaker status in logs
-grep "Circuit breaker" /tmp/starter-worker.log
+grep "Circuit breaker" /tmp/starter-worker-0.log
+# grep "Circuit breaker" /tmp/starter-worker-*.log  # All workers
 
 # Test external services manually
 curl -X POST webhook-endpoint-that-keeps-failing.com

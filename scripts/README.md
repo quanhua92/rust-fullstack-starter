@@ -232,7 +232,8 @@ docker compose up --wait                  # Wait for services
 
 # Monitor logs
 tail -f /tmp/starter-server-3000.log
-tail -f /tmp/starter-worker.log
+tail -f /tmp/starter-worker-0.log   # Default worker (ID 0)
+# tail -f /tmp/starter-worker-1.log # Worker ID 1
 
 # Option 2: Foreground mode (direct control)
 # Terminal 1: Server in foreground
@@ -263,7 +264,8 @@ curl -X POST http://localhost:3000/api/v1/tasks \
 
 # View logs
 tail -f /tmp/starter-server-3000.log
-tail -f /tmp/starter-worker.log
+tail -f /tmp/starter-worker-0.log   # Default worker (ID 0)
+# tail -f /tmp/starter-worker-*.log # All workers
 
 # Clean reset if issues
 ./scripts/reset-all.sh

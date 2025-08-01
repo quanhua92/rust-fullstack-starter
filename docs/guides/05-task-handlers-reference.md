@@ -36,10 +36,12 @@ curl -H "Authorization: Bearer $TOKEN" \
 ### 2. Monitor Worker Logs
 ```bash
 # Follow worker logs to see processing details
-tail -f /tmp/starter-worker.log
+tail -f /tmp/starter-worker-0.log   # Default worker (ID 0)
+# tail -f /tmp/starter-worker-1.log # Worker ID 1
 
 # Search for specific task processing
-grep "Task TASK_ID_HERE" /tmp/starter-worker.log
+grep "Task TASK_ID_HERE" /tmp/starter-worker-0.log
+# grep "Task TASK_ID_HERE" /tmp/starter-worker-*.log  # All workers
 ```
 
 ### 3. Use Admin CLI (Bypasses API Auth)
@@ -819,7 +821,8 @@ TASK_ID=$(echo "$RESPONSE" | python3 -c "import json,sys; print(json.load(sys.st
 echo "Created task: $TASK_ID"
 
 # 3. Monitor in real-time (in another terminal)
-tail -f /tmp/starter-worker.log | grep "$TASK_ID"
+tail -f /tmp/starter-worker-0.log | grep "$TASK_ID"
+# tail -f /tmp/starter-worker-*.log | grep "$TASK_ID"  # All workers
 
 # 4. Check final status
 curl -H "Authorization: Bearer $TOKEN" \

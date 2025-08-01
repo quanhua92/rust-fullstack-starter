@@ -637,7 +637,8 @@ WHERE NOT blocked_locks.GRANTED;
    ps aux | grep starter | grep worker
    
    # Check worker logs
-   tail -f /tmp/starter-worker.log
+   tail -f /tmp/starter-worker-0.log   # Default worker (ID 0)
+   # tail -f /tmp/starter-worker-*.log # All workers
    ```
 
 2. **Database investigation**:
