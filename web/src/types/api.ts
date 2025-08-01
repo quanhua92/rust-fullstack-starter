@@ -405,7 +405,7 @@ export interface components {
                 email: string;
                 /** Format: uuid */
                 id: string;
-                role: string;
+                role: components["schemas"]["UserRole"];
                 username: string;
             };
             message?: string | null;
@@ -533,7 +533,7 @@ export interface components {
                 is_active: boolean;
                 /** Format: date-time */
                 last_login_at?: string | null;
-                role: string;
+                role: components["schemas"]["UserRole"];
                 username: string;
             };
             message?: string | null;
@@ -592,7 +592,7 @@ export interface components {
             email: string;
             /** Format: uuid */
             id: string;
-            role: string;
+            role: components["schemas"]["UserRole"];
             username: string;
         };
         ComponentHealth: {
@@ -778,7 +778,7 @@ export interface components {
             is_active: boolean;
             /** Format: date-time */
             last_login_at?: string | null;
-            role: string;
+            role: components["schemas"]["UserRole"];
             /** Format: date-time */
             updated_at: string;
             username: string;
@@ -793,9 +793,14 @@ export interface components {
             is_active: boolean;
             /** Format: date-time */
             last_login_at?: string | null;
-            role: string;
+            role: components["schemas"]["UserRole"];
             username: string;
         };
+        /**
+         * @description User roles with hierarchy: User < Moderator < Admin
+         * @enum {string}
+         */
+        UserRole: "user" | "moderator" | "admin";
     };
     responses: never;
     parameters: never;

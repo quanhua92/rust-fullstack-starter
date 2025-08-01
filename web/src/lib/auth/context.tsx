@@ -1,5 +1,7 @@
 import { apiClient, getAuthToken, setAuthToken } from "@/lib/api/client";
 import type { components } from "@/types/api";
+import type { UserRole } from "@/lib/rbac/types";
+import { hasRoleOrHigher } from "@/lib/rbac/types";
 import {
 	type ReactNode,
 	createContext,
@@ -14,6 +16,9 @@ interface AuthContextType {
 	user: AuthUser | null;
 	isLoading: boolean;
 	isAuthenticated: boolean;
+	// Legacy aliases for compatibility
+	loading: boolean;
+	authenticated: boolean;
 	login: (credentials: {
 		username?: string;
 		email?: string;
@@ -28,6 +33,11 @@ interface AuthContextType {
 	logoutAll: () => Promise<void>;
 	refreshUser: () => Promise<void>;
 	refreshToken: () => Promise<boolean>;
+	// RBAC helper methods
+	hasRole: (requiredRole: UserRole) => boolean;
+	isAdmin: () => boolean;
+	isModerator: () => boolean;
+	isModeratorOrHigher: () => boolean;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -227,16 +237,42 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 		}
 	};
 
+	// RBAC helper functions
+	const hasRole = (requiredRole: UserRole): boolean => {
+		if (!user) return false;
+		return hasRoleOrHigher(user.role, requiredRole);
+	};
+
+	const isAdmin = (): boolean => {
+		return hasRole("admin");
+	};
+
+	const isModerator = (): boolean => {
+		return hasRole("moderator");
+	};
+
+	const isModeratorOrHigher = (): boolean => {
+		return hasRole("moderator");
+	};
+
 	const value: AuthContextType = {
 		user,
 		isLoading,
 		isAuthenticated,
+		// Legacy aliases for compatibility
+		loading: isLoading,
+		authenticated: isAuthenticated,
 		login,
 		register,
 		logout,
 		logoutAll,
 		refreshUser,
 		refreshToken,
+		// RBAC helper methods
+		hasRole,
+		isAdmin,
+		isModerator,
+		isModeratorOrHigher,
 	};
 
 	return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

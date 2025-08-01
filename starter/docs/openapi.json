@@ -978,6 +978,75 @@
         ]
       }
     },
+    "/users": {
+      "get": {
+        "tags": [
+          "Users"
+        ],
+        "summary": "List users",
+        "description": "List all users in the system (Admin/Moderator only)",
+        "operationId": "list_users",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Maximum number of users to return",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "description": "Number of users to skip",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of users",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse_Vec_UserProfile"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden - Moderator access required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
     "/users/{id}": {
       "get": {
         "tags": [
@@ -1063,7 +1132,7 @@
                 "format": "uuid"
               },
               "role": {
-                "type": "string"
+                "$ref": "#/components/schemas/UserRole"
               },
               "username": {
                 "type": "string"
@@ -1504,7 +1573,7 @@
                 "format": "date-time"
               },
               "role": {
-                "type": "string"
+                "$ref": "#/components/schemas/UserRole"
               },
               "username": {
                 "type": "string"
@@ -1696,6 +1765,70 @@
           }
         }
       },
+      "ApiResponse_Vec_UserProfile": {
+        "type": "object",
+        "required": [
+          "success"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "id",
+                "username",
+                "email",
+                "role",
+                "is_active",
+                "email_verified",
+                "created_at"
+              ],
+              "properties": {
+                "created_at": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "email": {
+                  "type": "string"
+                },
+                "email_verified": {
+                  "type": "boolean"
+                },
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "is_active": {
+                  "type": "boolean"
+                },
+                "last_login_at": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "date-time"
+                },
+                "role": {
+                  "$ref": "#/components/schemas/UserRole"
+                },
+                "username": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "message": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "success": {
+            "type": "boolean"
+          }
+        }
+      },
       "AuthUser": {
         "type": "object",
         "required": [
@@ -1713,9 +1846,24 @@
             "format": "uuid"
           },
           "role": {
-            "type": "string"
+            "$ref": "#/components/schemas/UserRole"
           },
           "username": {
+            "type": "string"
+          }
+        }
+      },
+      "ChangePasswordRequest": {
+        "type": "object",
+        "required": [
+          "current_password",
+          "new_password"
+        ],
+        "properties": {
+          "current_password": {
+            "type": "string"
+          },
+          "new_password": {
             "type": "string"
           }
         }
@@ -1808,6 +1956,67 @@
           },
           "task_type": {
             "type": "string"
+          }
+        }
+      },
+      "CreateUserRequest": {
+        "type": "object",
+        "required": [
+          "username",
+          "email",
+          "password"
+        ],
+        "properties": {
+          "email": {
+            "type": "string"
+          },
+          "password": {
+            "type": "string"
+          },
+          "role": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/UserRole"
+              }
+            ]
+          },
+          "username": {
+            "type": "string"
+          }
+        }
+      },
+      "DeleteAccountRequest": {
+        "type": "object",
+        "required": [
+          "password",
+          "confirmation"
+        ],
+        "properties": {
+          "confirmation": {
+            "type": "string"
+          },
+          "password": {
+            "type": "string"
+          }
+        }
+      },
+      "DeleteUserRequest": {
+        "type": "object",
+        "properties": {
+          "hard_delete": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "reason": {
+            "type": [
+              "string",
+              "null"
+            ]
           }
         }
       },
@@ -1935,6 +2144,28 @@
           }
         }
       },
+      "RecentRegistrations": {
+        "type": "object",
+        "required": [
+          "last_24h",
+          "last_7d",
+          "last_30d"
+        ],
+        "properties": {
+          "last_24h": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "last_30d": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "last_7d": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
       "RefreshResponse": {
         "type": "object",
         "required": [
@@ -1986,6 +2217,29 @@
           },
           "task_type": {
             "type": "string"
+          }
+        }
+      },
+      "ResetPasswordRequest": {
+        "type": "object",
+        "required": [
+          "new_password"
+        ],
+        "properties": {
+          "new_password": {
+            "type": "string"
+          },
+          "reason": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "require_change": {
+            "type": [
+              "boolean",
+              "null"
+            ]
           }
         }
       },
@@ -2307,6 +2561,80 @@
           }
         }
       },
+      "UpdateProfileRequest": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "username": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "UpdateUserProfileRequest": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "email_verified": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "username": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "UpdateUserRoleRequest": {
+        "type": "object",
+        "required": [
+          "role"
+        ],
+        "properties": {
+          "reason": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "role": {
+            "$ref": "#/components/schemas/UserRole"
+          }
+        }
+      },
+      "UpdateUserStatusRequest": {
+        "type": "object",
+        "required": [
+          "is_active"
+        ],
+        "properties": {
+          "is_active": {
+            "type": "boolean"
+          },
+          "reason": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
       "User": {
         "type": "object",
         "required": [
@@ -2345,7 +2673,7 @@
             "format": "date-time"
           },
           "role": {
-            "type": "string"
+            "$ref": "#/components/schemas/UserRole"
           },
           "updated_at": {
             "type": "string",
@@ -2393,10 +2721,86 @@
             "format": "date-time"
           },
           "role": {
-            "type": "string"
+            "$ref": "#/components/schemas/UserRole"
           },
           "username": {
             "type": "string"
+          }
+        }
+      },
+      "UserRole": {
+        "type": "string",
+        "description": "User roles with hierarchy: User < Moderator < Admin",
+        "enum": [
+          "user",
+          "moderator",
+          "admin"
+        ]
+      },
+      "UserRoleStats": {
+        "type": "object",
+        "required": [
+          "user",
+          "moderator",
+          "admin"
+        ],
+        "properties": {
+          "admin": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "moderator": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "user": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "UserStats": {
+        "type": "object",
+        "required": [
+          "total_users",
+          "active_users",
+          "inactive_users",
+          "email_verified",
+          "email_unverified",
+          "by_role",
+          "recent_registrations",
+          "last_updated"
+        ],
+        "properties": {
+          "active_users": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "by_role": {
+            "$ref": "#/components/schemas/UserRoleStats"
+          },
+          "email_unverified": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "email_verified": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "inactive_users": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "last_updated": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "recent_registrations": {
+            "$ref": "#/components/schemas/RecentRegistrations"
+          },
+          "total_users": {
+            "type": "integer",
+            "format": "int64"
           }
         }
       }

@@ -272,49 +272,135 @@ class ApiClient {
 		return this.request<UserProfileResponse>(`/users/${id}`);
 	}
 
-	async getUsers(): Promise<{ data: { users: UserProfile[] } }> {
-		// Mock implementation since /users endpoint doesn't exist yet
-		// In a real implementation, this would call GET /users
-		const currentUser = await this.getCurrentUser();
-		return {
-			data: {
-				users: currentUser.data
-					? [
-							{
-								...currentUser.data,
-								email_verified: false,
-								is_active: true,
-								created_at: new Date().toISOString(),
-								last_login_at: new Date().toISOString(),
-							},
-						]
-					: [],
-			},
-		};
+	// Self-service user profile management
+	async updateOwnProfile(data: {
+		username?: string;
+		email?: string;
+	}): Promise<UserProfileResponse> {
+		return this.request<UserProfileResponse>("/users/me/profile", {
+			method: "PUT",
+			body: JSON.stringify(data),
+		});
 	}
 
-	async createUser(userData: {
+	async changeOwnPassword(data: {
+		current_password: string;
+		new_password: string;
+	}): Promise<BasicResponse> {
+		return this.request<BasicResponse>("/users/me/password", {
+			method: "PUT",
+			body: JSON.stringify(data),
+		});
+	}
+
+	async deleteOwnAccount(data: {
+		password: string;
+		confirmation: string;
+	}): Promise<BasicResponse> {
+		return this.request<BasicResponse>("/users/me", {
+			method: "DELETE",
+			body: JSON.stringify(data),
+		});
+	}
+
+	// Moderator+ user management
+	async getUsers(params?: {
+		limit?: number;
+		offset?: number;
+	}): Promise<{ data: UserProfile[] }> {
+		const searchParams = new URLSearchParams();
+		if (params?.limit) searchParams.set("limit", params.limit.toString());
+		if (params?.offset) searchParams.set("offset", params.offset.toString());
+
+		const query = searchParams.toString();
+		const endpoint = query ? `/users?${query}` : "/users";
+
+		return this.request<{ data: UserProfile[] }>(endpoint);
+	}
+
+	async updateUserStatus(
+		id: string,
+		data: { is_active: boolean; reason?: string }
+	): Promise<UserProfileResponse> {
+		return this.request<UserProfileResponse>(`/users/${id}/status`, {
+			method: "PUT",
+			body: JSON.stringify(data),
+		});
+	}
+
+	async resetUserPassword(
+		id: string,
+		data: { reason?: string }
+	): Promise<BasicResponse> {
+		return this.request<BasicResponse>(`/users/${id}/reset-password`, {
+			method: "POST",
+			body: JSON.stringify(data),
+		});
+	}
+
+	// Admin-only user management
+	async createUser(data: {
 		username: string;
 		email: string;
 		password: string;
-		role: string;
-		isActive: boolean;
-	}): Promise<{ data: UserProfile }> {
-		// Mock implementation - would need actual API endpoint
-		// In a real implementation, this would call POST /users
-		console.log("Creating user:", userData);
-		return {
-			data: {
-				id: `mock-${Date.now()}`,
-				username: userData.username,
-				email: userData.email,
-				role: userData.role,
-				is_active: userData.isActive,
-				created_at: new Date().toISOString(),
-				email_verified: false,
-				last_login_at: null,
-			},
+		role: "user" | "moderator" | "admin";
+	}): Promise<UserProfileResponse> {
+		return this.request<UserProfileResponse>("/users", {
+			method: "POST",
+			body: JSON.stringify(data),
+		});
+	}
+
+	async updateUserProfile(
+		id: string,
+		data: {
+			username?: string;
+			email?: string;
+			email_verified?: boolean;
+		}
+	): Promise<UserProfileResponse> {
+		return this.request<UserProfileResponse>(`/users/${id}/profile`, {
+			method: "PUT",
+			body: JSON.stringify(data),
+		});
+	}
+
+	async updateUserRole(
+		id: string,
+		data: { role: "user" | "moderator" | "admin" }
+	): Promise<UserProfileResponse> {
+		return this.request<UserProfileResponse>(`/users/${id}/role`, {
+			method: "PUT",
+			body: JSON.stringify(data),
+		});
+	}
+
+	async deleteUser(
+		id: string,
+		data: { reason?: string }
+	): Promise<BasicResponse> {
+		return this.request<BasicResponse>(`/users/${id}`, {
+			method: "DELETE",
+			body: JSON.stringify(data),
+		});
+	}
+
+	async getUserStats(): Promise<{
+		data: {
+			total_users: number;
+			active_users: number;
+			users_by_role: Record<string, number>;
+			recent_registrations: number;
 		};
+	}> {
+		return this.request<{
+			data: {
+				total_users: number;
+				active_users: number;
+				users_by_role: Record<string, number>;
+				recent_registrations: number;
+			};
+		}>("/admin/users/stats");
 	}
 }
 
