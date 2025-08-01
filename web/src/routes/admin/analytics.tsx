@@ -2,7 +2,11 @@ import { AdminLayout } from "@/components/layout/AdminLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { apiClient } from "@/lib/api/client";
 import { useAuth } from "@/lib/auth/context";
-import { getRoleDisplayName, getRoleColorClasses, type UserRole } from "@/lib/rbac/types";
+import {
+	getRoleDisplayName,
+	getRoleColorClasses,
+	type UserRole,
+} from "@/lib/rbac/types";
 import { Badge } from "@/components/ui/badge";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
@@ -33,48 +37,7 @@ function UserAnalyticsPage() {
 		enabled: isAdmin(), // Only fetch if user is admin
 	});
 
-	// Fetch users for additional analytics
-	const { data: users = [] } = useQuery({
-		queryKey: ["admin", "users"],
-		queryFn: async () => {
-			const response = await apiClient.getUsers();
-			return response.data || [];
-		},
-		enabled: isAdmin(),
-	});
-
-	// Calculate additional metrics
-	const calculateAdditionalMetrics = () => {
-		if (!users.length) return null;
-
-		const now = new Date();
-		const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-		const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-
-		const recentUsers = users.filter(
-			(user) => new Date(user.created_at) >= thirtyDaysAgo,
-		);
-		const weeklyUsers = users.filter(
-			(user) => new Date(user.created_at) >= sevenDaysAgo,
-		);
-
-		const verifiedUsers = users.filter((user) => user.email_verified);
-		const activeUsers = users.filter((user) => user.is_active);
-
-		return {
-			totalUsers: users.length,
-			activeUsers: activeUsers.length,
-			verifiedUsers: verifiedUsers.length,
-			recentUsers: recentUsers.length,
-			weeklyUsers: weeklyUsers.length,
-			verificationRate:
-				users.length > 0 ? (verifiedUsers.length / users.length) * 100 : 0,
-			activeRate:
-				users.length > 0 ? (activeUsers.length / users.length) * 100 : 0,
-		};
-	};
-
-	const additionalMetrics = calculateAdditionalMetrics();
+	// All metrics are now provided by the backend UserStats API
 
 	// Show access denied for non-admin users
 	if (!isAdmin()) {
@@ -148,9 +111,7 @@ function UserAnalyticsPage() {
 								</CardHeader>
 								<CardContent>
 									<div className="text-2xl font-bold">
-										{userStats?.total_users ||
-											additionalMetrics?.totalUsers ||
-											0}
+										{userStats?.total_users || 0}
 									</div>
 									<p className="text-xs text-muted-foreground">
 										All registered accounts
@@ -167,13 +128,11 @@ function UserAnalyticsPage() {
 								</CardHeader>
 								<CardContent>
 									<div className="text-2xl font-bold">
-										{userStats?.active_users ||
-											additionalMetrics?.activeUsers ||
-											0}
+										{userStats?.active_users || 0}
 									</div>
 									<p className="text-xs text-muted-foreground">
-										{additionalMetrics?.activeRate
-											? `${additionalMetrics.activeRate.toFixed(1)}% of total`
+										{userStats?.total_users && userStats?.active_users
+											? `${((userStats.active_users / userStats.total_users) * 100).toFixed(1)}% of total`
 											: "Currently active"}
 									</p>
 								</CardContent>
@@ -188,9 +147,7 @@ function UserAnalyticsPage() {
 								</CardHeader>
 								<CardContent>
 									<div className="text-2xl font-bold">
-										{userStats?.recent_registrations?.last_30d ||
-											additionalMetrics?.recentUsers ||
-											0}
+										{userStats?.recent_registrations?.last_30d || 0}
 									</div>
 									<p className="text-xs text-muted-foreground">Last 30 days</p>
 								</CardContent>
@@ -205,9 +162,7 @@ function UserAnalyticsPage() {
 								</CardHeader>
 								<CardContent>
 									<div className="text-2xl font-bold">
-										{userStats?.recent_registrations?.last_7d ||
-											additionalMetrics?.weeklyUsers ||
-											0}
+										{userStats?.recent_registrations?.last_7d || 0}
 									</div>
 									<p className="text-xs text-muted-foreground">
 										New users this week
@@ -225,34 +180,34 @@ function UserAnalyticsPage() {
 								<CardContent>
 									<div className="space-y-4">
 										{userStats?.by_role ? (
-											Object.entries(userStats.by_role).map(
-												([role, count]) => {
-													const roleCount = count as number;
-													return (
-														<div
-															key={role}
-															className="flex items-center justify-between"
-														>
-															<div className="flex items-center space-x-2">
-																<Badge
-																	variant="outline"
-																	className={`${getRoleColorClasses(role as UserRole).text} ${getRoleColorClasses(role as UserRole).border}`}
-																>
-																	{getRoleDisplayName(role as UserRole)}
-																</Badge>
+											Object.entries(userStats.by_role).map(([role, count]) => {
+												const roleCount = count as number;
+												return (
+													<div
+														key={role}
+														className="flex items-center justify-between"
+													>
+														<div className="flex items-center space-x-2">
+															<Badge
+																variant="outline"
+																className={`${getRoleColorClasses(role as UserRole).text} ${getRoleColorClasses(role as UserRole).border}`}
+															>
+																{getRoleDisplayName(role as UserRole)}
+															</Badge>
+														</div>
+														<div className="text-right">
+															<div className="text-2xl font-bold">
+																{roleCount}
 															</div>
-															<div className="text-right">
-																<div className="text-2xl font-bold">{roleCount}</div>
-																<div className="text-xs text-muted-foreground">
-																	{userStats.total_users > 0
-																		? `${((roleCount / userStats.total_users) * 100).toFixed(1)}%`
-																		: "0%"}
-																</div>
+															<div className="text-xs text-muted-foreground">
+																{userStats.total_users > 0
+																	? `${((roleCount / userStats.total_users) * 100).toFixed(1)}%`
+																	: "0%"}
 															</div>
 														</div>
-													);
-												},
-											)
+													</div>
+												);
+											})
 										) : (
 											<p className="text-muted-foreground text-center py-4">
 												No role data available
@@ -275,11 +230,11 @@ function UserAnalyticsPage() {
 											</div>
 											<div className="text-right">
 												<div className="text-2xl font-bold">
-													{additionalMetrics?.activeUsers || 0}
+													{userStats?.active_users || 0}
 												</div>
 												<div className="text-xs text-muted-foreground">
-													{additionalMetrics?.activeRate
-														? `${additionalMetrics.activeRate.toFixed(1)}%`
+													{userStats?.total_users && userStats?.active_users
+														? `${((userStats.active_users / userStats.total_users) * 100).toFixed(1)}%`
 														: "0%"}
 												</div>
 											</div>
@@ -292,11 +247,11 @@ function UserAnalyticsPage() {
 											</div>
 											<div className="text-right">
 												<div className="text-2xl font-bold">
-													{additionalMetrics?.verifiedUsers || 0}
+													{userStats?.email_verified || 0}
 												</div>
 												<div className="text-xs text-muted-foreground">
-													{additionalMetrics?.verificationRate
-														? `${additionalMetrics.verificationRate.toFixed(1)}%`
+													{userStats?.total_users && userStats?.email_verified
+														? `${((userStats.email_verified / userStats.total_users) * 100).toFixed(1)}%`
 														: "0%"}
 												</div>
 											</div>
@@ -309,12 +264,11 @@ function UserAnalyticsPage() {
 											</div>
 											<div className="text-right">
 												<div className="text-2xl font-bold">
-													{(additionalMetrics?.totalUsers || 0) -
-														(additionalMetrics?.activeUsers || 0)}
+													{userStats?.inactive_users || 0}
 												</div>
 												<div className="text-xs text-muted-foreground">
-													{additionalMetrics?.totalUsers
-														? `${(100 - additionalMetrics.activeRate).toFixed(1)}%`
+													{userStats?.total_users && userStats?.inactive_users
+														? `${((userStats.inactive_users / userStats.total_users) * 100).toFixed(1)}%`
 														: "0%"}
 												</div>
 											</div>
@@ -333,13 +287,13 @@ function UserAnalyticsPage() {
 								<div className="grid gap-4 md:grid-cols-3">
 									<div className="text-center">
 										<div className="text-2xl font-bold text-blue-600">
-											{additionalMetrics?.weeklyUsers || 0}
+											{userStats?.recent_registrations?.last_7d || 0}
 										</div>
 										<p className="text-sm text-muted-foreground">This Week</p>
 									</div>
 									<div className="text-center">
 										<div className="text-2xl font-bold text-green-600">
-											{additionalMetrics?.recentUsers || 0}
+											{userStats?.recent_registrations?.last_30d || 0}
 										</div>
 										<p className="text-sm text-muted-foreground">
 											Last 30 Days
@@ -347,7 +301,9 @@ function UserAnalyticsPage() {
 									</div>
 									<div className="text-center">
 										<div className="text-2xl font-bold text-purple-600">
-											{((additionalMetrics?.recentUsers || 0) / 30).toFixed(1)}
+											{(
+												(userStats?.recent_registrations?.last_30d || 0) / 30
+											).toFixed(1)}
 										</div>
 										<p className="text-sm text-muted-foreground">
 											Daily Average

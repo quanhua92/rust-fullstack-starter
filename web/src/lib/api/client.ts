@@ -316,7 +316,9 @@ class ApiClient {
 		const query = searchParams.toString();
 		const endpoint = query ? `/users?${query}` : "/users";
 
-		return this.request<components["schemas"]["ApiResponse_Vec_UserProfile"]>(endpoint);
+		return this.request<components["schemas"]["ApiResponse_Vec_UserProfile"]>(
+			endpoint,
+		);
 	}
 
 	async updateUserStatus(

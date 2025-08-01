@@ -18,10 +18,23 @@ import {
 	TableHeader,
 	TableRow,
 } from "@/components/ui/table";
+import {
+	Pagination,
+	PaginationContent,
+	PaginationEllipsis,
+	PaginationItem,
+	PaginationLink,
+	PaginationNext,
+	PaginationPrevious,
+} from "@/components/ui/pagination";
 import { apiClient } from "@/lib/api/client";
 import { useAuth } from "@/lib/auth/context";
 import { RoleGuard } from "@/components/auth/RoleGuard";
-import { getRoleDisplayName, getRoleColorClasses, type UserRole } from "@/lib/rbac/types";
+import {
+	getRoleDisplayName,
+	getRoleColorClasses,
+	type UserRole,
+} from "@/lib/rbac/types";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
@@ -41,26 +54,41 @@ import { useState } from "react";
 
 function UsersPage() {
 	const [searchTerm, setSearchTerm] = useState("");
+	const [currentPage, setCurrentPage] = useState(1);
 	const { user: currentUser, isModeratorOrHigher } = useAuth();
 	const { toast } = useToast();
 	const queryClient = useQueryClient();
 
-	// Fetch users list with RBAC check
-	const { data: users = [], isLoading } = useQuery({
-		queryKey: ["admin", "users"],
+	const pageSize = 10; // Users per page
+	const offset = (currentPage - 1) * pageSize;
+
+	// Fetch users list with pagination and RBAC check
+	const { data: usersResponse, isLoading } = useQuery({
+		queryKey: ["admin", "users", currentPage, searchTerm],
 		queryFn: async () => {
-			const response = await apiClient.getUsers();
-			return response.data || [];
+			const response = await apiClient.getUsers({
+				limit: pageSize,
+				offset,
+			});
+			return response;
 		},
 		enabled: isModeratorOrHigher(), // Only fetch if user has permission
 	});
 
-	// Filter users based on search term
+	const users = usersResponse?.data || [];
+
+	// For search functionality, we'll need to implement server-side search
+	// For now, keeping client-side search on current page
 	const filteredUsers = users.filter(
 		(user) =>
 			user.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
 			user.email.toLowerCase().includes(searchTerm.toLowerCase()),
 	);
+
+	// Calculate total pages (since API doesn't return total count, we'll estimate)
+	// In production, the API should return total count for accurate pagination
+	const hasNextPage = users.length === pageSize;
+	const totalPages = hasNextPage ? currentPage + 1 : currentPage;
 
 	// User status update mutation (Moderator+)
 	const updateUserStatusMutation = useMutation({
@@ -217,17 +245,19 @@ function UsersPage() {
 					</RoleGuard>
 				</div>
 
-				{/* Stats Cards */}
+				{/* Current Page Stats */}
 				<div className="grid gap-4 md:grid-cols-3">
 					<Card>
 						<CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-							<CardTitle className="text-sm font-medium">Total Users</CardTitle>
+							<CardTitle className="text-sm font-medium">
+								Current Page
+							</CardTitle>
 							<UserCheck className="h-4 w-4 text-muted-foreground" />
 						</CardHeader>
 						<CardContent>
 							<div className="text-2xl font-bold">{users?.length || 0}</div>
 							<p className="text-xs text-muted-foreground">
-								Registered accounts
+								Users on page {currentPage}
 							</p>
 						</CardContent>
 					</Card>
@@ -235,7 +265,7 @@ function UsersPage() {
 					<Card>
 						<CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
 							<CardTitle className="text-sm font-medium">
-								Active Users
+								Active (Page)
 							</CardTitle>
 							<UserCheck className="h-4 w-4 text-muted-foreground" />
 						</CardHeader>
@@ -243,13 +273,17 @@ function UsersPage() {
 							<div className="text-2xl font-bold">
 								{users?.filter((u) => u.is_active).length || 0}
 							</div>
-							<p className="text-xs text-muted-foreground">Currently active</p>
+							<p className="text-xs text-muted-foreground">
+								Active on this page
+							</p>
 						</CardContent>
 					</Card>
 
 					<Card>
 						<CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-							<CardTitle className="text-sm font-medium">Admins</CardTitle>
+							<CardTitle className="text-sm font-medium">
+								Admins (Page)
+							</CardTitle>
 							<Shield className="h-4 w-4 text-muted-foreground" />
 						</CardHeader>
 						<CardContent>
@@ -257,7 +291,7 @@ function UsersPage() {
 								{users?.filter((u) => u.role === "admin").length || 0}
 							</div>
 							<p className="text-xs text-muted-foreground">
-								Administrator accounts
+								Admins on this page
 							</p>
 						</CardContent>
 					</Card>
@@ -422,6 +456,77 @@ function UsersPage() {
 						</Table>
 					</CardContent>
 				</Card>
+
+				{/* Pagination */}
+				{!isLoading && users.length > 0 && (
+					<div className="flex items-center justify-between">
+						<div className="text-sm text-muted-foreground">
+							Showing {(currentPage - 1) * pageSize + 1} to{" "}
+							{Math.min(
+								currentPage * pageSize,
+								(currentPage - 1) * pageSize + users.length,
+							)}{" "}
+							of users
+						</div>
+						<Pagination>
+							<PaginationContent>
+								<PaginationItem>
+									<PaginationPrevious
+										onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+										className={
+											currentPage === 1
+												? "pointer-events-none opacity-50"
+												: "cursor-pointer"
+										}
+									/>
+								</PaginationItem>
+
+								{/* Page numbers */}
+								{Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+									let pageNumber: number;
+									if (totalPages <= 5) {
+										pageNumber = i + 1;
+									} else if (currentPage <= 3) {
+										pageNumber = i + 1;
+									} else if (currentPage >= totalPages - 2) {
+										pageNumber = totalPages - 4 + i;
+									} else {
+										pageNumber = currentPage - 2 + i;
+									}
+
+									return (
+										<PaginationItem key={pageNumber}>
+											<PaginationLink
+												onClick={() => setCurrentPage(pageNumber)}
+												isActive={currentPage === pageNumber}
+												className="cursor-pointer"
+											>
+												{pageNumber}
+											</PaginationLink>
+										</PaginationItem>
+									);
+								})}
+
+								{totalPages > 5 && currentPage < totalPages - 2 && (
+									<PaginationItem>
+										<PaginationEllipsis />
+									</PaginationItem>
+								)}
+
+								<PaginationItem>
+									<PaginationNext
+										onClick={() => setCurrentPage(currentPage + 1)}
+										className={
+											!hasNextPage
+												? "pointer-events-none opacity-50"
+												: "cursor-pointer"
+										}
+									/>
+								</PaginationItem>
+							</PaginationContent>
+						</Pagination>
+					</div>
+				)}
 			</div>
 		</AdminLayout>
 	);

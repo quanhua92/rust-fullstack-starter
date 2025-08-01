@@ -1,6 +1,11 @@
 import type { ReactNode } from "react";
 import { useAuth } from "@/lib/auth/context";
-import type { UserRole, Resource, Permission, AuthUser } from "@/lib/rbac/types";
+import type {
+	UserRole,
+	Resource,
+	Permission,
+	AuthUser,
+} from "@/lib/rbac/types";
 import {
 	hasRoleOrHigher,
 	canAccessResource,

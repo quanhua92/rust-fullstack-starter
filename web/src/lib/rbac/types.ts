@@ -188,13 +188,13 @@ export function getRoleColorClasses(role: UserRole): {
 export function getRoleColor(role: UserRole): string {
 	switch (role) {
 		case "user":
-			return "blue";
+			return "blue-600";
 		case "moderator":
-			return "purple";
+			return "purple-600";
 		case "admin":
-			return "red";
+			return "red-600";
 		default:
-			return "gray";
+			return "gray-600";
 	}
 }
 

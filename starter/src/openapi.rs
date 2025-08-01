@@ -16,8 +16,8 @@ use crate::tasks::types::{CreateTaskRequest, TaskResponse, TaskStats, TaskStatus
 use crate::types::{DetailedHealthResponse, ErrorResponse, HealthResponse};
 use crate::users::models::{
     ChangePasswordRequest, CreateUserRequest, DeleteAccountRequest, DeleteUserRequest,
-    RecentRegistrations, ResetPasswordRequest, UpdateProfileRequest, UpdateUserProfileRequest, UpdateUserRoleRequest,
-    UpdateUserStatusRequest, User, UserProfile, UserRoleStats, UserStats,
+    RecentRegistrations, ResetPasswordRequest, UpdateProfileRequest, UpdateUserProfileRequest,
+    UpdateUserRoleRequest, UpdateUserStatusRequest, User, UserProfile, UserRoleStats, UserStats,
 };
 
 #[derive(OpenApi)]
@@ -100,7 +100,7 @@ use crate::users::models::{
             ResetPasswordRequest,
             DeleteUserRequest,
             UserStats,
-            UserRoleStats, 
+            UserRoleStats,
             RecentRegistrations,
             UserRole,
 

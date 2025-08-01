@@ -18,7 +18,11 @@ import {
 	SidebarRail,
 } from "@/components/ui/sidebar";
 import { useAuth } from "@/lib/auth/context";
-import { getRoleDisplayName, getRoleColorClasses, type UserRole } from "@/lib/rbac/types";
+import {
+	getRoleDisplayName,
+	getRoleColorClasses,
+	type UserRole,
+} from "@/lib/rbac/types";
 import { Link, useLocation } from "@tanstack/react-router";
 import {
 	BarChart3,
@@ -45,7 +49,10 @@ interface SubMenuItem {
 	visible?: boolean;
 }
 
-const getMenuItems = (isModeratorOrHigher: boolean, isAdmin: boolean): MenuItem[] =>
+const getMenuItems = (
+	isModeratorOrHigher: boolean,
+	isAdmin: boolean,
+): MenuItem[] =>
 	[
 		{
 			title: "Dashboard",
