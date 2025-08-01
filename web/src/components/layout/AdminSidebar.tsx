@@ -31,75 +31,76 @@ import {
 	UserCheck,
 } from "lucide-react";
 
-const getMenuItems = (isModeratorOrHigher: boolean, isAdmin: boolean) => [
-	{
-		title: "Dashboard",
-		url: "/admin",
-		icon: Home,
-	},
-	{
-		title: "Tasks",
-		icon: CheckSquare,
-		visible: true, // All authenticated users can see tasks
-		items: [
-			{
-				title: "All Tasks",
-				url: "/admin/tasks",
-			},
-			{
-				title: "Create Task",
-				url: "/admin/tasks/new",
-			},
-			{
-				title: "Dead Letter Queue",
-				url: "/admin/tasks/dead-letter",
-				visible: isModeratorOrHigher, // Only moderator+ can see dead letter queue
-			},
-		],
-	},
-	{
-		title: "Users",
-		icon: Users,
-		visible: isModeratorOrHigher, // Only moderator+ can see user management
-		items: [
-			{
-				title: "All Users",
-				url: "/admin/users",
-			},
-			{
-				title: "Create User",
-				url: "/admin/users/new",
-				visible: isAdmin, // Only admin can create users
-			},
-			{
-				title: "User Analytics",
-				url: "/admin/users/analytics",
-				visible: isAdmin, // Only admin can see analytics
-			},
-		],
-	},
-	{
-		title: "Health & Monitoring",
-		icon: Heart,
-		items: [
-			{
-				title: "Health Dashboard",
-				url: "/admin/health",
-			},
-		],
-	},
-	{
-		title: "Analytics",
-		url: "/admin/analytics",
-		icon: BarChart3,
-		visible: isAdmin, // Only admin can see main analytics
-	},
-].filter(item => item.visible !== false);
+const getMenuItems = (isModeratorOrHigher: boolean, isAdmin: boolean) =>
+	[
+		{
+			title: "Dashboard",
+			url: "/admin",
+			icon: Home,
+		},
+		{
+			title: "Tasks",
+			icon: CheckSquare,
+			visible: true, // All authenticated users can see tasks
+			items: [
+				{
+					title: "All Tasks",
+					url: "/admin/tasks",
+				},
+				{
+					title: "Create Task",
+					url: "/admin/tasks/new",
+				},
+				{
+					title: "Dead Letter Queue",
+					url: "/admin/tasks/dead-letter",
+					visible: isModeratorOrHigher, // Only moderator+ can see dead letter queue
+				},
+			],
+		},
+		{
+			title: "Users",
+			icon: Users,
+			visible: isModeratorOrHigher, // Only moderator+ can see user management
+			items: [
+				{
+					title: "All Users",
+					url: "/admin/users",
+				},
+				{
+					title: "Create User",
+					url: "/admin/users/new",
+					visible: isAdmin, // Only admin can create users
+				},
+				{
+					title: "User Analytics",
+					url: "/admin/users/analytics",
+					visible: isAdmin, // Only admin can see analytics
+				},
+			],
+		},
+		{
+			title: "Health & Monitoring",
+			icon: Heart,
+			items: [
+				{
+					title: "Health Dashboard",
+					url: "/admin/health",
+				},
+			],
+		},
+		{
+			title: "Analytics",
+			url: "/admin/analytics",
+			icon: BarChart3,
+			visible: isAdmin, // Only admin can see main analytics
+		},
+	].filter((item) => item.visible !== false);
 
 export function AdminSidebar() {
 	const location = useLocation();
 	const { user, logout, isModeratorOrHigher, isAdmin } = useAuth();
-	
+
 	const menuItems = getMenuItems(isModeratorOrHigher(), isAdmin());
 
 	const handleLogout = async () => {
@@ -184,7 +185,8 @@ export function AdminSidebar() {
 				<SidebarMenu>
 					<SidebarMenuItem>
 						<SidebarMenuButton asChild size="lg">
-							<Link to="/admin">{/* Changed to existing route for now */}
+							<Link to="/admin">
+								{/* Changed to existing route for now */}
 								<Avatar className="h-8 w-8">
 									<AvatarFallback>
 										{user?.username?.charAt(0).toUpperCase() || "U"}
@@ -195,8 +197,8 @@ export function AdminSidebar() {
 										{user?.username || "User"}
 									</p>
 									<div className="flex items-center gap-2">
-										<Badge 
-											variant="outline" 
+										<Badge
+											variant="outline"
 											className={`text-${getRoleColor(user?.role as any)} border-${getRoleColor(user?.role as any)} text-xs`}
 										>
 											{getRoleDisplayName(user?.role as any)}

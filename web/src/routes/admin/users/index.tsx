@@ -36,7 +36,6 @@ import {
 	UserCheck,
 	UserX,
 	Key,
-	Settings,
 } from "lucide-react";
 import { useState } from "react";
 
@@ -65,7 +64,11 @@ function UsersPage() {
 
 	// User status update mutation (Moderator+)
 	const updateUserStatusMutation = useMutation({
-		mutationFn: ({ id, is_active, reason }: { id: string; is_active: boolean; reason?: string }) =>
+		mutationFn: ({
+			id,
+			is_active,
+			reason,
+		}: { id: string; is_active: boolean; reason?: string }) =>
 			apiClient.updateUserStatus(id, { is_active, reason }),
 		onSuccess: () => {
 			toast({
@@ -77,7 +80,8 @@ function UsersPage() {
 		onError: (error: any) => {
 			toast({
 				title: "Failed to update user status",
-				description: error.message || "An error occurred while updating user status.",
+				description:
+					error.message || "An error occurred while updating user status.",
 				variant: "destructive",
 			});
 		},
@@ -96,7 +100,8 @@ function UsersPage() {
 		onError: (error: any) => {
 			toast({
 				title: "Failed to reset password",
-				description: error.message || "An error occurred while resetting password.",
+				description:
+					error.message || "An error occurred while resetting password.",
 				variant: "destructive",
 			});
 		},
@@ -128,13 +133,24 @@ function UsersPage() {
 				updateUserStatusMutation.mutate({ id: userId, is_active: true });
 				break;
 			case "deactivate":
-				updateUserStatusMutation.mutate({ id: userId, is_active: false, reason: "Deactivated by admin" });
+				updateUserStatusMutation.mutate({
+					id: userId,
+					is_active: false,
+					reason: "Deactivated by admin",
+				});
 				break;
 			case "reset-password":
-				resetPasswordMutation.mutate({ id: userId, reason: "Password reset by admin" });
+				resetPasswordMutation.mutate({
+					id: userId,
+					reason: "Password reset by admin",
+				});
 				break;
 			case "delete":
-				if (window.confirm("Are you sure you want to delete this user? This action cannot be undone.")) {
+				if (
+					window.confirm(
+						"Are you sure you want to delete this user? This action cannot be undone.",
+					)
+				) {
 					deleteUserMutation.mutate({ id: userId, reason: "Deleted by admin" });
 				}
 				break;
@@ -143,7 +159,10 @@ function UsersPage() {
 
 	const getUserRoleBadge = (role: string) => {
 		return (
-			<Badge variant="outline" className={`text-${getRoleColor(role as any)} border-${getRoleColor(role as any)}`}>
+			<Badge
+				variant="outline"
+				className={`text-${getRoleColor(role as any)} border-${getRoleColor(role as any)}`}
+			>
 				{getRoleDisplayName(role as any)}
 			</Badge>
 		);
@@ -362,7 +381,10 @@ function UsersPage() {
 
 																	<DropdownMenuItem
 																		onClick={() =>
-																			handleUserAction(user.id, "reset-password")
+																			handleUserAction(
+																				user.id,
+																				"reset-password",
+																			)
 																		}
 																	>
 																		<Key className="mr-2 h-4 w-4" />

@@ -26,25 +26,25 @@ interface RoleGuardProps {
 
 /**
  * RoleGuard component for conditional rendering based on user permissions
- * 
+ *
  * @example
  * // Require admin role
  * <RoleGuard requiredRole="admin">
  *   <AdminPanel />
  * </RoleGuard>
- * 
+ *
  * @example
  * // Require user management permission
  * <RoleGuard resource="users" permission="manage">
  *   <UserManagementTools />
  * </RoleGuard>
- * 
+ *
  * @example
  * // Check if user can access specific user's profile
  * <RoleGuard resource="users" permission="read" targetUserId={userId}>
  *   <UserProfile />
  * </RoleGuard>
- * 
+ *
  * @example
  * // Custom permission check
  * <RoleGuard customCheck={(user) => user.id === ownerId}>

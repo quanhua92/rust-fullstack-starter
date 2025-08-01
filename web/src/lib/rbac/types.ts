@@ -89,16 +89,20 @@ export function canAccessResource(
 				// Moderator+ can read all users, users can read their own
 				return (
 					isModeratorOrHigher(user) ||
-					(targetUserId && user.id === targetUserId)
+					Boolean(targetUserId && user.id === targetUserId)
 				);
 			}
 			if (permission === "write" || permission === "manage") {
 				// Only admin can create/manage users, users can update themselves
-				return isAdmin(user) || (targetUserId && user.id === targetUserId);
+				return (
+					isAdmin(user) || Boolean(targetUserId && user.id === targetUserId)
+				);
 			}
 			if (permission === "delete") {
 				// Only admin can delete users, users can delete themselves
-				return isAdmin(user) || (targetUserId && user.id === targetUserId);
+				return (
+					isAdmin(user) || Boolean(targetUserId && user.id === targetUserId)
+				);
 			}
 			return false;
 
@@ -120,7 +124,7 @@ export function canAccessResource(
 		default:
 			break;
 	}
-	
+
 	return false;
 }
 

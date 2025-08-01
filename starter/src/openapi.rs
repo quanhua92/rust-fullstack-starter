@@ -8,17 +8,17 @@ use crate::auth::{
     AuthUser,
     models::{LoginRequest, LoginResponse, RegisterRequest},
 };
+use crate::rbac::models::UserRole;
 use crate::tasks::api::{
     CreateTaskApiRequest, RegisterTaskTypeRequest, TaskQueryParams, TaskTypeResponse,
 };
 use crate::tasks::types::{CreateTaskRequest, TaskResponse, TaskStats, TaskStatus};
 use crate::types::{DetailedHealthResponse, ErrorResponse, HealthResponse};
 use crate::users::models::{
-    User, UserProfile, CreateUserRequest, UpdateProfileRequest, ChangePasswordRequest,
-    DeleteAccountRequest, UpdateUserProfileRequest, UpdateUserStatusRequest,
-    UpdateUserRoleRequest, ResetPasswordRequest, DeleteUserRequest, UserStats,
+    ChangePasswordRequest, CreateUserRequest, DeleteAccountRequest, DeleteUserRequest,
+    ResetPasswordRequest, UpdateProfileRequest, UpdateUserProfileRequest, UpdateUserRoleRequest,
+    UpdateUserStatusRequest, User, UserProfile, UserStats,
 };
-use crate::rbac::models::UserRole;
 
 #[derive(OpenApi)]
 #[openapi(

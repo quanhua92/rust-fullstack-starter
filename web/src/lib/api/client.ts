@@ -29,7 +29,8 @@ export type HealthResponse =
 	components["schemas"]["ApiResponse_HealthResponse"];
 export type DetailedHealthResponse =
 	components["schemas"]["ApiResponse_DetailedHealthResponse"];
-export type RefreshResponse = components["schemas"]["ApiResponse_RefreshResponse"];
+export type RefreshResponse =
+	components["schemas"]["ApiResponse_RefreshResponse"];
 export type BasicResponse = components["schemas"]["ApiResponse_String"];
 
 // Token management
@@ -320,7 +321,7 @@ class ApiClient {
 
 	async updateUserStatus(
 		id: string,
-		data: { is_active: boolean; reason?: string }
+		data: { is_active: boolean; reason?: string },
 	): Promise<UserProfileResponse> {
 		return this.request<UserProfileResponse>(`/users/${id}/status`, {
 			method: "PUT",
@@ -330,7 +331,7 @@ class ApiClient {
 
 	async resetUserPassword(
 		id: string,
-		data: { reason?: string }
+		data: { reason?: string },
 	): Promise<BasicResponse> {
 		return this.request<BasicResponse>(`/users/${id}/reset-password`, {
 			method: "POST",
@@ -357,7 +358,7 @@ class ApiClient {
 			username?: string;
 			email?: string;
 			email_verified?: boolean;
-		}
+		},
 	): Promise<UserProfileResponse> {
 		return this.request<UserProfileResponse>(`/users/${id}/profile`, {
 			method: "PUT",
@@ -367,7 +368,7 @@ class ApiClient {
 
 	async updateUserRole(
 		id: string,
-		data: { role: "user" | "moderator" | "admin" }
+		data: { role: "user" | "moderator" | "admin" },
 	): Promise<UserProfileResponse> {
 		return this.request<UserProfileResponse>(`/users/${id}/role`, {
 			method: "PUT",
@@ -377,7 +378,7 @@ class ApiClient {
 
 	async deleteUser(
 		id: string,
-		data: { reason?: string }
+		data: { reason?: string },
 	): Promise<BasicResponse> {
 		return this.request<BasicResponse>(`/users/${id}`, {
 			method: "DELETE",
