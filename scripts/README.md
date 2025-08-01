@@ -144,7 +144,7 @@ Gracefully stop background worker(s).
 ## 🧪 Testing & Integration
 
 ### Rust Integration Tests (Recommended)
-Comprehensive test suite with 53 integration tests covering all functionality:
+Comprehensive test suite with 95 integration tests covering all functionality:
 ```bash
 # Install faster test runner (recommended)
 cargo install cargo-nextest
@@ -153,7 +153,8 @@ cargo install cargo-nextest
 cargo nextest run
 
 # Run specific test categories
-cargo nextest run auth::     # Authentication tests (6 tests)
+cargo nextest run auth::     # Authentication tests (12 tests)
+cargo nextest run users::    # User management tests (17 tests)
 cargo nextest run tasks::    # Task system tests (18 tests including TDD metadata tests)
 cargo nextest run health::   # Health check tests
 cargo nextest run api::      # API standards tests
@@ -162,9 +163,10 @@ cargo nextest run api::      # API standards tests
 Benefits of the Rust test suite:
 - **Fast**: 10x speedup with database template pattern
 - **Isolated**: Each test gets its own database
-- **Comprehensive**: 53 tests covering all functionality including metadata persistence
+- **Comprehensive**: 95 tests covering all functionality including user management and metadata persistence
 - **Reliable**: Uses proper HTTP client and test harness
 - **TDD**: Includes Test-Driven Development tests for critical system behaviors
+- **RBAC Testing**: Complete role-based access control validation
 
 ### Chaos Testing Framework (Advanced)
 Docker-based resilience testing with 6 difficulty levels and container isolation:
@@ -188,7 +190,7 @@ Docker-based resilience testing with 6 difficulty levels and container isolation
 
 **API Endpoint Testing:**
 ```bash
-./scripts/test-with-curl.sh             # 40+ endpoint tests (~5 seconds)
+./scripts/test-with-curl.sh             # 44+ endpoint tests (~5 seconds)
 ./scripts/test-with-curl.sh localhost 8080  # Custom host/port
 ```
 

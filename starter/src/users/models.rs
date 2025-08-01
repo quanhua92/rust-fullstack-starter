@@ -113,3 +113,137 @@ pub fn validate_password(password: &str) -> Result<()> {
     }
     Ok(())
 }
+
+// New request/response models for user management endpoints
+
+#[derive(Debug, Deserialize, utoipa::ToSchema)]
+pub struct UpdateProfileRequest {
+    pub username: Option<String>,
+    pub email: Option<String>,
+}
+
+impl UpdateProfileRequest {
+    pub fn validate(&self) -> Result<()> {
+        if let Some(ref username) = self.username {
+            validate_username(username)?;
+        }
+        if let Some(ref email) = self.email {
+            validate_email(email)?;
+        }
+        Ok(())
+    }
+}
+
+#[derive(Debug, Deserialize, utoipa::ToSchema)]
+pub struct ChangePasswordRequest {
+    pub current_password: String,
+    pub new_password: String,
+}
+
+impl ChangePasswordRequest {
+    pub fn validate(&self) -> Result<()> {
+        validate_password(&self.new_password)?;
+        if self.current_password == self.new_password {
+            return Err(Error::validation(
+                "new_password",
+                "New password must be different from current password",
+            ));
+        }
+        Ok(())
+    }
+}
+
+#[derive(Debug, Deserialize, utoipa::ToSchema)]
+pub struct DeleteAccountRequest {
+    pub password: String,
+    pub confirmation: String,
+}
+
+impl DeleteAccountRequest {
+    pub fn validate(&self) -> Result<()> {
+        if self.confirmation != "DELETE" {
+            return Err(Error::validation(
+                "confirmation",
+                "Must provide 'DELETE' as confirmation",
+            ));
+        }
+        Ok(())
+    }
+}
+
+#[derive(Debug, Deserialize, utoipa::ToSchema)]
+pub struct UpdateUserProfileRequest {
+    pub username: Option<String>,
+    pub email: Option<String>,
+    pub email_verified: Option<bool>,
+}
+
+impl UpdateUserProfileRequest {
+    pub fn validate(&self) -> Result<()> {
+        if let Some(ref username) = self.username {
+            validate_username(username)?;
+        }
+        if let Some(ref email) = self.email {
+            validate_email(email)?;
+        }
+        Ok(())
+    }
+}
+
+#[derive(Debug, Deserialize, utoipa::ToSchema)]
+pub struct UpdateUserStatusRequest {
+    pub is_active: bool,
+    pub reason: Option<String>,
+}
+
+#[derive(Debug, Deserialize, utoipa::ToSchema)]
+pub struct UpdateUserRoleRequest {
+    pub role: UserRole,
+    pub reason: Option<String>,
+}
+
+#[derive(Debug, Deserialize, utoipa::ToSchema)]
+pub struct ResetPasswordRequest {
+    pub new_password: String,
+    pub require_change: Option<bool>,
+    pub reason: Option<String>,
+}
+
+impl ResetPasswordRequest {
+    pub fn validate(&self) -> Result<()> {
+        validate_password(&self.new_password)?;
+        Ok(())
+    }
+}
+
+#[derive(Debug, Deserialize, utoipa::ToSchema)]
+pub struct DeleteUserRequest {
+    pub reason: Option<String>,
+    pub hard_delete: Option<bool>,
+}
+
+#[derive(Debug, Serialize, utoipa::ToSchema)]
+pub struct UserStats {
+    pub total_users: i64,
+    pub active_users: i64,
+    pub inactive_users: i64,
+    pub email_verified: i64,
+    pub email_unverified: i64,
+    pub by_role: UserRoleStats,
+    pub recent_registrations: RecentRegistrations,
+    pub last_updated: DateTime<Utc>,
+}
+
+#[derive(Debug, Serialize, utoipa::ToSchema)]
+pub struct UserRoleStats {
+    pub user: i64,
+    pub moderator: i64,
+    pub admin: i64,
+}
+
+#[derive(Debug, Serialize, utoipa::ToSchema)]
+pub struct RecentRegistrations {
+    pub last_24h: i64,
+    pub last_7d: i64,
+    pub last_30d: i64,
+}

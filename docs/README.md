@@ -39,9 +39,10 @@ open http://localhost:3000
 ## What You Get
 
 ### **Full-Stack Application Ready to Use**
-- ✅ **React 18 Frontend** - TypeScript, TanStack Router/Query, Tailwind CSS
+- ✅ **React 18 Frontend** - TypeScript, TanStack Router/Query, shadcn/ui, Tailwind CSS
 - ✅ **Rust API Backend** - Axum, SQLx, PostgreSQL, background jobs
 - ✅ **Authentication System** - Secure sessions, password hashing, role-based access
+- ✅ **User Management** - Complete user lifecycle with 12 endpoints (profile, admin, analytics)
 - ✅ **Interactive API Docs** - OpenAPI/Swagger UI with type generation
 - ✅ **Production Ready** - Docker, health checks, comprehensive testing
 
@@ -212,17 +213,20 @@ rust-fullstack-starter/
 ├── Cargo.toml                 # Workspace configuration
 ├── docker-compose.yaml        # Development infrastructure
 ├── docker-compose.prod.yaml   # Production deployment
-├── scripts/                   # Development automation
-├── docs/                      # Comprehensive documentation
-└── starter/                   # Main application
+├── scripts/                   # Development automation (13 scripts + helpers)
+├── docs/                      # Comprehensive documentation (12 guides + references)
+├── web/                       # React/TypeScript frontend (TanStack Router + shadcn/ui)
+└── starter/                   # Main Rust application
     ├── src/
-    │   ├── auth/               # Authentication module
-    │   ├── users/              # User management
+    │   ├── auth/               # Session-based authentication
+    │   ├── users/              # User management (12 endpoints)
+    │   ├── rbac/               # Role-based access control
+    │   ├── cli/                # Admin command-line interface
     │   ├── tasks/              # Background job system
     │   ├── openapi.rs          # API documentation
-    │   └── ...
-    ├── migrations/             # Database schema
-    └── tests/                  # Integration tests
+    │   └── ...                 # Health, errors, database, server
+    ├── migrations/             # Database schema evolution
+    └── tests/                  # Integration tests (95 tests)
 ```
 
 ## Getting Started
@@ -251,14 +255,14 @@ curl http://localhost:3000/api/v1/health
 open http://localhost:3000/api-docs
 
 # Register a new user
-curl -X POST http://localhost:3000/auth/register \
+curl -X POST http://localhost:3000/api/v1/auth/register \
   -H "Content-Type: application/json" \
-  -d '{"username": "testuser", "email": "test@example.com", "password": "password123"}'
+  -d '{"username": "testuser", "email": "test@example.com", "password": "SecurePass123!"}'
 
 # Login to get a session token
-curl -X POST http://localhost:3000/auth/login \
+curl -X POST http://localhost:3000/api/v1/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"username": "testuser", "password": "password123"}'
+  -d '{"username": "testuser", "password": "SecurePass123!"}'
 ```
 
 ## Testing
@@ -269,10 +273,10 @@ curl -X POST http://localhost:3000/auth/login \
 # Install test runner (recommended)
 cargo install cargo-nextest
 
-# Run integration tests (53 tests, ~12 seconds)
+# Run integration tests (95 tests, ~12 seconds)
 cargo nextest run
 
-# Test API endpoints (41 endpoint tests)
+# Test API endpoints (44+ endpoint tests)
 ./scripts/test-with-curl.sh
 
 # Combined workflow
@@ -294,12 +298,16 @@ The starter includes interactive API documentation:
 Key endpoints:
 - `POST /api/v1/auth/register` - User registration
 - `POST /api/v1/auth/login` - User authentication
-- `GET /api/v1/users/{id}` - User profile
+- `PUT /api/v1/users/me/profile` - Update own profile
+- `PUT /api/v1/users/me/password` - Change password
+- `GET /api/v1/users` - List users (Moderator+)
+- `GET /api/v1/admin/users/stats` - User analytics (Admin)
 - `POST /api/v1/tasks` - Create background task
 - `GET /api/v1/tasks` - List tasks with filtering
 - `GET /api/v1/tasks/dead-letter` - Dead letter queue (failed tasks)
 - `POST /api/v1/tasks/{id}/retry` - Retry failed task
 - `DELETE /api/v1/tasks/{id}` - Delete completed/failed task
+- `GET /api/v1/tasks/types` - Task type registry
 
 ### Background Tasks
 
@@ -435,7 +443,7 @@ The starter includes comprehensive testing patterns:
 Comprehensive guides in **[`guides/`](guides/)**:
 
 - **[01 - Architecture](guides/01-architecture.md)** - System design and component overview
-- **[02 - Authentication](guides/02-authentication.md)** - User management and security
+- **[02 - Authentication](guides/02-authentication-and-authorization.md)** - User management and security
 - **[03 - Design Patterns](guides/03-patterns.md)** - Service layer and architectural patterns
 - **[04 - Background Tasks](guides/04-background-tasks.md)** - Async job processing system
 - **[05 - Task Handlers Reference](guides/05-task-handlers-reference.md)** - Built-in task type examples
@@ -445,6 +453,7 @@ Comprehensive guides in **[`guides/`](guides/)**:
 - **[09 - Chaos Testing](guides/09-chaos-testing.md)** - Resilience testing and failure simulation
 - **[10 - Web Frontend Integration](guides/10-web-frontend-integration.md)** - React ↔ Rust patterns
 - **[11 - Debugging & Troubleshooting](guides/11-debugging-and-troubleshooting.md)** - Systematic problem solving
+- **[12 - User Management](guides/12-user-management.md)** - Complete user lifecycle with 12 endpoints
 
 ### Reference Documentation
 - **[Task Handlers](reference/task-handlers.md)** - Built-in task type reference
@@ -466,7 +475,7 @@ Comprehensive guides in **[`guides/`](guides/)**:
 
 ### 🚢 **Ready for Production?**
 - **[Production Deployment](production-deployment.md)** - Docker, Kubernetes, security
-- **[Testing Strategy](guides/08-testing.md)** - 53 integration tests + chaos testing
+- **[Testing Strategy](guides/08-testing.md)** - 95 integration tests + chaos testing
 - **[Debugging Guide](guides/11-debugging-and-troubleshooting.md)** - Systematic problem solving
 - **[Performance & Monitoring](reliability.md)** - Optimization and observability
 

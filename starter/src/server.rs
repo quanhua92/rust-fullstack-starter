@@ -16,7 +16,7 @@ use crate::{
 use axum::{
     Json, Router, middleware,
     response::IntoResponse,
-    routing::{delete, get, post},
+    routing::{delete, get, post, put},
 };
 use tokio::net::TcpListener;
 use tower::ServiceBuilder;
@@ -124,6 +124,9 @@ pub fn create_router(state: AppState) -> Router {
         .route("/auth/refresh", post(auth_api::refresh))
         // User management routes
         .route("/users/{id}", get(users_api::get_user_by_id))
+        .route("/users/me/profile", put(users_api::update_own_profile))
+        .route("/users/me/password", put(users_api::change_own_password))
+        .route("/users/me", delete(users_api::delete_own_account))
         // Task management routes
         .route("/tasks", post(tasks_api::create_task))
         .route("/tasks", get(tasks_api::list_tasks))
@@ -142,6 +145,11 @@ pub fn create_router(state: AppState) -> Router {
     // Moderator routes (moderator role or higher required)
     let moderator_routes = Router::new()
         .route("/users", get(users_api::list_users))
+        .route("/users/{id}/status", put(users_api::update_user_status))
+        .route(
+            "/users/{id}/reset-password",
+            post(users_api::reset_user_password),
+        )
         .layer(middleware::from_fn(require_moderator_role))
         .layer(middleware::from_fn_with_state(
             state.clone(),
@@ -151,6 +159,11 @@ pub fn create_router(state: AppState) -> Router {
     // Admin routes (admin role required)
     let admin_routes = Router::new()
         .route("/admin/health", get(health::detailed_health))
+        .route("/admin/users/stats", get(users_api::get_user_stats))
+        .route("/users", post(users_api::create_user))
+        .route("/users/{id}/profile", put(users_api::update_user_profile))
+        .route("/users/{id}/role", put(users_api::update_user_role))
+        .route("/users/{id}", delete(users_api::delete_user))
         .layer(middleware::from_fn(admin_middleware))
         .layer(middleware::from_fn_with_state(
             state.clone(),

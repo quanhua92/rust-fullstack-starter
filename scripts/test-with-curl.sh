@@ -2,11 +2,23 @@
 
 # Comprehensive API Testing Script
 # Tests all endpoints with curl to verify documentation accuracy
+# 
+# Features tested:
+# - Health endpoints
+# - Authentication flow (register, login, logout, refresh)
+# - User management (profile, password, account deletion)
+# - Admin user management (create, update, role management, stats)
+# - Task management and task type registration
+# - Dead letter queue management
+# - Error response validation
+# - RBAC permission enforcement
 #
 # Usage:
 #   ./test-with-curl.sh                    # Test localhost:3000 (default)
 #   ./test-with-curl.sh localhost 8080    # Test localhost:8080
 #   ./test-with-curl.sh example.com 443   # Test https://example.com:443
+#
+# For comprehensive admin testing, set STARTER__INITIAL_ADMIN_PASSWORD environment variable
 
 set -e
 
@@ -152,6 +164,27 @@ if [ -n "$USER_TOKEN" ]; then
     
     # Test nonexistent user
     test_api "GET /api/v1/users/nonexistent" "GET" "/api/v1/users/00000000-0000-0000-0000-000000000000" "404" "$USER_TOKEN"
+    
+    # Test profile management
+    test_api "PUT /api/v1/users/me/profile" "PUT" "/api/v1/users/me/profile" "200" "$USER_TOKEN" '{"email": "updated_'$TIMESTAMP'@example.com"}'
+    
+    # Test password change (should fail with wrong current password)
+    WRONG_PASSWORD_DATA='{"current_password": "wrongpassword", "new_password": "NewSecurePass123!"}'
+    test_api "PUT /api/v1/users/me/password (wrong current)" "PUT" "/api/v1/users/me/password" "401" "$USER_TOKEN" "$WRONG_PASSWORD_DATA"
+    
+    # Test password change (correct current password)
+    CORRECT_PASSWORD_DATA='{"current_password": "SecurePass123", "new_password": "NewSecurePass123!"}'
+    test_api "PUT /api/v1/users/me/password (correct)" "PUT" "/api/v1/users/me/password" "200" "$USER_TOKEN" "$CORRECT_PASSWORD_DATA"
+    
+    # Test user list access (should fail for regular user)
+    test_api "GET /api/v1/users (regular user)" "GET" "/api/v1/users" "403" "$USER_TOKEN"
+    
+    # Test admin-only endpoints (should fail for regular user)
+    CREATE_USER_DATA='{"username": "admin_created_user", "email": "admin_created@example.com", "password": "AdminPass123!", "role": "user"}'
+    test_api "POST /api/v1/users (regular user)" "POST" "/api/v1/users" "403" "$USER_TOKEN" "$CREATE_USER_DATA"
+    
+    # Test user stats endpoint (should fail for regular user)
+    test_api "GET /api/v1/admin/users/stats (regular user)" "GET" "/api/v1/admin/users/stats" "403" "$USER_TOKEN"
     
     echo ""
     echo -e "${YELLOW}📋 Task Management${NC}"
@@ -338,6 +371,26 @@ if [ -n "$USER_TOKEN" ]; then
         test_api "POST /api/v1/auth/logout-all" "POST" "/api/v1/auth/logout-all" "200" "$USER_TOKEN"
     fi
     
+    echo ""
+    echo -e "${YELLOW}👑 Admin User Management Testing${NC}"
+    
+    # Test account deletion with wrong password (should fail)
+    WRONG_DELETE_DATA='{"password": "wrongpassword", "confirmation": "DELETE"}'
+    test_api "DELETE /api/v1/users/me (wrong password)" "DELETE" "/api/v1/users/me" "401" "$USER_TOKEN" "$WRONG_DELETE_DATA"
+    
+    # Test account deletion with correct password but wrong confirmation  
+    WRONG_CONFIRM_DATA='{"password": "NewSecurePass123!", "confirmation": "WRONG"}'
+    test_api "DELETE /api/v1/users/me (wrong confirmation)" "DELETE" "/api/v1/users/me" "400" "$USER_TOKEN" "$WRONG_CONFIRM_DATA"
+    
+    # Create admin user for comprehensive testing
+    ADMIN_USER_DATA="{\"username\": \"admin_$TIMESTAMP\", \"email\": \"admin_$TIMESTAMP@example.com\", \"password\": \"AdminPass123!\"}"
+    echo "🔑 Creating admin user for comprehensive testing..."
+    curl -s -X POST "$BASE_URL/api/v1/auth/register" -H "Content-Type: application/json" -d "$ADMIN_USER_DATA" > /dev/null
+    
+    # Promote user to admin via CLI (simulate admin setup)
+    # Note: In real deployment, this would be done through database or environment setup
+    # For testing purposes, we'll skip admin role tests that require actual admin permissions
+    
     # Test logout (single session) - test this last since it invalidates the token
     # Note: This might return 401 if logout-all already invalidated the token, which is expected
     LOGOUT_RESPONSE=$(curl -s -w 'HTTP_STATUS:%{http_code}' -X POST "$BASE_URL/api/v1/auth/logout" -H "Authorization: Bearer $USER_TOKEN")
@@ -381,9 +434,65 @@ echo -e "${YELLOW}👑 Admin Endpoints${NC}"
 # Test admin endpoint without auth
 test_api "GET /api/v1/admin/health (no auth)" "GET" "/api/v1/admin/health" "401"
 
+echo ""
+echo -e "${YELLOW}🔧 User Management Admin API Tests${NC}"
 
-# Note: Admin endpoint with proper admin credentials would require setting up 
-# an admin user, which is not configured in this test environment
+# Test creating admin user if STARTER__INITIAL_ADMIN_PASSWORD is set
+# This tests the admin account creation functionality
+if [ -n "${STARTER__INITIAL_ADMIN_PASSWORD:-}" ]; then
+    echo "🔑 Testing with configured admin account..."
+    ADMIN_LOGIN_DATA='{"email": "admin@example.com", "password": "'${STARTER__INITIAL_ADMIN_PASSWORD}'"}'
+    ADMIN_LOGIN_RESPONSE=$(curl -s -X POST "$BASE_URL/api/v1/auth/login" -H "Content-Type: application/json" -d "$ADMIN_LOGIN_DATA")
+    
+    if echo "$ADMIN_LOGIN_RESPONSE" | grep -q '"success":true'; then
+        ADMIN_TOKEN=$(echo "$ADMIN_LOGIN_RESPONSE" | python3 -c "import json,sys; print(json.load(sys.stdin)['data']['session_token'])" 2>/dev/null || echo "")
+        
+        if [ -n "$ADMIN_TOKEN" ]; then
+            echo -e "${GREEN}✅ PASS${NC} Admin login successful"
+            
+            # Test admin-only endpoints
+            test_api "GET /api/v1/users (admin)" "GET" "/api/v1/users" "200" "$ADMIN_TOKEN"
+            test_api "GET /api/v1/admin/users/stats (admin)" "GET" "/api/v1/admin/users/stats" "200" "$ADMIN_TOKEN"
+            
+            # Test admin user creation
+            ADMIN_CREATE_USER='{"username": "admin_created_'$TIMESTAMP'", "email": "admin_created_'$TIMESTAMP'@example.com", "password": "CreatedPass123!", "role": "user"}'
+            CREATED_USER_RESPONSE=$(curl -s -X POST "$BASE_URL/api/v1/users" -H "Content-Type: application/json" -H "Authorization: Bearer $ADMIN_TOKEN" -d "$ADMIN_CREATE_USER")
+            
+            if echo "$CREATED_USER_RESPONSE" | grep -q '"success":true'; then
+                CREATED_USER_ID=$(echo "$CREATED_USER_RESPONSE" | python3 -c "import json,sys; print(json.load(sys.stdin)['data']['id'])" 2>/dev/null || echo "")
+                echo -e "${GREEN}✅ PASS${NC} POST /api/v1/users (admin create user)"
+                PASSED_TESTS=$((PASSED_TESTS + 1))
+                
+                if [ -n "$CREATED_USER_ID" ]; then
+                    # Test admin user management operations
+                    UPDATE_USER_PROFILE='{"username": "updated_user_'$TIMESTAMP'", "email_verified": true}'
+                    test_api "PUT /api/v1/users/{id}/profile (admin)" "PUT" "/api/v1/users/$CREATED_USER_ID/profile" "200" "$ADMIN_TOKEN" "$UPDATE_USER_PROFILE"
+                    
+                    UPDATE_USER_STATUS='{"is_active": false, "reason": "Test deactivation"}'
+                    test_api "PUT /api/v1/users/{id}/status (admin)" "PUT" "/api/v1/users/$CREATED_USER_ID/status" "200" "$ADMIN_TOKEN" "$UPDATE_USER_STATUS"
+                    
+                    UPDATE_USER_ROLE='{"role": "moderator", "reason": "Test promotion"}'
+                    test_api "PUT /api/v1/users/{id}/role (admin)" "PUT" "/api/v1/users/$CREATED_USER_ID/role" "200" "$ADMIN_TOKEN" "$UPDATE_USER_ROLE"
+                    
+                    RESET_PASSWORD='{"new_password": "ResetPass123!", "require_change": true, "reason": "Test reset"}'
+                    test_api "POST /api/v1/users/{id}/reset-password (admin)" "POST" "/api/v1/users/$CREATED_USER_ID/reset-password" "200" "$ADMIN_TOKEN" "$RESET_PASSWORD"
+                    
+                    DELETE_USER='{"reason": "Test deletion", "hard_delete": false}'
+                    test_api "DELETE /api/v1/users/{id} (admin)" "DELETE" "/api/v1/users/$CREATED_USER_ID" "200" "$ADMIN_TOKEN" "$DELETE_USER"
+                fi
+            else
+                echo -e "${RED}❌ FAIL${NC} POST /api/v1/users (admin create user failed)"
+            fi
+            TOTAL_TESTS=$((TOTAL_TESTS + 1))
+        fi
+    else
+        echo -e "${YELLOW}⚠️  Admin login failed - admin functionality not tested${NC}"
+    fi
+else
+    echo -e "${YELLOW}⚠️  STARTER__INITIAL_ADMIN_PASSWORD not set - admin functionality not tested${NC}"
+fi
+
+# Note: For full admin testing, set STARTER__INITIAL_ADMIN_PASSWORD environment variable
 
 echo ""
 echo -e "${YELLOW}🧪 Additional API Tests${NC}"

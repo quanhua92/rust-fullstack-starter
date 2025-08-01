@@ -541,6 +541,7 @@ pub fn check_permission(
 - **Hierarchical ordering**: `PartialOrd` on roles enables natural privilege comparisons
 - **Fail closed**: Default case always denies access, preventing accidental privilege escalation
 
+
 ## API Flow Examples
 
 ### User Registration
@@ -790,7 +791,10 @@ pub async fn login_handler(
 # Run authentication tests (12 comprehensive tests)
 cargo nextest run auth::
 
-# Or run all tests including authentication
+# Run user management tests (17 comprehensive tests)
+cargo nextest run users::
+
+# Or run all tests including authentication and user management
 cargo nextest run
 ```
 
@@ -808,6 +812,17 @@ The authentication test suite covers:
 - **Token validation** and security
 - **Session management** and multi-device logout
 - **Error handling** and edge cases
+
+The user management test suite covers:
+- **Profile management** (update own profile, password changes)
+- **Account lifecycle** (creation, deletion, soft delete)
+- **RBAC enforcement** (role-based access control)
+- **Admin operations** (user creation, role management, password resets)
+- **Cross-user access control** (users can only see own data)
+- **User statistics** (comprehensive analytics for admins)
+- **Error handling** (invalid passwords, unauthorized access)
+- **Data validation** (email formats, username constraints)
+- **Security features** (confirmation requirements, audit trails)
 
 ### Manual Testing
 ```bash
@@ -833,6 +848,22 @@ curl -X POST -H "Authorization: Bearer $TOKEN" http://localhost:3000/api/v1/auth
 
 # 6. Try immediate second refresh (should get 409 CONFLICT)
 curl -X POST -H "Authorization: Bearer $TOKEN" http://localhost:3000/api/v1/auth/refresh
+
+# 7. Test user management features
+# Update own profile
+curl -X PUT -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"email":"alice.updated@example.com"}' \
+  http://localhost:3000/api/v1/users/me/profile
+
+# Change password
+curl -X PUT -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"current_password":"secure123","new_password":"NewPassword456!"}' \
+  http://localhost:3000/api/v1/users/me/password
+
+# Test comprehensive curl testing (40+ endpoint tests)
+./scripts/test-with-curl.sh
 ```
 
 ## Common Questions
