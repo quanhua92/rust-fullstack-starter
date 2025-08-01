@@ -567,7 +567,10 @@ const { data: userStats, isLoading } = useQuery({
 {userStats?.users_by_role && 
   Object.entries(userStats.users_by_role).map(([role, count]) => (
     <div key={role} className="flex items-center justify-between">
-      <Badge className={`text-${getRoleColor(role)} border-${getRoleColor(role)}`}>
+      <Badge
+        variant="outline"
+        className={`${getRoleColorClasses(role).text} ${getRoleColorClasses(role).border}`}
+      >
         {getRoleDisplayName(role)}
       </Badge>
       <div className="text-2xl font-bold">{count}</div>

@@ -1196,7 +1196,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
   
   const isAdmin = (): boolean => hasRole('admin');
-  const isModerator = (): boolean => hasRole('moderator');
+  const isModerator = (): boolean => user?.role === 'moderator';
   const isModeratorOrHigher = (): boolean => hasRole('moderator');
   
   return (
@@ -1260,7 +1260,7 @@ const getMenuItems = (isModeratorOrHigher: boolean, isAdmin: boolean): MenuItem[
 ```typescript
 <Badge 
   variant="outline" 
-  className={`text-${getRoleColor(user.role)} border-${getRoleColor(user.role)}`}
+  className={`${getRoleColorClasses(user.role).text} ${getRoleColorClasses(user.role).border}`}
 >
   {getRoleDisplayName(user.role)}
 </Badge>

@@ -115,12 +115,14 @@ function UsersPage() {
 		},
 	});
 
-	// Generate secure random password
+	// Generate secure random password using crypto API
 	const generateSecurePassword = (length: number = 12): string => {
 		const charset = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*";
+		const values = new Uint32Array(length);
+		window.crypto.getRandomValues(values);
 		let password = "";
 		for (let i = 0; i < length; i++) {
-			password += charset.charAt(Math.floor(Math.random() * charset.length));
+			password += charset[values[i] % charset.length];
 		}
 		return password;
 	};

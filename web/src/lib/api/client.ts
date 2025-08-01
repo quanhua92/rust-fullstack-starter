@@ -388,16 +388,10 @@ class ApiClient {
 		});
 	}
 
-	async getUserStats(): Promise<{
-		data: components["schemas"]["UserStats"];
-		success: boolean;
-		message?: string | null;
-	}> {
-		return this.request<{
-			data: components["schemas"]["UserStats"];
-			success: boolean;
-			message?: string | null;
-		}>("/admin/users/stats");
+	async getUserStats(): Promise<components["schemas"]["ApiResponse_UserStats"]> {
+		return this.request<components["schemas"]["ApiResponse_UserStats"]>(
+			"/admin/users/stats",
+		);
 	}
 }
 
