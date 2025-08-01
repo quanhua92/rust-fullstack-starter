@@ -1,62 +1,13 @@
 use crate::error::Error;
-use crate::rbac::UserRole;
 use crate::types::Result;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-// User models with proper validation
-#[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
-pub struct User {
-    pub id: Uuid,
-    pub username: String,
-    pub email: String,
-    #[serde(skip_serializing)] // Never serialize password hash
-    pub password_hash: String,
-    pub role: UserRole,
-    pub is_active: bool,
-    pub email_verified: bool,
-    pub created_at: DateTime<Utc>,
-    pub updated_at: DateTime<Utc>,
-    pub last_login_at: Option<DateTime<Utc>>,
-}
-
-impl User {
-    pub fn is_admin(&self) -> bool {
-        self.role == UserRole::Admin
-    }
-
-    pub fn is_moderator_or_higher(&self) -> bool {
-        self.role.has_role_or_higher(UserRole::Moderator)
-    }
-
-    /// Convert User to UserProfile (removes sensitive data)
-    pub fn to_profile(&self) -> UserProfile {
-        UserProfile {
-            id: self.id,
-            username: self.username.clone(),
-            email: self.email.clone(),
-            role: self.role,
-            is_active: self.is_active,
-            email_verified: self.email_verified,
-            created_at: self.created_at,
-            last_login_at: self.last_login_at,
-        }
-    }
-}
-
-// User profile for API responses (no sensitive data)
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct UserProfile {
-    pub id: Uuid,
-    pub username: String,
-    pub email: String,
-    pub role: UserRole,
-    pub is_active: bool,
-    pub email_verified: bool,
-    pub created_at: DateTime<Utc>,
-    pub last_login_at: Option<DateTime<Utc>>,
-}
+// Re-export user models from the users module (domain-driven organization)
+pub use crate::users::models::{
+    CreateUserRequest, User, UserProfile, validate_email, validate_password, validate_username,
+};
 
 // Session models
 #[derive(Debug, Clone, sqlx::FromRow)]
@@ -132,22 +83,6 @@ impl Task {
 }
 
 // Request/Response models for API
-#[derive(Debug, Serialize, Deserialize)]
-pub struct CreateUserRequest {
-    pub username: String,
-    pub email: String,
-    pub password: String,
-    pub role: Option<UserRole>,
-}
-
-impl CreateUserRequest {
-    pub fn validate(&self) -> Result<()> {
-        validate_username(&self.username)?;
-        validate_email(&self.email)?;
-        validate_password(&self.password)?;
-        Ok(())
-    }
-}
 
 #[derive(Debug, Deserialize)]
 pub struct CreateTaskRequest {
@@ -170,47 +105,4 @@ impl CreateTaskRequest {
         }
         Ok(())
     }
-}
-
-// Validation helpers
-pub fn validate_email(email: &str) -> Result<()> {
-    if email.len() < 3 || !email.contains('@') || email.len() > 254 {
-        return Err(Error::validation("email", "Invalid email format"));
-    }
-    Ok(())
-}
-
-pub fn validate_username(username: &str) -> Result<()> {
-    if username.len() < 3 || username.len() > 50 {
-        return Err(Error::validation(
-            "username",
-            "Username must be between 3 and 50 characters",
-        ));
-    }
-    if !username
-        .chars()
-        .all(|c| c.is_alphanumeric() || c == '_' || c == '-')
-    {
-        return Err(Error::validation(
-            "username",
-            "Username can only contain letters, numbers, underscores, and hyphens",
-        ));
-    }
-    Ok(())
-}
-
-pub fn validate_password(password: &str) -> Result<()> {
-    if password.len() < 8 {
-        return Err(Error::validation(
-            "password",
-            "Password must be at least 8 characters long",
-        ));
-    }
-    if password.len() > 128 {
-        return Err(Error::validation(
-            "password",
-            "Password must be less than 128 characters",
-        ));
-    }
-    Ok(())
 }

@@ -55,7 +55,7 @@ pub struct UserProfile {
     pub last_login_at: Option<DateTime<Utc>>,
 }
 
-#[derive(Debug, Deserialize, utoipa::ToSchema)]
+#[derive(Debug, Serialize, Deserialize, utoipa::ToSchema)]
 pub struct CreateUserRequest {
     pub username: String,
     pub email: String,

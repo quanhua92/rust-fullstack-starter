@@ -119,60 +119,8 @@ pub async fn admin_middleware(req: Request, next: Next) -> Result<Response, Erro
     // Check if user is admin
     if auth_user.role != UserRole::Admin {
         tracing::debug!("User {} attempted to access admin endpoint", auth_user.id);
-        return Err(Error::Unauthorized);
+        return Err(Error::Forbidden("Admin access required".to_string()));
     }
 
     Ok(next.run(req).await)
-}
-
-/// Moderator-or-higher middleware (requires auth_middleware to run first)
-pub async fn moderator_middleware(req: Request, next: Next) -> Result<Response, Error> {
-    // Get authenticated user from request extensions
-    let auth_user = req
-        .extensions()
-        .get::<AuthUser>()
-        .ok_or(Error::Unauthorized)?;
-
-    // Check if user is moderator or higher
-    if !auth_user.role.has_role_or_higher(UserRole::Moderator) {
-        tracing::debug!(
-            "User {} attempted to access moderator endpoint",
-            auth_user.id
-        );
-        return Err(Error::Forbidden("Moderator access required".to_string()));
-    }
-
-    Ok(next.run(req).await)
-}
-
-/// Role-based middleware that accepts a minimum required role
-pub fn require_role(
-    required_role: UserRole,
-) -> impl Fn(
-    Request,
-    Next,
-) -> std::pin::Pin<Box<dyn std::future::Future<Output = Result<Response, Error>> + Send>>
-+ Clone {
-    move |req: Request, next: Next| {
-        let required_role = required_role;
-        Box::pin(async move {
-            // Get authenticated user from request extensions
-            let auth_user = req
-                .extensions()
-                .get::<AuthUser>()
-                .ok_or(Error::Unauthorized)?;
-
-            // Check if user has required role or higher
-            if !auth_user.role.has_role_or_higher(required_role) {
-                tracing::debug!(
-                    "User {} attempted to access endpoint requiring {} role",
-                    auth_user.id,
-                    required_role
-                );
-                return Err(Error::Forbidden(format!("{required_role} access required")));
-            }
-
-            Ok(next.run(req).await)
-        })
-    }
 }

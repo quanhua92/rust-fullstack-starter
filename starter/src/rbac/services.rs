@@ -46,12 +46,23 @@ pub fn can_access_task(user: &AuthUser, task_created_by: Option<Uuid>) -> Result
 }
 
 /// Check if a user can access another user's profile
-pub fn can_access_user_profile(user: &AuthUser, target_user_id: Uuid) -> Result<(), Error> {
+/// This function requires the target user's role for complete authorization check
+pub fn can_access_user_profile(
+    user: &AuthUser,
+    target_user_id: Uuid,
+    target_user_role: UserRole,
+) -> Result<(), Error> {
     match user.role {
         // Admin can access any user profile
         UserRole::Admin => Ok(()),
-        // Moderators can access user profiles but not other admin profiles
-        UserRole::Moderator => Ok(()), // Additional admin check would be done in the handler
+        // Moderators can access user profiles but NOT admin profiles
+        UserRole::Moderator => {
+            if target_user_role == UserRole::Admin {
+                Err(Error::NotFound("User not found".to_string())) // Hide admin existence from moderators
+            } else {
+                Ok(())
+            }
+        }
         // Users can only access their own profile
         UserRole::User => {
             if user.id == target_user_id {

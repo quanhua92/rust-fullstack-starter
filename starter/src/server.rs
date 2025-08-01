@@ -2,12 +2,13 @@ use crate::{
     api::health,
     auth::{
         api as auth_api,
-        middleware::{admin_middleware, auth_middleware, moderator_middleware},
+        middleware::{admin_middleware, auth_middleware},
     },
     config::AppConfig,
     database::Database,
     error::Error,
     openapi,
+    rbac::middleware::require_moderator_role,
     tasks::api as tasks_api,
     types::{AppState, Result},
     users::api as users_api,
@@ -141,7 +142,7 @@ pub fn create_router(state: AppState) -> Router {
     // Moderator routes (moderator role or higher required)
     let moderator_routes = Router::new()
         .route("/users", get(users_api::list_users))
-        .layer(middleware::from_fn(moderator_middleware))
+        .layer(middleware::from_fn(require_moderator_role))
         .layer(middleware::from_fn_with_state(
             state.clone(),
             auth_middleware,

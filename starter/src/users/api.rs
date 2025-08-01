@@ -53,21 +53,25 @@ pub async fn get_user_by_id(
     Extension(auth_user): Extension<AuthUser>,
     Path(user_id): Path<Uuid>,
 ) -> Result<Json<ApiResponse<UserProfile>>, Error> {
-    // Check RBAC authorization - Admin can access any user, users only their own profile
-    rbac_services::can_access_user_profile(&auth_user, user_id)?;
-
     let mut conn = app_state
         .database
         .pool
         .acquire()
         .await
         .map_err(Error::from_sqlx)?;
-    let profile = user_services::get_user_profile(&mut conn, user_id).await?;
 
-    match profile {
-        Some(profile) => Ok(Json(ApiResponse::success(profile))),
-        None => Err(Error::NotFound("User not found".to_string())),
-    }
+    // Get target user to access their role for authorization
+    let target_user = user_services::find_user_by_id(&mut conn, user_id).await?;
+    let target_user = match target_user {
+        Some(user) => user,
+        None => return Err(Error::NotFound("User not found".to_string())),
+    };
+
+    // Check RBAC authorization with target user's role
+    rbac_services::can_access_user_profile(&auth_user, user_id, target_user.role)?;
+
+    // Return user profile
+    Ok(Json(ApiResponse::success(target_user.to_profile())))
 }
 
 #[derive(Debug, Deserialize)]
