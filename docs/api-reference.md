@@ -467,7 +467,7 @@ Get current user profile.
 
 ### POST /api/v1/auth/refresh
 
-Validate current session (refresh token).
+Refresh session token by extending its expiration time.
 
 **Authentication**: Required (Bearer token)
 
@@ -477,13 +477,32 @@ Validate current session (refresh token).
 ```json
 {
   "success": true,
-  "data": "Token is still valid",
-  "message": "Current session remains active"
+  "data": {
+    "expires_at": "2024-01-03T12:00:00Z",
+    "refreshed_at": "2024-01-02T12:00:00Z"
+  }
 }
 ```
 
+**Response Fields**:
+- `expires_at` - New token expiration time (extended by configured hours)
+- `refreshed_at` - Timestamp when refresh occurred
+
+**Rate Limiting**: Can only refresh once every 5 minutes (configurable via `STARTER__AUTH__REFRESH_MIN_INTERVAL_MINUTES`)
+
 **Error Responses**:
 - `401` - Invalid or expired token
+- `409` - Cannot refresh yet (rate limited)
+
+**Rate Limited Response** (409 Conflict):
+```json
+{
+  "error": {
+    "code": "CONFLICT",
+    "message": "Cannot refresh token yet. Please wait before requesting another refresh."
+  }
+}
+```
 
 ## User Management Endpoints
 

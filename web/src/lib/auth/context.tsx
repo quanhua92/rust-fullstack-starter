@@ -47,6 +47,7 @@ interface AuthProviderProps {
 export const AuthProvider = ({ children }: AuthProviderProps) => {
 	const [user, setUser] = useState<AuthUser | null>(null);
 	const [isLoading, setIsLoading] = useState(true);
+	const [tokenExpiration, setTokenExpiration] = useState<string | null>(null);
 
 	const isAuthenticated = !!user;
 
@@ -72,22 +73,48 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 		initAuth();
 	}, []);
 
-	// Automatic token refresh every 15 minutes
+	// Smart token refresh based on expiration time
 	useEffect(() => {
-		if (!isAuthenticated) return;
+		if (!isAuthenticated || !tokenExpiration) return;
 
-		const refreshInterval = setInterval(
-			async () => {
+		const scheduleRefresh = () => {
+			const expirationTime = new Date(tokenExpiration).getTime();
+			const currentTime = Date.now();
+			const timeUntilExpiration = expirationTime - currentTime;
+
+			// Refresh when 75% of the token lifetime has passed, with minimum 5 minutes before expiration
+			const refreshTime = Math.max(
+				timeUntilExpiration * 0.25, // 25% before expiration (75% of lifetime passed)
+				5 * 60 * 1000, // At least 5 minutes before expiration
+			);
+
+			// Don't schedule if token is already expired or expires very soon
+			if (timeUntilExpiration <= 60 * 1000) {
+				// Less than 1 minute remaining
+				console.log("Token expires very soon, forcing refresh now");
+				refreshToken();
+				return;
+			}
+
+			console.log(
+				`Scheduling token refresh in ${Math.round(refreshTime / 1000 / 60)} minutes`,
+			);
+
+			const timeoutId = setTimeout(async () => {
 				const success = await refreshToken();
 				if (!success) {
 					console.log("Token refresh failed, user will be logged out");
 				}
-			},
-			15 * 60 * 1000,
-		); // 15 minutes
+			}, refreshTime);
 
-		return () => clearInterval(refreshInterval);
-	}, [isAuthenticated]);
+			return timeoutId;
+		};
+
+		const timeoutId = scheduleRefresh();
+		return () => {
+			if (timeoutId) clearTimeout(timeoutId);
+		};
+	}, [isAuthenticated, tokenExpiration]);
 
 	const login = async (credentials: {
 		username?: string;
@@ -99,6 +126,10 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 			const response = await apiClient.login(credentials);
 			if (response.data?.user) {
 				setUser(response.data.user);
+				// Store token expiration for smart refresh scheduling
+				if (response.data.expires_at) {
+					setTokenExpiration(response.data.expires_at);
+				}
 			}
 		} catch (error) {
 			console.error("Login failed:", error);
@@ -136,6 +167,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 		} finally {
 			setUser(null);
 			setAuthToken(null);
+			setTokenExpiration(null);
 			setIsLoading(false);
 		}
 	};
@@ -150,6 +182,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 		} finally {
 			setUser(null);
 			setAuthToken(null);
+			setTokenExpiration(null);
 			setIsLoading(false);
 		}
 	};
@@ -165,14 +198,21 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 			// If refresh fails, user might need to login again
 			setUser(null);
 			setAuthToken(null);
+			setTokenExpiration(null);
 		}
 	};
 
 	const refreshToken = async (): Promise<boolean> => {
 		try {
 			const response = await apiClient.refreshToken();
-			if (response.success) {
-				// Token is still valid, refresh user data
+			if (response.success && response.data) {
+				// Token was successfully refreshed with new expiration
+				console.log(
+					`Token refreshed successfully. New expiration: ${response.data.expires_at}`,
+				);
+				// Update stored expiration time for smart refresh scheduling
+				setTokenExpiration(response.data.expires_at);
+				// Refresh user data to ensure consistency
 				await refreshUser();
 				return true;
 			}
@@ -182,6 +222,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 			// Token is invalid, clear user data
 			setUser(null);
 			setAuthToken(null);
+			setTokenExpiration(null);
 			return false;
 		}
 	};

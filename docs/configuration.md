@@ -73,8 +73,15 @@ Controls session management and security.
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `STARTER__AUTH__SESSION_DURATION_HOURS` | `24` | Session lifetime in hours |
+| `STARTER__AUTH__SESSION_DURATION_HOURS` | `24` | Initial session lifetime in hours |
 | `STARTER__AUTH__CLEANUP_INTERVAL_SECS` | `3600` | Expired session cleanup interval |
+| `STARTER__AUTH__REFRESH_EXTEND_HOURS` | `24` | Hours to extend token expiration when refreshed |
+| `STARTER__AUTH__REFRESH_MIN_INTERVAL_MINUTES` | `5` | Minimum time between refresh attempts |
+
+**Token Refresh Configuration:**
+- **`REFRESH_EXTEND_HOURS`**: How many hours to extend token expiration on refresh (default: 24 hours)
+- **`REFRESH_MIN_INTERVAL_MINUTES`**: Rate limiting - minimum wait time between refreshes (default: 5 minutes)
+- These settings balance security (shorter intervals) with usability (longer intervals)
 
 **Examples:**
 ```bash
@@ -83,6 +90,14 @@ STARTER__AUTH__SESSION_DURATION_HOURS=8
 
 # More frequent cleanup
 STARTER__AUTH__CLEANUP_INTERVAL_SECS=1800
+
+# Conservative token refresh policy
+STARTER__AUTH__REFRESH_EXTEND_HOURS=8
+STARTER__AUTH__REFRESH_MIN_INTERVAL_MINUTES=10
+
+# Permissive token refresh policy
+STARTER__AUTH__REFRESH_EXTEND_HOURS=48
+STARTER__AUTH__REFRESH_MIN_INTERVAL_MINUTES=1
 ```
 
 ### Worker Configuration
@@ -242,6 +257,8 @@ STARTER__DATABASE__MIN_CONNECTIONS=5
 
 STARTER__AUTH__SESSION_DURATION_HOURS=8
 STARTER__AUTH__CLEANUP_INTERVAL_SECS=1800
+STARTER__AUTH__REFRESH_EXTEND_HOURS=8
+STARTER__AUTH__REFRESH_MIN_INTERVAL_MINUTES=10
 
 STARTER__WORKER__CONCURRENCY=8
 STARTER__WORKER__POLL_INTERVAL_SECS=5

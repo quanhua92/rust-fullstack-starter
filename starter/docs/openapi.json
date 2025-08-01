@@ -183,21 +183,31 @@
           "Authentication"
         ],
         "summary": "Refresh token",
-        "description": "Validate current session token (refresh endpoint)",
+        "description": "Refresh session token by extending its expiration time",
         "operationId": "refresh",
         "responses": {
           "200": {
-            "description": "Token is valid",
+            "description": "Token refreshed successfully",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiResponse_String"
+                  "$ref": "#/components/schemas/ApiResponse_RefreshResponse"
                 }
               }
             }
           },
           "401": {
             "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Cannot refresh yet",
             "content": {
               "application/json": {
                 "schema": {
@@ -1188,6 +1198,40 @@
           }
         }
       },
+      "ApiResponse_RefreshResponse": {
+        "type": "object",
+        "required": [
+          "success"
+        ],
+        "properties": {
+          "data": {
+            "type": "object",
+            "required": [
+              "expires_at",
+              "refreshed_at"
+            ],
+            "properties": {
+              "expires_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "refreshed_at": {
+                "type": "string",
+                "format": "date-time"
+              }
+            }
+          },
+          "message": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "success": {
+            "type": "boolean"
+          }
+        }
+      },
       "ApiResponse_String": {
         "type": "object",
         "required": [
@@ -1888,6 +1932,23 @@
           },
           "user": {
             "$ref": "#/components/schemas/UserProfile"
+          }
+        }
+      },
+      "RefreshResponse": {
+        "type": "object",
+        "required": [
+          "expires_at",
+          "refreshed_at"
+        ],
+        "properties": {
+          "expires_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "refreshed_at": {
+            "type": "string",
+            "format": "date-time"
           }
         }
       },

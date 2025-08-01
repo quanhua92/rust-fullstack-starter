@@ -51,6 +51,7 @@ Comprehensive OpenAPI documentation is available:
 
 Key development scripts in `/scripts/`:
 - `check.sh` - **Comprehensive quality checks (run before every commit)**
+- `prepare-sqlx.sh` - **Update SQLx query cache for offline compilation**
 - `server.sh` - Start development server with custom port
 - `worker.sh` - Start background task worker (supports concurrent workers with --id)
 - `test-with-curl.sh` - Comprehensive API endpoint testing

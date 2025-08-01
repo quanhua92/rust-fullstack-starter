@@ -217,9 +217,10 @@ users (
 sessions (
   id UUID PRIMARY KEY,
   user_id UUID REFERENCES users(id),
-  token VARCHAR UNIQUE,   -- 64-character random string
-  expires_at TIMESTAMPTZ, -- 24 hours from creation
-  user_agent VARCHAR,     -- Browser/client info
+  token VARCHAR UNIQUE,      -- 64-character random string
+  expires_at TIMESTAMPTZ,    -- 24 hours from creation/refresh
+  last_refreshed_at TIMESTAMPTZ, -- When token was last refreshed
+  user_agent VARCHAR,        -- Browser/client info
   is_active BOOLEAN,
   created_at TIMESTAMPTZ,
   updated_at TIMESTAMPTZ
@@ -432,6 +433,40 @@ curl -X GET http://localhost:3000/api/v1/auth/me \
 5. Add user to request context
 6. Continue to handler with authenticated user
 
+### Token Refresh (NEW! ✨)
+```bash
+curl -X POST http://localhost:3000/api/v1/auth/refresh \
+  -H "Authorization: Bearer abc123...64chars"
+```
+
+**What Happens:**
+1. Validate current session token
+2. Check if refresh is allowed (5-minute minimum interval)
+3. Extend token expiration by 24 hours (configurable)
+4. Update `last_refreshed_at` timestamp in database
+5. Return new expiration time
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "expires_at": "2024-01-03T12:00:00Z",
+    "refreshed_at": "2024-01-02T12:00:00Z"
+  }
+}
+```
+
+**Rate Limiting:** Can only refresh once every 5 minutes (configurable). Immediate second refresh returns HTTP 409:
+```json
+{
+  "error": {
+    "code": "CONFLICT",
+    "message": "Cannot refresh token yet. Please wait before requesting another refresh."
+  }
+}
+```
+
 ### Logout
 ```bash
 curl -X POST http://localhost:3000/api/v1/auth/logout \
@@ -449,6 +484,47 @@ curl -X POST http://localhost:3000/api/v1/auth/logout-all \
   -H "Authorization: Bearer abc123...64chars"
 ```
 Marks all user's sessions as inactive.
+
+## Configuration Options
+
+### Environment Variables
+
+Token refresh behavior can be configured via environment variables:
+
+```bash
+# Authentication Configuration
+STARTER__AUTH__SESSION_DURATION_HOURS=24          # Initial session duration
+STARTER__AUTH__CLEANUP_INTERVAL_SECS=3600         # Session cleanup interval
+STARTER__AUTH__REFRESH_EXTEND_HOURS=24            # Hours to extend on refresh
+STARTER__AUTH__REFRESH_MIN_INTERVAL_MINUTES=5     # Minimum time between refreshes
+```
+
+**Configuration Notes:**
+- **`REFRESH_EXTEND_HOURS`**: How many hours to extend token expiration when refreshed (default: 24 hours)
+- **`REFRESH_MIN_INTERVAL_MINUTES`**: Minimum wait time between refresh attempts (default: 5 minutes)
+- Both settings help balance security (shorter intervals) with usability (longer intervals)
+
+### Frontend Integration
+
+The frontend automatically handles token refresh with smart scheduling:
+
+```typescript
+// Token refresh is handled automatically by AuthProvider
+const { user, login, refreshToken } = useAuth();
+
+// Manual refresh (usually not needed)
+const success = await refreshToken();
+if (!success) {
+  // Token refresh failed, user needs to login again
+  console.log('Please login again');
+}
+```
+
+**Smart Refresh Strategy:**
+- Automatically refreshes when 75% of token lifetime has passed
+- Minimum 5 minutes before expiration as safety buffer
+- Respects server-side rate limiting
+- Logs refresh operations for debugging
 
 ## Security Considerations
 
@@ -514,7 +590,7 @@ pub async fn login_handler(
 
 ### Authentication Tests
 ```bash
-# Run authentication tests (6 comprehensive tests)
+# Run authentication tests (12 comprehensive tests)
 cargo nextest run auth::
 
 # Or run all tests including authentication
@@ -522,12 +598,19 @@ cargo nextest run
 ```
 
 The authentication test suite covers:
-- User registration with validation
-- Login with correct/incorrect credentials  
-- Protected route access with/without tokens
-- Token validation and security
-- Session management and logout
-- Error handling and edge cases
+- **User registration** with validation
+- **Login/logout** with correct/incorrect credentials  
+- **Protected route access** with/without tokens
+- **Token refresh functionality** (6 dedicated tests):
+  - Successful refresh with new expiration time
+  - Rate limiting (5-minute minimum interval)
+  - Invalid token handling
+  - Session lifetime extension verification
+  - Database state updates
+  - Error response format validation
+- **Token validation** and security
+- **Session management** and multi-device logout
+- **Error handling** and edge cases
 
 ### Manual Testing
 ```bash
@@ -547,6 +630,12 @@ TOKEN=$(curl -s -X POST http://localhost:3000/api/v1/auth/login \
 
 # 4. Use token for authenticated requests
 curl -H "Authorization: Bearer $TOKEN" http://localhost:3000/api/v1/auth/me
+
+# 5. Refresh token to extend expiration
+curl -X POST -H "Authorization: Bearer $TOKEN" http://localhost:3000/api/v1/auth/refresh
+
+# 6. Try immediate second refresh (should get 409 CONFLICT)
+curl -X POST -H "Authorization: Bearer $TOKEN" http://localhost:3000/api/v1/auth/refresh
 ```
 
 ## Common Questions
@@ -562,6 +651,15 @@ A: Yes! Each device/browser can have its own session. Use `/auth/logout-all` to 
 
 **Q: How do I add role-based permissions?**
 A: The `user.role` field is already in place. Add authorization checks in your API handlers or create role-based middleware.
+
+**Q: How does token refresh work?**
+A: Token refresh extends the expiration time of existing tokens without requiring re-authentication. The frontend automatically schedules refreshes, and there's rate limiting to prevent abuse.
+
+**Q: Can I configure refresh intervals?**
+A: Yes! Use `STARTER__AUTH__REFRESH_EXTEND_HOURS` (default: 24) for extension duration and `STARTER__AUTH__REFRESH_MIN_INTERVAL_MINUTES` (default: 5) for rate limiting.
+
+**Q: What happens if token refresh fails?**
+A: The frontend will handle failed refreshes gracefully and prompt the user to login again. All refresh failures are logged for debugging.
 
 ## Next Steps
 

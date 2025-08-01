@@ -12,6 +12,7 @@ pub struct Session {
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
     pub last_activity_at: Option<DateTime<Utc>>,
+    pub last_refreshed_at: Option<DateTime<Utc>>,
     pub user_agent: Option<String>,
     pub is_active: bool,
 }
@@ -19,6 +20,27 @@ pub struct Session {
 impl Session {
     pub fn is_expired(&self) -> bool {
         Utc::now() > self.expires_at
+    }
+
+    /// Check if session can be refreshed (not expired and not too recently refreshed)
+    pub fn can_refresh(&self, min_refresh_interval_minutes: i64) -> bool {
+        if self.is_expired() {
+            return false;
+        }
+
+        if let Some(last_refreshed_at) = self.last_refreshed_at {
+            let min_next_refresh =
+                last_refreshed_at + chrono::Duration::minutes(min_refresh_interval_minutes);
+            Utc::now() >= min_next_refresh
+        } else {
+            // Never refreshed before, can refresh
+            true
+        }
+    }
+
+    /// Calculate new expiration time for refresh
+    pub fn calculate_refresh_expiration(&self, extend_hours: i64) -> DateTime<Utc> {
+        Utc::now() + chrono::Duration::hours(extend_hours)
     }
 }
 
@@ -94,4 +116,10 @@ pub struct LoginResponse {
     pub session_token: String,
     pub expires_at: DateTime<Utc>,
     pub user: crate::users::models::UserProfile,
+}
+
+#[derive(Debug, Serialize, utoipa::ToSchema)]
+pub struct RefreshResponse {
+    pub expires_at: DateTime<Utc>,
+    pub refreshed_at: DateTime<Utc>,
 }

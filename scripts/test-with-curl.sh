@@ -126,6 +126,22 @@ if [ -n "$USER_TOKEN" ]; then
     test_api "GET /api/v1/auth/me" "GET" "/api/v1/auth/me" "200" "$USER_TOKEN"
     test_api "POST /api/v1/auth/refresh" "POST" "/api/v1/auth/refresh" "200" "$USER_TOKEN"
     
+    # Test refresh rate limiting (should fail on immediate second request)
+    sleep 1 # Brief pause to ensure we're testing rate limiting
+    REFRESH_RATE_RESPONSE=$(curl -s -w 'HTTP_STATUS:%{http_code}' -X POST "$BASE_URL/api/v1/auth/refresh" -H "Authorization: Bearer $USER_TOKEN")
+    REFRESH_RATE_STATUS=$(echo "$REFRESH_RATE_RESPONSE" | grep -o 'HTTP_STATUS:[0-9]*' | cut -d: -f2)
+    if [ "$REFRESH_RATE_STATUS" = "409" ]; then
+        echo -e "${GREEN}✅ PASS${NC} POST /api/v1/auth/refresh (rate limited) (Status: $REFRESH_RATE_STATUS - expected 409 CONFLICT)"
+        PASSED_TESTS=$((PASSED_TESTS + 1))
+    else
+        echo -e "${RED}❌ FAIL${NC} POST /api/v1/auth/refresh (rate limited) (Expected: 409, Got: $REFRESH_RATE_STATUS)"
+        REFRESH_RATE_BODY=$(echo "$REFRESH_RATE_RESPONSE" | sed 's/HTTP_STATUS:[0-9]*$//')
+        if [ -n "$REFRESH_RATE_BODY" ]; then
+            echo "    Response: $REFRESH_RATE_BODY"
+        fi
+    fi
+    TOTAL_TESTS=$((TOTAL_TESTS + 1))
+    
     echo ""
     echo -e "${YELLOW}👤 User Management${NC}"
     

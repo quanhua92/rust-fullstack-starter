@@ -123,6 +123,24 @@ Gracefully stop background worker(s).
 ./scripts/stop-worker.sh --all
 ```
 
+## 🔧 Database Management
+
+### `prepare-sqlx.sh`
+**Update SQLx query cache for offline compilation.**
+- **Purpose:** Generates query metadata for offline Rust compilation
+- **Requirement:** Database must be running (use `docker compose up -d`)
+- **Auto-directory:** Changes to starter/ directory automatically
+- **Comprehensive:** Uses `--all -- --all-targets` for complete caching
+```bash
+./scripts/prepare-sqlx.sh      # Update SQLx query cache
+```
+
+**When to use:**
+- After adding/modifying database queries in your code
+- Before committing changes (ensures offline compilation works)
+- When SQLx compilation fails with "no cached data" errors
+- After database schema changes or migrations
+
 ## 🧪 Testing & Integration
 
 ### Rust Integration Tests (Recommended)

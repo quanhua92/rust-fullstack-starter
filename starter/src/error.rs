@@ -50,6 +50,9 @@ pub enum Error {
     #[error("Username already exists")]
     UsernameAlreadyExists,
 
+    #[error("Conflict: {0}")]
+    Conflict(String),
+
     // System errors
     #[error("Internal error: {0}")]
     Internal(String),
@@ -76,8 +79,8 @@ impl Error {
         }
     }
 
-    pub fn conflict(_message: &str) -> Self {
-        Self::UserAlreadyExists
+    pub fn conflict(message: &str) -> Self {
+        Self::Conflict(message.to_string())
     }
 
     pub fn internal(message: &str) -> Self {
@@ -177,6 +180,7 @@ impl IntoResponse for Error {
                 "Username already exists".to_string(),
                 "USERNAME_ALREADY_EXISTS",
             ),
+            Error::Conflict(msg) => (StatusCode::CONFLICT, msg.clone(), "CONFLICT"),
             Error::Internal(_) => (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 "Internal server error".to_string(),

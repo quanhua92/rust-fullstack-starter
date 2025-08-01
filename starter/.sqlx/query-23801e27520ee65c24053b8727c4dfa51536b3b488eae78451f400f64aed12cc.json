@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n        SELECT id, user_id, token, expires_at, created_at, updated_at,\n               last_activity_at, user_agent, is_active\n        FROM sessions \n        WHERE token = $1 AND is_active = true\n        ",
+  "query": "\n        INSERT INTO sessions (user_id, token, expires_at, user_agent)\n        VALUES ($1, $2, $3, $4)\n        RETURNING id, user_id, token, expires_at, created_at, updated_at,\n                  last_activity_at, last_refreshed_at, user_agent, is_active\n        ",
   "describe": {
     "columns": [
       {
@@ -40,17 +40,25 @@
       },
       {
         "ordinal": 7,
+        "name": "last_refreshed_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 8,
         "name": "user_agent",
         "type_info": "Text"
       },
       {
-        "ordinal": 8,
+        "ordinal": 9,
         "name": "is_active",
         "type_info": "Bool"
       }
     ],
     "parameters": {
       "Left": [
+        "Uuid",
+        "Text",
+        "Timestamptz",
         "Text"
       ]
     },
@@ -63,8 +71,9 @@
       false,
       false,
       true,
+      true,
       false
     ]
   },
-  "hash": "3cf11a4ab09f77a41e75bc9863e0ffc2116a481d94c0b0fe9c075100fd0b9083"
+  "hash": "23801e27520ee65c24053b8727c4dfa51536b3b488eae78451f400f64aed12cc"
 }
