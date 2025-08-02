@@ -46,11 +46,10 @@ test.describe('Authentication Flow', () => {
     // Submit registration
     await page.locator('button:has-text("Create Account")').click();
 
-    // Wait for registration success message or redirect
-    await page.waitForTimeout(3000); // Allow time for registration processing
+    // Wait for automatic redirect to login page after successful registration
+    await page.waitForURL('**/auth/login');
 
-    // Step 2: Login with the registered user
-    await page.goto('/auth/login');
+    // Step 2: Login with the registered user (already on login page)
     await page.waitForLoadState('networkidle');
 
     // Fill login form
