@@ -3,17 +3,24 @@
 # Comprehensive web frontend quality check script
 # Runs all quality checks: format, lint, type check, build, and tests
 #
-# Usage: ./check-web.sh [--skip-lint] [--full] [--smoke]
+# Usage: ./check-web.sh [--skip-lint] [--full] [--smoke] [--max-failures=N] [--no-fail-fast] [--timeout=N] [--global-timeout=N]
 #   --skip-lint: Skip linting and formatting checks
 #   --full: Run comprehensive multi-browser E2E tests (default: Chromium only)
 #   --smoke: Run ultra-fast smoke tests only (~400ms)
+#   --max-failures=N: Stop after N test failures (default: 1 for fail-fast)
+#   --no-fail-fast: Run all tests regardless of failures
+#   --timeout=N: Set timeout per test in milliseconds (default: 5000ms = 5s for fast fail)
+#   --global-timeout=N: Set global timeout for entire E2E test suite in seconds (default: 120s for single, 30s for smoke, 600s for full)
 
-set -e
+set -euo pipefail
 
 # Parse command line arguments
 SKIP_LINT=false
 FULL_TESTS=false
 SMOKE_ONLY=false
+MAX_FAILURES=1
+TEST_TIMEOUT=5000   # Default 5 seconds per test (fast fail)
+GLOBAL_TIMEOUT=""   # Will be set based on mode if not specified
 for arg in "$@"; do
     case $arg in
         --skip-lint)
@@ -26,6 +33,22 @@ for arg in "$@"; do
             ;;
         --smoke)
             SMOKE_ONLY=true
+            shift
+            ;;
+        --max-failures=*)
+            MAX_FAILURES="${arg#*=}"
+            shift
+            ;;
+        --no-fail-fast)
+            MAX_FAILURES=""
+            shift
+            ;;
+        --timeout=*)
+            TEST_TIMEOUT="${arg#*=}"
+            shift
+            ;;
+        --global-timeout=*)
+            GLOBAL_TIMEOUT="${arg#*=}"
             shift
             ;;
         *)
@@ -113,8 +136,8 @@ run_cmd "🧪 Step 8/9: Running unit tests" pnpm run test
 
 # 9. End-to-end tests with Playwright
 print_status "step" "🎭 Step 9/9: Running E2E tests with Playwright..."
-if [ "$CI" = "true" ] || [ "$PLAYWRIGHT_SKIP" = "true" ]; then
-    print_status "info" "Skipping E2E tests (CI=$CI, PLAYWRIGHT_SKIP=$PLAYWRIGHT_SKIP)"
+if [ "${CI:-false}" = "true" ] || [ "${PLAYWRIGHT_SKIP:-false}" = "true" ]; then
+    print_status "info" "Skipping E2E tests (CI=${CI:-false}, PLAYWRIGHT_SKIP=${PLAYWRIGHT_SKIP:-false})"
 else
     # Function to check if a port is in use
     check_port() {
@@ -183,14 +206,50 @@ else
     # Set Playwright to use the unified backend server on port 3000
     export PLAYWRIGHT_BASE_URL="http://localhost:3000"
     
-    # Run Playwright tests based on options
-    if [ "$SMOKE_ONLY" = "true" ] || [ "$PLAYWRIGHT_SMOKE_ONLY" = "true" ]; then
-        run_cmd "Running Playwright smoke tests" pnpm run test:e2e:smoke
+    # Build Playwright command with options
+    PLAYWRIGHT_FLAGS=""
+    if [ -n "$MAX_FAILURES" ]; then
+        PLAYWRIGHT_FLAGS="$PLAYWRIGHT_FLAGS --max-failures=$MAX_FAILURES"
+    fi
+    PLAYWRIGHT_FLAGS="$PLAYWRIGHT_FLAGS --timeout=$TEST_TIMEOUT"
+    
+    # Set default global timeouts if not specified
+    if [ "$SMOKE_ONLY" = "true" ] || [ "${PLAYWRIGHT_SMOKE_ONLY:-false}" = "true" ]; then
+        TEST_COUNT=1
+        BROWSER_COUNT=1
+        MODE="smoke"
+        if [ -z "$GLOBAL_TIMEOUT" ]; then
+            GLOBAL_TIMEOUT="30"  # 30 seconds for smoke
+        fi
+        EXPECTED_TIME="~1s"
     elif [ "$FULL_TESTS" = "true" ]; then
-        run_cmd "Running comprehensive multi-browser E2E tests" pnpm run test:e2e
+        TEST_COUNT=12
+        BROWSER_COUNT=5
+        MODE="multi-browser"
+        if [ -z "$GLOBAL_TIMEOUT" ]; then
+            GLOBAL_TIMEOUT="600"  # 10 minutes for full
+        fi
+        EXPECTED_TIME="~5-10min"
     else
-        # Default: fast single-browser tests
-        run_cmd "Running Playwright E2E tests (Chromium only)" pnpm run test:e2e --project=chromium
+        TEST_COUNT=12
+        BROWSER_COUNT=1
+        MODE="single-browser"
+        if [ -z "$GLOBAL_TIMEOUT" ]; then
+            GLOBAL_TIMEOUT="120"  # 2 minutes for single browser
+        fi
+        EXPECTED_TIME="<2min"
+    fi
+    
+    print_status "info" "E2E Testing: $TEST_COUNT tests × $BROWSER_COUNT browsers (${TEST_TIMEOUT}ms/test, ${GLOBAL_TIMEOUT}s global limit)"
+    
+    # Run Playwright tests based on options with configurable timeout enforcement
+    if [ "$SMOKE_ONLY" = "true" ] || [ "${PLAYWRIGHT_SMOKE_ONLY:-false}" = "true" ]; then
+        run_cmd "Running Playwright smoke tests (${GLOBAL_TIMEOUT}s max)" timeout ${GLOBAL_TIMEOUT}s pnpm run test:e2e:smoke $PLAYWRIGHT_FLAGS
+    elif [ "$FULL_TESTS" = "true" ]; then
+        run_cmd "Running comprehensive multi-browser E2E tests (${GLOBAL_TIMEOUT}s max)" timeout ${GLOBAL_TIMEOUT}s pnpm run test:e2e $PLAYWRIGHT_FLAGS
+    else
+        # Default: fast single-browser tests with configurable time limit
+        run_cmd "Running Playwright E2E tests - Chromium only (${GLOBAL_TIMEOUT}s max)" timeout ${GLOBAL_TIMEOUT}s pnpm run test:e2e --project=chromium $PLAYWRIGHT_FLAGS
     fi
     
     # Cleanup: Stop servers we started
@@ -268,7 +327,7 @@ else
     echo "   ✅ TypeScript, linting, and formatting"
 fi
 echo "   ✅ Build and unit tests"
-if [ "$SMOKE_ONLY" = "true" ] || [ "$PLAYWRIGHT_SMOKE_ONLY" = "true" ]; then
+if [ "$SMOKE_ONLY" = "true" ] || [ "${PLAYWRIGHT_SMOKE_ONLY:-false}" = "true" ]; then
     echo "   ✅ End-to-end tests (Playwright smoke)"
 elif [ "$FULL_TESTS" = "true" ]; then
     echo "   ✅ End-to-end tests (Multi-browser)"
