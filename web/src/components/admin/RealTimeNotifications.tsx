@@ -382,8 +382,9 @@ export function RealTimeNotifications() {
 							<div className="space-y-4">
 								{filteredNotifications.map((notification, index) => (
 									<div key={notification.id}>
-										<div
-											className={`flex items-start space-x-3 p-3 rounded-lg cursor-pointer transition-colors ${
+										<button
+											type="button"
+											className={`flex items-start space-x-3 p-3 rounded-lg cursor-pointer transition-colors border-none w-full text-left ${
 												notification.read
 													? "bg-gray-50 opacity-75"
 													: "bg-blue-50 hover:bg-blue-100"
@@ -391,6 +392,8 @@ export function RealTimeNotifications() {
 											onClick={() =>
 												!notification.read && markAsRead(notification.id)
 											}
+											disabled={notification.read}
+											aria-label={`Mark notification as read: ${notification.title}`}
 										>
 											<div className="flex-shrink-0 mt-1">
 												{getIcon(notification.type, notification.severity)}
@@ -438,7 +441,7 @@ export function RealTimeNotifications() {
 													</Badge>
 												</div>
 											</div>
-										</div>
+										</button>
 										{index < filteredNotifications.length - 1 && (
 											<Separator className="my-2" />
 										)}

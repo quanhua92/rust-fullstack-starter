@@ -26,6 +26,48 @@ test.describe('Authentication Flow', () => {
     }
   });
 
+  test('complete registration and login flow', async ({ page }) => {
+    // Generate dynamic user data using current datetime
+    const timestamp = Date.now();
+    const username = `testuser_${timestamp}`;
+    const email = `test_${timestamp}@example.com`;
+    const password = 'SecurePassword123!';
+
+    // Step 1: Registration
+    await page.goto('/auth/register');
+    await page.waitForLoadState('networkidle');
+
+    // Fill registration form with dynamic data
+    await page.locator('input[placeholder*="username" i]').fill(username);
+    await page.locator('input[type="email"]').fill(email);
+    await page.locator('input[type="password"]').first().fill(password);
+    await page.locator('input[type="password"]').last().fill(password); // Confirm password
+
+    // Submit registration
+    await page.locator('button:has-text("Create Account")').click();
+
+    // Wait for automatic redirect to login page after successful registration
+    await page.waitForURL('**/auth/login');
+
+    // Step 2: Login with the registered user (already on login page)
+    await page.waitForLoadState('networkidle');
+
+    // Fill login form
+    await page.locator('input[type="email"]').fill(email);
+    await page.locator('input[type="password"]').fill(password);
+
+    // Submit login
+    await page.locator('button:has-text("Sign In")').click();
+
+    // Wait for successful login and navigation
+    await page.waitForLoadState('networkidle');
+    
+    // Verify successful login by checking if we're redirected to admin or dashboard
+    // This is more reliable than checking for specific text that might not be loaded yet
+    await expect(page).not.toHaveURL(/.*\/auth\/login/);
+    await expect(page).not.toHaveURL(/.*\/auth\/register/);
+  });
+
   test('login form validation', async ({ page }) => {
     await page.goto('/auth/login');
     
@@ -42,7 +84,7 @@ test.describe('Authentication Flow', () => {
     await page.goto('/auth/login');
     
     // Look for link to register page - flexible text matching
-    const registerLink = page.locator('a[href*="register"], a:has-text("Sign Up"), a:has-text("Register")');
+    const registerLink = page.locator('button:has-text("Sign Up"), a:has-text("Sign Up"), a:has-text("Register")');
     if (await registerLink.count() > 0) {
       await registerLink.click();
       // Wait for navigation and accept any successful page load

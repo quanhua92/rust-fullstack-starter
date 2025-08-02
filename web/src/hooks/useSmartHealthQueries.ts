@@ -32,11 +32,16 @@ export const useSmartHealthQueries = () => {
 			if (!navigator.onLine) {
 				setConnectionQuality("offline");
 			} else if ("connection" in navigator) {
-				const connection = (navigator as any).connection;
+				const connection = (
+					navigator as typeof navigator & {
+						connection?: { effectiveType: string };
+					}
+				).connection;
 				// Slow connections: 2G, slow-2g
 				if (
-					connection.effectiveType === "2g" ||
-					connection.effectiveType === "slow-2g"
+					connection &&
+					(connection.effectiveType === "2g" ||
+						connection.effectiveType === "slow-2g")
 				) {
 					setConnectionQuality("poor");
 				} else {
@@ -79,8 +84,8 @@ export const useSmartHealthQueries = () => {
 	};
 
 	// Error tracking wrapper
-	const createQueryWithErrorTracking = (
-		queryFn: () => Promise<any>,
+	const createQueryWithErrorTracking = <T>(
+		queryFn: () => Promise<T>,
 		queryKey: string[],
 	) => {
 		return useQuery({

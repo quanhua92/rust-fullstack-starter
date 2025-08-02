@@ -270,8 +270,8 @@ export function UserActivityAnalytics() {
 									fill="#8884d8"
 									dataKey="count"
 								>
-									{userDemographicsData.map((entry, index) => (
-										<Cell key={`cell-${index}`} fill={entry.color} />
+									{userDemographicsData.map((entry) => (
+										<Cell key={`cell-${entry.role}`} fill={entry.color} />
 									))}
 								</Pie>
 								<Tooltip />
@@ -299,9 +299,9 @@ export function UserActivityAnalytics() {
 								<YAxis />
 								<Tooltip />
 								<Bar dataKey="activity" fill="#8884d8">
-									{hourlyActivityData.map((entry, index) => (
+									{hourlyActivityData.map((entry) => (
 										<Cell
-											key={`cell-${index}`}
+											key={`cell-${entry.hour}`}
 											fill={entry.peak ? "#10B981" : "#94A3B8"}
 										/>
 									))}
