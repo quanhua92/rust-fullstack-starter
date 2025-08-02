@@ -49,7 +49,7 @@ function AdminDashboard() {
 
 	// Fetch health status with real-time updates
 	const { data: healthStatus } = useQuery({
-		queryKey: ["health", "basic"],
+		queryKey: ["health", "dashboard"],
 		queryFn: async () => {
 			const response = await apiClient.getHealth();
 			return response.data;
