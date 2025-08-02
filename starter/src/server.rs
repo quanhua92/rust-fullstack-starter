@@ -19,6 +19,7 @@ use axum::{
     routing::{delete, get, post, put},
 };
 use std::path::Path;
+use std::time::Instant;
 use tokio::net::TcpListener;
 use tower::ServiceBuilder;
 use tower_http::{
@@ -215,6 +216,7 @@ pub async fn start_server(config: AppConfig, database: Database) -> Result<()> {
     let state = AppState {
         config: config.clone(),
         database,
+        start_time: Instant::now(),
     };
     let api_router = create_router(state);
 

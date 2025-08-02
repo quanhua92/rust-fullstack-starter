@@ -2,6 +2,7 @@ use crate::error::Error;
 use crate::{config::AppConfig, database::Database};
 use chrono::{DateTime, Utc};
 use std::collections::HashMap;
+use std::time::Instant;
 
 pub type Result<T> = std::result::Result<T, Error>;
 pub type DbPool = sqlx::PgPool;
@@ -12,6 +13,7 @@ pub type DbConn = sqlx::pool::PoolConnection<sqlx::Postgres>;
 pub struct AppState {
     pub database: Database,
     pub config: AppConfig,
+    pub start_time: Instant,
 }
 
 // Request/Response types for API layer
