@@ -52,7 +52,7 @@ pnpm run test:e2e:ui                          # Interactive debugging
 | `--max-failures=N` | Stop after N test failures | 1 | `./scripts/check-web.sh --max-failures=3` |
 | `--no-fail-fast` | Run all tests regardless of failures | false | `./scripts/check-web.sh --no-fail-fast` |
 | `--timeout=N` | Timeout per test in milliseconds | 5000 | `./scripts/check-web.sh --timeout=10000` |
-| `--global-timeout=N` | Global timeout for entire suite in seconds | 90/15/300 | `./scripts/check-web.sh --global-timeout=60` |
+| `--global-timeout=N` | Global timeout for entire suite in milliseconds | 90000/15000/300000 | `./scripts/check-web.sh --global-timeout=60000` |
 
 ### Environment Variables
 
@@ -79,8 +79,8 @@ The E2E tests are integrated into the `check-web.sh` quality pipeline with smart
 ./scripts/check-web.sh --skip-lint --full
 
 # Custom timeouts and failure control
-./scripts/check-web.sh --skip-lint --global-timeout=60 --max-failures=3
-./scripts/check-web.sh --skip-lint --timeout=3000 --global-timeout=90
+./scripts/check-web.sh --skip-lint --global-timeout=60000 --max-failures=3
+./scripts/check-web.sh --skip-lint --timeout=3000 --global-timeout=90000
 ./scripts/check-web.sh --skip-lint --no-fail-fast  # Run all tests regardless of failures
 
 # Alternative syntax
@@ -319,7 +319,7 @@ pnpm run test:e2e:ui
 
 **Note**: 
 - ✅ **Verified**: Performance optimizations implemented with fast timeouts and parallel execution
-- **Global Timeout**: Each mode has configurable global timeout limits (default: 15s/90s/300s)
+- **Global Timeout**: Each mode has configurable global timeout limits (default: 15000ms/90000ms/300000ms)
 - **Fail-Fast**: Tests stop on first failure by default for rapid feedback
 - Total times include dependencies, API generation, TypeScript checking, building, and unit tests
 
@@ -330,9 +330,9 @@ pnpm run test:e2e:ui
    - **Pre-commit**: `./scripts/check-web.sh --skip-lint` (~11s) 
    - **Pre-release**: `./scripts/check-web.sh --skip-lint --full` (~5-10min)
 2. **Customize timeouts** for your environment:
-   - **Fast feedback**: `./scripts/check-web.sh --skip-lint --global-timeout=60`
+   - **Fast feedback**: `./scripts/check-web.sh --skip-lint --global-timeout=60000`
    - **Thorough testing**: `./scripts/check-web.sh --skip-lint --no-fail-fast --timeout=10000`
-   - **CI/CD optimization**: `./scripts/check-web.sh --skip-lint --max-failures=1 --global-timeout=90`
+   - **CI/CD optimization**: `./scripts/check-web.sh --skip-lint --max-failures=1 --global-timeout=90000`
 3. **Run smoke tests** during active development for fastest feedback
 4. **Use single-browser mode** for comprehensive testing without multi-browser overhead
 5. **Reserve multi-browser mode** for final validation before releases

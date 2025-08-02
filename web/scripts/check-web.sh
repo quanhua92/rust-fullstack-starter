@@ -10,7 +10,7 @@
 #   --max-failures=N: Stop after N test failures (default: 1 for fail-fast)
 #   --no-fail-fast: Run all tests regardless of failures
 #   --timeout=N: Set timeout per test in milliseconds (default: 5000ms = 5s for fast fail)
-#   --global-timeout=N: Set global timeout for entire E2E test suite in seconds (default: 90s for single, 15s for smoke, 300s for full)
+#   --global-timeout=N: Set global timeout for entire E2E test suite in milliseconds (default: 90000ms for single, 15000ms for smoke, 300000ms for full)
 
 set -euo pipefail
 
@@ -19,8 +19,8 @@ SKIP_LINT=false
 FULL_TESTS=false
 SMOKE_ONLY=false
 MAX_FAILURES=1
-TEST_TIMEOUT=5000   # Default 5 seconds per test (fast fail)
-GLOBAL_TIMEOUT=""   # Will be set based on mode if not specified
+TEST_TIMEOUT=5000      # Default 5 seconds per test (fast fail)
+GLOBAL_TIMEOUT=""      # Will be set based on mode if not specified (in milliseconds)
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --skip-lint)
@@ -214,13 +214,13 @@ else
     fi
     PLAYWRIGHT_FLAGS="$PLAYWRIGHT_FLAGS --timeout=$TEST_TIMEOUT"
     
-    # Set default global timeouts if not specified
+    # Set default global timeouts if not specified (all in milliseconds)
     if [ "$SMOKE_ONLY" = "true" ] || [ "${PLAYWRIGHT_SMOKE_ONLY:-false}" = "true" ]; then
         TEST_COUNT=1
         BROWSER_COUNT=1
         MODE="smoke"
         if [ -z "$GLOBAL_TIMEOUT" ]; then
-            GLOBAL_TIMEOUT="15"  # 15 seconds for smoke
+            GLOBAL_TIMEOUT="15000"  # 15 seconds for smoke
         fi
         EXPECTED_TIME="~1s"
     elif [ "$FULL_TESTS" = "true" ]; then
@@ -228,7 +228,7 @@ else
         BROWSER_COUNT=5
         MODE="multi-browser"
         if [ -z "$GLOBAL_TIMEOUT" ]; then
-            GLOBAL_TIMEOUT="300"  # 5 minutes for full
+            GLOBAL_TIMEOUT="300000"  # 5 minutes for full
         fi
         EXPECTED_TIME="~5-10min"
     else
@@ -236,21 +236,25 @@ else
         BROWSER_COUNT=1
         MODE="single-browser"
         if [ -z "$GLOBAL_TIMEOUT" ]; then
-            GLOBAL_TIMEOUT="90"  # 90 seconds for single browser
+            GLOBAL_TIMEOUT="90000"  # 90 seconds for single browser
         fi
         EXPECTED_TIME="<2min"
     fi
     
-    print_status "info" "E2E Testing: $TEST_COUNT tests × $BROWSER_COUNT browsers (${TEST_TIMEOUT}ms/test, ${GLOBAL_TIMEOUT}s global limit)"
+    # Convert global timeout to seconds for display
+    GLOBAL_TIMEOUT_SECONDS=$((GLOBAL_TIMEOUT / 1000))
+    print_status "info" "E2E Testing: $TEST_COUNT tests × $BROWSER_COUNT browsers (${TEST_TIMEOUT}ms/test, ${GLOBAL_TIMEOUT_SECONDS}s global limit)"
     
     # Run Playwright tests based on options with configurable timeout enforcement
+    # Convert milliseconds to seconds for timeout command
+    GLOBAL_TIMEOUT_SECONDS=$((GLOBAL_TIMEOUT / 1000))
     if [ "$SMOKE_ONLY" = "true" ] || [ "${PLAYWRIGHT_SMOKE_ONLY:-false}" = "true" ]; then
-        run_cmd "Running Playwright smoke tests (${GLOBAL_TIMEOUT}s max)" timeout ${GLOBAL_TIMEOUT}s pnpm run test:e2e:smoke $PLAYWRIGHT_FLAGS
+        run_cmd "Running Playwright smoke tests (${GLOBAL_TIMEOUT_SECONDS}s max)" timeout ${GLOBAL_TIMEOUT_SECONDS}s pnpm run test:e2e:smoke $PLAYWRIGHT_FLAGS
     elif [ "$FULL_TESTS" = "true" ]; then
-        run_cmd "Running comprehensive multi-browser E2E tests (${GLOBAL_TIMEOUT}s max)" timeout ${GLOBAL_TIMEOUT}s pnpm run test:e2e $PLAYWRIGHT_FLAGS
+        run_cmd "Running comprehensive multi-browser E2E tests (${GLOBAL_TIMEOUT_SECONDS}s max)" timeout ${GLOBAL_TIMEOUT_SECONDS}s pnpm run test:e2e $PLAYWRIGHT_FLAGS
     else
         # Default: fast single-browser tests with configurable time limit
-        run_cmd "Running Playwright E2E tests - Chromium only (${GLOBAL_TIMEOUT}s max)" timeout ${GLOBAL_TIMEOUT}s pnpm run test:e2e --project=chromium $PLAYWRIGHT_FLAGS
+        run_cmd "Running Playwright E2E tests - Chromium only (${GLOBAL_TIMEOUT_SECONDS}s max)" timeout ${GLOBAL_TIMEOUT_SECONDS}s pnpm run test:e2e --project=chromium $PLAYWRIGHT_FLAGS
     fi
     
     # Cleanup: Stop servers we started
