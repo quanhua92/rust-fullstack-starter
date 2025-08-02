@@ -8,6 +8,69 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
   * TONE DOWN with STARTER NATURE OF THE PROJECT
   * NEVER SAY PRODUCTION OR ENTERPRISE READY
 
+## Development Patterns
+
+### Task Handler Conveniences
+
+**Use the new task helper macros for cleaner error handling:**
+
+```rust
+use crate::{extract_fields, require_field, require_typed_field};
+
+// Extract multiple required fields at once
+let (to, subject, body) = extract_fields!(context.payload, "to", "subject", "body")?;
+
+// Extract single required field
+let file_path = require_field!(context.payload, "file_path")?;
+
+// Extract typed fields with validation
+let count = require_typed_field!(context.payload, "count", as_i64)?;
+let enabled = require_typed_field!(context.payload, "enabled", as_bool)?;
+```
+
+**Use TaskError helper methods:**
+
+```rust
+// Instead of: TaskError::Execution("Missing 'field' field in payload".to_string())
+TaskError::missing_field("field")
+
+// Instead of: TaskError::Execution("Invalid 'field' field type, expected string".to_string()) 
+TaskError::invalid_field_type("field", "string")
+```
+
+### Script Utilities
+
+**Use common script utilities for consistent output:**
+
+```bash
+#!/bin/bash
+source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
+
+# Initialize timing and project directories
+init_timing
+get_project_dirs
+
+# Consistent status messages
+print_status "step" "Starting task..."
+print_status "success" "Task completed"
+print_status "error" "Task failed"
+print_status "warning" "Warning message"
+print_status "info" "Information"
+
+# Command execution with error handling
+run_cmd "Description of command" command arg1 arg2
+
+# Dependency checking
+check_command "docker" "Install from: https://docker.com"
+check_dependency "rust" "1.75" "https://rustup.rs"
+
+# Project validation
+validate_project_root
+
+# Show elapsed time
+show_elapsed
+```
+
 ## Testing Commands
 
 - **Quality Checks**: `./scripts/check.sh` (**RUN BEFORE EVERY COMMIT** - comprehensive quality validation)

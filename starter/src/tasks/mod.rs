@@ -1,5 +1,6 @@
 pub mod api;
 pub mod handlers;
+pub mod helpers;
 pub mod processor;
 pub mod retry;
 pub mod types;

@@ -2,6 +2,7 @@ use async_trait::async_trait;
 use std::collections::HashMap;
 
 use crate::tasks::types::{TaskContext, TaskError, TaskResult};
+use crate::{extract_fields, require_field};
 
 /// Trait that all task handlers must implement
 #[async_trait]
@@ -15,30 +16,8 @@ pub struct EmailTaskHandler;
 #[async_trait]
 impl TaskHandler for EmailTaskHandler {
     async fn handle(&self, context: TaskContext) -> Result<TaskResult, TaskError> {
-        // Extract email data from payload
-        let to = context
-            .payload
-            .get("to")
-            .and_then(|v| v.as_str())
-            .ok_or_else(|| {
-                TaskError::Execution("Missing 'to' field in email payload".to_string())
-            })?;
-
-        let subject = context
-            .payload
-            .get("subject")
-            .and_then(|v| v.as_str())
-            .ok_or_else(|| {
-                TaskError::Execution("Missing 'subject' field in email payload".to_string())
-            })?;
-
-        let body = context
-            .payload
-            .get("body")
-            .and_then(|v| v.as_str())
-            .ok_or_else(|| {
-                TaskError::Execution("Missing 'body' field in email payload".to_string())
-            })?;
+        // Extract email data from payload using convenience macro
+        let (to, subject, body) = extract_fields!(context.payload, "to", "subject", "body")?;
 
         // Simulate email sending (replace with actual email service)
         tracing::info!("Sending email to: {}, subject: {}", to, subject);
@@ -71,7 +50,7 @@ impl TaskHandler for DataProcessingTaskHandler {
         let data = context
             .payload
             .get("data")
-            .ok_or_else(|| TaskError::Execution("Missing 'data' field in payload".to_string()))?;
+            .ok_or_else(|| TaskError::missing_field("data"))?;
 
         let operation = context
             .payload
@@ -124,13 +103,7 @@ pub struct FileCleanupTaskHandler;
 #[async_trait]
 impl TaskHandler for FileCleanupTaskHandler {
     async fn handle(&self, context: TaskContext) -> Result<TaskResult, TaskError> {
-        let file_path = context
-            .payload
-            .get("file_path")
-            .and_then(|v| v.as_str())
-            .ok_or_else(|| {
-                TaskError::Execution("Missing 'file_path' field in payload".to_string())
-            })?;
+        let file_path = require_field!(context.payload, "file_path")?;
 
         let max_age_hours = context
             .payload
@@ -172,29 +145,8 @@ pub struct ReportGenerationTaskHandler;
 #[async_trait]
 impl TaskHandler for ReportGenerationTaskHandler {
     async fn handle(&self, context: TaskContext) -> Result<TaskResult, TaskError> {
-        let report_type = context
-            .payload
-            .get("report_type")
-            .and_then(|v| v.as_str())
-            .ok_or_else(|| {
-                TaskError::Execution("Missing 'report_type' field in payload".to_string())
-            })?;
-
-        let start_date = context
-            .payload
-            .get("start_date")
-            .and_then(|v| v.as_str())
-            .ok_or_else(|| {
-                TaskError::Execution("Missing 'start_date' field in payload".to_string())
-            })?;
-
-        let end_date = context
-            .payload
-            .get("end_date")
-            .and_then(|v| v.as_str())
-            .ok_or_else(|| {
-                TaskError::Execution("Missing 'end_date' field in payload".to_string())
-            })?;
+        let (report_type, start_date, end_date) =
+            extract_fields!(context.payload, "report_type", "start_date", "end_date")?;
 
         tracing::info!(
             "Generating {} report from {} to {}",
@@ -228,11 +180,7 @@ pub struct WebhookTaskHandler;
 #[async_trait]
 impl TaskHandler for WebhookTaskHandler {
     async fn handle(&self, context: TaskContext) -> Result<TaskResult, TaskError> {
-        let url = context
-            .payload
-            .get("url")
-            .and_then(|v| v.as_str())
-            .ok_or_else(|| TaskError::Execution("Missing 'url' field in payload".to_string()))?;
+        let url = require_field!(context.payload, "url")?;
 
         let _payload = context
             .payload

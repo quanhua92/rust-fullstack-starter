@@ -318,4 +318,18 @@ pub enum TaskError {
     Cancelled,
 }
 
+impl TaskError {
+    /// Helper for creating missing field errors
+    pub fn missing_field(field: &str) -> Self {
+        Self::Execution(format!("Missing '{field}' field in payload"))
+    }
+
+    /// Helper for creating invalid field type errors
+    pub fn invalid_field_type(field: &str, expected: &str) -> Self {
+        Self::Execution(format!(
+            "Invalid '{field}' field type, expected {expected}"
+        ))
+    }
+}
+
 pub type TaskResult2<T> = Result<T, TaskError>;
