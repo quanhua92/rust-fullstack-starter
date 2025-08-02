@@ -200,7 +200,7 @@ if [ -d "web" ] && [ -f "web/dist/index.html" ]; then
     export STARTER__SERVER__WEB_BUILD_PATH="$PROJECT_ROOT/web/dist"
     
     # Start server in background
-    bash -c "cd '$PROJECT_ROOT/starter' && cargo run --quiet -- server --port $TEST_PORT" >/dev/null 2>&1 &
+    bash -c "cd '$PROJECT_ROOT/starter' && cargo run --quiet -- server --port $TEST_PORT" &
     TEST_SERVER_PID=$!
     
     # Wait for server to start by polling its health endpoint
