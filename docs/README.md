@@ -1,6 +1,6 @@
 # Rust Full-Stack Starter Documentation
 
-**A complete full-stack application template with React frontend, Rust API backend, and PostgreSQL database. Get a working application in 2 minutes, then dive deep into modern development patterns.**
+**A complete full-stack application template with React 18 + TypeScript frontend, Rust API backend, and PostgreSQL database. Get a working application in 2 minutes with unified static file serving, then dive deep into modern development patterns.**
 
 ## 🚀 Quick Start (2 minutes)
 
@@ -11,7 +11,7 @@ cd rust-fullstack-starter
 open http://localhost:3000
 ```
 
-**Perfect for**: POCs, learning, urgent projects, interview demos
+**Perfect for**: POCs, learning, urgent projects, interview demos, full-stack development education
 
 **[📖 Full Quick Start Guide →](quick-start.md)**
 
@@ -39,12 +39,13 @@ open http://localhost:3000
 ## What You Get
 
 ### **Full-Stack Application Ready to Use**
-- ✅ **React 18 Frontend** - TypeScript, TanStack Router/Query, shadcn/ui, Tailwind CSS
-- ✅ **Rust API Backend** - Axum, SQLx, PostgreSQL, background jobs
-- ✅ **Authentication System** - Secure sessions, password hashing, role-based access
+- ✅ **React 18 Frontend** - TypeScript, TanStack Router/Query, shadcn/ui, Tailwind CSS 4, centralized API patterns
+- ✅ **Rust API Backend** - Axum, SQLx, PostgreSQL, background jobs, unified static serving
+- ✅ **Type-Safe Integration** - OpenAPI-generated TypeScript types, no API/frontend drift
+- ✅ **Authentication System** - Secure sessions, password hashing, 3-tier RBAC (User/Moderator/Admin)
 - ✅ **User Management** - Complete user lifecycle with 12 endpoints (profile, admin, analytics)
-- ✅ **Interactive API Docs** - OpenAPI/Swagger UI with type generation
-- ✅ **Production Ready** - Docker, health checks, comprehensive testing
+- ✅ **Interactive API Docs** - OpenAPI/Swagger UI with bearer token auth, client generation
+- ✅ **Production Ready** - Single deployment artifact, Docker multi-stage builds, comprehensive testing
 
 ## API Examples
 
@@ -114,32 +115,34 @@ Router::new()
 
 ### Use the API in React
 ```typescript
-// Auto-generated types from OpenAPI
-import { authApi, tasksApi } from '@/lib/api/client';
-import { useQuery, useMutation } from '@tanstack/react-query';
+// Auto-generated types from OpenAPI + centralized query hooks
+import { useHealthBasic, useTaskStats, useCurrentUser } from '@/hooks/useApiQueries';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { apiClient } from '@/lib/api/client';
 
-function MyComponent() {
-  // Get current user
-  const { data: user } = useQuery({
-    queryKey: ['user'],
-    queryFn: () => authApi.getCurrentUser()
-  });
-
-  // Create task mutation
+function Dashboard() {
+  // Centralized hooks prevent cache collisions
+  const { data: health } = useHealthBasic(15000);   // Auto-refresh every 15s
+  const { data: taskStats } = useTaskStats(10000);  // Auto-refresh every 10s
+  const { data: user } = useCurrentUser(30000);     // Auto-refresh every 30s
+  
+  const queryClient = useQueryClient();
   const createTask = useMutation({
-    mutationFn: (taskData) => tasksApi.createTask(taskData),
+    mutationFn: (taskData) => apiClient.createTask(taskData),
     onSuccess: () => {
-      // Refetch tasks list
-      queryClient.invalidateQueries(['tasks']);
+      // Type-safe cache invalidation
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.tasks.list() });
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.tasks.stats });
     }
   });
 
   return (
     <div>
-      <p>Welcome, {user?.username}!</p>
+      <p>Welcome, {user?.username}! System: {health?.status}</p>
+      <p>Active Tasks: {taskStats?.pending || 0}</p>
       <button onClick={() => createTask.mutate({
         task_type: 'email',
-        payload: { to: 'user@example.com' }
+        payload: { to: 'user@example.com', subject: 'Hello' }
       })}>
         Create Task
       </button>
@@ -156,38 +159,46 @@ cp .env.prod.example .env.prod
 # 2. Edit secrets (REQUIRED - change default passwords!)
 nano .env.prod
 
-# 3. Deploy with Docker
+# 3. Deploy with Docker (includes frontend build)
 docker-compose -f docker-compose.prod.yaml --env-file .env.prod up -d
 
-# 4. Verify deployment
-curl https://yourdomain.com/api/v1/health
+# 4. Verify full-stack deployment
+curl https://yourdomain.com/api/v1/health         # API backend
+curl https://yourdomain.com/                      # React frontend
+curl https://yourdomain.com/api-docs              # Interactive API docs
 ```
 
 ## System Overview
 
 ```mermaid
 graph LR
-    subgraph "🌐 Frontend"
-        REACT[React 18<br/>TypeScript + Tailwind]
+    subgraph "🌐 Frontend (SPA)"
+        REACT[React 18<br/>TypeScript + Tailwind CSS 4]
         ROUTER[TanStack Router<br/>File-based routing]
-        STATE[TanStack Query<br/>Server state]
+        STATE[TanStack Query<br/>Server state + caching]
+        HOOKS[Centralized API Hooks<br/>useApiQueries.ts]
     end
     
-    subgraph "🦀 Rust Backend"
+    subgraph "🦀 Rust Backend (Unified Server)"
         API[REST API<br/>Axum + SQLx]
-        AUTH[Authentication<br/>Sessions + JWT]
+        STATIC[Static File Serving<br/>SPA fallback routing]
+        AUTH[Authentication<br/>Sessions + 3-tier RBAC]
         TASKS[Background Jobs<br/>Async processing]
     end
     
     subgraph "💾 Database"
-        POSTGRES[(PostgreSQL<br/>Users + Tasks + Sessions)]
+        POSTGRES[(PostgreSQL<br/>Users + Tasks + Sessions + Types)]
     end
     
-    REACT --> API
-    ROUTER --> API
-    STATE --> API
+    REACT --> HOOKS
+    ROUTER --> HOOKS
+    STATE --> HOOKS
+    HOOKS -.->|OpenAPI types| API
+    REACT -.->|Static files| STATIC
+    
     API --> AUTH
     API --> TASKS
+    STATIC --> AUTH
     AUTH --> POSTGRES
     TASKS --> POSTGRES
     
@@ -195,16 +206,18 @@ graph LR
     classDef backend fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
     classDef database fill:#fce4ec,stroke:#c2185b,stroke-width:2px
     
-    class REACT,ROUTER,STATE frontend
-    class API,AUTH,TASKS backend
+    class REACT,ROUTER,STATE,HOOKS frontend
+    class API,STATIC,AUTH,TASKS backend
     class POSTGRES database
 ```
 
 **Key Features**:
-- **Type Safety** - OpenAPI schema generates TypeScript types automatically
-- **Real-time Updates** - TanStack Query handles caching and synchronization
-- **Background Processing** - Tasks run independently with retry logic
-- **Production Ready** - Health checks, monitoring, Docker deployment
+- **Type Safety** - OpenAPI schema generates TypeScript types automatically, no API/frontend drift
+- **Centralized Patterns** - useApiQueries.ts prevents cache collisions, ensures consistency
+- **Real-time Updates** - TanStack Query handles caching, synchronization, and smart refetching
+- **Unified Deployment** - Single server handles both API and static files (SPA fallback)
+- **Background Processing** - Tasks run independently with retry logic and dead letter queues
+- **Production Ready** - Multi-stage Docker builds, health checks, comprehensive testing
 
 ## Project Structure
 
@@ -212,19 +225,28 @@ graph LR
 rust-fullstack-starter/
 ├── Cargo.toml                 # Workspace configuration
 ├── docker-compose.yaml        # Development infrastructure
-├── docker-compose.prod.yaml   # Production deployment
+├── docker-compose.prod.yaml   # Production deployment (multi-stage build)
 ├── scripts/                   # Development automation (13 scripts + helpers)
-├── docs/                      # Comprehensive documentation (12 guides + references)
-├── web/                       # React/TypeScript frontend (TanStack Router + shadcn/ui)
+├── docs/                      # Comprehensive documentation (13 guides + references)
+├── web/                       # React 18 + TypeScript frontend
+│   ├── src/
+│   │   ├── components/        # Reusable UI components (shadcn/ui)
+│   │   ├── hooks/             # Custom hooks (useApiQueries.ts)
+│   │   ├── lib/api/           # API client with generated types
+│   │   ├── routes/            # File-based routing (TanStack Router)
+│   │   └── types/api.ts       # Auto-generated from OpenAPI
+│   ├── scripts/check-web.sh   # 10-step frontend quality validation
+│   └── package.json           # Frontend dependencies (React 18, Tailwind CSS 4)
 └── starter/                   # Main Rust application
     ├── src/
-    │   ├── auth/               # Session-based authentication
+    │   ├── auth/               # Session-based authentication + RBAC
     │   ├── users/              # User management (12 endpoints)
-    │   ├── rbac/               # Role-based access control
+    │   ├── rbac/               # Role-based access control (3-tier)
     │   ├── cli/                # Admin command-line interface
     │   ├── tasks/              # Background job system
-    │   ├── openapi.rs          # API documentation
-    │   └── ...                 # Health, errors, database, server
+    │   ├── openapi.rs          # API documentation generation
+    │   ├── server.rs           # Unified server (API + static files)
+    │   └── ...                 # Health, errors, database, types
     ├── migrations/             # Database schema evolution
     └── tests/                  # Integration tests (119 tests)
 ```
@@ -267,7 +289,7 @@ curl -X POST http://localhost:3000/api/v1/auth/login \
 
 ## Testing
 
-### Running Tests
+### Backend Testing
 
 ```bash
 # Install test runner (recommended)
@@ -279,11 +301,38 @@ cargo nextest run
 # Test API endpoints (44+ endpoint tests)
 ./scripts/test-with-curl.sh
 
-# Combined workflow
+# Combined backend workflow
 cargo nextest run && ./scripts/test-with-curl.sh
 
 # Docker-based chaos testing for resilience validation
 ./scripts/test-chaos.sh
+```
+
+### Frontend Testing
+
+```bash
+# Run comprehensive web quality checks (10 steps)
+cd web && ./scripts/check-web.sh
+
+# Individual quality checks
+cd web
+pnpm run type-check      # TypeScript validation
+pnpm run lint           # Biome linting
+pnpm run test           # Unit/integration tests
+pnpm run build          # Production build test
+```
+
+### Full-Stack Testing
+
+```bash
+# Complete quality validation (backend + frontend)
+./scripts/check.sh                    # Backend (9 steps, includes web build)
+cd web && ./scripts/check-web.sh      # Frontend (10 steps)
+
+# End-to-end API + frontend testing
+./scripts/dev-server.sh 3000          # Start unified server
+./scripts/test-with-curl.sh           # Test API endpoints
+# Manual: Test React frontend at http://localhost:3000
 ```
 
 ### API Development
@@ -451,9 +500,10 @@ Comprehensive guides in **[`guides/`](guides/)**:
 - **[07 - Task Registry](guides/07-task-registry.md)** - Organizing and managing tasks
 - **[08 - Testing](guides/08-testing.md)** - Comprehensive testing framework
 - **[09 - Chaos Testing](guides/09-chaos-testing.md)** - Resilience testing and failure simulation
-- **[10 - Web Frontend Integration](guides/10-web-frontend-integration.md)** - React ↔ Rust patterns
+- **[10 - Web Frontend Integration](guides/10-web-frontend-integration.md)** - React ↔ Rust patterns, OpenAPI workflow
 - **[11 - Debugging & Troubleshooting](guides/11-debugging-and-troubleshooting.md)** - Systematic problem solving
 - **[12 - User Management](guides/12-user-management.md)** - Complete user lifecycle with 12 endpoints
+- **[13 - React Frontend Patterns](guides/13-react-frontend-patterns.md)** - Modern React Query patterns, state management
 
 ### Reference Documentation
 - **[Task Handlers](reference/task-handlers.md)** - Built-in task type reference
@@ -471,7 +521,7 @@ Comprehensive guides in **[`guides/`](guides/)**:
 - **[System Overview](#system-overview)** - Architecture and component relationships
 - **[Authentication Guide](guides/02-authentication.md)** - Secure user management patterns
 - **[Background Tasks](guides/04-background-tasks.md)** - Async job processing system
-- **[Web Integration](guides/10-web-frontend-integration.md)** - React ↔ Rust patterns
+- **[Web Integration](guides/10-web-frontend-integration.md)** - React ↔ Rust patterns, OpenAPI workflow
 
 ### 🚢 **Ready for Production?**
 - **[Production Deployment](production-deployment.md)** - Docker, Kubernetes, security
@@ -626,13 +676,14 @@ graph TD
 ### Key Learning Areas Covered
 
 - **🧠 First Principles Thinking** - Understanding why, not just how
-- **⚛️ Modern React Patterns** - TanStack Router, Query, and type safety
-- **🦀 Production Rust** - Axum, SQLx, and async patterns
-- **🔒 Security Implementation** - Authentication, authorization, and session management
+- **⚛️ Modern React Patterns** - TanStack Router/Query, centralized API hooks, cache management
+- **🦀 Production Rust** - Axum, SQLx, async patterns, unified static serving
+- **🔒 Security Implementation** - Authentication, 3-tier RBAC, session management
 - **🔄 Async Processing** - Background tasks with retry logic and dead letter queues
-- **✅ Testing Excellence** - Integration testing and chaos engineering
-- **🚀 Production Deployment** - Docker, Kubernetes, and monitoring
-- **🌐 Full-Stack Integration** - End-to-end type safety and error handling
+- **🔗 Type-Safe Integration** - OpenAPI-generated types, no API/frontend drift
+- **✅ Testing Excellence** - Integration testing, chaos engineering, frontend quality checks
+- **🚀 Production Deployment** - Multi-stage Docker builds, single deployment artifact
+- **🌐 Full-Stack Patterns** - End-to-end type safety, unified development workflow
 
 ### Real-World Applications
 

@@ -171,6 +171,11 @@ Authorization: Bearer <session_token>
 - **Auto-Authorization**: The OpenAPI spec's Bearer security scheme automatically applies to protected endpoints
 - **Manual Setup**: Use "Authorization" tab → "Bearer Token" → enter your session token or variable
 
+**Using with React Frontend**:
+- **Auto-Generated Types**: Run `cd web && pnpm run generate-api` to generate TypeScript types
+- **Centralized Hooks**: Use `useApiQueries.ts` hooks to prevent cache collisions
+- **Type Safety**: All API calls are fully type-safe with auto-completion
+
 ## Health Endpoints
 
 ### GET /api/v1/health
@@ -1423,6 +1428,8 @@ CORS is configured for development:
 
 ### Complete Authentication Flow
 
+#### Backend (API) Testing
+
 1. **Register a new user**:
 ```bash
 curl -X POST http://localhost:3000/api/v1/auth/register \
@@ -1447,6 +1454,54 @@ curl -X GET http://localhost:3000/api/v1/auth/me \
 ```bash
 curl -X POST http://localhost:3000/api/v1/auth/logout \
   -H "Authorization: Bearer YOUR_SESSION_TOKEN_HERE"
+```
+
+#### Frontend (React) Integration
+
+```typescript
+// web/src/lib/auth/context.tsx - Authentication flow
+import { useCurrentUser } from '@/hooks/useApiQueries';
+import { apiClient } from '@/lib/api/client';
+
+function LoginForm() {
+  const { login } = useAuth();
+  const [credentials, setCredentials] = useState({
+    username: '',
+    password: ''
+  });
+
+  const loginMutation = useMutation({
+    mutationFn: login,
+    onSuccess: () => {
+      navigate({ to: '/admin' });
+    },
+    onError: (error: ApiError) => {
+      toast.error(error.message);
+    }
+  });
+
+  // Type-safe form submission
+  const handleSubmit = (e: FormEvent) => {
+    e.preventDefault();
+    loginMutation.mutate(credentials);
+  };
+
+  // Auto-generated types ensure API compatibility
+  return (
+    <form onSubmit={handleSubmit}>
+      {/* Form inputs */}
+    </form>
+  );
+}
+
+// Centralized user data with caching
+function UserProfile() {
+  const { data: user, isLoading } = useCurrentUser(30000); // 30s refresh
+  
+  if (isLoading) return <LoadingSpinner />;
+  
+  return <div>Welcome, {user?.username}!</div>;
+}
 ```
 
 ## Testing
