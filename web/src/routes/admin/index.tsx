@@ -12,8 +12,7 @@ import {
 	CardTitle,
 } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { apiClient } from "@/lib/api/client";
-import { useQuery } from "@tanstack/react-query";
+import { useHealthBasic, useTaskStats, useCurrentUser } from "@/hooks/useApiQueries";
 import { Link, createFileRoute } from "@tanstack/react-router";
 import {
 	Activity,
@@ -37,35 +36,10 @@ import {
 } from "recharts";
 
 function AdminDashboard() {
-	// Fetch task statistics with real-time updates
-	const { data: taskStats, isLoading: isLoadingStats } = useQuery({
-		queryKey: ["taskStats"],
-		queryFn: async () => {
-			const response = await apiClient.getTaskStats();
-			return response.data;
-		},
-		refetchInterval: 10000, // Real-time updates every 10 seconds
-	});
-
-	// Fetch health status with real-time updates
-	const { data: healthStatus } = useQuery({
-		queryKey: ["health", "dashboard"],
-		queryFn: async () => {
-			const response = await apiClient.getHealth();
-			return response.data;
-		},
-		refetchInterval: 15000,
-	});
-
-	// Fetch current user
-	const { data: currentUser } = useQuery({
-		queryKey: ["currentUser"],
-		queryFn: async () => {
-			const response = await apiClient.getCurrentUser();
-			return response.data;
-		},
-		refetchInterval: 30000,
-	});
+	// Fetch data with consistent hooks - no more cache collisions!
+	const { data: taskStats, isLoading: isLoadingStats } = useTaskStats(10000);
+	const { data: healthStatus } = useHealthBasic(15000);
+	const { data: currentUser } = useCurrentUser(30000);
 
 	// Generate trend data for mini charts (mock historical data)
 	const trendData = useMemo(() => {
