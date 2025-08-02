@@ -203,7 +203,12 @@ export function HealthTrends() {
 				trend: "+0.1%",
 			},
 		],
-		[basicHealthQuery.data, detailedHealthQuery.data, getCurrentHealthScore, getUptimePercentage],
+		[
+			basicHealthQuery.data,
+			detailedHealthQuery.data,
+			getCurrentHealthScore,
+			getUptimePercentage,
+		],
 	);
 
 	const availabilityData = useMemo(() => {
