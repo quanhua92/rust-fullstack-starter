@@ -21,8 +21,8 @@ SMOKE_ONLY=false
 MAX_FAILURES=1
 TEST_TIMEOUT=5000   # Default 5 seconds per test (fast fail)
 GLOBAL_TIMEOUT=""   # Will be set based on mode if not specified
-for arg in "$@"; do
-    case $arg in
+while [[ $# -gt 0 ]]; do
+    case "$1" in
         --skip-lint)
             SKIP_LINT=true
             shift
@@ -36,7 +36,7 @@ for arg in "$@"; do
             shift
             ;;
         --max-failures=*)
-            MAX_FAILURES="${arg#*=}"
+            MAX_FAILURES="${1#*=}"
             shift
             ;;
         --no-fail-fast)
@@ -44,15 +44,16 @@ for arg in "$@"; do
             shift
             ;;
         --timeout=*)
-            TEST_TIMEOUT="${arg#*=}"
+            TEST_TIMEOUT="${1#*=}"
             shift
             ;;
         --global-timeout=*)
-            GLOBAL_TIMEOUT="${arg#*=}"
+            GLOBAL_TIMEOUT="${1#*=}"
             shift
             ;;
         *)
-            # Unknown option
+            # Unknown option, shift to next
+            shift
             ;;
     esac
 done
@@ -136,8 +137,8 @@ run_cmd "🧪 Step 8/9: Running unit tests" pnpm run test
 
 # 9. End-to-end tests with Playwright
 print_status "step" "🎭 Step 9/9: Running E2E tests with Playwright..."
-if [ "${CI:-false}" = "true" ] || [ "${PLAYWRIGHT_SKIP:-false}" = "true" ]; then
-    print_status "info" "Skipping E2E tests (CI=${CI:-false}, PLAYWRIGHT_SKIP=${PLAYWRIGHT_SKIP:-false})"
+if [ "${PLAYWRIGHT_SKIP:-false}" = "true" ]; then
+    print_status "info" "Skipping E2E tests (PLAYWRIGHT_SKIP=true)"
 else
     # Function to check if a port is in use
     check_port() {

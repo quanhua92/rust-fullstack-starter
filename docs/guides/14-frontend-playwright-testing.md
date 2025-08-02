@@ -333,11 +333,11 @@ pnpm run test:e2e:ui
    - **Fast feedback**: `./scripts/check-web.sh --skip-lint --global-timeout=60`
    - **Thorough testing**: `./scripts/check-web.sh --skip-lint --no-fail-fast --timeout=10000`
    - **CI/CD optimization**: `./scripts/check-web.sh --skip-lint --max-failures=1 --global-timeout=90`
-2. **Run smoke tests** during active development for fastest feedback
-3. **Use single-browser mode** for comprehensive testing without multi-browser overhead
-4. **Reserve multi-browser mode** for final validation before releases
-5. **Skip E2E tests** when only testing backend changes with `PLAYWRIGHT_SKIP=true`
-6. **Smart server management** automatically handles server lifecycle - no manual setup needed
+3. **Run smoke tests** during active development for fastest feedback
+4. **Use single-browser mode** for comprehensive testing without multi-browser overhead
+5. **Reserve multi-browser mode** for final validation before releases
+6. **Skip E2E tests** when only testing backend changes with `PLAYWRIGHT_SKIP=true`
+7. **Smart server management** automatically handles server lifecycle - no manual setup needed
 
 ## Advanced Configuration
 

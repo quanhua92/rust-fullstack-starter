@@ -33,9 +33,9 @@ test.describe('Authentication Flow', () => {
     const submitButton = page.locator('button:has-text("Sign In"), button[type="submit"]').first();
     await submitButton.click();
     
-    // Basic validation - form should either show errors or stay on same page
-    // This is a minimal test that doesn't assume specific validation implementation
-    await expect(page.locator('body')).toBeVisible();
+    // Validate that the form submission doesn't navigate away (stays on login page)
+    // This ensures proper form validation handling
+    await expect(page).toHaveURL(/.*\/auth\/login/);
   });
 
   test('navigation between auth pages', async ({ page }) => {
