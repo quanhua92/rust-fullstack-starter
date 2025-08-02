@@ -3,15 +3,17 @@
 # Comprehensive web frontend quality check script
 # Runs all quality checks: format, lint, type check, build, and tests
 #
-# Usage: ./check-web.sh [--skip-lint] [--full]
+# Usage: ./check-web.sh [--skip-lint] [--full] [--smoke]
 #   --skip-lint: Skip linting and formatting checks
 #   --full: Run comprehensive multi-browser E2E tests (default: Chromium only)
+#   --smoke: Run ultra-fast smoke tests only (~400ms)
 
 set -e
 
 # Parse command line arguments
 SKIP_LINT=false
 FULL_TESTS=false
+SMOKE_ONLY=false
 for arg in "$@"; do
     case $arg in
         --skip-lint)
@@ -22,11 +24,20 @@ for arg in "$@"; do
             FULL_TESTS=true
             shift
             ;;
+        --smoke)
+            SMOKE_ONLY=true
+            shift
+            ;;
         *)
             # Unknown option
             ;;
     esac
 done
+
+# Set environment variable for smoke tests
+if [ "$SMOKE_ONLY" = "true" ]; then
+    export PLAYWRIGHT_SMOKE_ONLY=true
+fi
 
 # Source common utilities
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -173,7 +184,7 @@ else
     export PLAYWRIGHT_BASE_URL="http://localhost:3000"
     
     # Run Playwright tests based on options
-    if [ "$PLAYWRIGHT_SMOKE_ONLY" = "true" ]; then
+    if [ "$SMOKE_ONLY" = "true" ] || [ "$PLAYWRIGHT_SMOKE_ONLY" = "true" ]; then
         run_cmd "Running Playwright smoke tests" pnpm run test:e2e:smoke
     elif [ "$FULL_TESTS" = "true" ]; then
         run_cmd "Running comprehensive multi-browser E2E tests" pnpm run test:e2e
@@ -257,7 +268,7 @@ else
     echo "   ✅ TypeScript, linting, and formatting"
 fi
 echo "   ✅ Build and unit tests"
-if [ "$PLAYWRIGHT_SMOKE_ONLY" = "true" ]; then
+if [ "$SMOKE_ONLY" = "true" ] || [ "$PLAYWRIGHT_SMOKE_ONLY" = "true" ]; then
     echo "   ✅ End-to-end tests (Playwright smoke)"
 elif [ "$FULL_TESTS" = "true" ]; then
     echo "   ✅ End-to-end tests (Multi-browser)"
