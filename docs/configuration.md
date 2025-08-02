@@ -24,6 +24,7 @@ Controls the HTTP server behavior.
 | `STARTER__SERVER__PORT` | `8080` | Server port (overridden by CLI) |
 | `STARTER__SERVER__CORS_ORIGINS` | `"http://localhost:5173"` | Allowed CORS origins (comma-separated) |
 | `STARTER__SERVER__REQUEST_TIMEOUT_SECS` | `30` | HTTP request timeout in seconds |
+| `STARTER__SERVER__WEB_BUILD_PATH` | `web/dist` | Path to frontend build files for static serving |
 
 **Examples:**
 ```bash
@@ -35,6 +36,9 @@ STARTER__SERVER__CORS_ORIGINS="http://localhost:3000,http://localhost:5173"
 
 # Longer timeout for slow requests
 STARTER__SERVER__REQUEST_TIMEOUT_SECS=60
+
+# Custom frontend build path
+STARTER__SERVER__WEB_BUILD_PATH=/app/frontend/dist
 ```
 
 ### Database Configuration
@@ -120,6 +124,61 @@ STARTER__WORKER__POLL_INTERVAL_SECS=1
 # Conservative retry policy
 STARTER__WORKER__MAX_RETRIES=5
 STARTER__WORKER__RETRY_BACKOFF_BASE_SECS=5
+```
+
+### Web Frontend Configuration
+
+The application serves a React frontend as static files alongside the API.
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `STARTER__SERVER__WEB_BUILD_PATH` | `web/dist` | Path to built frontend files |
+
+**Static File Serving:**
+- The server automatically serves static files from the configured build path
+- SPA (Single Page Application) fallback routing is enabled for client-side routing
+- All non-API routes serve `index.html` for React Router to handle
+- API routes are prefixed with `/api/v1` to avoid conflicts
+
+**Frontend Development Setup:**
+```bash
+# Frontend runs on port 5173 (Vite dev server)
+cd web
+pnpm dev
+
+# Backend serves API on port 3000
+./scripts/server.sh 3000
+
+# Vite proxy forwards /api/v1 to http://localhost:3000
+```
+
+**Production Deployment:**
+```bash
+# Build frontend for production
+cd web && pnpm build
+
+# Start unified server (API + static files)
+STARTER__SERVER__WEB_BUILD_PATH=web/dist cargo run -- server --port 3000
+
+# Now accessible at:
+# - Frontend: http://localhost:3000/
+# - API: http://localhost:3000/api/v1/
+# - Docs: http://localhost:3000/api-docs
+```
+
+**Examples:**
+```bash
+# Development: Frontend build auto-detection
+STARTER__SERVER__WEB_BUILD_PATH=web/dist
+
+# Docker: Frontend built in container
+STARTER__SERVER__WEB_BUILD_PATH=/app/web/dist
+
+# Custom frontend location
+STARTER__SERVER__WEB_BUILD_PATH=/var/www/frontend
+
+# Disable static serving (API only)
+STARTER__SERVER__WEB_BUILD_PATH=""
 ```
 
 ### Security Configuration
@@ -223,6 +282,7 @@ The application code works identically with both methods - SQLx handles the diff
 STARTER__SERVER__HOST=0.0.0.0
 STARTER__SERVER__PORT=8080
 STARTER__SERVER__CORS_ORIGINS=["http://localhost:3000","http://localhost:5173"]
+STARTER__SERVER__WEB_BUILD_PATH=web/dist
 
 STARTER__DATABASE__USER=starter_user
 STARTER__DATABASE__PASSWORD=starter_pass
@@ -247,6 +307,7 @@ STARTER__SERVER__HOST=0.0.0.0
 STARTER__SERVER__PORT=80
 STARTER__SERVER__REQUEST_TIMEOUT_SECS=30
 STARTER__SERVER__CORS_ORIGINS=["https://app.example.com"]
+STARTER__SERVER__WEB_BUILD_PATH=/app/web/dist
 
 STARTER__DATABASE__HOST=prod-db.internal
 STARTER__DATABASE__USER=app_prod
