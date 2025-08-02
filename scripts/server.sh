@@ -12,7 +12,7 @@ export STARTER__SERVER__WEB_BUILD_PATH="${STARTER__SERVER__WEB_BUILD_PATH:-$PROJ
 if [ ! -d "$STARTER__SERVER__WEB_BUILD_PATH" ] && [ -d "$PROJECT_ROOT/web" ]; then
     echo "⚠️  Web build directory not found: $STARTER__SERVER__WEB_BUILD_PATH"
     echo "🏗️  Building web frontend automatically..."
-    if ! "$PROJECT_ROOT/scripts/build-web.sh" >/dev/null 2>&1; then
+    if ! "$PROJECT_ROOT/scripts/build-web.sh"; then
         echo "❌ Web frontend build failed!"
         echo "💡 You can still start the server (API only), but web serving will not work."
         echo "   Run './scripts/build-web.sh' manually or use './scripts/dev-full-stack.sh' instead."

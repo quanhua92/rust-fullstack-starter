@@ -82,7 +82,7 @@ fi
 # Build web frontend if requested and available
 if [ "$BUILD_WEB" = true ] && [ -d "web" ]; then
     echo "🌐 Building web frontend..."
-    if ! ./scripts/build-web.sh >/dev/null 2>&1; then
+    if ! ./scripts/build-web.sh; then
         echo "❌ Web frontend build failed!"
         echo "   Run './scripts/build-web.sh' for details"
         echo "   Continuing with API-only server..."

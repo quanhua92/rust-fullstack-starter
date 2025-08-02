@@ -77,7 +77,7 @@ RUN export TARGET_ARCH=$(case ${TARGETPLATFORM:-linux/amd64} in \
     cp target/${TARGET_ARCH}/release/starter /app/starter-bin
 
 # Stage 3: Create the final, minimal production image
-FROM alpine:latest AS final-image
+FROM alpine:3.22 AS final-image
 WORKDIR /app
 
 # Install ca-certificates for HTTPS requests

@@ -222,24 +222,28 @@ pub async fn start_server(config: AppConfig, database: Database) -> Result<()> {
 
     // Setup static file serving for web frontend
     let web_build_path = &config.server.web_build_path;
-    if !Path::new(web_build_path).is_dir() {
-        tracing::warn!(
-            "Web build directory not found at '{}'. Static file serving will fail.",
-            web_build_path
-        );
-    }
-    let index_path = Path::new(web_build_path).join("index.html");
-
-    let static_files_service =
-        ServeDir::new(web_build_path).not_found_service(ServeFile::new(index_path));
-
-    let app = Router::new()
+    
+    let mut app = Router::new()
         .nest("/api/v1", api_router)
         // Keep documentation routes at root level
         .route("/api-docs", get(api_docs))
-        .route("/api-docs/openapi.json", get(openapi_json))
-        // Serve static files with SPA fallback
-        .fallback_service(static_files_service);
+        .route("/api-docs/openapi.json", get(openapi_json));
+
+    // Only add static file serving if web_build_path is not empty (security check)
+    if !web_build_path.is_empty() {
+        if !Path::new(web_build_path).is_dir() {
+            tracing::warn!(
+                "Web build directory not found at '{}'. Static file serving will fail.",
+                web_build_path
+            );
+        }
+        let index_path = Path::new(web_build_path).join("index.html");
+        let static_files_service =
+            ServeDir::new(web_build_path).not_found_service(ServeFile::new(index_path));
+        app = app.fallback_service(static_files_service);
+    } else {
+        tracing::info!("Web build path is empty. Static file serving disabled for security.");
+    }
 
     let bind_addr = format!("{}:{}", config.server.host, config.server.port);
     let listener = TcpListener::bind(&bind_addr)

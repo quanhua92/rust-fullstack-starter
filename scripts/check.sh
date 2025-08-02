@@ -32,7 +32,7 @@ echo -e "\n${BLUE}🌐 Step 1/9: Web frontend build...${NC}"
 # Check if web directory exists and build early
 if [ -d "web" ]; then
     echo -e "${BLUE}🏗️  Building web frontend...${NC}"
-    if ! ./scripts/build-web.sh >/dev/null 2>&1; then
+    if ! ./scripts/build-web.sh; then
         echo -e "${RED}❌ Web frontend build failed!${NC}"
         echo -e "${YELLOW}   Run './scripts/build-web.sh' for details${NC}"
         exit 1
@@ -206,7 +206,7 @@ if [ -d "web" ] && [ -f "web/dist/index.html" ]; then
     # Wait for server to start by polling its health endpoint
     echo -e "${BLUE}   Waiting for server to start...${NC}"
     SERVER_READY=false
-    for i in {1..20}; do # 10 seconds timeout
+    for i in {1..60}; do # 30 seconds timeout
         if curl -s -f "http://localhost:$TEST_PORT/api/v1/health" >/dev/null 2>&1; then
             SERVER_READY=true
             break

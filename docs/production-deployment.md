@@ -112,21 +112,22 @@ The `Dockerfile.prod` uses a sophisticated multi-stage build:
 
 ```dockerfile
 # Stage 1: Node.js - Build React frontend
-FROM node:18-alpine AS frontend-builder
-WORKDIR /app/web
-COPY web/package*.json web/pnpm-lock.yaml ./
-RUN npm install -g pnpm && pnpm install --frozen-lockfile
-COPY web/ .
-RUN pnpm build
+FROM node:20-alpine AS frontend-builder
+WORKDIR /app
+RUN npm install -g pnpm
+COPY web/package.json web/pnpm-lock.yaml ./web/
+RUN cd web && pnpm install --frozen-lockfile
+COPY web ./web
+RUN cd web && pnpm build
 
-# Stage 2: Rust - Build backend
-FROM rust:1.70-alpine AS backend-builder
-# ... Rust build steps ...
+# Stage 2: Rust - Build backend with cargo-chef for caching
+FROM clux/muslrust:1.88.0-stable-2025-07-27 AS chef
+# ... cargo-chef dependency caching steps ...
 
-# Stage 3: Runtime - Combine frontend + backend
-FROM gcr.io/distroless/cc-debian11
-COPY --from=frontend-builder /app/web/dist /app/web/dist
-COPY --from=backend-builder /app/target/release/starter /app/starter
+# Stage 3: Runtime - Minimal Alpine production image
+FROM alpine:3.22 AS final-image
+COPY --from=frontend-builder /app/web/dist ./web/dist
+COPY --from=rust-builder /app/starter-bin ./starter
 ```
 
 ### Production Benefits

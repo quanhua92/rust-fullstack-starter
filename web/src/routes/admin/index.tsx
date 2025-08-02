@@ -12,7 +12,11 @@ import {
 	CardTitle,
 } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useHealthBasic, useTaskStats, useCurrentUser } from "@/hooks/useApiQueries";
+import {
+	useHealthBasic,
+	useTaskStats,
+	useCurrentUser,
+} from "@/hooks/useApiQueries";
 import { Link, createFileRoute } from "@tanstack/react-router";
 import {
 	Activity,
