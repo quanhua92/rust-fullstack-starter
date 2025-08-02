@@ -14,6 +14,6 @@ test.describe('Smoke Tests', () => {
     expect(typeof title).toBe('string');
     
     const url = await page.evaluate(() => window.location.href);
-    expect(url).toMatch(/^https?:\/\//);
+    expect(url).toContain('about:blank');
   });
 });

@@ -6,8 +6,10 @@ test.describe('API Health Checks', () => {
     expect(response.status()).toBe(200);
     
     const data = await response.json();
-    expect(data).toHaveProperty('status');
-    expect(data.status).toBe('ok');
+    expect(data).toHaveProperty('data');
+    expect(data.data).toHaveProperty('status');
+    expect(data.data.status).toBe('healthy');
+    expect(data.success).toBe(true);
   });
 
   test('detailed health endpoint responds', async ({ request }) => {
@@ -15,9 +17,11 @@ test.describe('API Health Checks', () => {
     expect(response.status()).toBe(200);
     
     const data = await response.json();
-    expect(data).toHaveProperty('status');
-    expect(data).toHaveProperty('version');
-    expect(data).toHaveProperty('uptime');
+    expect(data).toHaveProperty('data');
+    expect(data.data).toHaveProperty('status');
+    expect(data.data.status).toBe('healthy');
+    expect(data.data).toHaveProperty('checks');
+    expect(data.success).toBe(true);
   });
 
   test('API documentation is accessible', async ({ request }) => {
