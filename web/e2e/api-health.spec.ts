@@ -3,38 +3,44 @@ import { test, expect } from '@playwright/test';
 test.describe('API Health Checks', () => {
   test('health endpoint responds', async ({ request }) => {
     const response = await request.get('/api/v1/health');
-    expect(response.status()).toBe(200);
-    
+    await expect(response).toBeOK();
+
     const data = await response.json();
-    expect(data).toHaveProperty('data');
-    expect(data.data).toHaveProperty('status');
-    expect(data.data.status).toBe('healthy');
-    expect(data.success).toBe(true);
+    expect(data).toEqual(expect.objectContaining({
+      success: true,
+      data: expect.objectContaining({
+        status: 'healthy',
+      }),
+    }));
   });
 
   test('detailed health endpoint responds', async ({ request }) => {
     const response = await request.get('/api/v1/health/detailed');
-    expect(response.status()).toBe(200);
+    await expect(response).toBeOK();
     
     const data = await response.json();
-    expect(data).toHaveProperty('data');
-    expect(data.data).toHaveProperty('status');
-    expect(data.data.status).toBe('healthy');
-    expect(data.data).toHaveProperty('checks');
-    expect(data.success).toBe(true);
+    expect(data).toEqual(expect.objectContaining({
+      success: true,
+      data: expect.objectContaining({
+        status: 'healthy',
+        checks: expect.any(Object),
+      }),
+    }));
   });
 
   test('API documentation is accessible', async ({ request }) => {
     const response = await request.get('/api-docs');
-    expect(response.status()).toBe(200);
+    await expect(response).toBeOK();
   });
 
   test('OpenAPI spec is accessible', async ({ request }) => {
     const response = await request.get('/api-docs/openapi.json');
-    expect(response.status()).toBe(200);
+    await expect(response).toBeOK();
     
     const data = await response.json();
-    expect(data).toHaveProperty('openapi');
-    expect(data).toHaveProperty('info');
+    expect(data).toEqual(expect.objectContaining({
+      openapi: expect.any(String),
+      info: expect.any(Object),
+    }));
   });
 });

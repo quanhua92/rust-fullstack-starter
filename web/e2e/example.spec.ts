@@ -16,12 +16,10 @@ test.describe('Basic Application Tests', () => {
     await expect(page.locator('body')).toBeVisible();
     
     // Accept either home page or sign-in page as successful load
-    // Look for Sign In heading or button
-    const hasSignInHeading = await page.locator('h1, h2, h3').filter({ hasText: 'Sign In' }).isVisible().catch(() => false);
-    const hasSignInButton = await page.locator('button').filter({ hasText: 'Sign In' }).isVisible().catch(() => false);
-    const hasHomeContent = await page.locator('main, .container, #root').isVisible().catch(() => false);
-    
-    expect(hasSignInHeading || hasSignInButton || hasHomeContent).toBe(true);
+    const signInLocator = page.locator('h1, h2, h3, button').filter({ hasText: 'Sign In' });
+    const homeContentLocator = page.locator('main, .container, #root');
+
+    await expect(signInLocator.or(homeContentLocator).first()).toBeVisible();
   });
 
   test('navigation works', async ({ page }) => {

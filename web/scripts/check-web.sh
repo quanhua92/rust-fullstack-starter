@@ -168,7 +168,7 @@ else
         print_status "info" "Starting backend server on port 3000..."
         (cd "$PROJECT_ROOT" && ./scripts/server.sh 3000 >/dev/null 2>&1 &)
         BACKEND_STARTED=true
-        if wait_for_server "http://localhost:3000/api/v1/health" 30; then
+        if wait_for_server "http://127.0.0.1:3000/api/v1/health" 30; then
             print_status "success" "Backend server started successfully"
         else
             print_status "error" "Failed to start backend server"
@@ -194,7 +194,7 @@ else
         print_status "info" "Starting frontend dev server on port 5173..."
         (pnpm run dev >/dev/null 2>&1 &)
         FRONTEND_STARTED=true
-        if wait_for_server "http://localhost:5173" 60; then
+        if wait_for_server "http://127.0.0.1:5173" 60; then
             print_status "success" "Frontend dev server started successfully"
         else
             print_status "error" "Failed to start frontend dev server"
@@ -205,7 +205,7 @@ else
     fi
     
     # Set Playwright to use the unified backend server on port 3000
-    export PLAYWRIGHT_BASE_URL="http://localhost:3000"
+    export PLAYWRIGHT_BASE_URL="http://127.0.0.1:3000"
     
     # Build Playwright command with options
     PLAYWRIGHT_FLAGS=""
