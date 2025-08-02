@@ -104,7 +104,7 @@ curl -H "Authorization: Bearer TOKEN" http://localhost:3000/api/v1/tasks
 
 ```bash
 # Run tests
-cargo nextest run                    # Integration tests (95 tests)
+cargo nextest run                    # Integration tests (119 tests)
 ./scripts/test-with-curl.sh         # API endpoint tests (44+ tests)
 ./scripts/test-chaos.sh             # Chaos testing (7 scenarios)
 

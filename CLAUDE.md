@@ -14,7 +14,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
   - Runs: cargo check, fmt, clippy, sqlx prepare, unit tests, integration tests
   - ~30-60 seconds for complete validation
   - Required for all commits to maintain code quality
-- **Integration Tests**: `cd starter && cargo nextest run` (95 tests, ~12 seconds)
+- **Integration Tests**: `cd starter && cargo nextest run` (119 tests, ~17 seconds)
 - **API Testing**: `./scripts/test-with-curl.sh [host] [port]` (44+ endpoint tests)
   - Default: `./scripts/test-with-curl.sh` (localhost:3000)
   - Custom: `./scripts/test-with-curl.sh localhost 8080`
