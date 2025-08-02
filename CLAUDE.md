@@ -78,6 +78,12 @@ show_elapsed
   - 9 steps total with health endpoint polling for reliable testing
   - ~40-45 seconds for complete validation including frontend
   - Required for all commits to maintain code quality
+- **Frontend E2E Testing**: `cd web && ./scripts/check-web.sh` (Playwright-based end-to-end testing)
+  - **Ultra-fast smoke**: `./scripts/check-web.sh --skip-lint --smoke` (~10s total, ~410ms E2E)
+  - **Fast single-browser**: `./scripts/check-web.sh --skip-lint` (~11s total, ~1.1s E2E)
+  - **Full multi-browser**: `./scripts/check-web.sh --skip-lint --full` (~5-10min)
+  - **Custom timeouts**: `./scripts/check-web.sh --skip-lint --global-timeout=60 --max-failures=3`
+  - **No fail-fast**: `./scripts/check-web.sh --skip-lint --no-fail-fast` (run all tests)
 - **Integration Tests**: `cd starter && cargo nextest run` (123 tests, ~17 seconds)
 - **API Testing**: `./scripts/test-with-curl.sh [host] [port]` (44+ endpoint tests)
   - Default: `./scripts/test-with-curl.sh` (localhost:3000)
@@ -475,7 +481,7 @@ gh api repos/OWNER/REPO/pulls/PR_NUMBER/reviews/REVIEW_ID/comments
 # Comment on pull request to address reviewer feedback
 gh pr comment PR_NUMBER --body "## 🔧 PR Review Feedback Addressed
 
-@REVIEWER_USERNAME Thank you for the comprehensive code review! I've addressed the issues you identified:
+@gemini-code-assist Thank you for the comprehensive code review! I've addressed the issues you identified:
 
 ## ✅ **Critical Issues Fixed:**
 ### 1. **Issue Title** 

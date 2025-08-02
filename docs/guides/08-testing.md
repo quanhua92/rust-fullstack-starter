@@ -703,7 +703,7 @@ async fn test_user_registration_duplicate_username() {
 ## Limitations & Future Improvements
 
 ### Current Limitations
-- **No E2E Tests**: Only integration tests, no browser automation
+- **Limited Frontend E2E**: Basic Playwright tests for critical flows (see [Frontend Playwright Testing Guide](14-frontend-playwright-testing.md))
 - **Limited Load Testing**: Not designed for performance testing
 - **Simple Error Cases**: Basic error handling testing
 - **No Mocking**: Tests against real database (by design)
@@ -715,6 +715,7 @@ This testing framework demonstrates:
 - HTTP testing approaches
 - Test data management
 - Assertion patterns
+- Frontend E2E testing with Playwright (web/e2e/)
 
 Use these patterns as a foundation for your own testing strategies.
 
@@ -724,6 +725,7 @@ Consider adding:
 - Performance benchmarks for critical paths
 - Contract testing for API consumers
 - Chaos testing for reliability (see [Chaos Testing Guide](09-chaos-testing.md))
+- Enhanced frontend E2E coverage (see [Frontend Playwright Testing Guide](14-frontend-playwright-testing.md))
 
 ## Next Steps
 

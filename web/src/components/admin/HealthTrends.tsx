@@ -20,7 +20,7 @@ import {
 	TrendingUp,
 	Zap,
 } from "lucide-react";
-import { useMemo } from "react";
+import { useMemo, useCallback } from "react";
 import {
 	Area,
 	AreaChart,
@@ -126,7 +126,7 @@ export function HealthTrends() {
 		return data;
 	}, []);
 
-	const getCurrentHealthScore = () => {
+	const getCurrentHealthScore = useCallback(() => {
 		if (!detailedHealthQuery.data?.data?.checks) return 0;
 
 		const checks = Object.values(detailedHealthQuery.data.data.checks);
@@ -134,16 +134,16 @@ export function HealthTrends() {
 			(check: ComponentHealth) => check.status === "healthy",
 		).length;
 		return Math.round((healthyChecks / checks.length) * 100);
-	};
+	}, [detailedHealthQuery.data?.data?.checks]);
 
-	const getUptimePercentage = () => {
+	const getUptimePercentage = useCallback(() => {
 		if (!basicHealthQuery.data?.data?.uptime) return 0;
 
 		// Calculate uptime percentage based on current uptime
 		const uptimeSeconds = basicHealthQuery.data.data.uptime;
 		const targetUptime = 24 * 60 * 60; // 24 hours
 		return Math.min(Math.round((uptimeSeconds / targetUptime) * 100), 100);
-	};
+	}, [basicHealthQuery.data?.data?.uptime]);
 
 	const formatUptime = (uptime: number) => {
 		const uptimeMs = uptime * 1000;
