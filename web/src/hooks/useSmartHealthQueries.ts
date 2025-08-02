@@ -69,7 +69,7 @@ export const useSmartHealthQueries = () => {
 
 		// Exponential backoff for errors (up to 4x slower)
 		if (errorCount > 0) {
-			multiplier *= Math.min(Math.pow(1.5, errorCount), 4);
+			multiplier *= Math.min(1.5 ** errorCount, 4);
 		}
 
 		// Critical queries (liveness) should have minimum intervals

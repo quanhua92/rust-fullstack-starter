@@ -358,3 +358,78 @@ pub async fn create_user(
 ```
 
 **Documentation**: Comprehensive user management documentation available at `docs/guides/12-user-management.md`
+
+## GitHub CLI Workflow
+
+**Standard GitHub CLI commands for PR management and code review workflows:**
+
+### Pull Request Management
+```bash
+# Create pull request with structured description
+gh pr create --title "TITLE" --body "$(cat <<'EOF'
+## Summary
+- Key change 1
+- Key change 2
+- Key change 3
+
+## Test plan
+- [ ] Quality checks passed
+- [ ] Tests executed
+- [ ] Documentation updated
+EOF
+)"
+
+# View pull request details and status
+gh pr view PR_NUMBER
+gh pr status
+
+# List and read pull request reviews
+gh pr review list PR_NUMBER
+gh api repos/OWNER/REPO/pulls/PR_NUMBER/reviews/REVIEW_ID
+gh api repos/OWNER/REPO/pulls/PR_NUMBER/reviews/REVIEW_ID/comments
+```
+
+### Code Review Response Workflow
+```bash
+# Comment on pull request to address reviewer feedback
+gh pr comment PR_NUMBER --body "## 🔧 PR Review Feedback Addressed
+
+@REVIEWER_USERNAME Thank you for the comprehensive code review! I've addressed the issues you identified:
+
+## ✅ **Critical Issues Fixed:**
+### 1. **Issue Title** 
+- **Fixed**: Description of fix
+- **Location**: \`file/path:line-range\`
+- **Impact**: What this fix accomplishes
+
+### 2. **Another Issue**
+- **Fixed**: Description of fix
+- **Location**: \`file/path:line-range\`
+- **Impact**: What this fix accomplishes
+
+## 📊 **Quality Validation:**
+- [x] All tests passing
+- [x] Build successful
+- [x] Linting/formatting clean
+- [x] No breaking changes"
+```
+
+### Review Analysis Commands
+```bash
+# Fetch specific review details with GitHub API
+gh api repos/OWNER/REPO/pulls/PR_NUMBER/reviews/REVIEW_ID
+
+# Get review comments for detailed analysis  
+gh api repos/OWNER/REPO/pulls/PR_NUMBER/reviews/REVIEW_ID/comments
+
+# View PR conversation and comments
+gh pr view PR_NUMBER --comments
+```
+
+**Key Success Patterns:**
+- **Direct reviewer tagging**: Use `@username` to notify original reviewer
+- **Structured responses**: Organize fixes by severity (Critical → High → Medium)
+- **Detailed locations**: Include file paths and line numbers for each fix
+- **Impact explanation**: Describe what each fix accomplishes  
+- **Testing validation**: Show test results and quality metrics
+- **Template usage**: Use placeholders (OWNER/REPO/PR_NUMBER) for reusability

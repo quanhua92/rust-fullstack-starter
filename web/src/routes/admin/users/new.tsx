@@ -25,7 +25,7 @@ interface CreateUserForm {
 	email: string;
 	password: string;
 	confirmPassword: string;
-	role: string;
+	role: "user" | "moderator" | "admin";
 	isActive: boolean;
 }
 
@@ -50,10 +50,12 @@ function NewUserPage() {
 			return response.data;
 		},
 		onSuccess: (data) => {
-			toast({
-				title: "User created successfully",
-				description: `User ${data.username} has been created with ID ${data.id}`,
-			});
+			if (data) {
+				toast({
+					title: "User created successfully",
+					description: `User ${data.username} has been created with ID ${data.id}`,
+				});
+			}
 			navigate({ to: "/admin/users" });
 		},
 		onError: (error: Error) => {

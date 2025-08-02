@@ -416,7 +416,7 @@ export function RealTimeNotifications() {
 														)}
 													</div>
 													{!notification.read && (
-														<div className="w-2 h-2 bg-blue-600 rounded-full flex-shrink-0"></div>
+														<div className="w-2 h-2 bg-blue-600 rounded-full flex-shrink-0" />
 													)}
 												</div>
 												<p

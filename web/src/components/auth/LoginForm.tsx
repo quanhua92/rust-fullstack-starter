@@ -23,17 +23,16 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 
-const loginSchema = z.object({
-	username: z.string().optional(),
-	email: z.string().email().optional(),
-	password: z.string().min(1, "Password is required"),
-}).refine(
-	(data) => data.username || data.email,
-	{
+const loginSchema = z
+	.object({
+		username: z.string().optional(),
+		email: z.string().email().optional(),
+		password: z.string().min(1, "Password is required"),
+	})
+	.refine((data) => data.username || data.email, {
 		message: "Either username or email is required",
 		path: ["username"],
-	}
-);
+	});
 
 type LoginFormData = z.infer<typeof loginSchema>;
 

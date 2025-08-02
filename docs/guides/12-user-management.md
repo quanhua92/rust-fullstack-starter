@@ -498,13 +498,148 @@ A: No. User creation requires admin privileges. Moderators can manage existing u
 **Q: Are password changes logged?**  
 A: Password changes trigger audit log entries with timestamps, but the actual passwords are never logged. Only hashed passwords are stored in the database.
 
+## Web Frontend Integration
+
+The comprehensive user management system is fully integrated into the React frontend with role-based UI components:
+
+### Admin User Management Interface
+
+**Complete User Management Portal** (`/admin/users`):
+- **User List**: Searchable, filterable list of all users with pagination
+- **Role-Based Actions**: Different action menus based on user role (moderator vs admin)
+- **Status Management**: One-click activate/deactivate users
+- **Password Reset**: Force password reset with automatic session invalidation
+- **User Creation**: Admin-only user creation with role assignment
+- **User Deletion**: Confirmed deletion with audit trail
+
+**Key Features**:
+```typescript
+// Role-based action menu
+<RoleGuard requiredRole="moderator">
+  {user.id !== currentUser?.id && (
+    <>
+      <DropdownMenuItem onClick={() => handleUserAction(user.id, "activate")}>
+        <UserCheck className="mr-2 h-4 w-4" />
+        {user.is_active ? "Deactivate" : "Activate"}
+      </DropdownMenuItem>
+      
+      <DropdownMenuItem onClick={() => handleUserAction(user.id, "reset-password")}>
+        <Key className="mr-2 h-4 w-4" />
+        Reset Password
+      </DropdownMenuItem>
+    </>
+  )}
+</RoleGuard>
+
+<RoleGuard requiredRole="admin">
+  {user.id !== currentUser?.id && (
+    <DropdownMenuItem onClick={() => handleUserAction(user.id, "delete")}>
+      <Trash2 className="mr-2 h-4 w-4" />
+      Delete User
+    </DropdownMenuItem>
+  )}
+</RoleGuard>
+```
+
+### User Analytics Dashboard
+
+**Comprehensive Analytics Interface** (`/admin/analytics`):
+- **Overview Statistics**: Total users, active users, recent registrations
+- **Role Distribution**: Visual breakdown of user roles across the system
+- **Account Status Analysis**: Active vs inactive account metrics
+- **Registration Trends**: Time-based registration analysis (weekly, monthly)
+- **Real-Time Updates**: Auto-refreshing statistics with live data
+
+**Analytics Features**:
+```typescript
+// Real-time user statistics
+const { data: userStats, isLoading } = useQuery({
+  queryKey: ["admin", "users", "stats"],
+  queryFn: async () => {
+    const response = await apiClient.getUserStats();
+    return response.data;
+  },
+  enabled: isAdmin(), // Only fetch if user is admin
+  refetchInterval: 30000, // Auto-refresh every 30 seconds
+});
+
+// Role distribution visualization
+{userStats?.users_by_role && 
+  Object.entries(userStats.users_by_role).map(([role, count]) => (
+    <div key={role} className="flex items-center justify-between">
+      <Badge
+        variant="outline"
+        className={`${getRoleColorClasses(role).text} ${getRoleColorClasses(role).border}`}
+      >
+        {getRoleDisplayName(role)}
+      </Badge>
+      <div className="text-2xl font-bold">{count}</div>
+    </div>
+  ))
+}
+```
+
+### Self-Service Profile Management
+
+**User Profile Interface**: Users can manage their own accounts through intuitive forms:
+- **Profile Updates**: Change username and email with real-time validation
+- **Password Changes**: Secure password updates with current password verification
+- **Account Deletion**: Self-service account deletion with confirmation requirements
+
+### Role-Based Navigation
+
+**Dynamic Menu System**: Navigation adapts based on user role:
+```typescript
+// Role-based menu visibility
+{
+  title: "Users",
+  icon: Users,
+  visible: isModeratorOrHigher, // Only moderator+ can see user management
+  items: [
+    { title: "All Users", url: "/admin/users" },
+    { 
+      title: "Create User", 
+      url: "/admin/users/new",
+      visible: isAdmin // Only admin can create users
+    },
+    { 
+      title: "User Analytics", 
+      url: "/admin/users/analytics",
+      visible: isAdmin // Only admin can see analytics
+    },
+  ],
+}
+```
+
+### Security and UX Features
+
+**Enhanced Security UI**:
+- **Confirmation Dialogs**: Critical operations require confirmation
+- **Password Visibility**: Optional password reveal for user convenience
+- **Loading States**: Clear feedback during async operations
+- **Error Handling**: User-friendly error messages with recovery suggestions
+
+**Accessibility and Usability**:
+- **Keyboard Navigation**: Full keyboard accessibility
+- **Screen Reader Support**: Proper ARIA labels and descriptions
+- **Responsive Design**: Works seamlessly on all device sizes
+- **Real-time Validation**: Immediate feedback on form inputs
+
 ## Next Steps
 
-Now that you understand user management, explore related systems:
+Now that you understand user management across the full stack:
 
 - **[Authentication & Authorization →](./02-authentication-and-authorization.md)** - Core auth concepts and RBAC implementation
+- **[Web Frontend Integration →](./10-web-frontend-integration.md)** - Complete frontend integration patterns
 - **[Testing →](./08-testing.md)** - Comprehensive testing strategies
-- **[Web Frontend Integration →](./10-web-frontend-integration.md)** - React components for user management
+
+**Try the Web Interface**:
+1. Start the backend API: `./scripts/dev-server.sh 3000`
+2. Start the frontend dev server: `cd web && pnpm dev` (runs on port 5173)
+3. Navigate to the web app: `http://localhost:5173`
+4. Access the admin interface: `http://localhost:5173/admin`
+5. Explore user management features with different role levels
+6. Test the analytics dashboard and role-based permissions
 
 ---
-*This user management system demonstrates production-ready patterns for user lifecycle management with security-first design.*
+*This user management system demonstrates production-ready patterns for user lifecycle management with security-first design and comprehensive frontend integration.*

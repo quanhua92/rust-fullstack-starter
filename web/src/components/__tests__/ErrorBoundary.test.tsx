@@ -59,24 +59,29 @@ describe("ErrorBoundary", () => {
 	});
 
 	it("allows retry functionality", () => {
-		const { rerender } = render(
+		let shouldThrow = true;
+		const DynamicThrowError = () => {
+			if (shouldThrow) {
+				throw new Error("Test error");
+			}
+			return <div>No error</div>;
+		};
+
+		render(
 			<ErrorBoundary>
-				<ThrowError shouldThrow={true} />
+				<DynamicThrowError />
 			</ErrorBoundary>,
 		);
 
 		expect(screen.getByText("Something went wrong")).toBeDefined();
 
+		// Fix the error condition
+		shouldThrow = false;
+
 		// Click retry button
 		fireEvent.click(screen.getByRole("button", { name: /try again/i }));
 
-		// Rerender with no error
-		rerender(
-			<ErrorBoundary>
-				<ThrowError shouldThrow={false} />
-			</ErrorBoundary>,
-		);
-
+		// Component should now render without error
 		expect(screen.getByText("No error")).toBeDefined();
 	});
 
