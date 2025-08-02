@@ -24,7 +24,7 @@
 - [ ] **Lesson 1:** System Overview - Map 13 modules (8 domains + 5 infrastructure), 6-line main.rs miracle
 - [ ] **Lesson 2:** Database Foundation - Master 5-table schema, 126 lines of migrations, connection pooling
 - [ ] **Lesson 3:** Authentication System - 64-character tokens, session lifecycle, 844 lines of auth code
-- [ ] **Lesson 4:** RBAC System - 3-tier hierarchy (User<Moderator<Admin), permission matrix, 622 lines
+- [ ] **Lesson 4:** RBAC System - 3-tier hierarchy (`User < Moderator < Admin`), permission matrix, 622 lines
 - [ ] **Lesson 5:** Task System - Background processing, retry strategies, TaskProcessor concurrency, 1,200+ lines
 - [ ] **Lesson 6:** API Layer - 36 routes, 4-tier security, OpenAPI docs, health endpoints
 - [ ] **Lesson 7:** User Management - 12 endpoints, Argon2 hashing, CLI admin tools
@@ -132,7 +132,7 @@ Master the 844-line authentication system with 64-character tokens, session life
 
 ---
 
-### 🛡️ LESSON 4: RBAC System - Permission Architecture  
+### 🛡️ LESSON 4: RBAC System - Permission Architecture
 *"Authentication says who you are, authorization says what you can do"*
 
 **🎯 Your Mission:**
@@ -140,7 +140,7 @@ Master the 622-line RBAC system with 3-tier hierarchy, permission matrix, and an
 
 **📂 Files to Explore:**
 1. **`starter/src/rbac/`** - Complete RBAC module (4 files, 622 lines)
-2. **Usage examples**: `tasks/api.rs`, `users/api.rs`, `cli/api.rs`
+2. **Usage examples**: `starter/src/tasks/api.rs`, `starter/src/users/api.rs`, `starter/src/cli/api.rs`
 
 **🔍 Your Discoveries:**
 - [ ] **3-Tier Hierarchy**: User(1) < Moderator(2) < Admin(3) with numerical comparisons
@@ -193,7 +193,7 @@ Master the 1,200+ line task processing system with TaskProcessor, retry strategi
 
 ---
 
-### 🌐 LESSON 6: API Layer - HTTP Interface  
+### 🌐 LESSON 6: API Layer - HTTP Interface
 *"How the outside world talks to our system"*
 
 **🎯 Your Mission:**
@@ -201,7 +201,7 @@ Master the 36-route HTTP API with 4-tier security, OpenAPI documentation, and co
 
 **📂 Files to Explore:**
 1. **`starter/src/server.rs`** - Complete router (265 lines)
-2. **`starter/src/openapi.rs`** - OpenAPI docs (190 lines) 
+2. **`starter/src/openapi.rs`** - OpenAPI docs (190 lines)
 3. **`starter/src/api/health.rs`** - 5 health endpoints (260 lines)
 4. **`scripts/test-with-curl.sh`** - 44+ endpoint tests
 
@@ -296,7 +296,7 @@ Master the complete React 18 frontend with 17,548 lines of TypeScript across 89 
 
 **📂 Files to Explore:**
 1. **`web/src/main.tsx`** - React 18 bootstrap with router configuration (49 lines)
-2. **`web/src/routeTree.gen.ts`** - 13 auto-generated routes from file structure  
+2. **`web/src/routeTree.gen.ts`** - 13 auto-generated routes from file structure
 3. **`web/vite.config.ts`** - Build config with API proxy and plugins (44 lines)
 4. **`web/src/types/api.ts`** - 2,515 lines of auto-generated OpenAPI types!
 5. **`web/src/components/ui/`** - 38 shadcn/ui components
@@ -309,7 +309,7 @@ Master the complete React 18 frontend with 17,548 lines of TypeScript across 89 
 
 **🧪 Hands-On Experiments:**
 1. **Route Generation**: Add a new route file and watch auto-generation
-2. **Component Library**: Explore shadcn/ui components and their variants  
+2. **Component Library**: Explore shadcn/ui components and their variants
 3. **Build Process**: Compare `pnpm dev` vs `pnpm build` outputs
 4. **Type Sync**: Modify backend API and regenerate frontend types
 
@@ -527,7 +527,7 @@ pub struct InvoiceProcessingTaskHandler;
 impl TaskHandler for InvoiceProcessingTaskHandler {
     async fn handle(&self, context: TaskContext) -> Result<TaskResult, TaskError> {
         // Use actual macros from helpers.rs
-        let (invoice_id, customer_id, amount) = 
+        let (invoice_id, customer_id, amount) =
             extract_fields!(context.payload, "invoice_id", "customer_id", "amount")?;
         
         // Follow exact timing patterns from existing handlers

@@ -17,7 +17,7 @@ cp docs/courses/STUDENT_BOOK.md docs/courses/STUDENT_BOOK.your-name.md
 
 # Example personalized names:
 # STUDENT_BOOK.john.md
-# STUDENT_BOOK.sarah.md  
+# STUDENT_BOOK.sarah.md
 # STUDENT_BOOK.alex-dev.md
 
 # The .gitignore will keep your personal learning journal private
@@ -59,7 +59,7 @@ Let's begin! What should I do first to understand the system overview?
 ### The Feynman Method Applied to This Starter
 
 1. **Understand** - We'll explore actual files in the codebase together
-2. **Simplify** - Break down complex parts into understandable pieces  
+2. **Simplify** - Break down complex parts into understandable pieces
 3. **Teach Back** - You'll explain concepts back to me in your own words
 4. **Iterate** - We'll refine understanding through experiments and questions
 
@@ -91,7 +91,7 @@ Let's begin! What should I do first to understand the system overview?
 ### 📖 Phase 1: Backend Mastery (Lessons 1-8)
 Master every Rust file in `starter/src/` before touching frontend
 
-### 🌐 Phase 2: Frontend Integration (Lessons 9-13)  
+### 🌐 Phase 2: Frontend Integration (Lessons 9-13)
 Understand how `web/` connects to the backend you've mastered
 
 ### 🔧 Phase 3: Customization & Mastery (Lessons 14-15)
@@ -120,7 +120,7 @@ You should see 5 migration files. Open `001_users.up.sql` and tell me what you n
 ## 🔄 Continuous Learning Loop
 
 1. **Learn** - AI teaches you a specific concept from the curriculum
-2. **Experiment** - You modify actual code to test understanding  
+2. **Experiment** - You modify actual code to test understanding
 3. **Journal** - Update your learning journal with insights
 4. **Question** - Ask follow-up questions about what you discovered
 5. **Apply** - Build on the knowledge in the next lesson
