@@ -26,19 +26,43 @@ cp docs/courses/STUDENT_BOOK.md docs/courses/STUDENT_BOOK.your-name.md
 
 ### Step 2: Set Up Your AI Learning Assistant
 
-**Choose your preferred AI assistant:**
-- Claude (claude.ai)
-- ChatGPT (chat.openai.com)
+**Recommended AI assistants with codebase access:**
+- **Claude Code** (claude.ai/code) - Direct codebase integration, can read and explore files
+- **Gemini CLI** - Command-line AI with live codebase access
+- **Cursor** - AI-powered code editor with full project context
+
+**Alternative for web-based AI assistants:**
+- Claude (claude.ai) - Upload both course files
+- ChatGPT (chat.openai.com) - Upload both course files  
 - Any other LLM with file upload capability
 
-**Upload these two files to start your interactive learning session:**
+**For codebase-integrated AI (Recommended):**
+The AI can directly explore files mentioned in lessons and provide real-time guidance based on the actual code.
+
+**For web-based AI:**
+Upload these two files to start your interactive learning session:
 1. `docs/courses/TEACHER_BOOK.md` - Complete teaching guide
 2. `docs/courses/STUDENT_BOOK.your-name.md` - Your personal learning journal
 
 ### Step 3: Start Your First Learning Session
 
-**Paste this prompt to begin:**
+**For codebase-integrated AI (Claude Code, Gemini CLI):**
+```
+I want to learn the Rust Fullstack Starter system completely using the interactive learning system in docs/courses/. 
 
+Please act as my Feynman-method teacher for this specific starter system. Read docs/courses/TEACHER_BOOK.md for the complete curriculum and help me work through it systematically starting with Lesson 1: System Overview.
+
+Teaching rules:
+1. Always reference actual files in the codebase (like starter/src/main.rs)
+2. Ask me to experiment with real code changes you can verify
+3. Use your codebase access to provide specific examples and line numbers
+4. Focus only on THIS starter system, not general concepts
+5. Guide me to truly understand, not just memorize
+
+Let's begin! What should I do first to understand the system overview?
+```
+
+**For web-based AI (after uploading both course files):**
 ```
 I want to learn the Rust Fullstack Starter system completely. I've uploaded the TEACHER_BOOK.md with the complete curriculum and my personal STUDENT_BOOK.your-name.md learning journal.
 
@@ -79,6 +103,13 @@ Let's begin! What should I do first to understand the system overview?
 ✅ **Help you update your learning journal with insights**
 ✅ **Answer questions specific to this starter system**
 ✅ **Challenge you with hands-on exercises**
+
+**Additional benefits with codebase-integrated AI:**
+✅ **Read and analyze actual code in real-time**
+✅ **Provide exact line numbers and code examples**
+✅ **Verify your experiments and modifications**
+✅ **Navigate the complete project structure**
+✅ **Keep up with any codebase changes**
 
 ❌ **Won't teach general web development concepts**
 ❌ **Won't skip the systematic progression**
