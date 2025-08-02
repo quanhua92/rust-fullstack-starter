@@ -246,8 +246,6 @@ else
     print_status "info" "E2E Testing: $TEST_COUNT tests × $BROWSER_COUNT browsers (${TEST_TIMEOUT}ms/test, ${GLOBAL_TIMEOUT_SECONDS}s global limit)"
     
     # Run Playwright tests based on options with configurable timeout enforcement
-    # Convert milliseconds to seconds for timeout command
-    GLOBAL_TIMEOUT_SECONDS=$((GLOBAL_TIMEOUT / 1000))
     if [ "$SMOKE_ONLY" = "true" ] || [ "${PLAYWRIGHT_SMOKE_ONLY:-false}" = "true" ]; then
         run_cmd "Running Playwright smoke tests (${GLOBAL_TIMEOUT_SECONDS}s max)" timeout ${GLOBAL_TIMEOUT_SECONDS}s pnpm run test:e2e:smoke $PLAYWRIGHT_FLAGS
     elif [ "$FULL_TESTS" = "true" ]; then
