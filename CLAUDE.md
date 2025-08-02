@@ -82,7 +82,7 @@ show_elapsed
   - **Ultra-fast smoke**: `./scripts/check-web.sh --skip-lint --smoke` (~10s total, ~410ms E2E)
   - **Fast single-browser**: `./scripts/check-web.sh --skip-lint` (~11s total, ~1.1s E2E)
   - **Full multi-browser**: `./scripts/check-web.sh --skip-lint --full` (~5-10min)
-  - **Custom timeouts**: `./scripts/check-web.sh --skip-lint --global-timeout=60 --max-failures=3`
+  - **Custom timeouts**: `./scripts/check-web.sh --skip-lint --global-timeout=60000 --max-failures=3`
   - **No fail-fast**: `./scripts/check-web.sh --skip-lint --no-fail-fast` (run all tests)
 - **Integration Tests**: `cd starter && cargo nextest run` (123 tests, ~17 seconds)
 - **API Testing**: `./scripts/test-with-curl.sh [host] [port]` (44+ endpoint tests)
