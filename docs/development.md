@@ -152,7 +152,7 @@ This starter includes a comprehensive integration testing framework that helps y
 # Install cargo-nextest for faster testing (optional but recommended)
 cargo install cargo-nextest
 
-# Run all integration tests (~12 seconds for 119 tests)
+# Run all integration tests (~17 seconds for 123 tests)
 cargo nextest run
 
 # Run without stopping on failures (see all results)
@@ -263,7 +263,7 @@ sqlx migrate revert
 ```bash
 # Backend testing
 cargo check                                  # Check compilation
-cargo nextest run                            # Run 119 integration tests (~12 seconds)
+cargo nextest run                            # Run 123 tests (~17 seconds)
 cargo nextest run --no-fail-fast            # See all test results
 ./scripts/test-with-curl.sh                  # Test API endpoints (44+ tests)
 

@@ -9,7 +9,7 @@ This guide will help you set up and run the Rust Full-Stack Starter project loca
 - **Docker 20.10+** and **Docker Compose 2.0+** - For database infrastructure
 - **PostgreSQL client tools** (optional) - For database inspection
 
-> **Performance Note**: Setup typically takes 2-3 seconds, test execution ~12 seconds for all 119 tests
+> **Performance Note**: Setup typically takes 2-3 seconds, test execution ~17 seconds for all 123 tests
 
 ## Quick Setup
 
@@ -243,7 +243,7 @@ docker compose up -d postgres && docker compose up --wait
 
 ### Testing Commands
 ```bash
-# Run all integration tests (~12 seconds)
+# Run all integration tests (~17 seconds)
 cargo nextest run
 
 # Test API endpoints (44 tests)
@@ -306,14 +306,14 @@ docker compose down
 
 ## Testing Your Application
 
-This starter includes a comprehensive testing framework with 119 integration tests.
+This starter includes a comprehensive testing framework with 123 tests (93 integration tests + 30 unit tests).
 
 ### Running Tests
 ```bash
 # Install faster test runner (recommended)
 cargo install cargo-nextest
 
-# Run all tests (119 integration tests) - takes ~12 seconds
+# Run all tests (123 tests) - takes ~17 seconds
 cargo nextest run
 
 # Run specific test categories

@@ -248,7 +248,7 @@ rust-fullstack-starter/
     │   ├── server.rs           # Unified server (API + static files)
     │   └── ...                 # Health, errors, database, types
     ├── migrations/             # Database schema evolution
-    └── tests/                  # Integration tests (119 tests)
+    └── tests/                  # Integration tests (93 tests)
 ```
 
 ## Getting Started
@@ -295,7 +295,7 @@ curl -X POST http://localhost:3000/api/v1/auth/login \
 # Install test runner (recommended)
 cargo install cargo-nextest
 
-# Run integration tests (119 tests, ~12 seconds)
+# Run integration tests (123 tests, ~17 seconds)
 cargo nextest run
 
 # Test API endpoints (44+ endpoint tests)
@@ -525,7 +525,7 @@ Comprehensive guides in **[`guides/`](guides/)**:
 
 ### 🚢 **Ready for Production?**
 - **[Production Deployment](production-deployment.md)** - Docker, Kubernetes, security
-- **[Testing Strategy](guides/08-testing.md)** - 119 integration tests + chaos testing
+- **[Testing Strategy](guides/08-testing.md)** - 123 tests (93 integration + 30 unit) + chaos testing
 - **[Debugging Guide](guides/11-debugging-and-troubleshooting.md)** - Systematic problem solving
 - **[Performance & Monitoring](reliability.md)** - Optimization and observability
 
