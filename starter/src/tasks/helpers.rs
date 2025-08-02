@@ -133,4 +133,19 @@ mod tests {
 
         Ok(())
     }
+
+    #[test]
+    fn test_extract_fields_macro_missing_field() {
+        let payload = json!({
+            "to": "test@example.com",
+            "subject": "Test Subject"
+            // "body" is missing
+        });
+
+        let result = extract_fields!(payload, "to", "subject", "body");
+        assert!(result.is_err());
+        if let Err(e) = result {
+            assert!(e.to_string().contains("Missing 'body' field in payload"));
+        }
+    }
 }

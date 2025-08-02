@@ -69,8 +69,12 @@ run_cmd "🧪 Step 8/8: Running tests" pnpm run test
 print_status "step" "🔍 Additional quality checks..."
 
 # Check for console statements in source files (excluding dev/debug files)
-if find src -name "*.ts" -o -name "*.tsx" | grep -v "dev\|debug\|test" | xargs grep -l "console\." 2>/dev/null | head -5 >/dev/null; then
+console_files=$(find src -name "*.ts" -o -name "*.tsx" | grep -v "dev\|debug\|test" | xargs grep -l "console\." 2>/dev/null | head -5)
+if [ -n "$console_files" ]; then
     print_status "warning" "Found console statements in source files (consider removing for production)"
+    echo "$console_files" | while read -r file; do
+        print_status "info" "  $file"
+    done
 fi
 
 # Check for TODO/FIXME in source files

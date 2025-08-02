@@ -67,7 +67,7 @@ check_dependency() {
     
     echo -n "🔍 $cmd: "
     if command -v "$cmd" >/dev/null 2>&1; then
-        local version=$($cmd --version 2>/dev/null | head -1 | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1)
+        local version=$($cmd --version 2>/dev/null | head -1 | grep -oE '[0-9]+(\.[0-9]+)*' | head -1)
         if [ -n "$version" ]; then
             echo "✅ Found ($version)"
             if [ -n "$required_version" ]; then
@@ -208,6 +208,9 @@ parse_standard_args() {
 
 # Get project directories
 get_project_dirs() {
+    # Note: BASH_SOURCE[1] is used here to get the path of the calling script,
+    # not this common.sh script. This allows us to correctly determine the
+    # project root relative to the script that sources this file.
     SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[1]}")" && pwd)"
     PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
     WEB_ROOT="$PROJECT_ROOT/web"
