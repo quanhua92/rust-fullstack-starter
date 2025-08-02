@@ -54,12 +54,15 @@ graph TB
 
 ### Quick Start
 ```bash
-# Complete development environment (recommended)
+# Complete development environment (recommended) - includes web build
 ./scripts/dev-server.sh 3000
+
+# Complete setup with background worker
+./scripts/dev-server.sh -w
 
 # Or step by step
 docker compose up -d postgres && docker compose up --wait  # Start infrastructure
-./scripts/server.sh 3000            # Start server in background
+./scripts/server.sh 3000            # Start server with auto-build
 ./scripts/test-server.sh 3000       # Verify it's working
 ```
 
@@ -88,11 +91,12 @@ rust-fullstack-starter/
 ├── .env.example               # Environment template
 ├── .env.prod.test             # Production test environment
 ├── scripts/
-│   ├── dev-server.sh          # Complete development workflow
-│   ├── server.sh              # Start server with auto-restart
-│   ├── test-server.sh         # Test health endpoints
-│   ├── stop-server.sh         # Stop server processes
-│   └── dev-server.sh          # Complete development workflow
+│   ├── dev-server.sh          # Complete development workflow (enhanced)
+│   ├── server.sh              # Start server with auto-build and static serving
+│   ├── test-server.sh         # Test health endpoints with polling
+│   ├── stop-server.sh         # Graceful server shutdown
+│   ├── build-web.sh           # React/TypeScript frontend build
+│   └── worker.sh              # Background task worker management
 ├── docs/                      # Documentation
 └── starter/                   # Main application
     ├── Cargo.toml             # Application dependencies
@@ -584,19 +588,22 @@ psql $DATABASE_URL -c "SELECT 1"
 
 ### Development Scripts Workflow
 ```bash
-# Start development environment
+# Start complete development environment with web build
 ./scripts/dev-server.sh 3000
 
-# During development - restart server
+# Or with background worker included
+./scripts/dev-server.sh -w
+
+# During development - restart server (auto-builds web if needed)
 ./scripts/server.sh 3000
 
-# Test changes
+# Test changes with health endpoint polling
 ./scripts/test-server.sh 3000
 
 # View logs
 tail -f /tmp/starter-server-3000.log
 
-# Stop when done
+# Stop when done (graceful shutdown)
 ./scripts/stop-server.sh 3000
 ```
 

@@ -19,12 +19,24 @@ cd rust-fullstack-starter
 ### 2. Start the Server
 
 ```bash
-# Start database and HTTP server
+# Complete full-stack environment (database + web + API)
 ./scripts/dev-server.sh
+
+# Or with options:
+./scripts/dev-server.sh -w          # Also start worker (complete setup)
+./scripts/dev-server.sh -f          # Foreground mode
+./scripts/dev-server.sh --api-only  # API only (skip web build)
+./scripts/dev-server.sh -p 8080     # Custom port
 ```
 
-### 3. Start the Worker (New Terminal)
+### 3. Start the Worker
 
+**Option A: Included with server** (easiest):
+```bash
+./scripts/dev-server.sh -w    # Starts everything: database + web + API + worker
+```
+
+**Option B: Separate terminal**:
 ```bash
 # Start background task worker with log following
 ./scripts/worker.sh -f
@@ -84,23 +96,28 @@ curl -H "Authorization: Bearer TOKEN" http://localhost:3000/api/v1/tasks
 
 ### 5. Build and Serve Full-Stack Application
 
-**Option A: Serve web frontend from Rust server** (recommended for deployment):
+**Option A: Complete development environment** (recommended):
 ```bash
-# Build web frontend and start unified server
-./scripts/dev-full-stack.sh
+# Full setup: database + web build + unified server
+./scripts/dev-server.sh
 
-# Or manually:
-./scripts/build-web.sh         # Build React frontend
-./scripts/server.sh 3000       # Serve API + static files
+# Or quick restart: auto-detects and builds web if needed  
+./scripts/server.sh 3000       # Smart server with auto-build
 ```
 
 **Option B: Separate development servers**:
 ```bash
-# Terminal 1: API server
+# Terminal 1: API server only
 ./scripts/server.sh 3000
 
 # Terminal 2: React dev server  
 cd web && pnpm dev
+```
+
+**Option C: Manual build then serve**:
+```bash
+./scripts/build-web.sh         # Build React frontend  
+./scripts/server.sh 3000       # Serve API + static files
 ```
 
 ### 6. Explore the Application
@@ -128,7 +145,7 @@ cd web && pnpm dev
 
 ```bash
 # Full-stack development
-./scripts/dev-full-stack.sh         # Build web + start unified server
+./scripts/dev-server.sh             # Complete environment: database + web + API
 ./scripts/build-web.sh              # Build React frontend only
 
 # Run tests

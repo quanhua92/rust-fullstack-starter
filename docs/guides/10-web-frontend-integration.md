@@ -1342,23 +1342,24 @@ echo "✅ Web frontend build completed!"
 echo "📂 Build output: web/dist"
 ```
 
-**Full-Stack Development Script** (`scripts/dev-full-stack.sh`):
+**Enhanced Development Script** (`scripts/dev-server.sh`):
 ```bash
 #!/bin/bash
-# Complete full-stack development environment
+# Complete full-stack development environment with enhanced features
 
-# Build web frontend
+# Start infrastructure
+docker compose up -d postgres && docker compose up --wait
+
+# Auto-build web frontend if needed (with smart detection)
 ./scripts/build-web.sh
 
-# Start database
-docker compose up -d postgres
-
-# Start Rust server with static file serving
+# Start unified server with auto-build detection and static serving
 ./scripts/server.sh 3000
 
 echo "🎉 Full-stack development environment ready!"
 echo "🌐 Frontend: http://localhost:3000"
 echo "🔌 API: http://localhost:3000/api/v1"
+echo "📚 API Docs: http://localhost:3000/api-docs"
 ```
 
 ### Configuration Options

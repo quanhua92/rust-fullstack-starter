@@ -220,6 +220,12 @@ pub async fn start_server(config: AppConfig, database: Database) -> Result<()> {
 
     // Setup static file serving for web frontend
     let web_build_path = &config.server.web_build_path;
+    if !Path::new(web_build_path).is_dir() {
+        tracing::warn!(
+            "Web build directory not found at '{}'. Static file serving will fail.",
+            web_build_path
+        );
+    }
     let index_path = Path::new(web_build_path).join("index.html");
 
     let static_files_service =

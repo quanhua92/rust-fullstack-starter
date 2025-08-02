@@ -203,11 +203,19 @@ if [ -d "web" ] && [ -f "web/dist/index.html" ]; then
     bash -c "cd '$PROJECT_ROOT/starter' && cargo run --quiet -- server --port $TEST_PORT" >/dev/null 2>&1 &
     TEST_SERVER_PID=$!
     
-    # Give server time to start
-    sleep 3
+    # Wait for server to start by polling its health endpoint
+    echo -e "${BLUE}   Waiting for server to start...${NC}"
+    SERVER_READY=false
+    for i in {1..20}; do # 10 seconds timeout
+        if curl -s -f "http://localhost:$TEST_PORT/api/v1/health" >/dev/null 2>&1; then
+            SERVER_READY=true
+            break
+        fi
+        sleep 0.5
+    done
     
     # Test if server is responding
-    if kill -0 $TEST_SERVER_PID 2>/dev/null; then
+    if [ "$SERVER_READY" = true ] && kill -0 $TEST_SERVER_PID 2>/dev/null; then
         # Test static file serving
         if curl -s "http://localhost:$TEST_PORT/" | grep -q "<!DOCTYPE html>"; then
             echo -e "${GREEN}✅ Static file serving working${NC}"
@@ -232,9 +240,24 @@ if [ -d "web" ] && [ -f "web/dist/index.html" ]; then
         echo -e "${YELLOW}⚠️  Could not start test server for static file validation${NC}"
     fi
     
-    # Clean up test server
+    # Clean up test server gracefully
     if kill -0 $TEST_SERVER_PID 2>/dev/null; then
-        kill -9 $TEST_SERVER_PID 2>/dev/null || true
+        # Try graceful shutdown first
+        kill $TEST_SERVER_PID 2>/dev/null || true
+        
+        # Wait briefly for graceful shutdown
+        for i in {1..6}; do # 3 seconds timeout
+            if ! kill -0 $TEST_SERVER_PID 2>/dev/null; then
+                break
+            fi
+            sleep 0.5
+        done
+        
+        # Force kill if still running
+        if kill -0 $TEST_SERVER_PID 2>/dev/null; then
+            kill -9 $TEST_SERVER_PID 2>/dev/null || true
+        fi
+        
         # Also kill by port in case of issues
         lsof -ti:$TEST_PORT | xargs kill -9 2>/dev/null || true
     fi

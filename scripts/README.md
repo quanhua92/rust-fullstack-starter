@@ -4,15 +4,20 @@ This directory contains comprehensive scripts for developing, testing, and manag
 
 ## 🎯 Quick Start Scripts
 
-### `dev-server.sh [port]`
-**Complete development environment with database, migrations, and server startup (recommended).**
+### `dev-server.sh [options]`
+**Complete full-stack development environment with database, web build, and unified server (recommended).**
 - **Default port:** 3000
-- **Includes:** PostgreSQL startup, migrations, server startup, health checks
+- **Includes:** PostgreSQL startup, web frontend build, unified API + static serving, migrations
+- **Optional:** Background worker startup with `-w` flag
 - **Auto-creates:** .env file if missing
 - **Validates:** Prerequisites and working directory
+- **Options:** `-f` (foreground), `-w` (with worker), `-p PORT`, `--api-only`, `-h` (help)
 ```bash
-./scripts/dev-server.sh         # Start on port 3000
-./scripts/dev-server.sh 8080    # Start on port 8080
+./scripts/dev-server.sh              # Database + web + API
+./scripts/dev-server.sh -w           # Complete setup: database + web + API + worker
+./scripts/dev-server.sh -f           # Foreground mode
+./scripts/dev-server.sh --api-only   # Skip web build (API only)
+./scripts/dev-server.sh -p 8080      # Custom port
 ```
 
 ### `rename-project.sh <name>`
@@ -54,19 +59,21 @@ Check status of all services, ports, PID files, and connectivity.
 ## 🖥️ Server Management
 
 ### `server.sh [port] [-f|--foreground]`
-Start HTTP API server in background or foreground mode.
+Start HTTP API server with static file serving in background or foreground mode.
 - **Default port:** 3000
+- **Static serving:** Automatically serves React frontend from `web/dist` with SPA fallback
+- **Auto-build:** Detects missing web build and builds frontend automatically
 - **Background mode:** PID tracking, log files, process management
 - **Foreground mode (-f):** Direct exec, Ctrl+C kills process cleanly
 - **PID file:** `/tmp/starter-server-{PORT}.pid` (background only)
 - **Log file:** `/tmp/starter-server-{PORT}.log` (background only, auto-rotated at 50MB)
 - **Auto-cleanup:** Always kills existing processes on port first
 ```bash
-# Background mode (default)
-./scripts/server.sh         # Start on port 3000, creates PID file
-./scripts/server.sh 8080     # Start on port 8080, creates PID file
+# Background mode (default) - serves API + frontend
+./scripts/server.sh         # Port 3000, auto-builds web if needed
+./scripts/server.sh 8080     # Port 8080, auto-builds web if needed
 
-# Foreground mode (direct control)
+# Foreground mode (direct control) - unified full-stack server
 ./scripts/server.sh -f       # Port 3000, direct exec, Ctrl+C to stop
 ./scripts/server.sh 3000 -f  # Port 3000, direct exec, Ctrl+C to stop
 ```
@@ -82,6 +89,19 @@ Test server health endpoints with 30-second timeout.
 ```bash
 ./scripts/test-server.sh 3000
 ```
+
+## 🌐 Web Frontend Management
+
+### `build-web.sh`
+Build React/TypeScript frontend with comprehensive quality checks.
+- **Output:** Production build to `web/dist/` directory
+- **Quality checks:** Dependencies, TypeScript, linting, build validation
+- **Auto-install:** pnpm if not available
+- **Fallback:** Regular install if frozen lockfile fails
+```bash
+./scripts/build-web.sh              # Build with quality checks
+```
+
 
 ## ⚙️ Background Worker Management
 
