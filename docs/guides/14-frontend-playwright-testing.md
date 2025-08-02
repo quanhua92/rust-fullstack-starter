@@ -189,7 +189,7 @@ projects: [
 
 ### Key Configuration Features
 
-- **Base URL**: Configurable via `PLAYWRIGHT_BASE_URL` (default: `http://localhost:3000`)
+- **Base URL**: Configurable via `PLAYWRIGHT_BASE_URL` (default: `http://localhost:5173`)
 - **Parallel Execution**: Tests run in parallel for speed
 - **Retry Logic**: Automatic retries on CI environments
 - **Artifacts**: Screenshots, videos, and traces on failure
