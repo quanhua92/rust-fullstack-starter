@@ -1,6 +1,6 @@
 # Web Frontend Integration Guide
 
-*This guide explains how the React TypeScript frontend connects with the Rust API backend, demonstrating real-world full-stack integration patterns based on the actual implementation.*
+*This guide explains how the React TypeScript frontend connects with the Rust API backend, demonstrating real-world full-stack integration patterns with static file serving from the Rust server.*
 
 ## 🤔 Why This Specific Integration Approach?
 
@@ -1266,15 +1266,181 @@ const getMenuItems = (isModeratorOrHigher: boolean, isAdmin: boolean): MenuItem[
 </Badge>
 ```
 
+## Static File Serving Integration
+
+### Backend: Rust Server Configuration
+
+The Rust server serves the React frontend build files directly, providing a unified deployment option:
+
+**Server Configuration** (`starter/src/config.rs`):
+```rust
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ServerConfig {
+    pub host: String,
+    pub port: u16,
+    pub cors_origins: Vec<String>,
+    pub request_timeout_secs: u64,
+    pub web_build_path: String, // Path to frontend build directory
+}
+
+impl Default for ServerConfig {
+    fn default() -> Self {
+        Self {
+            // ... other defaults ...
+            web_build_path: "web/dist".to_string(), // Default to web/dist
+        }
+    }
+}
+```
+
+**Static File Service** (`starter/src/server.rs`):
+```rust
+use tower_http::services::{ServeDir, ServeFile};
+
+pub async fn start_server(config: AppConfig, database: Database) -> Result<()> {
+    let state = AppState { config: config.clone(), database };
+    let api_router = create_router(state);
+    
+    // Setup static file serving for web frontend
+    let web_build_path = &config.server.web_build_path;
+    let index_path = Path::new(web_build_path).join("index.html");
+
+    let static_files_service =
+        ServeDir::new(web_build_path).not_found_service(ServeFile::new(index_path));
+
+    let app = Router::new()
+        .nest("/api/v1", api_router)
+        .route("/api-docs", get(api_docs))
+        .route("/api-docs/openapi.json", get(openapi_json))
+        // Serve static files with SPA fallback
+        .fallback_service(static_files_service);
+    
+    info!("Serving static files from: {}", config.server.web_build_path);
+    // ... server startup ...
+}
+```
+
+### Frontend Build Integration
+
+**Automated Build Script** (`scripts/build-web.sh`):
+```bash
+#!/bin/bash
+# Comprehensive web frontend build with quality checks
+
+echo "🚀 Building web frontend..."
+
+# Install dependencies
+cd web && pnpm install --frozen-lockfile
+
+# Run quality checks
+./scripts/check-web.sh
+
+# Build production bundle
+pnpm build
+
+echo "✅ Web frontend build completed!"
+echo "📂 Build output: web/dist"
+```
+
+**Full-Stack Development Script** (`scripts/dev-full-stack.sh`):
+```bash
+#!/bin/bash
+# Complete full-stack development environment
+
+# Build web frontend
+./scripts/build-web.sh
+
+# Start database
+docker compose up -d postgres
+
+# Start Rust server with static file serving
+./scripts/server.sh 3000
+
+echo "🎉 Full-stack development environment ready!"
+echo "🌐 Frontend: http://localhost:3000"
+echo "🔌 API: http://localhost:3000/api/v1"
+```
+
+### Configuration Options
+
+**Environment Variable Override**:
+```bash
+# Override web build path via environment
+export STARTER__SERVER__WEB_BUILD_PATH="/custom/path/to/build"
+./scripts/server.sh
+```
+
+**Development vs Production Paths**:
+```toml
+# .env.development
+STARTER__SERVER__WEB_BUILD_PATH="web/dist"
+
+# .env.production  
+STARTER__SERVER__WEB_BUILD_PATH="./static"
+```
+
+### Deployment Integration
+
+**Docker Build Example**:
+```dockerfile
+# Multi-stage build for full-stack deployment
+FROM node:20-alpine AS frontend-builder
+WORKDIR /app
+
+# Install pnpm
+RUN npm install -g pnpm
+
+# Copy frontend source and build
+COPY web/package.json web/pnpm-lock.yaml ./web/
+RUN cd web && pnpm install --frozen-lockfile
+
+COPY web ./web
+RUN cd web && pnpm build
+
+# Rust backend stage
+FROM rust:1.75-alpine AS backend-builder
+WORKDIR /app
+
+# Build Rust application
+COPY . .
+RUN cargo build --release
+
+# Final production image
+FROM alpine:latest
+WORKDIR /app
+
+# Copy built frontend assets
+COPY --from=frontend-builder /app/web/dist ./static
+
+# Copy Rust binary
+COPY --from=backend-builder /app/target/release/starter .
+
+# Set configuration
+ENV STARTER__SERVER__WEB_BUILD_PATH="./static"
+ENV STARTER__SERVER__PORT=3000
+
+EXPOSE 3000
+CMD ["./starter", "server", "--port", "3000"]
+```
+
+### Benefits of Unified Serving
+
+1. **Simplified Deployment**: Single server for API and frontend
+2. **Consistent Routing**: No CORS issues during development
+3. **Reduced Infrastructure**: Fewer moving parts in production
+4. **SPA Support**: Automatic fallback to index.html for client-side routing
+5. **Performance**: Direct file serving without additional proxy layers
+
 ## Next Steps
 
-Now that you understand the full-stack integration with RBAC:
+Now that you understand the full-stack integration with static file serving:
 
-1. **Experiment**: Make changes to see how types propagate through the stack
-2. **Extend**: Add new endpoints and see the workflow in action
-3. **Debug**: Practice debugging issues at different layers
-4. **Optimize**: Implement caching and performance improvements
-5. **Customize RBAC**: Modify roles and permissions for your specific needs
+1. **Build & Serve**: Use `./scripts/dev-full-stack.sh` to test the complete stack
+2. **Experiment**: Make changes to see how types propagate through the stack
+3. **Extend**: Add new endpoints and see the workflow in action
+4. **Debug**: Practice debugging issues at different layers
+5. **Optimize**: Implement caching and performance improvements
+6. **Customize RBAC**: Modify roles and permissions for your specific needs
 
 **Related Guides**:
 - [Architecture Overview](01-architecture.md) - System design principles

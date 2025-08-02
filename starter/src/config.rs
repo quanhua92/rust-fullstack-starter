@@ -21,6 +21,7 @@ pub struct ServerConfig {
     #[serde(deserialize_with = "deserialize_cors_origins")]
     pub cors_origins: Vec<String>,
     pub request_timeout_secs: u64,
+    pub web_build_path: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -226,6 +227,7 @@ impl Default for AppConfig {
                 port: 8080,
                 cors_origins: vec!["http://localhost:5173".to_string()],
                 request_timeout_secs: 30,
+                web_build_path: "web/dist".to_string(),
             },
             database: DatabaseConfig {
                 user: "starter_user".to_string(),

@@ -85,6 +85,13 @@ rotate_log_if_needed
 if [ "$FOLLOW_LOGS" = true ]; then
     echo "🚀 Starting server in foreground mode (Ctrl+C to exit)..."
     echo "📋 Running directly with exec (no PID file or logs)"
+    
+    # Set default web build path if not already set
+    SCRIPT_DIR=$(pwd)
+    if [ -z "${STARTER__SERVER__WEB_BUILD_PATH:-}" ]; then
+        export STARTER__SERVER__WEB_BUILD_PATH="$SCRIPT_DIR/web/dist"
+    fi
+    
     echo "=================================="
     cd starter
     exec cargo run -- server --port $PORT
@@ -97,6 +104,12 @@ echo "📄 PID file: $PID_FILE"
 
 # Use absolute path and proper backgrounding
 SCRIPT_DIR=$(pwd)
+
+# Set default web build path if not already set
+if [ -z "${STARTER__SERVER__WEB_BUILD_PATH:-}" ]; then
+    export STARTER__SERVER__WEB_BUILD_PATH="$SCRIPT_DIR/web/dist"
+fi
+
 bash -c "cd '$SCRIPT_DIR/starter' && exec cargo run -- server --port $PORT" > "$LOG_FILE" 2>&1 &
 SERVER_PID=$!
 

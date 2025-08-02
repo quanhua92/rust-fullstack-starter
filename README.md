@@ -82,34 +82,63 @@ curl -X POST http://localhost:3000/api/v1/tasks \
 curl -H "Authorization: Bearer TOKEN" http://localhost:3000/api/v1/tasks
 ```
 
-### 5. Explore More
+### 5. Build and Serve Full-Stack Application
 
-- **API Docs**: http://localhost:3000/api-docs (Interactive Swagger UI)
-- **Health Check**: http://localhost:3000/health (System status)
-- **Worker Logs**: Check `/tmp/starter-worker-0.log` for task processing (or `/tmp/starter-worker-{ID}.log` for specific worker ID)
+**Option A: Serve web frontend from Rust server** (recommended for deployment):
+```bash
+# Build web frontend and start unified server
+./scripts/dev-full-stack.sh
+
+# Or manually:
+./scripts/build-web.sh         # Build React frontend
+./scripts/server.sh 3000       # Serve API + static files
+```
+
+**Option B: Separate development servers**:
+```bash
+# Terminal 1: API server
+./scripts/server.sh 3000
+
+# Terminal 2: React dev server  
+cd web && pnpm dev
+```
+
+### 6. Explore the Application
+
+- **🌐 Frontend**: http://localhost:3000 (React app served by Rust)
+- **🔌 API**: http://localhost:3000/api/v1 (REST API)
+- **📚 API Docs**: http://localhost:3000/api-docs (Interactive Swagger UI)
+- **❤️ Health Check**: http://localhost:3000/api/v1/health (System status)
+- **🔧 Worker Logs**: Check `/tmp/starter-worker-0.log` for task processing
 
 ## Key Features
 
+- **🌐 Full-Stack Integration** - React frontend served directly by Rust server with unified deployment
 - **🔐 Authentication & Authorization** - Session-based auth with Role-Based Access Control (RBAC)
 - **👥 User Management System** - Complete user lifecycle with 12 endpoints (profile, admin, analytics)
 - **🔑 Role-Based Access Control** - Three-tier system (User/Moderator/Admin) with hierarchical permissions
 - **⚙️ Background Tasks** - Async job processing with retry logic and dead letter queue
 - **📊 API Documentation** - Interactive OpenAPI/Swagger docs
-- **🧪 Testing Framework** - 95 integration tests + comprehensive API endpoint testing
+- **🧪 Testing Framework** - 119 integration tests + comprehensive API endpoint testing
 - **🔥 Chaos Testing** - Docker-based resilience testing with 7 scenarios
 - **⚙️ Admin CLI** - Direct database access for monitoring and maintenance
-- **🐳 Docker Support** - Development and production containers
+- **🐳 Docker Support** - Development and production containers with multi-stage builds
 
 ## Development Commands
 
 ```bash
+# Full-stack development
+./scripts/dev-full-stack.sh         # Build web + start unified server
+./scripts/build-web.sh              # Build React frontend only
+
 # Run tests
 cargo nextest run                    # Integration tests (119 tests)
 ./scripts/test-with-curl.sh         # API endpoint tests (44+ tests)
 ./scripts/test-chaos.sh             # Chaos testing (7 scenarios)
 
 # Quality checks
-./scripts/check.sh                  # Format, lint, test (run before commits)
+./scripts/check.sh                  # Backend: format, lint, test (run before commits)
+cd web && ./scripts/check-web.sh    # Frontend: dependencies, types, lint, build, tests
 
 # Background tasks
 ./scripts/worker.sh -f              # Start task worker with logs (ID 0)

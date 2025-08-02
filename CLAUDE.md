@@ -55,6 +55,8 @@ Key development scripts in `/scripts/`:
 - `prepare-sqlx.sh` - **Update SQLx query cache for offline compilation**
 - `server.sh` - Start development server with custom port
 - `worker.sh` - Start background task worker (supports concurrent workers with --id)
+- `build-web.sh` - **Build React frontend to web/dist directory**
+- `dev-full-stack.sh` - **Complete full-stack development environment (build web + serve)**
 - `test-with-curl.sh` - Comprehensive API endpoint testing
 - `test-chaos.sh` - Chaos testing framework for resilience validation
 - `reset-all.sh` - Database reset (requires `--reset-database` flag)
@@ -108,6 +110,20 @@ This starter template includes comprehensive development infrastructure:
 3. **Fix Issues**: Address any failures from quality checks
 4. **Commit Phase**: Commit completed phase without push to mark milestone
 5. **Next Phase**: Proceed to next development phase
+
+### Full-Stack Development (React + Rust)
+**Unified development workflow with static file serving:**
+
+1. **Frontend Build**: `./scripts/build-web.sh` (Build React app to web/dist)
+2. **Unified Server**: `./scripts/dev-full-stack.sh` (Start Rust server serving both API and static files)
+   - Automatically builds frontend
+   - Starts database if needed
+   - Serves frontend at `http://localhost:3000`
+   - API available at `http://localhost:3000/api/v1`
+   - Single deployment artifact for production
+3. **Quality Validation**: Both backend and frontend checks
+   - Backend: `./scripts/check.sh`
+   - Frontend: `cd web && ./scripts/check-web.sh`
 
 **Web Quality Checks**: `web/scripts/check-web.sh`
 - **Dependencies**: Validates pnpm dependencies and installation
