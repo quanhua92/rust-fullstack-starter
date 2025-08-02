@@ -78,7 +78,7 @@ show_elapsed
   - 9 steps total with health endpoint polling for reliable testing
   - ~40-45 seconds for complete validation including frontend
   - Required for all commits to maintain code quality
-- **Integration Tests**: `cd starter && cargo nextest run` (119 tests, ~17 seconds)
+- **Integration Tests**: `cd starter && cargo nextest run` (123 tests, ~17 seconds)
 - **API Testing**: `./scripts/test-with-curl.sh [host] [port]` (44+ endpoint tests)
   - Default: `./scripts/test-with-curl.sh` (localhost:3000)
   - Custom: `./scripts/test-with-curl.sh localhost 8080`

@@ -149,7 +149,7 @@ cd web && pnpm dev
 ./scripts/build-web.sh              # Build React frontend only
 
 # Run tests
-cargo nextest run                    # Integration tests (119 tests)
+cargo nextest run                    # Integration tests (123 tests)
 ./scripts/test-with-curl.sh         # API endpoint tests (44+ tests)
 ./scripts/test-chaos.sh             # Chaos testing (7 scenarios)
 
@@ -184,7 +184,7 @@ rust-fullstack-starter/
     │   ├── tasks/    # Background job processing
     │   └── ...       # Health, errors, database, server
     ├── migrations/   # Database schema evolution
-    └── tests/        # Integration tests (95 tests)
+    └── tests/        # Integration tests (93 tests)
 ```
 
 ## Documentation

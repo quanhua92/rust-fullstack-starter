@@ -401,7 +401,7 @@ async fn test_get_user_profile_authenticated() {
 # Install faster test runner (recommended)
 cargo install cargo-nextest
 
-# Run all tests (38 integration tests, ~10 seconds)
+# Run all tests (123 tests, ~17 seconds)
 cargo nextest run
 
 # Run without stopping on first failure
@@ -501,7 +501,7 @@ Template approach:
 Total: 3.4s for 3 tests (55% faster)
 ```
 
-With 40 tests, this saves significant development time.
+With 123 tests, this saves significant development time.
 
 ### Parallel Execution
 
@@ -729,7 +729,7 @@ Consider adding:
 
 Now that you understand the testing framework:
 
-1. **Run the Tests**: `cargo nextest run` to see all 40 tests pass
+1. **Run the Tests**: `cargo nextest run` to see all 123 tests pass
 2. **Explore Test Code**: Read through `starter/tests/` to understand patterns
 3. **Write New Tests**: Add tests for any new features you build
 4. **Learn from Failures**: When tests fail, use them to understand the system
