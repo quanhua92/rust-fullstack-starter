@@ -257,6 +257,9 @@ while [ $COMPLETED_TASKS -lt $CREATED ] && [ $(date +%s) -lt $DEADLINE_TIME ]; d
         ESTIMATED_COMPLETED=$(echo "scale=0; ($COMPLETION_RATE * $CREATED) / 100" | bc -l 2>/dev/null || echo "0")
         echo -e "   ${YELLOW}📊${NC} Progress: ~${ESTIMATED_COMPLETED}/${CREATED} completed, ${REMAINING_TIME}s remaining"
         
+        # 🎯 FIX: Update loop control variable so loop can exit when tasks complete
+        COMPLETED_TASKS=$ESTIMATED_COMPLETED
+        
         # Add diagnostic information if no progress after some time
         ELAPSED_TIME=$(($(date +%s) - START_TIME))
         
