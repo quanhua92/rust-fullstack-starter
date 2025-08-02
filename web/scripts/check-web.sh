@@ -3,17 +3,23 @@
 # Comprehensive web frontend quality check script
 # Runs all quality checks: format, lint, type check, build, and tests
 #
-# Usage: ./check-web.sh [--skip-lint]
+# Usage: ./check-web.sh [--skip-lint] [--full]
 #   --skip-lint: Skip linting and formatting checks
+#   --full: Run comprehensive multi-browser E2E tests (default: Chromium only)
 
 set -e
 
 # Parse command line arguments
 SKIP_LINT=false
+FULL_TESTS=false
 for arg in "$@"; do
     case $arg in
         --skip-lint)
             SKIP_LINT=true
+            shift
+            ;;
+        --full)
+            FULL_TESTS=true
             shift
             ;;
         *)
@@ -166,11 +172,14 @@ else
     # Set Playwright to use the unified backend server on port 3000
     export PLAYWRIGHT_BASE_URL="http://localhost:3000"
     
-    # Run Playwright tests (fast smoke test first, then full if available)
+    # Run Playwright tests based on options
     if [ "$PLAYWRIGHT_SMOKE_ONLY" = "true" ]; then
         run_cmd "Running Playwright smoke tests" pnpm run test:e2e:smoke
+    elif [ "$FULL_TESTS" = "true" ]; then
+        run_cmd "Running comprehensive multi-browser E2E tests" pnpm run test:e2e
     else
-        run_cmd "Running Playwright E2E tests" pnpm run test:e2e
+        # Default: fast single-browser tests
+        run_cmd "Running Playwright E2E tests (Chromium only)" pnpm run test:e2e --project=chromium
     fi
     
     # Cleanup: Stop servers we started
@@ -248,7 +257,13 @@ else
     echo "   ✅ TypeScript, linting, and formatting"
 fi
 echo "   ✅ Build and unit tests"
-echo "   ✅ End-to-end tests (Playwright)"
+if [ "$PLAYWRIGHT_SMOKE_ONLY" = "true" ]; then
+    echo "   ✅ End-to-end tests (Playwright smoke)"
+elif [ "$FULL_TESTS" = "true" ]; then
+    echo "   ✅ End-to-end tests (Multi-browser)"
+else
+    echo "   ✅ End-to-end tests (Chromium)"
+fi
 echo "   ✅ Code quality analysis"
 
 print_status "info" "Ready to continue development!"
