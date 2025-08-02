@@ -2,8 +2,25 @@
 
 # Comprehensive web frontend quality check script
 # Runs all quality checks: format, lint, type check, build, and tests
+#
+# Usage: ./check-web.sh [--skip-lint]
+#   --skip-lint: Skip linting and formatting checks
 
 set -e
+
+# Parse command line arguments
+SKIP_LINT=false
+for arg in "$@"; do
+    case $arg in
+        --skip-lint)
+            SKIP_LINT=true
+            shift
+            ;;
+        *)
+            # Unknown option
+            ;;
+    esac
+done
 
 # Source common utilities
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -45,19 +62,31 @@ fi
 run_cmd "📝 Step 3/9: TypeScript type checking" pnpm exec tsc --noEmit
 
 # 4. Biome linting
-if ! run_cmd "📎 Step 4/9: Biome linting" pnpm run lint; then
-    print_status "info" "Run 'pnpm run format' to fix formatting issues"
-    exit 1
+if [ "$SKIP_LINT" = "true" ]; then
+    print_status "info" "📎 Step 4/9: Skipping Biome linting (--skip-lint)"
+else
+    if ! run_cmd "📎 Step 4/9: Biome linting" pnpm run lint; then
+        print_status "info" "Run 'pnpm run format' to fix formatting issues"
+        exit 1
+    fi
 fi
 
 # 5. Biome formatting check
-if ! run_cmd "🎨 Step 5/9: Code formatting check" pnpm run format --write=false; then
-    print_status "info" "Run 'pnpm run format' to fix formatting"
-    exit 1
+if [ "$SKIP_LINT" = "true" ]; then
+    print_status "info" "🎨 Step 5/9: Skipping code formatting check (--skip-lint)"
+else
+    if ! run_cmd "🎨 Step 5/9: Code formatting check" pnpm run format --write=false; then
+        print_status "info" "Run 'pnpm run format' to fix formatting"
+        exit 1
+    fi
 fi
 
 # 6. Biome comprehensive check
-run_cmd "🔍 Step 6/9: Biome comprehensive check" pnpm run check
+if [ "$SKIP_LINT" = "true" ]; then
+    print_status "info" "🔍 Step 6/9: Skipping Biome comprehensive check (--skip-lint)"
+else
+    run_cmd "🔍 Step 6/9: Biome comprehensive check" pnpm run check
+fi
 
 # 7. Build check
 run_cmd "🏗️ Step 7/9: Production build test" pnpm run build
@@ -209,7 +238,11 @@ print_status "info" "Web frontend is ready for development"
 echo ""
 print_status "step" "Summary of checks performed:"
 echo "   ✅ Dependencies and API types"
-echo "   ✅ TypeScript, linting, and formatting"
+if [ "$SKIP_LINT" = "true" ]; then
+    echo "   ⏭️  TypeScript (linting and formatting skipped)"
+else
+    echo "   ✅ TypeScript, linting, and formatting"
+fi
 echo "   ✅ Build and unit tests"
 echo "   ✅ End-to-end tests (Playwright)"
 echo "   ✅ Code quality analysis"
