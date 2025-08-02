@@ -84,7 +84,7 @@ pub fn add_timestamp_metadata(metadata: &mut std::collections::HashMap<String, s
 
 #[cfg(test)]
 mod tests {
-    
+
     use serde_json::json;
 
     #[test]

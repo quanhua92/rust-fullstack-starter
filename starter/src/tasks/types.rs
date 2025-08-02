@@ -326,9 +326,7 @@ impl TaskError {
 
     /// Helper for creating invalid field type errors
     pub fn invalid_field_type(field: &str, expected: &str) -> Self {
-        Self::Execution(format!(
-            "Invalid '{field}' field type, expected {expected}"
-        ))
+        Self::Execution(format!("Invalid '{field}' field type, expected {expected}"))
     }
 }
 
