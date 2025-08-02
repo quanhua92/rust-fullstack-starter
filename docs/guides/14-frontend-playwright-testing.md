@@ -17,8 +17,8 @@ The Playwright testing setup provides multiple testing modes to balance speed an
 npx playwright install
 
 # Quality check scripts with smart server management:
-./scripts/check-web.sh --skip-lint --smoke    # Ultra-fast (~16s)
-./scripts/check-web.sh --skip-lint            # Fast single-browser (~12s)
+./scripts/check-web.sh --skip-lint --smoke    # Ultra-fast (~10s)
+./scripts/check-web.sh --skip-lint            # Fast single-browser (~11s)
 ./scripts/check-web.sh --skip-lint --full     # Full multi-browser (~5-10min)
 
 # Direct Playwright commands (requires manual server setup):
@@ -52,7 +52,7 @@ pnpm run test:e2e:ui                          # Interactive debugging
 | `--max-failures=N` | Stop after N test failures | 1 | `./scripts/check-web.sh --max-failures=3` |
 | `--no-fail-fast` | Run all tests regardless of failures | false | `./scripts/check-web.sh --no-fail-fast` |
 | `--timeout=N` | Timeout per test in milliseconds | 5000 | `./scripts/check-web.sh --timeout=10000` |
-| `--global-timeout=N` | Global timeout for entire suite in seconds | 120/30/600 | `./scripts/check-web.sh --global-timeout=60` |
+| `--global-timeout=N` | Global timeout for entire suite in seconds | 90/15/300 | `./scripts/check-web.sh --global-timeout=60` |
 
 ### Environment Variables
 
@@ -69,10 +69,10 @@ The E2E tests are integrated into the `check-web.sh` quality pipeline with smart
 ### Quality Check Options
 
 ```bash
-# Default: Fast single-browser E2E tests (~12s total)
+# Default: Fast single-browser E2E tests (~11s total)
 ./scripts/check-web.sh --skip-lint
 
-# Ultra-fast smoke tests only (~16s total)
+# Ultra-fast smoke tests only (~10s total)
 ./scripts/check-web.sh --skip-lint --smoke
 
 # Full multi-browser testing (~5-10min total)
@@ -313,21 +313,21 @@ pnpm run test:e2e:ui
 
 | Mode | E2E Duration | Total Quality Check | Browsers | Use Case |
 |------|-------------|---------------------|----------|----------|
-| Smoke | ~400ms | **~16s** ✅ | Chromium | Quick validation |
-| Single Browser | **~1.2s** ✅ | **~12s** ✅ | Chromium | Development |
+| Smoke | ~410ms | **~10s** ✅ | Chromium | Quick validation |
+| Single Browser | **~1.1s** ✅ | **~11s** ✅ | Chromium | Development |
 | Multi-Browser | Estimated | **~5-10min** (estimated) | All 5 | Pre-release |
 
 **Note**: 
 - ✅ **Verified**: Performance optimizations implemented with fast timeouts and parallel execution
-- **Global Timeout**: Each mode has configurable global timeout limits (default: 30s/120s/600s)
+- **Global Timeout**: Each mode has configurable global timeout limits (default: 15s/90s/300s)
 - **Fail-Fast**: Tests stop on first failure by default for rapid feedback
 - Total times include dependencies, API generation, TypeScript checking, building, and unit tests
 
 ### Speed Optimization Tips
 
 1. **Use appropriate test mode** for your needs:
-   - **Development**: `./scripts/check-web.sh --skip-lint --smoke` (~16s)
-   - **Pre-commit**: `./scripts/check-web.sh --skip-lint` (~12s) 
+   - **Development**: `./scripts/check-web.sh --skip-lint --smoke` (~10s)
+   - **Pre-commit**: `./scripts/check-web.sh --skip-lint` (~11s) 
    - **Pre-release**: `./scripts/check-web.sh --skip-lint --full` (~5-10min)
 2. **Customize timeouts** for your environment:
    - **Fast feedback**: `./scripts/check-web.sh --skip-lint --global-timeout=60`
