@@ -5,7 +5,7 @@ interface ProbeResponse {
 	probe?: string;
 	status?: string;
 	timestamp?: string;
-	checks?: Record<string, any>;
+	checks?: Record<string, unknown>;
 }
 
 // Type guards for testing
@@ -31,7 +31,7 @@ const getProbeTimestamp = (data: unknown): string | undefined => {
 	return undefined;
 };
 
-const getProbeChecks = (data: unknown): Record<string, any> | undefined => {
+const getProbeChecks = (data: unknown): Record<string, unknown> | undefined => {
 	if (isProbeResponse(data) && data.checks) {
 		return data.checks;
 	}
