@@ -91,9 +91,88 @@ The deployment script will:
 - ✅ Validate configuration and security settings
 - ✅ Create database backup (if updating existing deployment)
 - ✅ Build optimized Docker images with utoipa-swagger-ui support
+- ✅ Build and integrate React frontend with backend
 - ✅ Start all services with health checks
 - ✅ Run database migrations automatically on startup
 - ✅ Verify deployment health and API documentation endpoints
+
+## Full-Stack Architecture
+
+The production deployment provides a **unified full-stack application** with:
+
+### Single Deployment Artifact
+- **Backend API**: Rust server with all business logic
+- **Frontend UI**: React SPA served as static files
+- **Unified Serving**: Single server handles both API and static files
+- **Single Port**: Both frontend and API accessible via one port
+
+### Multi-Stage Docker Build
+
+The `Dockerfile.prod` uses a sophisticated multi-stage build:
+
+```dockerfile
+# Stage 1: Node.js - Build React frontend
+FROM node:20-alpine AS frontend-builder
+WORKDIR /app
+RUN npm install -g pnpm
+COPY web/package.json web/pnpm-lock.yaml ./web/
+RUN cd web && pnpm install --frozen-lockfile
+COPY web ./web
+RUN cd web && pnpm build
+
+# Stage 2: Rust - Build backend with cargo-chef for caching
+FROM clux/muslrust:1.88.0-stable-2025-07-27 AS chef
+# ... cargo-chef dependency caching steps ...
+
+# Stage 3: Runtime - Minimal Alpine production image
+FROM alpine:3.22 AS final-image
+COPY --from=frontend-builder /app/web/dist ./web/dist
+COPY --from=rust-builder /app/starter-bin ./starter
+```
+
+### Production Benefits
+
+**🚀 Performance:**
+- Static files served efficiently by Rust server
+- No separate frontend server needed
+- Optimized frontend builds with tree shaking and minification
+- Compressed assets (gzip/brotli)
+
+**🔒 Security:**
+- Single attack surface to secure
+- Unified authentication for API and frontend
+- CORS configuration simplified
+- Static files served with security headers
+
+**📦 Deployment:**
+- Single Docker image contains everything
+- No coordination between frontend/backend deployments
+- Simplified CI/CD pipelines
+- Consistent versioning
+
+**🌐 Routing:**
+- `/api/v1/*` → Backend API endpoints
+- `/api-docs` → OpenAPI documentation
+- `/*` → Frontend SPA (with fallback routing)
+
+### Production URLs
+
+Once deployed, access your application at:
+
+```bash
+# Full application (React frontend)
+https://your-domain.com/
+
+# API endpoints
+https://your-domain.com/api/v1/health
+https://your-domain.com/api/v1/tasks
+
+# API documentation
+https://your-domain.com/api-docs
+
+# Authentication
+https://your-domain.com/auth/login
+```
 
 ## Configuration
 

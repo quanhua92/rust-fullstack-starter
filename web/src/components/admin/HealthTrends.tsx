@@ -48,6 +48,28 @@ interface HealthTrendData {
 	response_time: number;
 }
 
+// Type guard for probe responses
+interface ProbeResponse {
+	status?: string;
+	probe?: string;
+	timestamp?: string;
+}
+
+const isProbeResponse = (data: unknown): data is ProbeResponse => {
+	return (
+		typeof data === "object" &&
+		data !== null &&
+		typeof (data as ProbeResponse).status === "string"
+	);
+};
+
+const getProbeStatus = (data: unknown): string => {
+	if (isProbeResponse(data)) {
+		return data.status || "Unknown";
+	}
+	return "Unknown";
+};
+
 export function HealthTrends() {
 	const basicHealthQuery = useQuery({
 		queryKey: ["health", "basic"],
@@ -181,7 +203,7 @@ export function HealthTrends() {
 				trend: "+0.1%",
 			},
 		],
-		[basicHealthQuery.data, detailedHealthQuery.data],
+		[basicHealthQuery.data, detailedHealthQuery.data, getCurrentHealthScore, getUptimePercentage],
 	);
 
 	const availabilityData = useMemo(() => {
@@ -419,24 +441,24 @@ export function HealthTrends() {
 									<span className="text-sm">Liveness:</span>
 									<Badge
 										className={
-											(livenessQuery.data?.data as any)?.status === "alive"
+											getProbeStatus(livenessQuery.data?.data) === "alive"
 												? "bg-green-100 text-green-800"
 												: "bg-red-100 text-red-800"
 										}
 									>
-										{(livenessQuery.data?.data as any)?.status || "Unknown"}
+										{getProbeStatus(livenessQuery.data?.data)}
 									</Badge>
 								</div>
 								<div className="flex justify-between items-center">
 									<span className="text-sm">Readiness:</span>
 									<Badge
 										className={
-											(readinessQuery.data?.data as any)?.status === "ready"
+											getProbeStatus(readinessQuery.data?.data) === "ready"
 												? "bg-green-100 text-green-800"
 												: "bg-red-100 text-red-800"
 										}
 									>
-										{(readinessQuery.data?.data as any)?.status || "Unknown"}
+										{getProbeStatus(readinessQuery.data?.data)}
 									</Badge>
 								</div>
 								<div className="flex justify-between items-center">

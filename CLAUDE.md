@@ -11,8 +11,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Testing Commands
 
 - **Quality Checks**: `./scripts/check.sh` (**RUN BEFORE EVERY COMMIT** - comprehensive quality validation)
-  - Runs: cargo check, fmt, clippy, sqlx prepare, unit tests, integration tests
-  - ~30-60 seconds for complete validation
+  - Runs: web build (early), cargo check, fmt, clippy, sqlx prepare, unit tests, integration tests, static serving smoke test
+  - 9 steps total with health endpoint polling for reliable testing
+  - ~40-45 seconds for complete validation including frontend
   - Required for all commits to maintain code quality
 - **Integration Tests**: `cd starter && cargo nextest run` (119 tests, ~17 seconds)
 - **API Testing**: `./scripts/test-with-curl.sh [host] [port]` (44+ endpoint tests)
@@ -26,7 +27,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
   - Keep Data: `./scripts/test-chaos.sh --keep-database` (preserve existing database state)
   - Output: Results saved to `/tmp/chaos-test-report.md` and `/tmp/api-test-*.txt`
 - **Server Management**: 
-  - Start: `./scripts/server.sh [port] [-f]` (default port 3000, -f for foreground)
+  - Complete environment: `./scripts/dev-server.sh [options]` (database + web build + unified server)
+  - Quick start: `./scripts/server.sh [port] [-f]` (unified API + frontend serving, auto-builds web if needed)
   - Stop: `./scripts/stop-server.sh [port]`
   - Worker: `./scripts/worker.sh [--id ID] [-f]` (--id for concurrent workers, -f for foreground mode)
 
@@ -55,6 +57,7 @@ Key development scripts in `/scripts/`:
 - `prepare-sqlx.sh` - **Update SQLx query cache for offline compilation**
 - `server.sh` - Start development server with custom port
 - `worker.sh` - Start background task worker (supports concurrent workers with --id)
+- `build-web.sh` - **Build React frontend to web/dist directory**
 - `test-with-curl.sh` - Comprehensive API endpoint testing
 - `test-chaos.sh` - Chaos testing framework for resilience validation
 - `reset-all.sh` - Database reset (requires `--reset-database` flag)
@@ -83,14 +86,15 @@ This starter template includes comprehensive development infrastructure:
 ## Development Workflow
 
 ### Backend Development (Rust API)
-1. **Start Services**: `./scripts/dev-server.sh 3000` (complete environment)
-   - Or manually background: `./scripts/server.sh && ./scripts/worker.sh`
-   - Or manually foreground: `./scripts/server.sh -f` + `./scripts/worker.sh -f` (separate terminals)
-   - Multiple workers: `./scripts/worker.sh --id 1` + `./scripts/worker.sh --id 2` (concurrent workers)
+1. **Start Services**: Choose your preferred method
+   - **Complete environment**: `./scripts/dev-server.sh` (database + web build + unified server) **[RECOMMENDED]**
+   - **Quick restart**: `./scripts/server.sh && ./scripts/worker.sh` (auto-builds web if needed)
+   - **Manual foreground**: `./scripts/server.sh -f` + `./scripts/worker.sh -f` (separate terminals)
+   - **Multiple workers**: `./scripts/worker.sh --id 1` + `./scripts/worker.sh --id 2` (concurrent workers)
    - **IMPORTANT**: Workers must start to register task types before creating tasks
 2. **Quality Checks**: `./scripts/check.sh` (**MANDATORY before every commit**)
-   - Validates: formatting, linting, compilation, SQLx, tests
-3. **API Testing**: `./scripts/test-with-curl.sh` (40+ endpoint tests)
+   - Validates: web build, formatting, linting, compilation, SQLx, tests, static serving
+3. **API Testing**: `./scripts/test-with-curl.sh` (44+ endpoint tests including web serving)
 4. **Chaos Testing**: `./scripts/test-chaos.sh` (Docker-based resilience validation)
 5. **Stop Services**: `./scripts/stop-server.sh 3000`
 
@@ -108,6 +112,20 @@ This starter template includes comprehensive development infrastructure:
 3. **Fix Issues**: Address any failures from quality checks
 4. **Commit Phase**: Commit completed phase without push to mark milestone
 5. **Next Phase**: Proceed to next development phase
+
+### Full-Stack Development (React + Rust)
+**Unified development workflow with static file serving:**
+
+1. **Complete Environment**: `./scripts/dev-server.sh` (One command for everything)
+   - Starts database if needed
+   - Builds frontend automatically
+   - Serves unified API + static files
+   - Available at `http://localhost:3000`
+   - Single deployment artifact for production
+2. **Manual Build**: `./scripts/build-web.sh` (Build React app to web/dist only)
+3. **Quality Validation**: Both backend and frontend checks
+   - Backend: `./scripts/check.sh`
+   - Frontend: `cd web && ./scripts/check-web.sh`
 
 **Web Quality Checks**: `web/scripts/check-web.sh`
 - **Dependencies**: Validates pnpm dependencies and installation

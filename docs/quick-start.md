@@ -9,7 +9,7 @@
 git clone https://github.com/quanhua92/rust-fullstack-starter.git
 cd rust-fullstack-starter
 
-# 2. Start everything (database + server + worker + frontend)
+# 2. Start everything (database + unified server with React frontend)
 ./scripts/dev-server.sh 3000
 
 # 3. Open your browser
@@ -17,10 +17,11 @@ open http://localhost:3000
 ```
 
 **That's it!** 🎉 You now have:
-- ✅ **REST API** running on port 3000
-- ✅ **React Frontend** with authentication
-- ✅ **PostgreSQL Database** with sample data
-- ✅ **Background Task Worker** processing async jobs
+- ✅ **React 18 Frontend** with authentication, admin dashboard, type-safe API integration
+- ✅ **REST API** running on port 3000 with OpenAPI documentation
+- ✅ **PostgreSQL Database** with migrations and sample data
+- ✅ **Background Task Worker** processing async jobs with retry logic
+- ✅ **Unified Static Serving** - Single server for both API and frontend
 - ✅ **Interactive API Documentation** at `/api-docs`
 
 ## 🧪 Test It Works
@@ -122,9 +123,10 @@ cargo run worker                    # Start background worker
 cargo run -- admin task-stats       # Check system status
 
 # Frontend only  
-cd web && pnpm dev                   # Start React dev server
-cd web && pnpm run generate-api      # Regenerate API types
-cd web && ./scripts/check-web.sh     # Run quality checks
+cd web && pnpm dev                   # Start React dev server (port 5173)
+cd web && pnpm run generate-api      # Regenerate API types from OpenAPI
+cd web && ./scripts/check-web.sh     # Run 10-step quality checks
+cd web && pnpm run build             # Production build test
 
 # Testing
 cargo nextest run                    # Run 119 integration tests

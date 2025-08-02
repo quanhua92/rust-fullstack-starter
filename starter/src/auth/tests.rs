@@ -16,7 +16,11 @@ mod auth_tests {
         let database = Database::connect(&config)
             .await
             .expect("Failed to connect to database");
-        let state = AppState { config, database };
+        let state = AppState {
+            config,
+            database,
+            start_time: std::time::Instant::now(),
+        };
 
         crate::server::create_router(state)
     }

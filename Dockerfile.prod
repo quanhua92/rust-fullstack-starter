@@ -1,13 +1,29 @@
 # Multi-stage production Docker build
 # Optimized for minimal size, security, and fast builds with cargo-chef
 
-# Stage 1: Setup cargo-chef for dependency caching
+# Stage 1: Build the React Frontend
+FROM node:20-alpine AS frontend-builder
+WORKDIR /app
+
+# Install pnpm, which is used by the project
+RUN npm install -g pnpm
+
+# Copy package manifests first to leverage Docker layer caching
+COPY web/package.json web/pnpm-lock.yaml ./web/
+# Install frontend dependencies
+RUN cd web && pnpm install --frozen-lockfile
+
+# Copy the rest of the web app source code
+COPY web ./web
+# Build the production-ready static files
+RUN cd web && pnpm build
+
+# Stage 2: Build the Rust Backend
 FROM clux/muslrust:1.88.0-stable-2025-07-27 AS chef
 USER root
 RUN cargo install cargo-chef
 WORKDIR /app
 
-# Stage 2: Generate dependency recipe
 FROM chef AS rust-planner
 WORKDIR /app
 
@@ -19,7 +35,6 @@ COPY ./starter/Cargo.toml ./starter/Cargo.toml
 COPY ./starter/src ./starter/src
 RUN cargo chef prepare --recipe-path recipe.json --bin starter
 
-# Stage 3: Build dependencies (cached layer)
 FROM chef AS rust-cacher
 WORKDIR /app
 ARG TARGETPLATFORM
@@ -39,7 +54,6 @@ RUN export TARGET_ARCH=$(case ${TARGETPLATFORM:-linux/amd64} in \
     echo "Cooking dependencies for target: ${TARGET_ARCH}" && \
     cargo chef cook --release --target ${TARGET_ARCH} --recipe-path recipe.json --bin starter
 
-# Stage 4: Build application
 FROM chef AS rust-builder
 WORKDIR /app
 ARG TARGETPLATFORM
@@ -62,8 +76,8 @@ RUN export TARGET_ARCH=$(case ${TARGETPLATFORM:-linux/amd64} in \
     SQLX_OFFLINE=true cargo build --release --target ${TARGET_ARCH} --bin starter && \
     cp target/${TARGET_ARCH}/release/starter /app/starter-bin
 
-# Stage 5: Final runtime image
-FROM alpine:latest AS final-image
+# Stage 3: Create the final, minimal production image
+FROM alpine:3.22 AS final-image
 WORKDIR /app
 
 # Install ca-certificates for HTTPS requests
@@ -74,6 +88,10 @@ RUN addgroup -S appgroup && adduser -S -G appgroup appuser
 
 # Set default environment variables
 ENV RUST_LOG="info"
+ENV WEB_BUILD_PATH="./web/dist"
+
+# Copy the compiled React assets from the frontend-builder stage
+COPY --from=frontend-builder /app/web/dist ./web/dist
 
 # Copy the compiled binary from rust-builder stage
 COPY --from=rust-builder /app/starter-bin ./starter

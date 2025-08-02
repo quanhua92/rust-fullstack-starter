@@ -429,6 +429,74 @@ test_api "GET /api-docs" "GET" "/api-docs" "200"
 test_api "GET /api-docs/openapi.json" "GET" "/api-docs/openapi.json" "200"
 
 echo ""
+echo -e "${YELLOW}🌐 Web Frontend Static Serving${NC}"
+
+# Test static file serving for web frontend
+echo "🔧 Testing static file serving and SPA functionality..."
+
+# Test root path (should serve React app index.html)
+ROOT_RESPONSE=$(curl -s -w 'HTTP_STATUS:%{http_code}' "$BASE_URL/")
+ROOT_STATUS=$(echo "$ROOT_RESPONSE" | grep -o 'HTTP_STATUS:[0-9]*' | cut -d: -f2)
+ROOT_BODY=$(echo "$ROOT_RESPONSE" | sed 's/HTTP_STATUS:[0-9]*$//')
+
+if [ "$ROOT_STATUS" = "200" ] && echo "$ROOT_BODY" | grep -q "<!DOCTYPE html>"; then
+    echo -e "${GREEN}✅ PASS${NC} GET / (React app index.html served) (Status: $ROOT_STATUS)"
+    PASSED_TESTS=$((PASSED_TESTS + 1))
+else
+    echo -e "${RED}❌ FAIL${NC} GET / (Expected: 200 with HTML content, Got: $ROOT_STATUS)"
+    if [ -n "$ROOT_BODY" ]; then
+        echo "    Response: ${ROOT_BODY:0:100}..."
+    fi
+fi
+TOTAL_TESTS=$((TOTAL_TESTS + 1))
+
+# Test static asset (favicon.ico)
+FAVICON_RESPONSE=$(curl -s -w 'HTTP_STATUS:%{http_code}' "$BASE_URL/favicon.ico")
+FAVICON_STATUS=$(echo "$FAVICON_RESPONSE" | grep -o 'HTTP_STATUS:[0-9]*' | cut -d: -f2)
+
+if [ "$FAVICON_STATUS" = "200" ]; then
+    echo -e "${GREEN}✅ PASS${NC} GET /favicon.ico (Static asset served) (Status: $FAVICON_STATUS)"
+    PASSED_TESTS=$((PASSED_TESTS + 1))
+else
+    echo -e "${RED}❌ FAIL${NC} GET /favicon.ico (Expected: 200, Got: $FAVICON_STATUS)"
+fi
+TOTAL_TESTS=$((TOTAL_TESTS + 1))
+
+# Test SPA routing fallback (client-side routes should serve index.html)
+SPA_ROUTES=("/admin" "/admin/dashboard" "/admin/users" "/auth/login" "/some/nested/route")
+
+for route in "${SPA_ROUTES[@]}"; do
+    SPA_RESPONSE=$(curl -s -w 'HTTP_STATUS:%{http_code}' "$BASE_URL$route")
+    SPA_STATUS=$(echo "$SPA_RESPONSE" | grep -o 'HTTP_STATUS:[0-9]*' | cut -d: -f2)
+    SPA_BODY=$(echo "$SPA_RESPONSE" | sed 's/HTTP_STATUS:[0-9]*$//')
+    
+    # SPA fallback serves index.html but might return 404 status - check for HTML content
+    if echo "$SPA_BODY" | grep -q "<!DOCTYPE html>" && echo "$SPA_BODY" | grep -q "<title>"; then
+        echo -e "${GREEN}✅ PASS${NC} GET $route (SPA fallback served) (Status: $SPA_STATUS)"
+        PASSED_TESTS=$((PASSED_TESTS + 1))
+    else
+        echo -e "${RED}❌ FAIL${NC} GET $route (Expected: HTML content for SPA, Got: $SPA_STATUS)"
+        if [ -n "$SPA_BODY" ]; then
+            echo "    Response: ${SPA_BODY:0:100}..."
+        fi
+    fi
+    TOTAL_TESTS=$((TOTAL_TESTS + 1))
+done
+
+# Test that API routes are NOT affected by static serving
+echo "🔧 Verifying API routes work alongside static serving..."
+API_HEALTH_RESPONSE=$(curl -s -w 'HTTP_STATUS:%{http_code}' "$BASE_URL/api/v1/health")
+API_HEALTH_STATUS=$(echo "$API_HEALTH_RESPONSE" | grep -o 'HTTP_STATUS:[0-9]*' | cut -d: -f2)
+
+if [ "$API_HEALTH_STATUS" = "200" ]; then
+    echo -e "${GREEN}✅ PASS${NC} API routes unaffected by static serving (Status: $API_HEALTH_STATUS)"
+    PASSED_TESTS=$((PASSED_TESTS + 1))
+else
+    echo -e "${RED}❌ FAIL${NC} API routes affected by static serving (Expected: 200, Got: $API_HEALTH_STATUS)"
+fi
+TOTAL_TESTS=$((TOTAL_TESTS + 1))
+
+echo ""
 echo -e "${YELLOW}👑 Admin Endpoints${NC}"
 
 # Test admin endpoint without auth

@@ -17,14 +17,13 @@ use std::collections::HashMap;
         (status = 503, description = "Application is unhealthy", body = ErrorResponse)
     )
 )]
-pub async fn health() -> impl IntoResponse {
+pub async fn health(State(state): State<AppState>) -> impl IntoResponse {
+    let uptime_seconds = state.start_time.elapsed().as_secs_f64();
+
     let health_data = serde_json::json!({
         "status": "healthy",
         "version": env!("CARGO_PKG_VERSION"),
-        "uptime": std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .unwrap()
-            .as_secs_f64(),
+        "uptime": uptime_seconds,
         "documentation": {
             "openapi_json": "/api-docs/openapi.json",
             "api_docs": "/api-docs"

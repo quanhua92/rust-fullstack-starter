@@ -59,7 +59,7 @@ function DeadLetterQueuePage() {
 		onSuccess: () => {
 			queryClient.invalidateQueries({ queryKey: ["deadLetterQueue"] });
 			queryClient.invalidateQueries({ queryKey: ["tasks"] });
-			queryClient.invalidateQueries({ queryKey: ["taskStats"] });
+			queryClient.invalidateQueries({ queryKey: ["tasks", "stats"] });
 			toast({ title: "Task retry initiated successfully" });
 		},
 		onError: (error: Error) => {
@@ -75,7 +75,7 @@ function DeadLetterQueuePage() {
 		mutationFn: (taskId: string) => apiClient.deleteTask(taskId),
 		onSuccess: () => {
 			queryClient.invalidateQueries({ queryKey: ["deadLetterQueue"] });
-			queryClient.invalidateQueries({ queryKey: ["taskStats"] });
+			queryClient.invalidateQueries({ queryKey: ["tasks", "stats"] });
 			toast({ title: "Task deleted successfully" });
 		},
 		onError: (error: Error) => {

@@ -1,6 +1,33 @@
 #!/bin/bash
 set -e
 
+# Get project root reliably
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+
+# Set default web build path if not already set
+export STARTER__SERVER__WEB_BUILD_PATH="${STARTER__SERVER__WEB_BUILD_PATH:-$PROJECT_ROOT/web/dist}"
+
+# Check if web build exists, and offer to build if not
+if [ ! -d "$STARTER__SERVER__WEB_BUILD_PATH" ] && [ -d "$PROJECT_ROOT/web" ]; then
+    echo "⚠️  Web build directory not found: $STARTER__SERVER__WEB_BUILD_PATH"
+    echo "🏗️  Building web frontend automatically..."
+    if ! "$PROJECT_ROOT/scripts/build-web.sh"; then
+        echo "❌ Web frontend build failed!"
+        echo "💡 You can still start the server (API only), but web serving will not work."
+        echo "   Run './scripts/build-web.sh' manually or use './scripts/dev-full-stack.sh' instead."
+        echo ""
+    else
+        echo "✅ Web frontend built successfully"
+    fi
+elif [ ! -d "$STARTER__SERVER__WEB_BUILD_PATH" ]; then
+    echo "⚠️  Web build directory not found: $STARTER__SERVER__WEB_BUILD_PATH"
+    echo "💡 API will work, but web serving will fail. Consider:"
+    echo "   - Run './scripts/build-web.sh' to build frontend"
+    echo "   - Use './scripts/dev-full-stack.sh' for complete setup"
+    echo ""
+fi
+
 PORT=""
 FOLLOW_LOGS=false
 
@@ -85,8 +112,9 @@ rotate_log_if_needed
 if [ "$FOLLOW_LOGS" = true ]; then
     echo "🚀 Starting server in foreground mode (Ctrl+C to exit)..."
     echo "📋 Running directly with exec (no PID file or logs)"
+    echo "🌐 Web build path: $STARTER__SERVER__WEB_BUILD_PATH"
     echo "=================================="
-    cd starter
+    cd "$PROJECT_ROOT/starter"
     exec cargo run -- server --port $PORT
 fi
 
@@ -94,10 +122,10 @@ fi
 echo "🚀 Starting new server in background..."
 echo "📝 Log file: $LOG_FILE"
 echo "📄 PID file: $PID_FILE"
+echo "🌐 Web build path: $STARTER__SERVER__WEB_BUILD_PATH"
 
 # Use absolute path and proper backgrounding
-SCRIPT_DIR=$(pwd)
-bash -c "cd '$SCRIPT_DIR/starter' && exec cargo run -- server --port $PORT" > "$LOG_FILE" 2>&1 &
+bash -c "cd '$PROJECT_ROOT/starter' && exec cargo run -- server --port $PORT" > "$LOG_FILE" 2>&1 &
 SERVER_PID=$!
 
 # Save PID immediately

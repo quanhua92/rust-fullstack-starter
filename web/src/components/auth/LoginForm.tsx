@@ -23,16 +23,10 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 
-const loginSchema = z
-	.object({
-		username: z.string().optional(),
-		email: z.string().email().optional(),
-		password: z.string().min(1, "Password is required"),
-	})
-	.refine((data) => data.username || data.email, {
-		message: "Either username or email is required",
-		path: ["username"],
-	});
+const loginSchema = z.object({
+	email: z.string().email("Please enter a valid email address"),
+	password: z.string().min(1, "Password is required"),
+});
 
 type LoginFormData = z.infer<typeof loginSchema>;
 
@@ -46,7 +40,6 @@ export const LoginForm = () => {
 	const form = useForm<LoginFormData>({
 		resolver: zodResolver(loginSchema),
 		defaultValues: {
-			username: "",
 			email: "",
 			password: "",
 		},
@@ -84,24 +77,6 @@ export const LoginForm = () => {
 				<CardContent>
 					<Form {...form}>
 						<form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-							<FormField
-								control={form.control}
-								name="username"
-								render={({ field }) => (
-									<FormItem>
-										<FormLabel>Username</FormLabel>
-										<FormControl>
-											<Input
-												{...field}
-												placeholder="Enter your username"
-												disabled={isLoading}
-											/>
-										</FormControl>
-										<FormMessage />
-									</FormItem>
-								)}
-							/>
-
 							<FormField
 								control={form.control}
 								name="email"

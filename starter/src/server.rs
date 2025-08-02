@@ -18,10 +18,13 @@ use axum::{
     response::IntoResponse,
     routing::{delete, get, post, put},
 };
+use std::path::Path;
+use std::time::Instant;
 use tokio::net::TcpListener;
 use tower::ServiceBuilder;
 use tower_http::{
     cors::{Any, CorsLayer},
+    services::{ServeDir, ServeFile},
     trace::TraceLayer,
 };
 use tracing::info;
@@ -213,13 +216,34 @@ pub async fn start_server(config: AppConfig, database: Database) -> Result<()> {
     let state = AppState {
         config: config.clone(),
         database,
+        start_time: Instant::now(),
     };
     let api_router = create_router(state);
-    let app = Router::new()
+
+    // Setup static file serving for web frontend
+    let web_build_path = &config.server.web_build_path;
+
+    let mut app = Router::new()
         .nest("/api/v1", api_router)
         // Keep documentation routes at root level
         .route("/api-docs", get(api_docs))
         .route("/api-docs/openapi.json", get(openapi_json));
+
+    // Only add static file serving if web_build_path is not empty (security check)
+    if !web_build_path.is_empty() {
+        if !Path::new(web_build_path).is_dir() {
+            tracing::warn!(
+                "Web build directory not found at '{}'. Static file serving will fail.",
+                web_build_path
+            );
+        }
+        let index_path = Path::new(web_build_path).join("index.html");
+        let static_files_service =
+            ServeDir::new(web_build_path).not_found_service(ServeFile::new(index_path));
+        app = app.fallback_service(static_files_service);
+    } else {
+        tracing::info!("Web build path is empty. Static file serving disabled for security.");
+    }
 
     let bind_addr = format!("{}:{}", config.server.host, config.server.port);
     let listener = TcpListener::bind(&bind_addr)
@@ -227,6 +251,10 @@ pub async fn start_server(config: AppConfig, database: Database) -> Result<()> {
         .map_err(|e| Error::Internal(format!("Failed to bind to {bind_addr}: {e}")))?;
 
     info!("Server starting on {}", bind_addr);
+    info!(
+        "Serving static files from: {}",
+        config.server.web_build_path
+    );
 
     axum::serve(listener, app)
         .await

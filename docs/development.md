@@ -1,6 +1,6 @@
 # Development Guide
 
-This guide covers the development workflow, tools, and best practices for the Rust Full-Stack Starter project.
+This guide covers the development workflow, tools, and best practices for the Rust Full-Stack Starter project with React 18 + TypeScript frontend integration.
 
 ## Development Environment Setup
 
@@ -54,13 +54,16 @@ graph TB
 
 ### Quick Start
 ```bash
-# Complete development environment (recommended)
+# Complete development environment (recommended) - includes React frontend build + API
 ./scripts/dev-server.sh 3000
 
-# Or step by step
+# Complete setup with background worker
+./scripts/dev-server.sh -w
+
+# Or step by step for full-stack development
 docker compose up -d postgres && docker compose up --wait  # Start infrastructure
-./scripts/server.sh 3000            # Start server in background
-./scripts/test-server.sh 3000       # Verify it's working
+./scripts/server.sh 3000            # Start unified server (auto-builds React frontend)
+./scripts/test-server.sh 3000       # Verify full-stack deployment
 ```
 
 ### Manual Setup
@@ -88,12 +91,22 @@ rust-fullstack-starter/
 ├── .env.example               # Environment template
 ├── .env.prod.test             # Production test environment
 ├── scripts/
-│   ├── dev-server.sh          # Complete development workflow
-│   ├── server.sh              # Start server with auto-restart
-│   ├── test-server.sh         # Test health endpoints
-│   ├── stop-server.sh         # Stop server processes
-│   └── dev-server.sh          # Complete development workflow
+│   ├── dev-server.sh          # Complete development workflow (enhanced)
+│   ├── server.sh              # Start server with auto-build and static serving
+│   ├── test-server.sh         # Test health endpoints with polling
+│   ├── stop-server.sh         # Graceful server shutdown
+│   ├── build-web.sh           # React/TypeScript frontend build
+│   └── worker.sh              # Background task worker management
 ├── docs/                      # Documentation
+├── web/                       # React 18 + TypeScript frontend
+│   ├── src/
+│   │   ├── components/        # Reusable UI components (shadcn/ui)
+│   │   ├── hooks/             # Custom hooks (useApiQueries.ts)
+│   │   ├── lib/api/           # API client with generated types
+│   │   ├── routes/            # File-based routing (TanStack Router)
+│   │   └── types/api.ts       # Auto-generated from OpenAPI
+│   ├── scripts/check-web.sh   # 10-step frontend quality validation
+│   └── package.json           # Frontend dependencies (React 18, Tailwind CSS 4)
 └── starter/                   # Main application
     ├── Cargo.toml             # Application dependencies
     ├── src/
@@ -204,22 +217,32 @@ See `starter/tests/README.md` for detailed testing documentation.
 
 ## Development Workflow
 
-### 1. Feature Development
+### 1. Full-Stack Feature Development
 ```bash
 # Start with fresh database (optional)
 docker compose down -v
 docker compose up -d postgres
 sqlx migrate run
 
-# Make your changes
+# Option 1: Unified development (recommended)
+./scripts/dev-server.sh 3000    # Builds React frontend + starts API server
+
+# Option 2: Separate frontend/backend development
+./scripts/server.sh 3000        # Start Rust API server
+cd web && pnpm dev              # Start React dev server (port 5173)
+
+# Make your changes to backend or frontend
 # Test compilation
-cargo check
+cargo check                     # Backend compilation
+cd web && pnpm run type-check   # Frontend TypeScript validation
 
-# Run tests (when available)
-cargo test
+# Run tests
+cargo test                      # Backend tests
+cd web && pnpm test             # Frontend tests
 
-# Test the application
-cargo run -- server
+# Test the full-stack application
+curl http://localhost:3000                    # Test React frontend
+curl http://localhost:3000/api/v1/health     # Test API backend
 ```
 
 ### 2. Database Changes
@@ -236,24 +259,28 @@ sqlx migrate run
 sqlx migrate revert
 ```
 
-### 3. Testing Changes
+### 3. Full-Stack Testing Changes
 ```bash
-# Check compilation
-cargo check
+# Backend testing
+cargo check                                  # Check compilation
+cargo nextest run                            # Run 119 integration tests (~12 seconds)
+cargo nextest run --no-fail-fast            # See all test results
+./scripts/test-with-curl.sh                  # Test API endpoints (44+ tests)
 
-# Run the comprehensive test suite (recommended - faster, ~10 seconds)
-cargo nextest run
+# Frontend testing
+cd web && ./scripts/check-web.sh             # 10-step quality validation
+cd web && pnpm run type-check                # TypeScript validation
+cd web && pnpm run build                     # Production build test
+cd web && pnpm test                          # Unit/integration tests
 
-# Run all tests without stopping on first failure
-cargo nextest run --no-fail-fast
+# Combined testing workflow
+cargo nextest run && ./scripts/test-with-curl.sh    # Backend validation
+cd web && ./scripts/check-web.sh                    # Frontend validation
 
-# Test API endpoints with running server
-./scripts/test-with-curl.sh
+# Comprehensive quality checks (run before commits)
+./scripts/check.sh                           # Backend + frontend build validation
 
-# Run tests with standard cargo (slower)
-cargo test
-
-# Run tests with output
+# Test with output
 TEST_LOG=1 cargo test -- --nocapture
 
 # Run specific test modules
@@ -261,10 +288,7 @@ cargo nextest run auth::
 cargo nextest run tasks::
 cargo nextest run health::
 
-# Full validation workflow
-cargo nextest run && ./scripts/test-with-curl.sh
-
-# Run with different configurations
+# Test different configurations
 STARTER__SERVER__PORT=3001 cargo run -- server
 
 # Test worker mode
@@ -582,25 +606,35 @@ cargo check
 psql $DATABASE_URL -c "SELECT 1"
 ```
 
-### Development Scripts Workflow
+### Full-Stack Development Scripts Workflow
 ```bash
-# Start development environment
+# Start complete development environment with React frontend build + API
 ./scripts/dev-server.sh 3000
 
-# During development - restart server
+# Or with background worker included
+./scripts/dev-server.sh -w
+
+# During development - restart unified server (auto-builds React frontend if needed)
 ./scripts/server.sh 3000
 
-# Test changes
+# Test full-stack deployment with health endpoint polling
 ./scripts/test-server.sh 3000
 
-# View logs
+# View server logs
 tail -f /tmp/starter-server-3000.log
 
-# Stop when done
+# Frontend development workflow
+cd web && pnpm dev                           # Start React dev server (port 5173)
+cd web && pnpm run generate-api              # Regenerate API types from OpenAPI
+cd web && ./scripts/check-web.sh             # Run 10-step quality validation
+
+# Stop when done (graceful shutdown)
 ./scripts/stop-server.sh 3000
 ```
 
 ### Add New Dependencies
+
+#### Backend Dependencies (Rust)
 ```bash
 # Add to workspace (preferred)
 # Edit Cargo.toml [workspace.dependencies]
@@ -613,20 +647,52 @@ tail -f /tmp/starter-server-3000.log
 cargo update
 ```
 
+#### Frontend Dependencies (React)
+```bash
+cd web
+
+# Add production dependencies
+pnpm add package-name
+
+# Add development dependencies
+pnpm add -D package-name
+
+# Update dependencies
+pnpm update
+
+# Regenerate API types after backend changes
+pnpm run generate-api
+```
+
 ## IDE Setup
 
 ### VS Code
-Recommended extensions:
+Recommended extensions for full-stack development:
+
+#### Backend (Rust)
 - rust-analyzer
 - Better TOML
 - Docker
 - PostgreSQL
+
+#### Frontend (React + TypeScript)
+- TypeScript Importer
+- ES7+ React/Redux/React-Native snippets
+- Tailwind CSS IntelliSense
+- Auto Rename Tag
+- Prettier
 
 ### Environment Variables
 Create `.vscode/settings.json`:
 ```json
 {
   "rust-analyzer.cargo.loadOutDirsFromCheck": true,
-  "rust-analyzer.procMacro.enable": true
+  "rust-analyzer.procMacro.enable": true,
+  "typescript.preferences.importModuleSpecifier": "relative",
+  "editor.formatOnSave": true,
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "[rust]": {
+    "editor.defaultFormatter": "rust-lang.rust-analyzer"
+  }
 }
 ```

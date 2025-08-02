@@ -1,17 +1,25 @@
 # Troubleshooting Guide
 
-This guide covers common issues and their solutions.
+This guide covers common issues and their solutions for both backend and frontend development.
 
 ## Quick Diagnostics
 
 ```bash
-# Check everything at once
+# Backend diagnostics
 ./scripts/check-prereqs.sh
 ./scripts/status.sh
+
+# Frontend diagnostics  
+cd web && ./scripts/check-web.sh     # 10-step quality validation
+cd web && pnpm run type-check        # TypeScript errors
 
 # Admin CLI for direct database access (bypasses API)
 cargo run -- admin task-stats        # Check task processing
 cargo run -- admin list-tasks --limit 5  # Recent tasks
+
+# Full-stack testing
+./scripts/test-with-curl.sh           # Test API endpoints
+curl http://localhost:3000            # Test frontend serving
 ```
 
 ## Common Issues
@@ -127,14 +135,86 @@ cargo install cargo-nextest
 cargo nextest run
 ```
 
+### 6. Frontend Issues
+
+#### Error: "pnpm command not found"
+```bash
+# Install pnpm globally
+npm install -g pnpm
+
+# Verify installation
+pnpm --version
+```
+
+#### Error: "TypeScript errors after API changes"
+```bash
+# Regenerate API types from OpenAPI schema
+cd web
+pnpm run generate-api
+
+# Check for type errors
+pnpm run type-check
+```
+
+#### Error: "React Query cache collisions"
+```bash
+# Use centralized hooks to prevent collisions
+# Replace manual useQuery with useApiQueries hooks
+
+# ❌ Bad: Manual queries with same keys
+const { data } = useQuery({ queryKey: ["health", "basic"], ... });
+
+# ✅ Good: Centralized hooks
+import { useHealthBasic } from '@/hooks/useApiQueries';
+const { data } = useHealthBasic(15000);
+```
+
+#### Error: "Frontend build fails"
+```bash
+cd web
+
+# Clean and reinstall dependencies
+rm -rf node_modules .next dist
+pnpm install
+
+# Run type checking
+pnpm run type-check
+
+# Build with verbose output
+pnpm run build
+
+# Check for common issues
+pnpm run lint
+```
+
+#### Error: "API calls fail with CORS errors"
+```bash
+# Development: Check CORS configuration
+STARTER__SERVER__CORS_ORIGINS="http://localhost:5173"
+
+# Production: Update CORS origins
+STARTER__SERVER__CORS_ORIGINS="https://yourdomain.com"
+
+# Check if using correct API base URL
+# Development: http://localhost:3000
+# Production: https://yourdomain.com
+```
+
 ## Complete Reset
 
 When all else fails:
 ```bash
-# Nuclear option - reset everything
-./scripts/reset-all.sh
-./scripts/check-prereqs.sh
-./scripts/dev-server.sh 3000
+# Nuclear option - reset everything (backend + frontend)
+./scripts/reset-all.sh                # Reset database and backend
+cd web && rm -rf node_modules dist    # Clean frontend
+cd web && pnpm install                # Reinstall frontend deps
+./scripts/check-prereqs.sh            # Verify prerequisites
+./scripts/dev-server.sh 3000          # Start unified server
+
+# Verify everything works
+curl http://localhost:3000/api/v1/health  # Test API
+curl http://localhost:3000                # Test frontend
+cd web && ./scripts/check-web.sh          # Validate frontend
 ```
 
 ## Getting Help

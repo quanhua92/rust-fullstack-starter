@@ -388,7 +388,9 @@ class ApiClient {
 		});
 	}
 
-	async getUserStats(): Promise<components["schemas"]["ApiResponse_UserStats"]> {
+	async getUserStats(): Promise<
+		components["schemas"]["ApiResponse_UserStats"]
+	> {
 		return this.request<components["schemas"]["ApiResponse_UserStats"]>(
 			"/admin/users/stats",
 		);

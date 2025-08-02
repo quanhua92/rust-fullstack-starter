@@ -62,6 +62,7 @@ pub async fn spawn_app() -> TestApp {
     let state = starter::types::AppState {
         config: config.clone(),
         database,
+        start_time: std::time::Instant::now(),
     };
     let api_router = server::create_router(state);
     let app = axum::Router::new().nest("/api/v1", api_router);

@@ -1,8 +1,54 @@
 #!/bin/bash
 set -e
 
-PORT=${1:-3000}
-echo "🚀 Starting complete development environment on port $PORT..."
+# Default values
+PORT=3000
+FOREGROUND=false
+BUILD_WEB=true
+START_WORKER=false
+
+# Parse command line arguments
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        -p|--port)
+            PORT="$2"
+            shift 2
+            ;;
+        -f|--foreground)
+            FOREGROUND=true
+            shift
+            ;;
+        --api-only)
+            BUILD_WEB=false
+            shift
+            ;;
+        -w|--with-worker)
+            START_WORKER=true
+            shift
+            ;;
+        -h|--help)
+            echo "Usage: $0 [options]"
+            echo "Options:"
+            echo "  -p, --port PORT     Set server port (default: 3000)"
+            echo "  -f, --foreground    Run server in foreground mode"
+            echo "  -w, --with-worker   Also start background worker (ID 0)"
+            echo "  --api-only          Skip web frontend build (API only)"
+            echo "  -h, --help          Show this help message"
+            exit 0
+            ;;
+        [0-9]*)
+            PORT=$1
+            shift
+            ;;
+        *)
+            echo "Unknown option: $1"
+            echo "Use -h or --help for usage information"
+            exit 1
+            ;;
+    esac
+done
+
+echo "🚀 Starting complete full-stack development environment on port $PORT..."
 
 # Validate we're in the right directory
 if [ ! -f "docker-compose.yaml" ]; then
@@ -33,6 +79,27 @@ if [ ! -f ".env" ]; then
     echo "   ✅ .env created with development defaults"
 fi
 
+# Build web frontend if requested and available
+if [ "$BUILD_WEB" = true ] && [ -d "web" ]; then
+    echo "🌐 Building web frontend..."
+    if ! ./scripts/build-web.sh; then
+        echo "❌ Web frontend build failed!"
+        echo "   Run './scripts/build-web.sh' for details"
+        echo "   Continuing with API-only server..."
+        BUILD_WEB=false
+    else
+        echo "   ✅ Web frontend built successfully"
+    fi
+elif [ "$BUILD_WEB" = true ]; then
+    echo "⚠️  Web directory not found, starting API-only server"
+    BUILD_WEB=false
+fi
+
+# Set web build path for server
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+export STARTER__SERVER__WEB_BUILD_PATH="$PROJECT_ROOT/web/dist"
+
 # Check sqlx-cli
 if ! command -v sqlx &> /dev/null; then
     echo "⚠️  sqlx-cli not found. Installing..."
@@ -53,21 +120,53 @@ sqlx migrate run || {
 }
 cd ..
 
-# Start server in foreground
-echo "🖥️  Starting server in foreground..."
-echo "   Server: http://localhost:$PORT"
-echo "   Health: http://localhost:$PORT/api/v1/health"
-echo "   API Docs: http://localhost:$PORT/api-docs"
+# Display available endpoints
+echo "🖥️  Starting development server..."
 echo ""
-echo "🛑 To stop: Ctrl+C"
+echo "📍 Available endpoints:"
+if [ "$BUILD_WEB" = true ]; then
+    echo "   🌐 Frontend: http://localhost:$PORT (React SPA)"
+fi
+echo "   🔌 API: http://localhost:$PORT/api/v1"
+echo "   ❤️  Health: http://localhost:$PORT/api/v1/health"
+echo "   📚 API Docs: http://localhost:$PORT/api-docs"
+echo ""
+if [ "$FOREGROUND" = true ]; then
+    echo "🛑 To stop: Ctrl+C"
+else
+    echo "🛑 To stop: ./scripts/stop-server.sh $PORT"
+fi
 echo "📚 Next: Check docs/guides/ for learning materials"
 echo ""
 
-# Kill any existing server on the port first
-echo "🛑 Stopping any existing server on port $PORT..."
-lsof -ti:$PORT | xargs kill -9 2>/dev/null || true
-sleep 1
+# Start worker if requested (background mode only)
+if [ "$START_WORKER" = true ] && [ "$FOREGROUND" = false ]; then
+    echo "⚙️  Starting background worker..."
+    ./scripts/worker.sh
+    echo "   ✅ Worker started (ID 0)"
+fi
 
-# Start server in foreground
-cd starter
-exec cargo run -- server --port $PORT
+# Start server using the enhanced server.sh script
+if [ "$FOREGROUND" = true ]; then
+    echo "🚀 Starting server in foreground mode..."
+    if [ "$START_WORKER" = true ]; then
+        echo "💡 Note: Worker not started in foreground mode. Start separately:"
+        echo "   ./scripts/worker.sh -f  # In another terminal"
+        echo ""
+    fi
+    exec ./scripts/server.sh "$PORT" -f
+else
+    echo "🚀 Starting server in background mode..."
+    ./scripts/server.sh "$PORT"
+    
+    # Show status
+    echo ""
+    echo "✅ Development environment ready!"
+    echo "📋 Server logs: tail -f /tmp/starter-server-$PORT.log"
+    if [ "$START_WORKER" = true ]; then
+        echo "📋 Worker logs: tail -f /tmp/starter-worker-0.log"
+    else
+        echo "💡 Start worker: ./scripts/worker.sh"
+    fi
+    echo "📊 Check status: ./scripts/status.sh"
+fi

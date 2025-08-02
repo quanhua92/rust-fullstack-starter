@@ -27,6 +27,7 @@ import {
 } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
 import { apiClient } from "@/lib/api/client";
+import { useTaskStats, QUERY_KEYS } from "@/hooks/useApiQueries";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { Link } from "@tanstack/react-router";
@@ -86,21 +87,15 @@ function TasksPage() {
 		},
 	});
 
-	// Fetch task statistics
-	const { data: taskStatsResponse } = useQuery({
-		queryKey: ["taskStats"],
-		queryFn: async () => {
-			const response = await apiClient.getTaskStats();
-			return response;
-		},
-	});
+	// Fetch task statistics - now using consistent hook
+	const { data: taskStatsData } = useTaskStats();
 
 	// Task action mutations
 	const cancelTaskMutation = useMutation({
 		mutationFn: (taskId: string) => apiClient.cancelTask(taskId),
 		onSuccess: () => {
 			queryClient.invalidateQueries({ queryKey: ["tasks"] });
-			queryClient.invalidateQueries({ queryKey: ["taskStats"] });
+			queryClient.invalidateQueries({ queryKey: QUERY_KEYS.tasks.stats });
 			toast({ title: "Task cancelled successfully" });
 		},
 		onError: (error: Error) => {
@@ -116,7 +111,7 @@ function TasksPage() {
 		mutationFn: (taskId: string) => apiClient.retryTask(taskId),
 		onSuccess: () => {
 			queryClient.invalidateQueries({ queryKey: ["tasks"] });
-			queryClient.invalidateQueries({ queryKey: ["taskStats"] });
+			queryClient.invalidateQueries({ queryKey: QUERY_KEYS.tasks.stats });
 			toast({ title: "Task retry initiated successfully" });
 		},
 		onError: (error: Error) => {
@@ -132,7 +127,7 @@ function TasksPage() {
 		mutationFn: (taskId: string) => apiClient.deleteTask(taskId),
 		onSuccess: () => {
 			queryClient.invalidateQueries({ queryKey: ["tasks"] });
-			queryClient.invalidateQueries({ queryKey: ["taskStats"] });
+			queryClient.invalidateQueries({ queryKey: QUERY_KEYS.tasks.stats });
 			toast({ title: "Task deleted successfully" });
 		},
 		onError: (error: Error) => {
@@ -146,7 +141,7 @@ function TasksPage() {
 
 	const tasks = tasksResponse?.data || [];
 	const taskTypes = taskTypesResponse?.data || [];
-	const taskStats = taskStatsResponse?.data;
+	const taskStats = taskStatsData; // Already extracted by hook
 
 	const getStatusBadge = (status: TaskStatus) => {
 		const statusConfig = {

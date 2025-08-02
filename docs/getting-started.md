@@ -1,10 +1,11 @@
 # Getting Started
 
-This guide will help you set up and run the Rust Full-Stack Starter project locally.
+This guide will help you set up and run the Rust Full-Stack Starter project locally, including both the Rust backend and React frontend.
 
 ## Prerequisites
 
 - **Rust 1.75+** - Install via [rustup](https://rustup.rs/)
+- **Node.js 18+** and **pnpm** - For React frontend (`npm install -g pnpm`)
 - **Docker 20.10+** and **Docker Compose 2.0+** - For database infrastructure
 - **PostgreSQL client tools** (optional) - For database inspection
 
@@ -21,11 +22,15 @@ This guide will help you set up and run the Rust Full-Stack Starter project loca
 ### Quick Start (Recommended)
 
 ```bash
-# Check prerequisites and start server
+# Check prerequisites and start unified server (React + API)
 ./scripts/check-prereqs.sh
 ./scripts/dev-server.sh 3000
 
-# In a new terminal, start the background worker with log following
+# Access the full-stack application
+open http://localhost:3000                    # React frontend
+open http://localhost:3000/api-docs           # API documentation
+
+# Optional: Start background worker in separate terminal
 ./scripts/worker.sh -f
 
 # Or run multiple concurrent workers (different terminals):
@@ -118,14 +123,24 @@ The admin user will be created automatically when the server first starts with:
 
 ### Start Development Environment
 ```bash
-# Check prerequisites and start server
+# Option 1: Unified full-stack development (recommended)
 ./scripts/check-prereqs.sh
-./scripts/dev-server.sh
+./scripts/dev-server.sh 3000
+# - Builds React frontend automatically
+# - Serves frontend + API from single server
+# - Includes health checks and static file serving
 
-# In a new terminal, start the background worker with log following
+# Option 2: Separate frontend development (for React-specific work)
+./scripts/server.sh 3000              # Start Rust API server
+cd web && pnpm dev                    # Start React dev server (port 5173)
+# - React dev server proxies API calls to backend
+# - Hot reloading for React components
+# - TypeScript type checking
+
+# Background worker (optional, separate terminal)
 ./scripts/worker.sh -f
 
-# Or run multiple concurrent workers (different terminals):
+# Or run multiple concurrent workers:
 # ./scripts/worker.sh --id 1 -f
 # ./scripts/worker.sh --id 2 -f
 ```

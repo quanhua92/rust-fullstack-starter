@@ -19,12 +19,24 @@ cd rust-fullstack-starter
 ### 2. Start the Server
 
 ```bash
-# Start database and HTTP server
+# Complete full-stack environment (database + web + API)
 ./scripts/dev-server.sh
+
+# Or with options:
+./scripts/dev-server.sh -w          # Also start worker (complete setup)
+./scripts/dev-server.sh -f          # Foreground mode
+./scripts/dev-server.sh --api-only  # API only (skip web build)
+./scripts/dev-server.sh -p 8080     # Custom port
 ```
 
-### 3. Start the Worker (New Terminal)
+### 3. Start the Worker
 
+**Option A: Included with server** (easiest):
+```bash
+./scripts/dev-server.sh -w    # Starts everything: database + web + API + worker
+```
+
+**Option B: Separate terminal**:
 ```bash
 # Start background task worker with log following
 ./scripts/worker.sh -f
@@ -82,34 +94,68 @@ curl -X POST http://localhost:3000/api/v1/tasks \
 curl -H "Authorization: Bearer TOKEN" http://localhost:3000/api/v1/tasks
 ```
 
-### 5. Explore More
+### 5. Build and Serve Full-Stack Application
 
-- **API Docs**: http://localhost:3000/api-docs (Interactive Swagger UI)
-- **Health Check**: http://localhost:3000/health (System status)
-- **Worker Logs**: Check `/tmp/starter-worker-0.log` for task processing (or `/tmp/starter-worker-{ID}.log` for specific worker ID)
+**Option A: Complete development environment** (recommended):
+```bash
+# Full setup: database + web build + unified server
+./scripts/dev-server.sh
+
+# Or quick restart: auto-detects and builds web if needed  
+./scripts/server.sh 3000       # Smart server with auto-build
+```
+
+**Option B: Separate development servers**:
+```bash
+# Terminal 1: API server only
+./scripts/server.sh 3000
+
+# Terminal 2: React dev server  
+cd web && pnpm dev
+```
+
+**Option C: Manual build then serve**:
+```bash
+./scripts/build-web.sh         # Build React frontend  
+./scripts/server.sh 3000       # Serve API + static files
+```
+
+### 6. Explore the Application
+
+- **🌐 Frontend**: http://localhost:3000 (React app served by Rust)
+- **🔌 API**: http://localhost:3000/api/v1 (REST API)
+- **📚 API Docs**: http://localhost:3000/api-docs (Interactive Swagger UI)
+- **❤️ Health Check**: http://localhost:3000/api/v1/health (System status)
+- **🔧 Worker Logs**: Check `/tmp/starter-worker-0.log` for task processing
 
 ## Key Features
 
+- **🌐 Full-Stack Integration** - React frontend served directly by Rust server with unified deployment
 - **🔐 Authentication & Authorization** - Session-based auth with Role-Based Access Control (RBAC)
 - **👥 User Management System** - Complete user lifecycle with 12 endpoints (profile, admin, analytics)
 - **🔑 Role-Based Access Control** - Three-tier system (User/Moderator/Admin) with hierarchical permissions
 - **⚙️ Background Tasks** - Async job processing with retry logic and dead letter queue
 - **📊 API Documentation** - Interactive OpenAPI/Swagger docs
-- **🧪 Testing Framework** - 95 integration tests + comprehensive API endpoint testing
+- **🧪 Testing Framework** - 119 integration tests + comprehensive API endpoint testing
 - **🔥 Chaos Testing** - Docker-based resilience testing with 7 scenarios
 - **⚙️ Admin CLI** - Direct database access for monitoring and maintenance
-- **🐳 Docker Support** - Development and production containers
+- **🐳 Docker Support** - Development and production containers with multi-stage builds
 
 ## Development Commands
 
 ```bash
+# Full-stack development
+./scripts/dev-server.sh             # Complete environment: database + web + API
+./scripts/build-web.sh              # Build React frontend only
+
 # Run tests
 cargo nextest run                    # Integration tests (119 tests)
 ./scripts/test-with-curl.sh         # API endpoint tests (44+ tests)
 ./scripts/test-chaos.sh             # Chaos testing (7 scenarios)
 
 # Quality checks
-./scripts/check.sh                  # Format, lint, test (run before commits)
+./scripts/check.sh                  # Backend: format, lint, test (run before commits)
+cd web && ./scripts/check-web.sh    # Frontend: dependencies, types, lint, build, tests
 
 # Background tasks
 ./scripts/worker.sh -f              # Start task worker with logs (ID 0)
