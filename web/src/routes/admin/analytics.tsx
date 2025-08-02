@@ -131,7 +131,7 @@ function UserAnalyticsPage() {
 										{userStats?.active_users || 0}
 									</div>
 									<p className="text-xs text-muted-foreground">
-										{userStats?.total_users && userStats?.active_users
+										{userStats?.total_users && userStats.total_users > 0
 											? `${((userStats.active_users / userStats.total_users) * 100).toFixed(1)}% of total`
 											: "Currently active"}
 									</p>
@@ -233,7 +233,7 @@ function UserAnalyticsPage() {
 													{userStats?.active_users || 0}
 												</div>
 												<div className="text-xs text-muted-foreground">
-													{userStats?.total_users && userStats?.active_users
+													{userStats?.total_users && userStats.total_users > 0
 														? `${((userStats.active_users / userStats.total_users) * 100).toFixed(1)}%`
 														: "0%"}
 												</div>
@@ -250,7 +250,7 @@ function UserAnalyticsPage() {
 													{userStats?.email_verified || 0}
 												</div>
 												<div className="text-xs text-muted-foreground">
-													{userStats?.total_users && userStats?.email_verified
+													{userStats?.total_users && userStats.total_users > 0
 														? `${((userStats.email_verified / userStats.total_users) * 100).toFixed(1)}%`
 														: "0%"}
 												</div>
@@ -267,7 +267,7 @@ function UserAnalyticsPage() {
 													{userStats?.inactive_users || 0}
 												</div>
 												<div className="text-xs text-muted-foreground">
-													{userStats?.total_users && userStats?.inactive_users
+													{userStats?.total_users && userStats.total_users > 0
 														? `${((userStats.inactive_users / userStats.total_users) * 100).toFixed(1)}%`
 														: "0%"}
 												</div>

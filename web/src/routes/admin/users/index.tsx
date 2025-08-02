@@ -116,9 +116,10 @@ function UsersPage() {
 	});
 
 	// Generate secure random password using crypto API
-	const generateSecurePassword = (length: number = 12): string => {
-		const charset = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*";
-		const values = new Uint32Array(length);
+	const generateSecurePassword = (length = 12): string => {
+		const charset =
+			"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*";
+		const values = new Uint8Array(length);
 		window.crypto.getRandomValues(values);
 		let password = "";
 		for (let i = 0; i < length; i++) {
@@ -131,10 +132,12 @@ function UsersPage() {
 	const resetPasswordMutation = useMutation({
 		mutationFn: ({ id, reason }: { id: string; reason?: string }) => {
 			const newPassword = generateSecurePassword();
-			return apiClient.resetUserPassword(id, { new_password: newPassword, reason }).then(response => ({
-				...response,
-				newPassword, // Return the generated password for display
-			}));
+			return apiClient
+				.resetUserPassword(id, { new_password: newPassword, reason })
+				.then((response) => ({
+					...response,
+					newPassword, // Return the generated password for display
+				}));
 		},
 		onSuccess: (data) => {
 			toast({
