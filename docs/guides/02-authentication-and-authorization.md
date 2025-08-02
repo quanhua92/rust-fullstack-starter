@@ -294,32 +294,35 @@ sequenceDiagram
 
 ### Users Table
 ```sql
-users (
-  id UUID PRIMARY KEY,
-  username VARCHAR UNIQUE,
-  email VARCHAR UNIQUE, 
-  password_hash VARCHAR,  -- Argon2 hash, never plain text
-  role VARCHAR CHECK (role IN ('user', 'moderator', 'admin')), -- RBAC role with database constraint
-  is_active BOOLEAN,
-  email_verified BOOLEAN,
-  created_at TIMESTAMPTZ,
-  updated_at TIMESTAMPTZ
-)
+CREATE TABLE users (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  username VARCHAR(50) NOT NULL UNIQUE,
+  email VARCHAR(254) NOT NULL UNIQUE, 
+  password_hash TEXT NOT NULL,  -- Argon2 hash, never plain text
+  role TEXT NOT NULL DEFAULT 'user', -- RBAC role with database constraint
+  is_active BOOLEAN NOT NULL DEFAULT true,
+  email_verified BOOLEAN NOT NULL DEFAULT false,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  last_login_at TIMESTAMPTZ,
+  CONSTRAINT check_user_role CHECK (role IN ('user', 'moderator', 'admin'))
+);
 ```
 
 ### Sessions Table  
 ```sql
-sessions (
-  id UUID PRIMARY KEY,
-  user_id UUID REFERENCES users(id),
-  token VARCHAR UNIQUE,      -- 64-character random string
-  expires_at TIMESTAMPTZ,    -- 24 hours from creation/refresh
+CREATE TABLE sessions (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  token TEXT NOT NULL UNIQUE,      -- 64-character random string
+  expires_at TIMESTAMPTZ NOT NULL,    -- 24 hours from creation/refresh
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  last_activity_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   last_refreshed_at TIMESTAMPTZ, -- When token was last refreshed
-  user_agent VARCHAR,        -- Browser/client info
-  is_active BOOLEAN,
-  created_at TIMESTAMPTZ,
-  updated_at TIMESTAMPTZ
-)
+  user_agent TEXT,        -- Browser/client info
+  is_active BOOLEAN NOT NULL DEFAULT true
+);
 ```
 
 **Why Separate Tables? (Database Design Principles)**
