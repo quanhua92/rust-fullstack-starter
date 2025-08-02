@@ -166,8 +166,12 @@ else
     # Set Playwright to use the unified backend server on port 3000
     export PLAYWRIGHT_BASE_URL="http://localhost:3000"
     
-    # Run Playwright tests
-    run_cmd "Running Playwright E2E tests" pnpm run test:e2e
+    # Run Playwright tests (fast smoke test first, then full if available)
+    if [ "$PLAYWRIGHT_SMOKE_ONLY" = "true" ]; then
+        run_cmd "Running Playwright smoke tests" pnpm run test:e2e:smoke
+    else
+        run_cmd "Running Playwright E2E tests" pnpm run test:e2e
+    fi
     
     # Cleanup: Stop servers we started
     cleanup_servers() {

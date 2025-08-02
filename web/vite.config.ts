@@ -27,6 +27,13 @@ export default defineConfig({
     globals: true,
     environment: 'jsdom',
     setupFiles: ['./src/test/setup.ts'],
+    exclude: [
+      '**/node_modules/**',
+      '**/dist/**',
+      '**/cypress/**',
+      '**/.{idea,git,cache,output,temp}/**',
+      '**/e2e/**' // Exclude Playwright e2e tests from vitest
+    ],
   },
   resolve: {
     alias: {
