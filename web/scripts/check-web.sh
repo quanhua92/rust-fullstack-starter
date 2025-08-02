@@ -10,7 +10,7 @@
 #   --max-failures=N: Stop after N test failures (default: 1 for fail-fast)
 #   --no-fail-fast: Run all tests regardless of failures
 #   --timeout=N: Set timeout per test in milliseconds (default: 5000ms = 5s for fast fail)
-#   --global-timeout=N: Set global timeout for entire E2E test suite in seconds (default: 120s for single, 30s for smoke, 600s for full)
+#   --global-timeout=N: Set global timeout for entire E2E test suite in seconds (default: 90s for single, 15s for smoke, 300s for full)
 
 set -euo pipefail
 
@@ -219,7 +219,7 @@ else
         BROWSER_COUNT=1
         MODE="smoke"
         if [ -z "$GLOBAL_TIMEOUT" ]; then
-            GLOBAL_TIMEOUT="30"  # 30 seconds for smoke
+            GLOBAL_TIMEOUT="15"  # 15 seconds for smoke
         fi
         EXPECTED_TIME="~1s"
     elif [ "$FULL_TESTS" = "true" ]; then
@@ -227,7 +227,7 @@ else
         BROWSER_COUNT=5
         MODE="multi-browser"
         if [ -z "$GLOBAL_TIMEOUT" ]; then
-            GLOBAL_TIMEOUT="600"  # 10 minutes for full
+            GLOBAL_TIMEOUT="300"  # 5 minutes for full
         fi
         EXPECTED_TIME="~5-10min"
     else
@@ -235,7 +235,7 @@ else
         BROWSER_COUNT=1
         MODE="single-browser"
         if [ -z "$GLOBAL_TIMEOUT" ]; then
-            GLOBAL_TIMEOUT="120"  # 2 minutes for single browser
+            GLOBAL_TIMEOUT="90"  # 90 seconds for single browser
         fi
         EXPECTED_TIME="<2min"
     fi
