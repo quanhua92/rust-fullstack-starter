@@ -481,7 +481,7 @@ gh api repos/OWNER/REPO/pulls/PR_NUMBER/reviews/REVIEW_ID/comments
 # Comment on pull request to address reviewer feedback
 gh pr comment PR_NUMBER --body "## 🔧 PR Review Feedback Addressed
 
-@REVIEWER_USERNAME Thank you for the comprehensive code review! I've addressed the issues you identified:
+@gemini-code-assist Thank you for the comprehensive code review! I've addressed the issues you identified:
 
 ## ✅ **Critical Issues Fixed:**
 ### 1. **Issue Title** 
