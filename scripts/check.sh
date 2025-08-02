@@ -113,12 +113,12 @@ else
     echo -e "${GREEN}✅ Cargo check passed${NC}"
 fi
 
-# 3. Format check and auto-fix
-echo -e "\n${BLUE}🎨 Step 3/9: Checking and fixing code formatting...${NC}"
+# 3. Format check (strict - matches CI behavior)
+echo -e "\n${BLUE}🎨 Step 3/9: Checking code formatting...${NC}"
 if ! cargo fmt --manifest-path starter/Cargo.toml --all -- --check; then
-    echo -e "${YELLOW}⚠️  Code formatting issues found, auto-fixing...${NC}"
-    cargo fmt --manifest-path starter/Cargo.toml --all
-    echo -e "${GREEN}✅ Code formatting fixed${NC}"
+    echo -e "${RED}❌ Code formatting issues found!${NC}"
+    echo -e "${YELLOW}💡 Run 'cargo fmt --manifest-path starter/Cargo.toml --all' to fix${NC}"
+    exit 1
 else
     echo -e "${GREEN}✅ Code formatting is correct${NC}"
 fi

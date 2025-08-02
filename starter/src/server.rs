@@ -222,7 +222,7 @@ pub async fn start_server(config: AppConfig, database: Database) -> Result<()> {
 
     // Setup static file serving for web frontend
     let web_build_path = &config.server.web_build_path;
-    
+
     let mut app = Router::new()
         .nest("/api/v1", api_router)
         // Keep documentation routes at root level
