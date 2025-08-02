@@ -242,13 +242,13 @@ stateDiagram-v2
 ```sql
 CREATE TABLE tasks (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    task_type VARCHAR NOT NULL,           -- 'email', 'webhook', etc.
-    payload JSONB NOT NULL,               -- Task-specific data
+    task_type VARCHAR(255) NOT NULL,      -- 'email', 'webhook', etc.
+    payload JSONB NOT NULL DEFAULT '{}',  -- Task-specific data
     status task_status NOT NULL DEFAULT 'pending',
     priority task_priority NOT NULL DEFAULT 'normal',
     
     -- Retry configuration
-    retry_strategy JSONB,                 -- How to retry failures
+    retry_strategy JSONB NOT NULL DEFAULT '{}', -- How to retry failures
     max_attempts INTEGER NOT NULL DEFAULT 3,
     current_attempt INTEGER NOT NULL DEFAULT 0,
     
@@ -263,10 +263,10 @@ CREATE TABLE tasks (
     completed_at TIMESTAMPTZ,             -- When finished
     
     -- Ownership
-    created_by UUID REFERENCES users(id),
+    created_by UUID REFERENCES users(id) ON DELETE SET NULL,
     
     -- Additional context
-    metadata JSONB DEFAULT '{}'
+    metadata JSONB NOT NULL DEFAULT '{}'
 );
 ```
 
