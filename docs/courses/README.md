@@ -98,21 +98,33 @@ Let's begin! What should I do first to understand the system overview?
 ### Your AI Teaching Assistant Will:
 
 ✅ **Guide you through the 15-lesson curriculum systematically**
+
 ✅ **Reference specific files in the actual codebase**
+
 ✅ **Suggest real experiments and code modifications**
+
 ✅ **Help you update your learning journal with insights**
+
 ✅ **Answer questions specific to this starter system**
+
 ✅ **Challenge you with hands-on exercises**
 
 **Additional benefits with codebase-integrated AI:**
+
 ✅ **Read and analyze actual code in real-time**
+
 ✅ **Provide exact line numbers and code examples**
+
 ✅ **Verify your experiments and modifications**
+
 ✅ **Navigate the complete project structure**
+
 ✅ **Keep up with any codebase changes**
 
 ❌ **Won't teach general web development concepts**
+
 ❌ **Won't skip the systematic progression**
+
 ❌ **Won't let you treat any code as a "magic box"**
 
 ---
