@@ -861,7 +861,7 @@ sqlx migrate run --source starter/migrations
 
 #### Run Tests
 ```bash
-# All monitoring tests (12 tests)
+# All monitoring tests (15 tests)
 cargo nextest run monitoring
 
 # Specific test patterns

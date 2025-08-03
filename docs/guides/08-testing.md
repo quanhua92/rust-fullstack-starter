@@ -448,7 +448,7 @@ Success rate: 100%
 ```
 
 **Features**:
-- Tests all 15 documented API endpoints
+- Tests 44+ API endpoints including edge cases and error scenarios
 - Validates input/output formats against documentation
 - Tests authentication flows and error cases
 - Supports custom server configurations

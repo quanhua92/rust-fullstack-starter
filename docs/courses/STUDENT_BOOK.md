@@ -29,7 +29,7 @@
 - [ ] **Lesson 6:** API Layer - 36 routes, 4-tier security, OpenAPI docs, health endpoints
 - [ ] **Lesson 7:** User Management - 12 endpoints, Argon2 hashing, CLI admin tools
 - [ ] **Lesson 8:** Testing & Quality - 91 integration tests, 9-step quality pipeline, 10 chaos scenarios
-- [ ] **Lesson 9:** Monitoring & Observability - 14 API endpoints, 4-table schema, Prometheus export, incident timelines
+- [ ] **Lesson 9:** Monitoring & Observability - 14 API endpoints, 4-table schema, enhanced Prometheus export with detailed metrics, incident timelines, robust error handling
 
 **Phase 1 Reflection:**
 *After completing Phase 1, I can confidently say I understand...*
@@ -293,7 +293,7 @@ Master the 91-test integration suite, 9-step quality pipeline, and 10-scenario c
 *"If you can't measure it, you can't manage it"*
 
 **🎯 Your Mission:**
-Master the comprehensive monitoring system with 14 API endpoints, 4 database tables, and real-time observability patterns.
+Master the comprehensive monitoring system with 14 API endpoints, 4 database tables, enhanced error handling with data integrity protection, and real-time observability patterns.
 
 **📂 Files to Explore:**
 1. **`starter/src/monitoring/`** - Complete monitoring module (5 files, ~2,000 lines)
@@ -302,11 +302,12 @@ Master the comprehensive monitoring system with 14 API endpoints, 4 database tab
 4. **`starter/tests/monitoring/`** - Comprehensive test suite
 
 **🔍 Your Discoveries:**
-- [ ] **The 4-Table Schema**: events, metrics, alerts, incidents - how do they relate?
-- [ ] **12 API Endpoints**: Event collection, metrics submission, alert management, incident tracking
+- [ ] **The 4-Table Schema**: events, metrics, alerts, incidents with TEXT + CHECK constraints for data integrity
+- [ ] **14 API Endpoints**: Event collection, metrics submission, alert management, incident tracking
 - [ ] **RBAC Integration**: How monitoring permissions work with User → Moderator → Admin hierarchy
-- [ ] **Prometheus Export**: Industry-standard metrics export at `/api/v1/monitoring/metrics/prometheus`
+- [ ] **Enhanced Prometheus Export**: Industry-standard metrics export with system stats + detailed database metrics at `/api/v1/monitoring/metrics/prometheus`
 - [ ] **Timeline Magic**: How incidents automatically correlate with related events
+- [ ] **Data Integrity Protection**: Robust error handling prevents database corruption and silent failures
 
 **🧪 Hands-On Experiments:**
 1. **30-Second Setup**: Start monitoring and create your first event
@@ -367,9 +368,9 @@ Master the comprehensive monitoring system with 14 API endpoints, 4 database tab
 **🔧 Key Code Patterns:**
 
 ```rust
-// Log application events
+// Log application events with robust error handling
 let event = services::create_event(&mut conn, CreateEventRequest {
-    event_type: "log".to_string(),
+    event_type: "log".to_string(), // String validated in service layer
     source: "user-service".to_string(),
     message: Some("User registration completed".to_string()),
     level: Some("info".to_string()),
@@ -379,7 +380,7 @@ let event = services::create_event(&mut conn, CreateEventRequest {
     ]),
     payload: HashMap::new(),
     timestamp: None,
-}).await?;
+}).await?; // Proper error propagation instead of silent failures
 
 // Track performance metrics
 let metric = services::create_metric(&mut conn, CreateMetricRequest {
@@ -394,11 +395,12 @@ let metric = services::create_metric(&mut conn, CreateMetricRequest {
 ```
 
 **✅ Success Criteria:**
-- [ ] Can explain all 4 monitoring database tables and their relationships
+- [ ] Can explain all 4 monitoring database tables and their relationships with TEXT + CHECK constraints
 - [ ] Understand the 14 API endpoints and their RBAC requirements
-- [ ] Can create events, metrics, alerts, and incidents programmatically
-- [ ] Know how to export metrics for external monitoring systems
+- [ ] Can create events, metrics, alerts, and incidents programmatically with proper error handling
+- [ ] Know how to export comprehensive metrics (system + database) for external monitoring systems
 - [ ] Can correlate events into incident timelines for analysis
+- [ ] Understand data integrity features and error detection mechanisms
 
 **🎓 Advanced Challenges:**
 - Integrate monitoring into your own task handlers
@@ -407,9 +409,10 @@ let metric = services::create_metric(&mut conn, CreateMetricRequest {
 - Implement automated incident response workflows
 
 **📖 Essential Reading:**
-- `docs/guides/15-monitoring-and-observability.md` - Complete 891-line implementation guide
-- `docs/monitoring.md` - API reference and integration patterns
-- Study monitoring tests to understand usage patterns
+- `docs/guides/15-monitoring-and-observability.md` - Complete implementation guide with enhanced Prometheus integration
+- `docs/monitoring.md` - API reference and integration patterns with data integrity features
+- `tasks/MONITORING.md` - Technical architecture documentation with database schema details
+- Study monitoring tests to understand usage patterns and error handling
 
 **🔗 Connects To:**
 - **Previous Lessons**: Authentication (RBAC), Tasks (integration), API Layer (endpoints)

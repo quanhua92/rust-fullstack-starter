@@ -1026,9 +1026,9 @@ Docker Compose → System Spawn → Failure Injection → Recovery Validation
 
 **Learning Objectives:**
 - Master the comprehensive monitoring system with 14 API endpoints, 4 database tables, and real-time observability patterns
-- Understand production-grade monitoring with events, metrics, alerts, and incidents
+- Understand production-grade monitoring with enhanced error handling and data integrity protection
 - See RBAC integration with 3-tier permissions (User → Moderator → Admin)
-- Grasp Prometheus metrics export and timeline reconstruction
+- Grasp enhanced Prometheus metrics export with detailed database metrics and timeline reconstruction
 
 **Monitoring-Specific Materials:**
 - `starter/src/monitoring/` - Complete monitoring module (5 files, ~2,000 lines)
