@@ -33,14 +33,14 @@ This document outlines the implementation of a foundational monitoring and obser
 
 ### Events Table
 ```sql
-CREATE TYPE event_type AS ENUM ('log', 'metric', 'trace', 'alert');
-
+-- TEXT + CHECK constraints for better compatibility and error handling
 CREATE TABLE events (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    event_type event_type NOT NULL,
-    source VARCHAR(255) NOT NULL,
+    event_type TEXT NOT NULL 
+        CONSTRAINT valid_event_type CHECK (event_type IN ('log', 'metric', 'trace', 'alert')),
+    source TEXT NOT NULL,
     message TEXT,
-    level VARCHAR(50),
+    level TEXT,
     tags JSONB NOT NULL DEFAULT '{}',
     payload JSONB NOT NULL DEFAULT '{}',
     timestamp TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -50,17 +50,19 @@ CREATE TABLE events (
 CREATE INDEX idx_events_timestamp ON events(timestamp);
 CREATE INDEX idx_events_source ON events(source);
 CREATE INDEX idx_events_type ON events(event_type);
+CREATE INDEX idx_events_level ON events(level);
 CREATE INDEX idx_events_tags ON events USING GIN(tags);
+CREATE INDEX idx_events_payload ON events USING GIN(payload);
+CREATE INDEX idx_events_source_timestamp ON events(source, timestamp);
 ```
 
 ### Metrics Table
 ```sql
-CREATE TYPE metric_type AS ENUM ('counter', 'gauge', 'histogram', 'summary');
-
 CREATE TABLE metrics (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    name VARCHAR(255) NOT NULL,
-    metric_type metric_type NOT NULL,
+    name TEXT NOT NULL,
+    metric_type TEXT NOT NULL 
+        CONSTRAINT valid_metric_type CHECK (metric_type IN ('counter', 'gauge', 'histogram', 'summary')),
     value DOUBLE PRECISION NOT NULL,
     labels JSONB NOT NULL DEFAULT '{}',
     timestamp TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -69,47 +71,60 @@ CREATE TABLE metrics (
 
 CREATE INDEX idx_metrics_name ON metrics(name);
 CREATE INDEX idx_metrics_timestamp ON metrics(timestamp);
+CREATE INDEX idx_metrics_name_timestamp ON metrics(name, timestamp);
 CREATE INDEX idx_metrics_labels ON metrics USING GIN(labels);
+CREATE INDEX idx_metrics_type ON metrics(metric_type);
 ```
 
 ### Alerts Table
 ```sql
-CREATE TYPE alert_status AS ENUM ('active', 'resolved', 'silenced');
-
 CREATE TABLE alerts (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    name VARCHAR(255) NOT NULL,
+    name TEXT NOT NULL,
     description TEXT,
     query TEXT NOT NULL,
     threshold_value DOUBLE PRECISION,
-    status alert_status NOT NULL DEFAULT 'active',
+    status TEXT NOT NULL DEFAULT 'active'
+        CONSTRAINT valid_alert_status CHECK (status IN ('active', 'resolved', 'silenced')),
     triggered_at TIMESTAMPTZ,
     resolved_at TIMESTAMPTZ,
-    created_by UUID REFERENCES users(id),
+    created_by UUID REFERENCES users(id) ON DELETE SET NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+-- Indexes for alerts table
+CREATE INDEX idx_alerts_status ON alerts(status);
+CREATE INDEX idx_alerts_created_by ON alerts(created_by);
+CREATE INDEX idx_alerts_created_at ON alerts(created_at);
 ```
 
 ### Incidents Table
 ```sql
-CREATE TYPE incident_severity AS ENUM ('low', 'medium', 'high', 'critical');
-CREATE TYPE incident_status AS ENUM ('open', 'investigating', 'resolved', 'closed');
-
 CREATE TABLE incidents (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    title VARCHAR(255) NOT NULL,
+    title TEXT NOT NULL,
     description TEXT,
-    severity incident_severity NOT NULL DEFAULT 'medium',
-    status incident_status NOT NULL DEFAULT 'open',
+    severity TEXT NOT NULL DEFAULT 'medium'
+        CONSTRAINT valid_incident_severity CHECK (severity IN ('low', 'medium', 'high', 'critical')),
+    status TEXT NOT NULL DEFAULT 'open'
+        CONSTRAINT valid_incident_status CHECK (status IN ('open', 'investigating', 'resolved', 'closed')),
     started_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     resolved_at TIMESTAMPTZ,
     root_cause TEXT,
-    created_by UUID REFERENCES users(id),
-    assigned_to UUID REFERENCES users(id),
+    created_by UUID REFERENCES users(id) ON DELETE SET NULL,
+    assigned_to UUID REFERENCES users(id) ON DELETE SET NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+-- Indexes for incidents table
+CREATE INDEX idx_incidents_status ON incidents(status);
+CREATE INDEX idx_incidents_severity ON incidents(severity);
+CREATE INDEX idx_incidents_created_by ON incidents(created_by);
+CREATE INDEX idx_incidents_assigned_to ON incidents(assigned_to);
+CREATE INDEX idx_incidents_started_at ON incidents(started_at);
+CREATE INDEX idx_incidents_created_at ON incidents(created_at);
 ```
 
 ## API Endpoints
@@ -122,7 +137,11 @@ CREATE TABLE incidents (
 ### Metrics
 - `POST /api/v1/monitoring/metrics` - Submit metrics data
 - `GET /api/v1/monitoring/metrics` - Query metrics with aggregation
-- `GET /api/v1/monitoring/metrics/prometheus` - Prometheus exposition format
+- `GET /api/v1/monitoring/metrics/prometheus` - Enhanced Prometheus exposition format
+  - Exports system statistics (events, alerts, incidents)
+  - Exports last 24 hours of user-submitted metrics from database
+  - Includes proper HELP and TYPE comments
+  - Full label support with key-value pairs
 
 ### Alerts
 - `POST /api/v1/monitoring/alerts` - Create alert rules

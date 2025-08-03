@@ -196,15 +196,15 @@ The monitoring system integrates with the existing RBAC system:
 
 ## Prometheus Integration
 
-### Metrics Exposition
+### Enhanced Metrics Exposition
 
-The system provides a Prometheus-compatible metrics endpoint:
+The system provides a comprehensive Prometheus-compatible metrics endpoint that exports both system statistics and detailed user-submitted metrics:
 
 ```bash
 curl http://localhost:3000/api/v1/monitoring/metrics/prometheus
 ```
 
-**Output:**
+**Output includes:**
 ```
 # HELP monitoring_total_events Total number of events in the system
 # TYPE monitoring_total_events counter
@@ -213,7 +213,22 @@ monitoring_total_events 15420
 # HELP monitoring_active_alerts Number of currently active alerts  
 # TYPE monitoring_active_alerts gauge
 monitoring_active_alerts 3
+
+# HELP payment_processing_duration_ms User-submitted metric
+# TYPE payment_processing_duration_ms histogram
+payment_processing_duration_ms{gateway="stripe",currency="USD"} 245.5 1704454800000
+
+# HELP http_requests_total User-submitted metric
+# TYPE http_requests_total counter
+http_requests_total{method="POST",status="200"} 1.0 1704454801000
 ```
+
+**Features:**
+- **System metrics**: Built-in monitoring statistics 
+- **User metrics**: Last 24 hours of submitted metrics from database
+- **Proper formatting**: HELP and TYPE comments for each metric
+- **Labels**: Full label support with key-value pairs
+- **Timestamps**: Millisecond precision timestamps
 
 ### Configuration
 
@@ -320,6 +335,12 @@ sqlx migrate run --source starter/migrations
 - Verify `event_type` uses valid values: `log`, `metric`, `trace`, `alert`
 - Invalid event types return 400 Bad Request with descriptive error message
 - Check JSON payload structure matches `CreateEventRequest` schema
+
+**Q: Database corruption errors in logs**
+- The system now detects invalid enum values in the database
+- If you see panic messages about "Database corruption detected", this indicates CHECK constraints were bypassed
+- Review recent database changes and data imports for invalid values
+- This is a safety feature that prevents silent data corruption
 
 **Q: Events not appearing in timeline**
 - Check event timestamps are within incident timeframe

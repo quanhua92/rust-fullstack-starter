@@ -94,7 +94,7 @@ curl -H "Authorization: Bearer $TOKEN" \
 ### Database Design
 
 ```sql
--- Simple TEXT + CHECK constraints (not PostgreSQL enums)
+-- TEXT + CHECK constraints with robust error handling
 CREATE TABLE events (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     event_type TEXT NOT NULL 
@@ -108,6 +108,12 @@ CREATE TABLE events (
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 ```
+
+**Data Integrity Features:**
+- **CHECK constraints**: Prevent invalid enum values at database level
+- **Error detection**: Application detects any corruption that bypasses constraints  
+- **Robust handling**: Proper error propagation instead of silent fallbacks
+- **Type safety**: Rust compile-time validation with runtime verification
 
 ---
 
@@ -470,14 +476,14 @@ Authorization: Bearer <moderator_token>
 }
 ```
 
-### Prometheus Integration
+### Enhanced Prometheus Integration
 
 ```http
 GET /api/v1/monitoring/metrics/prometheus
 Authorization: Bearer <token>
 ```
 
-**Response:** Prometheus exposition format
+**Response:** Comprehensive Prometheus exposition format
 ```
 # HELP monitoring_total_events Total number of events in the system
 # TYPE monitoring_total_events counter
@@ -486,7 +492,22 @@ monitoring_total_events 15420
 # HELP monitoring_active_alerts Number of currently active alerts
 # TYPE monitoring_active_alerts gauge
 monitoring_active_alerts 3
+
+# HELP payment_processing_duration_ms User-submitted metric
+# TYPE payment_processing_duration_ms histogram
+payment_processing_duration_ms{gateway="stripe",currency="USD"} 245.5 1704454800000
+
+# HELP http_requests_total User-submitted metric
+# TYPE http_requests_total counter
+http_requests_total{method="POST",status="200"} 1.0 1704454801000
 ```
+
+**Enhanced Features:**
+- **System statistics**: Built-in monitoring metrics
+- **User-submitted metrics**: Last 24 hours of detailed metrics from database
+- **Full label support**: Multi-dimensional metrics with labels
+- **Proper Prometheus format**: HELP and TYPE comments for each metric
+- **Timestamp precision**: Millisecond-accurate timestamps
 
 ---
 
@@ -874,6 +895,8 @@ cargo nextest run test_incident_timeline
 - **Use RBAC**: Restrict access to monitoring data
 - **Sanitize messages**: Prevent data leakage in logs
 - **Implement retention**: Clean up old data regularly
+- **Data integrity**: System detects database corruption and prevents silent failures
+- **Input validation**: All enum values validated at application and database levels
 
 ---
 
