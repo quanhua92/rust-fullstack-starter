@@ -440,18 +440,18 @@ pub struct MonitoringStats {
 }
 
 // IMPORTANT: From<String> implementations are REQUIRED by SQLx query_as! macros
-// 
+//
 // These implementations exist solely to support SQLx's query_as! macro which
 // automatically converts database strings to enums. Without these, query_as!
 // compilation will fail with "the trait bound `EventType: From<String>`" errors.
 //
 // DESIGN CHOICE: We use safe fallbacks with error logging instead of panicking
-// to prevent server crashes from corrupted database data. The sqlx::Decode 
+// to prevent server crashes from corrupted database data. The sqlx::Decode
 // implementation (below) provides proper error handling when used directly.
 //
 // Alternative approaches considered:
 // 1. Remove From<String> and use manual field mapping - more verbose, error-prone
-// 2. Panic on invalid data - could crash the server from bad database state  
+// 2. Panic on invalid data - could crash the server from bad database state
 // 3. Return Result<Self> - not compatible with From trait requirements
 //
 // Current approach balances convenience, safety, and SQLx compatibility.

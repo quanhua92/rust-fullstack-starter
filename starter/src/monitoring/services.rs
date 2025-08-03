@@ -639,7 +639,7 @@ pub async fn get_prometheus_metrics(conn: &mut DbConn) -> Result<String> {
                     };
                     // Properly escape backslashes and double quotes for Prometheus format
                     let escaped_v = v_str.replace('\\', r"\\").replace('"', r#"\""#);
-                    Some(format!("{}=\"{}\"", k, escaped_v))
+                    Some(format!("{k}=\"{escaped_v}\""))
                 })
                 .collect();
             format!("{{{}}}", label_pairs.join(","))
