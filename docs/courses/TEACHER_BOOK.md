@@ -1135,23 +1135,23 @@ let metric = services::create_metric(&mut conn, CreateMetricRequest {
 
 **📊 Teaching the 4-Week Progressive Implementation:**
 
-**Week 1: Foundation**
+#### Week 1: Foundation
 - Database schema and migrations
 - Basic event and metric collection
 - Understanding monitoring data model
 
-**Week 2: API Development**
+#### Week 2: API Development
 - Implementing CRUD endpoints
 - Adding RBAC protection
 - Request/response validation
 
-**Week 3: Advanced Features**
+#### Week 3: Advanced Features
 - Alert rule management
 - Incident lifecycle tracking
 - Timeline reconstruction
 - Advanced tag filtering with JSONB queries
 
-**Week 4: Production Integration**
+#### Week 4: Production Integration
 - Prometheus metrics export
 - Performance optimization
 - Real-world monitoring patterns

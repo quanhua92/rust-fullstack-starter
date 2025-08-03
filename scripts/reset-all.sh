@@ -4,12 +4,38 @@
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/common.sh"
 
-# Parse command line arguments
+# Parse command line arguments (combined to avoid double-handling)
 RESET_DATABASE=false
 FORCE_REMOTE=false
-parse_standard_args "$@"
+HELP_REQUESTED=false
 
-# Handle help or custom parsing
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        -h|--help)
+            HELP_REQUESTED=true
+            shift
+            ;;
+        --reset-database)
+            RESET_DATABASE=true
+            shift
+            ;;
+        --force-remote)
+            FORCE_REMOTE=true
+            shift
+            ;;
+        --*)
+            print_status "error" "Unknown option: $1"
+            print_status "info" "Use --help for usage information"
+            exit 1
+            ;;
+        *)
+            # Skip non-flag arguments
+            shift
+            ;;
+    esac
+done
+
+# Handle help display
 if [ "$HELP_REQUESTED" = true ]; then
     show_standard_help "$0" "Reset all starter processes and optionally database:"
     echo "Options:"
@@ -22,36 +48,33 @@ if [ "$HELP_REQUESTED" = true ]; then
     exit 0
 fi
 
-# Check for --reset-database and --force-remote flags
-for arg in "$@"; do
-    case $arg in
-        --reset-database)
-            RESET_DATABASE=true
-            ;;
-        --force-remote)
-            FORCE_REMOTE=true
-            ;;
-        --*)
-            print_status "error" "Unknown option: $arg"
-            print_status "info" "Use --help for usage information"
-            exit 1
-            ;;
-    esac
-done
-
 # Function to check if database host is local
 is_local_host() {
     local db_url="$1"
-    # Extract host from database URL
-    # URL format: postgresql://user:pass@host:port/db
-    local host=$(echo "$db_url" | sed -n 's/.*@\([^:]*\):.*/\1/p')
+    local host
     
-    # If sed didn't extract host, try alternative parsing
-    if [ -z "$host" ]; then
-        host=$(echo "$db_url" | sed -n 's/.*@\([^/]*\)\/.*/\1/p' | cut -d':' -f1)
+    # Use Python's urlparse for robust URL parsing that handles:
+    # - IPv6 addresses: postgres://u:p@[::1]:5432/db
+    # - Unix sockets: postgresql:///db?host=/var/run/postgresql  
+    # - Query parameters and complex credential formats
+    # - Missing hostname defaults
+    host=$(python3 -c "
+import sys
+try:
+    from urllib.parse import urlparse
+    url = urlparse('$db_url')
+    hostname = url.hostname or ''
+    print(hostname)
+except Exception:
+    print('PARSE_FAILED')
+" 2>/dev/null || echo "PARSE_FAILED")
+    
+    # If parsing failed, treat as remote for safety (fail-closed)
+    if [ "$host" = "PARSE_FAILED" ]; then
+        return 1  # Treat unknown as remote
     fi
     
-    # Check if host is localhost or 127.0.0.1 or empty (defaults to localhost)
+    # Check if host is localhost, 127.0.0.1, ::1, or empty (defaults to localhost)
     case "$host" in
         "localhost"|"127.0.0.1"|"::1"|"")
             return 0  # Local host
@@ -65,11 +88,24 @@ is_local_host() {
 # Function to confirm remote database operation
 confirm_remote_operation() {
     local db_url="$1"
-    local host=$(echo "$db_url" | sed -n 's/.*@\([^:]*\):.*/\1/p')
     
-    if [ -z "$host" ]; then
-        host=$(echo "$db_url" | sed -n 's/.*@\([^/]*\)\/.*/\1/p' | cut -d':' -f1)
+    # Check if it's actually a local host first - if so, no confirmation needed
+    if is_local_host "$db_url"; then 
+        return 0
     fi
+    
+    # Extract hostname using the same robust parsing
+    local host
+    host=$(python3 -c "
+import sys
+try:
+    from urllib.parse import urlparse
+    url = urlparse('$db_url')
+    hostname = url.hostname or 'localhost'
+    print(hostname)
+except Exception:
+    print('unknown-host')
+" 2>/dev/null || echo "unknown-host")
     
     print_status "warning" "⚠️  DANGER: About to perform database operation on REMOTE host: $host"
     print_status "warning" "This could affect production or shared databases!"
@@ -142,7 +178,19 @@ if [ "$RESET_DATABASE" = true ]; then
     fi
     
     # Proceed with dropping test template database
-    ADMIN_URL="${DB_URL%/*}/postgres"
+    # Use Python to construct admin URL that preserves query parameters and handles complex URLs
+    ADMIN_URL=$(python3 -c "
+import sys
+try:
+    from urllib.parse import urlparse
+    url = urlparse('$DB_URL')
+    admin = url._replace(path='/postgres')
+    print(admin.geturl())
+except Exception:
+    # Fallback to original URL if parsing fails
+    print('$DB_URL')
+" 2>/dev/null || echo "$DB_URL")
+    
     if psql "$ADMIN_URL" -c 'DROP DATABASE IF EXISTS "starter_test_template"' 2>/dev/null; then
         print_status "success" "Test template database dropped successfully"
     else
