@@ -89,6 +89,107 @@ async fn test_get_events_with_filters() {
 }
 
 #[tokio::test]
+async fn test_get_events_with_tag_filters() {
+    let app = spawn_app().await;
+    let factory = TestDataFactory::new(app.clone());
+    let unique_username = format!("taguser_{}", &Uuid::new_v4().to_string()[..8]);
+    let (_user, token) = factory.create_authenticated_user(&unique_username).await;
+
+    // Create events with different tags
+    let events = vec![
+        json!({
+            "event_type": "log",
+            "source": "web-service",
+            "message": "User login",
+            "level": "info",
+            "tags": {
+                "user_id": "123",
+                "environment": "production",
+                "action": "login"
+            }
+        }),
+        json!({
+            "event_type": "log",
+            "source": "api-service",
+            "message": "API call",
+            "level": "info",
+            "tags": {
+                "user_id": "456",
+                "environment": "production",
+                "action": "api_call"
+            }
+        }),
+        json!({
+            "event_type": "log",
+            "source": "web-service",
+            "message": "User logout",
+            "level": "info",
+            "tags": {
+                "user_id": "123",
+                "environment": "development",
+                "action": "logout"
+            }
+        }),
+    ];
+
+    // Create all events
+    for event_data in &events {
+        let response = app
+            .post_json_auth("/api/v1/monitoring/events", event_data, &token.token)
+            .await;
+        assert_status(&response, StatusCode::OK);
+    }
+
+    // Test single tag filter - should return 2 events with user_id:123
+    let response = app
+        .get_auth("/api/v1/monitoring/events?tags=user_id:123", &token.token)
+        .await;
+    assert_status(&response, StatusCode::OK);
+    let json: serde_json::Value = response.json().await.unwrap();
+    let data = json["data"].as_array().unwrap();
+    assert_eq!(data.len(), 2);
+
+    // Test multiple tag filter - should return 1 event with user_id:123 AND environment:production
+    let response = app
+        .get_auth(
+            "/api/v1/monitoring/events?tags=user_id:123,environment:production",
+            &token.token,
+        )
+        .await;
+    assert_status(&response, StatusCode::OK);
+    let json: serde_json::Value = response.json().await.unwrap();
+    let data = json["data"].as_array().unwrap();
+    assert_eq!(data.len(), 1);
+    assert_json_field(&data[0]["tags"], "action", &json!("login"));
+
+    // Test non-matching tag filter - should return 0 events
+    let response = app
+        .get_auth(
+            "/api/v1/monitoring/events?tags=nonexistent:value",
+            &token.token,
+        )
+        .await;
+    assert_status(&response, StatusCode::OK);
+    let json: serde_json::Value = response.json().await.unwrap();
+    let data = json["data"].as_array().unwrap();
+    assert_eq!(data.len(), 0);
+
+    // Test invalid tag format - should return 400 error
+    let response = app
+        .get_auth(
+            "/api/v1/monitoring/events?tags=invalid_format",
+            &token.token,
+        )
+        .await;
+    assert_status(&response, StatusCode::BAD_REQUEST);
+    let json: serde_json::Value = response.json().await.unwrap();
+    let error_message = json["error"]["message"]
+        .as_str()
+        .expect("Expected error message in response");
+    assert!(error_message.contains("Invalid tag format"));
+}
+
+#[tokio::test]
 async fn test_create_metric() {
     let app = spawn_app().await;
     let factory = TestDataFactory::new(app.clone());

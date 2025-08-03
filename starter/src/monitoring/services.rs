@@ -90,6 +90,16 @@ pub async fn find_events_with_filter(conn: &mut DbConn, filter: EventFilter) -> 
         query_builder.push_bind(end_time);
     }
 
+    // Tag filtering using JSONB containment operator
+    if let Some(tags) = &filter.tags {
+        for (key, value) in tags {
+            query_builder.push(" AND tags @> ");
+            // Create JSONB object for containment check
+            let tag_json = serde_json::json!({ key: value });
+            query_builder.push_bind(tag_json);
+        }
+    }
+
     query_builder.push(" ORDER BY timestamp DESC");
 
     if let Some(limit) = filter.limit {

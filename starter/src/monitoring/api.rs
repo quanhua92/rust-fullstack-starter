@@ -10,7 +10,43 @@ use axum::{
     response::Json,
 };
 use serde::Deserialize;
+use std::collections::HashMap;
 use uuid::Uuid;
+
+/// Parse tags query parameter string into HashMap
+/// Format: "key1:value1,key2:value2"
+fn parse_tags_query(tags_str: &str) -> Result<HashMap<String, String>, Error> {
+    let mut tags = HashMap::new();
+
+    for pair in tags_str.split(',') {
+        let pair = pair.trim();
+        if pair.is_empty() {
+            continue;
+        }
+
+        let parts: Vec<&str> = pair.splitn(2, ':').collect();
+        if parts.len() != 2 {
+            return Err(Error::validation(
+                "tags",
+                "Invalid tag format. Expected 'key:value' pairs separated by commas",
+            ));
+        }
+
+        let key = parts[0].trim().to_string();
+        let value = parts[1].trim().to_string();
+
+        if key.is_empty() || value.is_empty() {
+            return Err(Error::validation(
+                "tags",
+                "Tag keys and values cannot be empty",
+            ));
+        }
+
+        tags.insert(key, value);
+    }
+
+    Ok(tags)
+}
 
 /// Query parameters for event listing
 #[derive(Debug, Deserialize)]
@@ -22,6 +58,9 @@ pub struct EventQueryParams {
     pub end_time: Option<chrono::DateTime<chrono::Utc>>,
     pub limit: Option<i64>,
     pub offset: Option<i64>,
+    /// Tag filtering: supports key=value pairs separated by commas
+    /// Example: ?tags=user_id:123,environment:production
+    pub tags: Option<String>,
 }
 
 /// Query parameters for metric listing
@@ -101,6 +140,7 @@ pub async fn create_event(
         ("level" = Option<String>, Query, description = "Filter by level"),
         ("start_time" = Option<String>, Query, description = "Start time filter (ISO 8601)"),
         ("end_time" = Option<String>, Query, description = "End time filter (ISO 8601)"),
+        ("tags" = Option<String>, Query, description = "Filter by tags using key:value pairs separated by commas (e.g., 'user_id:123,env:prod')"),
         ("limit" = Option<i64>, Query, description = "Maximum number of events to return"),
         ("offset" = Option<i64>, Query, description = "Number of events to skip")
     ),
@@ -126,6 +166,13 @@ pub async fn get_events(
         .await
         .map_err(Error::from_sqlx)?;
 
+    // Parse tags parameter if provided
+    let tags = if let Some(tags_str) = &params.tags {
+        Some(parse_tags_query(tags_str)?)
+    } else {
+        None
+    };
+
     // Users can view all events, but in production you might want to filter by source ownership
     let filter = EventFilter {
         event_type: params.event_type,
@@ -133,7 +180,7 @@ pub async fn get_events(
         level: params.level,
         start_time: params.start_time,
         end_time: params.end_time,
-        tags: None, // TODO: Add tag filtering from query params
+        tags,
         limit: params.limit,
         offset: params.offset,
     };
