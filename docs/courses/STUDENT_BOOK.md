@@ -18,8 +18,8 @@
 
 ## 📝 My Progress Tracker
 
-### 🦀 Phase 1: Backend Mastery (Lessons 1-8)
-*Master 7,719 lines of Rust code across 38 files*
+### 🦀 Phase 1: Backend Mastery (Lessons 1-9)
+*Master 10,000+ lines of Rust code across 45 files*
 
 - [ ] **Lesson 1:** System Overview - Map 13 modules (8 domains + 5 infrastructure), 6-line main.rs miracle
 - [ ] **Lesson 2:** Database Foundation - Master 5-table schema, 126 lines of migrations, connection pooling
@@ -29,6 +29,7 @@
 - [ ] **Lesson 6:** API Layer - 36 routes, 4-tier security, OpenAPI docs, health endpoints
 - [ ] **Lesson 7:** User Management - 12 endpoints, Argon2 hashing, CLI admin tools
 - [ ] **Lesson 8:** Testing & Quality - 91 integration tests, 9-step quality pipeline, 10 chaos scenarios
+- [ ] **Lesson 9:** Monitoring & Observability - 14 API endpoints, 4-table schema, Prometheus export, incident timelines
 
 **Phase 1 Reflection:**
 *After completing Phase 1, I can confidently say I understand...*
@@ -288,7 +289,138 @@ Master the 91-test integration suite, 9-step quality pipeline, and 10-scenario c
 
 ---
 
-### 🌐 LESSON 9: React Frontend Overview - Modern Architecture
+### 📊 LESSON 9: Monitoring & Observability - Production Visibility
+*"If you can't measure it, you can't manage it"*
+
+**🎯 Your Mission:**
+Master the comprehensive monitoring system with 14 API endpoints, 4 database tables, and real-time observability patterns.
+
+**📂 Files to Explore:**
+1. **`starter/src/monitoring/`** - Complete monitoring module (5 files, ~2,000 lines)
+2. **`starter/migrations/006_monitoring.up.sql`** - 4-table schema with PostgreSQL enums
+3. **`docs/guides/15-monitoring-and-observability.md`** - 891-line implementation guide
+4. **`starter/tests/monitoring/`** - Comprehensive test suite
+
+**🔍 Your Discoveries:**
+- [ ] **The 4-Table Schema**: events, metrics, alerts, incidents - how do they relate?
+- [ ] **12 API Endpoints**: Event collection, metrics submission, alert management, incident tracking
+- [ ] **RBAC Integration**: How monitoring permissions work with User → Moderator → Admin hierarchy
+- [ ] **Prometheus Export**: Industry-standard metrics export at `/api/v1/monitoring/metrics/prometheus`
+- [ ] **Timeline Magic**: How incidents automatically correlate with related events
+
+**🧪 Hands-On Experiments:**
+1. **30-Second Setup**: Start monitoring and create your first event
+   ```bash
+   ./scripts/dev-server.sh
+   
+   # Create your first monitoring event
+   curl -X POST http://localhost:3000/api/v1/monitoring/events \
+     -H "Content-Type: application/json" \
+     -H "Authorization: Bearer $TOKEN" \
+     -d '{"event_type": "log", "source": "my-app", "message": "Hello monitoring!"}'
+   ```
+
+2. **Database Schema Exploration**: Examine migration 006 and understand the PostgreSQL enums
+3. **API Endpoint Tour**: Test all 14 monitoring endpoints with different user roles
+4. **Prometheus Integration**: Export metrics and understand the standard format
+5. **Incident Timeline**: Create an incident and watch how events get correlated
+
+**📊 Your Learning Journey:**
+
+**Week 1: Foundation**
+- Understand the monitoring database schema
+- Learn event and metric collection basics
+- Explore the monitoring data model
+
+**Week 2: API Mastery**
+- Master all 14 monitoring endpoints
+- Understand RBAC protection levels
+- Practice request/response validation
+
+**Week 3: Advanced Features**
+- Create and manage alert rules
+- Master incident lifecycle tracking
+- Understand timeline reconstruction
+
+**Week 4: Production Integration**
+- Learn Prometheus metrics export
+- Optimize monitoring performance
+- Apply real-world monitoring patterns
+
+**🎭 Discovery Moments:**
+
+*"Wait, monitoring is built into the starter by default?"*
+- Yes! No setup required - just start using the endpoints
+- Events and metrics are ready to collect immediately
+- Prometheus export works out of the box
+
+*"The timeline rebuilds incidents automatically?"*
+- Create an incident, then add related events before/after
+- Watch the system correlate events into a chronological timeline
+- Perfect for root cause analysis and incident documentation
+
+*"Different roles can do different monitoring actions?"*
+- Users can create events/metrics and incidents
+- Moderators can manage alerts and view all incidents
+- Admins get full system statistics and configuration
+
+**🔧 Key Code Patterns:**
+
+```rust
+// Log application events
+let event = services::create_event(&mut conn, CreateEventRequest {
+    event_type: "log".to_string(),
+    source: "user-service".to_string(),
+    message: Some("User registration completed".to_string()),
+    level: Some("info".to_string()),
+    tags: HashMap::from([
+        ("user_id".to_string(), json!(user.id)),
+        ("action".to_string(), json!("registration"))
+    ]),
+    payload: HashMap::new(),
+    timestamp: None,
+}).await?;
+
+// Track performance metrics
+let metric = services::create_metric(&mut conn, CreateMetricRequest {
+    name: "registration_duration_ms".to_string(),
+    metric_type: MetricType::Histogram,
+    value: duration.as_millis() as f64,
+    labels: HashMap::from([
+        ("outcome".to_string(), "success".to_string())
+    ]),
+    timestamp: None,
+}).await?;
+    ]),
+    // ...
+}).await?;
+```
+
+**✅ Success Criteria:**
+- [ ] Can explain all 4 monitoring database tables and their relationships
+- [ ] Understand the 14 API endpoints and their RBAC requirements
+- [ ] Can create events, metrics, alerts, and incidents programmatically
+- [ ] Know how to export metrics for external monitoring systems
+- [ ] Can correlate events into incident timelines for analysis
+
+**🎓 Advanced Challenges:**
+- Integrate monitoring into your own task handlers
+- Build custom alert rules for business metrics
+- Create monitoring dashboards using exported data
+- Implement automated incident response workflows
+
+**📖 Essential Reading:**
+- `docs/guides/15-monitoring-and-observability.md` - Complete 891-line implementation guide
+- `docs/monitoring.md` - API reference and integration patterns
+- Study monitoring tests to understand usage patterns
+
+**🔗 Connects To:**
+- **Previous Lessons**: Authentication (RBAC), Tasks (integration), API Layer (endpoints)
+- **Next Lessons**: React Frontend (monitoring dashboard), Admin Dashboard (real data visualization)
+
+---
+
+### 🌐 LESSON 10: React Frontend Overview - Modern Architecture
 *"Now that we know the server, let's meet the client"*
 
 **🎯 Your Mission:**
@@ -321,7 +453,7 @@ Master the complete React 18 frontend with 17,548 lines of TypeScript across 89 
 
 ---
 
-### 🔐 LESSON 10: Authentication Frontend - Secure UX
+### 🔐 LESSON 11: Authentication Frontend - Secure UX
 *"How users log in through the browser"*
 
 **🎯 Your Mission:**
@@ -354,7 +486,7 @@ Master authentication components with sophisticated RBAC, Zod validation, and sm
 
 ---
 
-### 📊 LESSON 11: Admin Dashboard - Production Monitoring
+### 📊 LESSON 12: Admin Dashboard - Production Monitoring
 *"Building production monitoring dashboards"*
 
 **🎯 Your Mission:**
@@ -387,7 +519,7 @@ Master the comprehensive admin dashboard with 10 components, 3,267 lines of moni
 
 ---
 
-### 🔌 LESSON 12: API Integration - Frontend-Backend Harmony
+### 🔌 LESSON 13: API Integration - Frontend-Backend Harmony
 *"How frontend and backend stay in sync"*
 
 **🎯 Your Mission:**
@@ -419,7 +551,7 @@ Master the comprehensive API client with 50+ typed methods, auto-generated types
 
 ---
 
-### 🎭 LESSON 13: Testing Frontend - E2E Reliability
+### 🎭 LESSON 14: Testing Frontend - E2E Reliability
 *"Ensuring the UI works end-to-end"*
 
 **🎯 Your Mission:**
@@ -452,7 +584,7 @@ Master Playwright E2E testing with 3-tier strategy, multi-browser support, and c
 
 ---
 
-### 🔧 LESSON 14: The Rename Script - System Transformation
+### 🔧 LESSON 15: The Rename Script - System Transformation
 *"Making it my own system"*
 
 **🎯 Your Mission:**
@@ -484,7 +616,7 @@ Execute the 314-line rename script and validate with the 497-line test suite to 
 
 ---
 
-### 🎓 LESSON 15: Mastery Demonstration - Production Deployment
+### 🎓 LESSON 16: Mastery Demonstration - Production Deployment
 *"Prove you own this system completely"*
 
 **🎯 Your Mission:**
@@ -576,11 +708,11 @@ You have successfully transformed the Rust Fullstack Starter into YOUR own produ
 *After completing Phase 2, I can confidently connect frontend to backend by...*
 [Write your reflection here]
 
-### 🔧 Phase 3: Customization & Mastery (Lessons 14-15)
+### 🔧 Phase 3: Customization & Mastery (Lessons 15-16)
 *Transform the starter into YOUR custom system*
 
-- [ ] **Lesson 14:** The Rename Script - Execute 314-line script, validate with 497-line test suite
-- [ ] **Lesson 15:** Mastery Demonstration - Build custom task handler, extend E2E tests, deploy to production
+- [ ] **Lesson 15:** The Rename Script - Execute 314-line script, validate with 497-line test suite
+- [ ] **Lesson 16:** Mastery Demonstration - Build custom task handler, extend E2E tests, deploy to production
 
 **Phase 3 Reflection:**
 *After completing Phase 3, I have created my own system called...*

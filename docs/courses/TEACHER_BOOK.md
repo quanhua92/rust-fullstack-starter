@@ -29,19 +29,19 @@ This course is NOT about general web development. It's about achieving complete 
 
 ---
 
-## 📚 Course Structure: 15 Lessons (3 Phases)
+## 📚 Course Structure: 16 Lessons (3 Phases)
 
-### 🦀 Phase 1: Backend Mastery (Lessons 1-8)
+### 🦀 Phase 1: Backend Mastery (Lessons 1-9)
 **Goal**: Complete understanding of every Rust file in `starter/src/`
-**Duration**: 6-8 weeks  
+**Duration**: 7-9 weeks  
 **Philosophy**: Master the server completely before adding frontend complexity
 
-### 🌐 Phase 2: Frontend Integration (Lessons 9-13)
+### 🌐 Phase 2: Frontend Integration (Lessons 10-14)
 **Goal**: Understand how the React app in `web/` connects to the backend
 **Duration**: 4-5 weeks
-**Philosophy**: Build on solid backend foundation
+**Philosophy**: Build on solid backend foundation with real monitoring data
 
-### 🔧 Phase 3: Customization & Mastery (Lessons 14-15)
+### 🔧 Phase 3: Customization & Mastery (Lessons 15-16)
 **Goal**: Use the rename script to create your own custom system
 **Duration**: 2-3 weeks  
 **Philosophy**: True mastery means ability to adapt and extend
@@ -1019,9 +1019,163 @@ Docker Compose → System Spawn → Failure Injection → Recovery Validation
 
 ---
 
-## 🌐 PHASE 2: FRONTEND INTEGRATION (Lessons 9-13)
+## 🌐 PHASE 2: FRONTEND INTEGRATION (Lessons 10-14)
 
-### **Lesson 9: React Frontend Overview (`web/src/`)**
+### 📊 **Lesson 9: Monitoring & Observability (`starter/src/monitoring/`)**
+*"If you can't measure it, you can't manage it"*
+
+**Learning Objectives:**
+- Master the comprehensive monitoring system with 14 API endpoints, 4 database tables, and real-time observability patterns
+- Understand production-grade monitoring with events, metrics, alerts, and incidents
+- See RBAC integration with 3-tier permissions (User → Moderator → Admin)
+- Grasp Prometheus metrics export and timeline reconstruction
+
+**Monitoring-Specific Materials:**
+- `starter/src/monitoring/` - Complete monitoring module (5 files, ~2,000 lines)
+- `starter/migrations/006_monitoring.up.sql` - 4-table schema with PostgreSQL enums
+- `docs/guides/15-monitoring-and-observability.md` - 891-line implementation guide
+- `starter/tests/monitoring/` - Comprehensive test suite
+- `docs/monitoring.md` - API reference and integration patterns
+
+**🎯 Teaching Goals:**
+Guide students through implementing a comprehensive monitoring system that demonstrates industry-standard observability patterns.
+
+**🔍 Core Concepts to Teach:**
+- [ ] **4-Table Schema**: events, metrics, alerts, incidents with JSONB and PostgreSQL enums
+- [ ] **14 API Endpoints**: Event collection, metrics submission, alert management, incident tracking
+- [ ] **RBAC Integration**: 3-tier permissions with role-based access control
+- [ ] **Prometheus Export**: Time-series metrics in industry-standard format
+- [ ] **Timeline Reconstruction**: Automated incident analysis with event correlation
+
+**🧪 Hands-On Teaching Activities:**
+
+1. **30-Second Setup Demo**:
+   ```bash
+   # Show how monitoring is included by default
+   ./scripts/dev-server.sh
+   
+   # Create first monitoring event
+   curl -X POST http://localhost:3000/api/v1/monitoring/events \
+     -H "Content-Type: application/json" \
+     -H "Authorization: Bearer $TOKEN" \
+     -d '{"event_type": "log", "source": "demo", "message": "First event!"}'
+   ```
+
+2. **Database Schema Exploration**:
+   - Walk through migration 006 and explain PostgreSQL enums
+   - Show relationship between events, metrics, alerts, and incidents
+   - Demonstrate JSONB flexibility for tags and labels
+
+3. **API Endpoint Tour**:
+   - Events: Create, query, retrieve with filtering
+   - Metrics: Submit, query, Prometheus export
+   - Alerts: Rule creation (moderator+ required)
+   - Incidents: Lifecycle management with RBAC
+   - Statistics: System health overview
+
+4. **Real-Time Monitoring**:
+   - Create events from different sources
+   - Submit metrics with labels and timestamps
+   - Trigger alerts and create incidents
+   - Export timeline for incident analysis
+
+**🎭 Student Discovery Moments:**
+
+*"Wait, this exports Prometheus metrics automatically?"*
+- Show `/api/v1/monitoring/metrics/prometheus` endpoint
+- Explain industry-standard observability patterns
+- Demonstrate how metrics become dashboards
+
+*"The timeline rebuilds incidents automatically?"*
+- Create incident, add related events
+- Show timeline reconstruction with correlation
+- Explain root cause analysis patterns
+
+*"RBAC controls who can create alerts?"*
+- Test alert creation with different user roles
+- Show moderator+ requirement for system operations
+- Demonstrate ownership-based incident updates
+
+**🔧 Implementation Patterns to Emphasize:**
+
+```rust
+// Show clean monitoring integration patterns
+use starter::monitoring::services;
+
+// Log application events
+let event = services::create_event(&mut conn, CreateEventRequest {
+    event_type: "log".to_string(),
+    source: "user-service".to_string(),
+    message: Some("User action completed".to_string()),
+    level: Some("info".to_string()),
+    tags: HashMap::from([
+        ("user_id".to_string(), json!(user.id)),
+        ("action".to_string(), json!("profile_update"))
+    ]),
+    payload: HashMap::new(),
+    timestamp: None,
+}).await?;
+
+// Track performance metrics
+let metric = services::create_metric(&mut conn, CreateMetricRequest {
+    name: "response_time_ms".to_string(),
+    metric_type: MetricType::Histogram,
+    value: duration.as_millis() as f64,
+    labels: HashMap::from([
+        ("endpoint".to_string(), "/api/v1/users".to_string()),
+        ("method".to_string(), "PUT".to_string())
+    ]),
+    timestamp: None,
+}).await?;
+```
+
+**📊 Teaching the 4-Week Progressive Implementation:**
+
+**Week 1: Foundation**
+- Database schema and migrations
+- Basic event and metric collection
+- Understanding monitoring data model
+
+**Week 2: API Development**
+- Implementing CRUD endpoints
+- Adding RBAC protection
+- Request/response validation
+
+**Week 3: Advanced Features**
+- Alert rule management
+- Incident lifecycle tracking
+- Timeline reconstruction
+
+**Week 4: Production Integration**
+- Prometheus metrics export
+- Performance optimization
+- Real-world monitoring patterns
+
+**✅ Student Success Criteria:**
+- [ ] Can explain all 4 monitoring database tables and their relationships
+- [ ] Understands the 14 API endpoints and their RBAC requirements
+- [ ] Can create events, metrics, alerts, and incidents programmatically
+- [ ] Knows how to export metrics for external monitoring systems
+- [ ] Can correlate events into incident timelines for analysis
+
+**🎓 Advanced Extensions:**
+- Integrate monitoring into existing task handlers
+- Build custom alert rules for business metrics
+- Create monitoring dashboards using exported data
+- Implement automated incident response workflows
+
+**📖 Required Reading:**
+- `docs/guides/15-monitoring-and-observability.md` - Complete implementation guide
+- `docs/monitoring.md` - API reference and integration patterns
+- Study existing monitoring tests for usage patterns
+
+**🔗 Connects To:**
+- **Previous Lessons**: Authentication (RBAC), Tasks (integration), API Layer (endpoints)
+- **Next Lessons**: React Frontend (dashboard integration), Admin Dashboard (real monitoring data)
+
+---
+
+### **Lesson 10: React Frontend Overview (`web/src/`)**
 *"Now that we know the server, let's meet the client"*
 
 **Learning Objectives:**
@@ -1210,7 +1364,7 @@ API Calls → Proxy → Backend (Dev Mode)
 
 ---
 
-### **Lesson 10: Authentication Frontend (`web/src/components/auth/`)**
+### **Lesson 11: Authentication Frontend (`web/src/components/auth/`)**
 *"How users log in through the browser"*
 
 **Learning Objectives:**
@@ -1485,7 +1639,7 @@ Protected Component Access
 
 ---
 
-### **Lesson 11: Admin Dashboard (`web/src/components/admin/`)**
+### **Lesson 12: Admin Dashboard (`web/src/components/admin/`)**
 *"Building production monitoring dashboards"*
 
 **Learning Objectives:**
@@ -1778,7 +1932,7 @@ Admin Components (3,267 lines):
 
 ---
 
-### **Lesson 12: API Integration (`web/src/lib/api/`)**
+### **Lesson 13: API Integration (`web/src/lib/api/`)**
 *"How frontend and backend stay in sync"*
 
 **Learning Objectives:**
@@ -1969,7 +2123,7 @@ export const QUERY_KEYS = {
 
 ---
 
-### **Lesson 13: Testing Frontend (`web/e2e/` & `web/src/test/`)**
+### **Lesson 14: Testing Frontend (`web/e2e/` & `web/src/test/`)**
 *"Ensuring the UI works end-to-end"*
 
 **Learning Objectives:**
@@ -2100,9 +2254,9 @@ Step 9/9: Bundle analysis and optimization
 
 ---
 
-## 🔧 PHASE 3: CUSTOMIZATION & MASTERY (Lessons 14-15)
+## 🔧 PHASE 3: CUSTOMIZATION & MASTERY (Lessons 15-16)
 
-### **Lesson 14: The Rename Script - Making It Yours**
+### **Lesson 15: The Rename Script - Making It Yours**
 *"Transform the starter into your own system"*
 
 **Learning Objectives:**
@@ -2287,7 +2441,7 @@ docker-compose down --remove-orphans 2>/dev/null || true
 
 ---
 
-### **Lesson 15: Mastery Demonstration**
+### **Lesson 16: Mastery Demonstration**
 *"Prove you own this system completely - build something real using established patterns"*
 
 **Learning Objectives:**
