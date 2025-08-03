@@ -10,6 +10,7 @@
 # - Admin user management (create, update, role management, stats)
 # - Task management and task type registration
 # - Dead letter queue management
+# - Monitoring & Observability (events, metrics, incidents, alerts, Prometheus)
 # - Error response validation
 # - RBAC permission enforcement
 #
@@ -593,6 +594,90 @@ if [ -n "$USER_TOKEN" ]; then
         # Test admin endpoint with regular user (should get 401)
         test_api "GET /api/v1/admin/health (non-admin)" "GET" "/api/v1/admin/health" "403" "$NEW_TOKEN"
     fi
+fi
+
+echo ""
+echo -e "${YELLOW}📊 Monitoring & Observability API${NC}"
+
+# Test monitoring endpoints with authenticated user
+if [ -n "$USER_TOKEN" ]; then
+    # Test event creation and retrieval
+    EVENT_DATA='{"event_type": "log", "source": "test-script", "message": "API test event", "level": "info", "tags": {"test_id": "'$TIMESTAMP'", "component": "api-test"}, "payload": {"test": true}}'
+    test_api "POST /api/v1/monitoring/events" "POST" "/api/v1/monitoring/events" "200" "$USER_TOKEN" "$EVENT_DATA"
+    
+    test_api "GET /api/v1/monitoring/events" "GET" "/api/v1/monitoring/events?limit=10" "200" "$USER_TOKEN"
+    
+    # Create an event to get an ID for testing individual event retrieval
+    EVENT_RESPONSE=$(curl -s -X POST "$BASE_URL/api/v1/monitoring/events" -H "Authorization: Bearer $USER_TOKEN" -H "Content-Type: application/json" -d "$EVENT_DATA")
+    EVENT_ID=$(echo "$EVENT_RESPONSE" | python3 -c "import json,sys; print(json.load(sys.stdin)['data']['id'])" 2>/dev/null || echo "")
+    
+    if [ -n "$EVENT_ID" ]; then
+        test_api "GET /api/v1/monitoring/events/{id}" "GET" "/api/v1/monitoring/events/$EVENT_ID" "200" "$USER_TOKEN"
+    fi
+    
+    # Test metric creation and retrieval
+    METRIC_DATA='{"name": "test_api_response_time", "metric_type": "histogram", "value": 123.45, "labels": {"endpoint": "/api/v1/test", "status": "200", "test_id": "'$TIMESTAMP'"}}'
+    test_api "POST /api/v1/monitoring/metrics" "POST" "/api/v1/monitoring/metrics" "200" "$USER_TOKEN" "$METRIC_DATA"
+    
+    test_api "GET /api/v1/monitoring/metrics" "GET" "/api/v1/monitoring/metrics?limit=10" "200" "$USER_TOKEN"
+    
+    # Test Prometheus metrics endpoint (requires auth)
+    test_api "GET /api/v1/monitoring/metrics/prometheus" "GET" "/api/v1/monitoring/metrics/prometheus" "200" "$USER_TOKEN"
+    
+    # Test incident creation and retrieval
+    INCIDENT_DATA='{"title": "Test API Incident", "description": "Testing incident management via API", "severity": "low"}'
+    test_api "POST /api/v1/monitoring/incidents" "POST" "/api/v1/monitoring/incidents" "200" "$USER_TOKEN" "$INCIDENT_DATA"
+    
+    test_api "GET /api/v1/monitoring/incidents" "GET" "/api/v1/monitoring/incidents?limit=10" "200" "$USER_TOKEN"
+    
+    # Create an incident to test individual retrieval and timeline
+    INCIDENT_RESPONSE=$(curl -s -X POST "$BASE_URL/api/v1/monitoring/incidents" -H "Authorization: Bearer $USER_TOKEN" -H "Content-Type: application/json" -d "$INCIDENT_DATA")
+    INCIDENT_ID=$(echo "$INCIDENT_RESPONSE" | python3 -c "import json,sys; print(json.load(sys.stdin)['data']['id'])" 2>/dev/null || echo "")
+    
+    if [ -n "$INCIDENT_ID" ]; then
+        test_api "GET /api/v1/monitoring/incidents/{id}" "GET" "/api/v1/monitoring/incidents/$INCIDENT_ID" "200" "$USER_TOKEN"
+        
+        # Test incident update
+        UPDATE_DATA='{"status": "investigating", "description": "Updated description via API test"}'
+        test_api "PUT /api/v1/monitoring/incidents/{id}" "PUT" "/api/v1/monitoring/incidents/$INCIDENT_ID" "200" "$USER_TOKEN" "$UPDATE_DATA"
+        
+        # Test incident timeline
+        test_api "GET /api/v1/monitoring/incidents/{id}/timeline" "GET" "/api/v1/monitoring/incidents/$INCIDENT_ID/timeline" "200" "$USER_TOKEN"
+    fi
+    
+    # Test alert endpoints (list alerts - available to all users)
+    test_api "GET /api/v1/monitoring/alerts" "GET" "/api/v1/monitoring/alerts" "200" "$USER_TOKEN"
+    
+    # Test alert creation (should require moderator+ role - expect 403 for regular user)
+    ALERT_DATA='{"name": "High Error Rate", "description": "Alert when error rate exceeds threshold", "query": "error_rate > 0.05", "threshold_value": 0.05}'
+    test_api "POST /api/v1/monitoring/alerts (regular user)" "POST" "/api/v1/monitoring/alerts" "403" "$USER_TOKEN" "$ALERT_DATA"
+    
+    # Test monitoring stats (should require moderator+ role - expect 403 for regular user)
+    test_api "GET /api/v1/monitoring/stats (regular user)" "GET" "/api/v1/monitoring/stats" "403" "$USER_TOKEN"
+    
+    # Test invalid event type validation
+    INVALID_EVENT='{"event_type": "invalid_type", "source": "test", "message": "Invalid event type test"}'
+    test_api "POST /api/v1/monitoring/events (invalid type)" "POST" "/api/v1/monitoring/events" "400" "$USER_TOKEN" "$INVALID_EVENT"
+    
+    # Test invalid metric type validation
+    INVALID_METRIC='{"name": "test_metric", "metric_type": "invalid_type", "value": 100}'
+    test_api "POST /api/v1/monitoring/metrics (invalid type)" "POST" "/api/v1/monitoring/metrics" "400" "$USER_TOKEN" "$INVALID_METRIC"
+else
+    echo -e "${YELLOW}⚠️  No user token available - monitoring API tests skipped${NC}"
+fi
+
+# Test admin monitoring endpoints if admin token is available
+if [ -n "$ADMIN_TOKEN" ]; then
+    echo "🔐 Testing Admin Monitoring Features..."
+    
+    # Test alert creation (should work for admin)
+    ADMIN_ALERT_DATA='{"name": "Admin Test Alert", "description": "Testing admin alert creation", "query": "cpu_usage > 80", "threshold_value": 80.0}'
+    test_api "POST /api/v1/monitoring/alerts (admin)" "POST" "/api/v1/monitoring/alerts" "200" "$ADMIN_TOKEN" "$ADMIN_ALERT_DATA"
+    
+    # Test monitoring stats (should work for admin)
+    test_api "GET /api/v1/monitoring/stats (admin)" "GET" "/api/v1/monitoring/stats" "200" "$ADMIN_TOKEN"
+else
+    echo -e "${YELLOW}⚠️  No admin token available - admin monitoring features not tested${NC}"
 fi
 
 echo ""
