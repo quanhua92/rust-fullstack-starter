@@ -210,7 +210,7 @@ Docker-based resilience testing with 6 difficulty levels and container isolation
 
 **API Endpoint Testing:**
 ```bash
-./scripts/test-with-curl.sh             # 44+ endpoint tests (~5 seconds)
+./scripts/test-with-curl.sh             # 60+ endpoint tests including monitoring APIs (~8 seconds)
 ./scripts/test-with-curl.sh localhost 8080  # Custom host/port
 ```
 
