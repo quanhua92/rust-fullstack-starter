@@ -71,6 +71,445 @@
         ]
       }
     },
+    "/api/v1/monitoring/alerts": {
+      "post": {
+        "tags": [
+          "Monitoring"
+        ],
+        "summary": "Create a new alert (requires moderator or higher)",
+        "operationId": "create_alert",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateAlertRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Alert created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse_Alert"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden - requires moderator role",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/monitoring/events": {
+      "get": {
+        "tags": [
+          "Monitoring"
+        ],
+        "summary": "Get events with filters",
+        "operationId": "get_events",
+        "parameters": [
+          {
+            "name": "event_type",
+            "in": "query",
+            "description": "Filter by event type",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/EventType"
+            }
+          },
+          {
+            "name": "source",
+            "in": "query",
+            "description": "Filter by source",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "level",
+            "in": "query",
+            "description": "Filter by level",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "start_time",
+            "in": "query",
+            "description": "Start time filter (ISO 8601)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "end_time",
+            "in": "query",
+            "description": "End time filter (ISO 8601)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Maximum number of events to return",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "description": "Number of events to skip",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Events retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse_Vec_Event"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid query parameters",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "Monitoring"
+        ],
+        "summary": "Create a new event",
+        "operationId": "create_event",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateEventRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Event created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse_Event"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/monitoring/events/{id}": {
+      "get": {
+        "tags": [
+          "Monitoring"
+        ],
+        "summary": "Get a specific event by ID",
+        "operationId": "get_event_by_id",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Event ID",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Event retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse_Event"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Event not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/monitoring/incidents": {
+      "post": {
+        "tags": [
+          "Monitoring"
+        ],
+        "summary": "Create a new incident",
+        "operationId": "create_incident",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateIncidentRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Incident created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse_Incident"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/monitoring/metrics": {
+      "post": {
+        "tags": [
+          "Monitoring"
+        ],
+        "summary": "Create a new metric",
+        "operationId": "create_metric",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateMetricRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Metric created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse_Metric"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/monitoring/metrics/prometheus": {
+      "get": {
+        "tags": [
+          "Monitoring"
+        ],
+        "summary": "Export metrics in Prometheus format",
+        "operationId": "get_prometheus_metrics",
+        "responses": {
+          "200": {
+            "description": "Prometheus metrics exported successfully",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
     "/auth/login": {
       "post": {
         "tags": [
@@ -1985,6 +2424,91 @@
           "silenced"
         ]
       },
+      "ApiResponse_Alert": {
+        "type": "object",
+        "required": [
+          "success"
+        ],
+        "properties": {
+          "data": {
+            "type": "object",
+            "required": [
+              "id",
+              "name",
+              "query",
+              "status",
+              "created_at",
+              "updated_at"
+            ],
+            "properties": {
+              "created_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "created_by": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "uuid"
+              },
+              "description": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "name": {
+                "type": "string"
+              },
+              "query": {
+                "type": "string"
+              },
+              "resolved_at": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "date-time"
+              },
+              "status": {
+                "$ref": "#/components/schemas/AlertStatus"
+              },
+              "threshold_value": {
+                "type": [
+                  "number",
+                  "null"
+                ],
+                "format": "double"
+              },
+              "triggered_at": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "date-time"
+              },
+              "updated_at": {
+                "type": "string",
+                "format": "date-time"
+              }
+            }
+          },
+          "message": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "success": {
+            "type": "boolean"
+          }
+        }
+      },
       "ApiResponse_AuthUser": {
         "type": "object",
         "required": [
@@ -2069,6 +2593,69 @@
           }
         }
       },
+      "ApiResponse_Event": {
+        "type": "object",
+        "required": [
+          "success"
+        ],
+        "properties": {
+          "data": {
+            "type": "object",
+            "required": [
+              "id",
+              "event_type",
+              "source",
+              "tags",
+              "payload",
+              "timestamp",
+              "created_at"
+            ],
+            "properties": {
+              "created_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "event_type": {
+                "$ref": "#/components/schemas/EventType"
+              },
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "level": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "message": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "payload": {},
+              "source": {
+                "type": "string"
+              },
+              "tags": {},
+              "timestamp": {
+                "type": "string",
+                "format": "date-time"
+              }
+            }
+          },
+          "message": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "success": {
+            "type": "boolean"
+          }
+        }
+      },
       "ApiResponse_HealthResponse": {
         "type": "object",
         "required": [
@@ -2106,6 +2693,95 @@
           }
         }
       },
+      "ApiResponse_Incident": {
+        "type": "object",
+        "required": [
+          "success"
+        ],
+        "properties": {
+          "data": {
+            "type": "object",
+            "required": [
+              "id",
+              "title",
+              "severity",
+              "status",
+              "started_at",
+              "created_at",
+              "updated_at"
+            ],
+            "properties": {
+              "assigned_to": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "uuid"
+              },
+              "created_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "created_by": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "uuid"
+              },
+              "description": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "resolved_at": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "date-time"
+              },
+              "root_cause": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "severity": {
+                "$ref": "#/components/schemas/IncidentSeverity"
+              },
+              "started_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "status": {
+                "$ref": "#/components/schemas/IncidentStatus"
+              },
+              "title": {
+                "type": "string"
+              },
+              "updated_at": {
+                "type": "string",
+                "format": "date-time"
+              }
+            }
+          },
+          "message": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "success": {
+            "type": "boolean"
+          }
+        }
+      },
       "ApiResponse_LoginResponse": {
         "type": "object",
         "required": [
@@ -2129,6 +2805,60 @@
               },
               "user": {
                 "$ref": "#/components/schemas/UserProfile"
+              }
+            }
+          },
+          "message": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "success": {
+            "type": "boolean"
+          }
+        }
+      },
+      "ApiResponse_Metric": {
+        "type": "object",
+        "required": [
+          "success"
+        ],
+        "properties": {
+          "data": {
+            "type": "object",
+            "required": [
+              "id",
+              "name",
+              "metric_type",
+              "value",
+              "labels",
+              "timestamp",
+              "created_at"
+            ],
+            "properties": {
+              "created_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "labels": {},
+              "metric_type": {
+                "$ref": "#/components/schemas/MetricType"
+              },
+              "name": {
+                "type": "string"
+              },
+              "timestamp": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "value": {
+                "type": "number",
+                "format": "double"
               }
             }
           },
@@ -2536,6 +3266,72 @@
         ],
         "properties": {
           "data": {},
+          "message": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "success": {
+            "type": "boolean"
+          }
+        }
+      },
+      "ApiResponse_Vec_Event": {
+        "type": "object",
+        "required": [
+          "success"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "id",
+                "event_type",
+                "source",
+                "tags",
+                "payload",
+                "timestamp",
+                "created_at"
+              ],
+              "properties": {
+                "created_at": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "event_type": {
+                  "$ref": "#/components/schemas/EventType"
+                },
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "level": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "message": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "payload": {},
+                "source": {
+                  "type": "string"
+                },
+                "tags": {},
+                "timestamp": {
+                  "type": "string",
+                  "format": "date-time"
+                }
+              }
+            }
+          },
           "message": {
             "type": [
               "string",

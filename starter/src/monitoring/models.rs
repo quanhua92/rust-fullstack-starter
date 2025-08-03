@@ -439,45 +439,69 @@ pub struct MonitoringStats {
     pub metrics_last_hour: i64,
 }
 
-// From<String> implementations for database conversion
-// Safe From<String> implementations that detect database corruption
-// These will panic with descriptive messages if invalid data is found in the database
+// Safe From<String> implementations that handle invalid data gracefully
+// These are required by SQLx but designed to never panic
 impl From<String> for EventType {
     fn from(s: String) -> Self {
+        // Fall back to Log for any invalid data instead of panicking
         EventType::from_str(&s).unwrap_or_else(|_| {
-            panic!("Database corruption detected: invalid event_type '{s}' found in database. This should never happen due to CHECK constraints.")
+            tracing::error!(
+                "Invalid event_type in database: '{}', falling back to 'log'",
+                s
+            );
+            EventType::Log
         })
     }
 }
 
 impl From<String> for MetricType {
     fn from(s: String) -> Self {
+        // Fall back to Gauge for any invalid data instead of panicking
         MetricType::from_str(&s).unwrap_or_else(|_| {
-            panic!("Database corruption detected: invalid metric_type '{s}' found in database. This should never happen due to CHECK constraints.")
+            tracing::error!(
+                "Invalid metric_type in database: '{}', falling back to 'gauge'",
+                s
+            );
+            MetricType::Gauge
         })
     }
 }
 
 impl From<String> for AlertStatus {
     fn from(s: String) -> Self {
+        // Fall back to Active for any invalid data instead of panicking
         AlertStatus::from_str(&s).unwrap_or_else(|_| {
-            panic!("Database corruption detected: invalid alert status '{s}' found in database. This should never happen due to CHECK constraints.")
+            tracing::error!(
+                "Invalid alert_status in database: '{}', falling back to 'active'",
+                s
+            );
+            AlertStatus::Active
         })
     }
 }
 
 impl From<String> for IncidentSeverity {
     fn from(s: String) -> Self {
+        // Fall back to Medium for any invalid data instead of panicking
         IncidentSeverity::from_str(&s).unwrap_or_else(|_| {
-            panic!("Database corruption detected: invalid incident severity '{s}' found in database. This should never happen due to CHECK constraints.")
+            tracing::error!(
+                "Invalid incident_severity in database: '{}', falling back to 'medium'",
+                s
+            );
+            IncidentSeverity::Medium
         })
     }
 }
 
 impl From<String> for IncidentStatus {
     fn from(s: String) -> Self {
+        // Fall back to Open for any invalid data instead of panicking
         IncidentStatus::from_str(&s).unwrap_or_else(|_| {
-            panic!("Database corruption detected: invalid incident status '{s}' found in database. This should never happen due to CHECK constraints.")
+            tracing::error!(
+                "Invalid incident_status in database: '{}', falling back to 'open'",
+                s
+            );
+            IncidentStatus::Open
         })
     }
 }

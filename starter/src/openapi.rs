@@ -84,21 +84,14 @@ use crate::users::models::{
         crate::tasks::api::retry_task,
         crate::tasks::api::delete_task,
 
-        // Monitoring endpoints (will be added when utoipa::path attributes are added)
-        // crate::monitoring::api::create_event,
-        // crate::monitoring::api::get_events,
-        // crate::monitoring::api::get_event_by_id,
-        // crate::monitoring::api::create_metric,
-        // crate::monitoring::api::get_metrics,
-        // crate::monitoring::api::create_alert,
-        // crate::monitoring::api::get_alerts,
-        // crate::monitoring::api::create_incident,
-        // crate::monitoring::api::get_incidents,
-        // crate::monitoring::api::get_incident_by_id,
-        // crate::monitoring::api::update_incident,
-        // crate::monitoring::api::get_incident_timeline,
-        // crate::monitoring::api::get_monitoring_stats,
-        // crate::monitoring::api::get_prometheus_metrics,
+        // Monitoring endpoints with utoipa::path attributes (annotated endpoints only)
+        crate::monitoring::api::create_event,
+        crate::monitoring::api::get_events,
+        crate::monitoring::api::get_event_by_id,
+        crate::monitoring::api::create_metric,
+        crate::monitoring::api::create_alert,
+        crate::monitoring::api::create_incident,
+        crate::monitoring::api::get_prometheus_metrics,
     ),
     components(
         schemas(

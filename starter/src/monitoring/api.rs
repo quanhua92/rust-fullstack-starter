@@ -3,7 +3,7 @@ use super::services;
 use crate::Error;
 use crate::auth::AuthUser;
 use crate::rbac::services as rbac_services;
-use crate::types::{ApiResponse, AppState};
+use crate::types::{ApiResponse, AppState, ErrorResponse};
 use axum::{
     Extension,
     extract::{Path, Query, State},
@@ -50,6 +50,20 @@ pub struct TimelineQueryParams {
 }
 
 /// Create a new event
+#[utoipa::path(
+    post,
+    path = "/api/v1/monitoring/events",
+    request_body = CreateEventRequest,
+    responses(
+        (status = 200, description = "Event created successfully", body = ApiResponse<Event>),
+        (status = 400, description = "Invalid input", body = ErrorResponse),
+        (status = 401, description = "Unauthorized", body = ErrorResponse)
+    ),
+    security(
+        ("bearer_auth" = [])
+    ),
+    tag = "Monitoring"
+)]
 pub async fn create_event(
     State(app_state): State<AppState>,
     Extension(auth_user): Extension<AuthUser>,
@@ -77,6 +91,28 @@ pub async fn create_event(
 }
 
 /// Get events with filters
+#[utoipa::path(
+    get,
+    path = "/api/v1/monitoring/events",
+    params(
+        ("event_type" = Option<EventType>, Query, description = "Filter by event type"),
+        ("source" = Option<String>, Query, description = "Filter by source"),
+        ("level" = Option<String>, Query, description = "Filter by level"),
+        ("start_time" = Option<String>, Query, description = "Start time filter (ISO 8601)"),
+        ("end_time" = Option<String>, Query, description = "End time filter (ISO 8601)"),
+        ("limit" = Option<i64>, Query, description = "Maximum number of events to return"),
+        ("offset" = Option<i64>, Query, description = "Number of events to skip")
+    ),
+    responses(
+        (status = 200, description = "Events retrieved successfully", body = ApiResponse<Vec<Event>>),
+        (status = 400, description = "Invalid query parameters", body = ErrorResponse),
+        (status = 401, description = "Unauthorized", body = ErrorResponse)
+    ),
+    security(
+        ("bearer_auth" = [])
+    ),
+    tag = "Monitoring"
+)]
 pub async fn get_events(
     State(app_state): State<AppState>,
     Extension(_auth_user): Extension<AuthUser>,
@@ -106,6 +142,22 @@ pub async fn get_events(
 }
 
 /// Get a specific event by ID
+#[utoipa::path(
+    get,
+    path = "/api/v1/monitoring/events/{id}",
+    params(
+        ("id" = Uuid, Path, description = "Event ID")
+    ),
+    responses(
+        (status = 200, description = "Event retrieved successfully", body = ApiResponse<Event>),
+        (status = 404, description = "Event not found", body = ErrorResponse),
+        (status = 401, description = "Unauthorized", body = ErrorResponse)
+    ),
+    security(
+        ("bearer_auth" = [])
+    ),
+    tag = "Monitoring"
+)]
 pub async fn get_event_by_id(
     State(app_state): State<AppState>,
     Extension(_auth_user): Extension<AuthUser>,
@@ -124,6 +176,20 @@ pub async fn get_event_by_id(
 }
 
 /// Create a new metric
+#[utoipa::path(
+    post,
+    path = "/api/v1/monitoring/metrics",
+    request_body = CreateMetricRequest,
+    responses(
+        (status = 200, description = "Metric created successfully", body = ApiResponse<Metric>),
+        (status = 400, description = "Invalid input", body = ErrorResponse),
+        (status = 401, description = "Unauthorized", body = ErrorResponse)
+    ),
+    security(
+        ("bearer_auth" = [])
+    ),
+    tag = "Monitoring"
+)]
 pub async fn create_metric(
     State(app_state): State<AppState>,
     Extension(_auth_user): Extension<AuthUser>,
@@ -168,6 +234,21 @@ pub async fn get_metrics(
 }
 
 /// Create a new alert (requires moderator or higher)
+#[utoipa::path(
+    post,
+    path = "/api/v1/monitoring/alerts",
+    request_body = CreateAlertRequest,
+    responses(
+        (status = 200, description = "Alert created successfully", body = ApiResponse<Alert>),
+        (status = 400, description = "Invalid input", body = ErrorResponse),
+        (status = 401, description = "Unauthorized", body = ErrorResponse),
+        (status = 403, description = "Forbidden - requires moderator role", body = ErrorResponse)
+    ),
+    security(
+        ("bearer_auth" = [])
+    ),
+    tag = "Monitoring"
+)]
 pub async fn create_alert(
     State(app_state): State<AppState>,
     Extension(auth_user): Extension<AuthUser>,
@@ -203,6 +284,20 @@ pub async fn get_alerts(
 }
 
 /// Create a new incident
+#[utoipa::path(
+    post,
+    path = "/api/v1/monitoring/incidents",
+    request_body = CreateIncidentRequest,
+    responses(
+        (status = 200, description = "Incident created successfully", body = ApiResponse<Incident>),
+        (status = 400, description = "Invalid input", body = ErrorResponse),
+        (status = 401, description = "Unauthorized", body = ErrorResponse)
+    ),
+    security(
+        ("bearer_auth" = [])
+    ),
+    tag = "Monitoring"
+)]
 pub async fn create_incident(
     State(app_state): State<AppState>,
     Extension(auth_user): Extension<AuthUser>,
@@ -333,6 +428,18 @@ pub async fn get_monitoring_stats(
 }
 
 /// Export metrics in Prometheus format
+#[utoipa::path(
+    get,
+    path = "/api/v1/monitoring/metrics/prometheus",
+    responses(
+        (status = 200, description = "Prometheus metrics exported successfully", body = String),
+        (status = 401, description = "Unauthorized", body = ErrorResponse)
+    ),
+    security(
+        ("bearer_auth" = [])
+    ),
+    tag = "Monitoring"
+)]
 pub async fn get_prometheus_metrics(
     State(app_state): State<AppState>,
     Extension(_auth_user): Extension<AuthUser>,
