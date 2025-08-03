@@ -446,6 +446,114 @@ pub async fn create_user(
 
 **Documentation**: Comprehensive user management documentation available at `docs/guides/12-user-management.md`
 
+## Monitoring and Observability System
+
+**NEW**: Comprehensive monitoring system providing foundational infrastructure for root cause analysis and incident management.
+
+### Monitoring Features
+- **Unified Event Collection** - Logs, metrics, traces, and alerts in single system
+- **Time-Series Metrics** - Prometheus-compatible metric types with labels
+- **Alert Management** - Rule-based alerting with threshold detection (moderator+ required)
+- **Incident Management** - End-to-end lifecycle tracking with timeline reconstruction
+- **RBAC Integration** - Role-based access to monitoring features and data
+- **Prometheus Integration** - Standard metrics exposition endpoint
+
+### Monitoring Endpoints (12 total)
+| Endpoint | Method | Access Level | Description |
+|----------|--------|-------------|-------------|
+| **Event Management** | | | |
+| `/api/v1/monitoring/events` | POST | User | Create observability events |
+| `/api/v1/monitoring/events` | GET | User | Query events with filters |
+| `/api/v1/monitoring/events/{id}` | GET | User | Get specific event by ID |
+| **Metric Management** | | | |
+| `/api/v1/monitoring/metrics` | POST | User | Submit time-series metrics |
+| `/api/v1/monitoring/metrics` | GET | User | Query metrics with filters |
+| `/api/v1/monitoring/metrics/prometheus` | GET | User | Prometheus exposition format |
+| **Alert Management** | | | |
+| `/api/v1/monitoring/alerts` | POST | Moderator+ | Create alert rules |
+| `/api/v1/monitoring/alerts` | GET | User | List all alerts |
+| **Incident Management** | | | |
+| `/api/v1/monitoring/incidents` | POST | User | Create incidents |
+| `/api/v1/monitoring/incidents` | GET | User | List incidents with pagination |
+| `/api/v1/monitoring/incidents/{id}` | GET | User | Get incident by ID |
+| `/api/v1/monitoring/incidents/{id}` | PUT | Creator/Moderator+ | Update incident status/details |
+| `/api/v1/monitoring/incidents/{id}/timeline` | GET | User | Get incident timeline with events |
+| **System Statistics** | | | |
+| `/api/v1/monitoring/stats` | GET | Moderator+ | System monitoring statistics |
+
+### Monitoring Module Architecture
+
+The monitoring system is organized in `starter/src/monitoring/`:
+- **`api.rs`** - HTTP endpoints (14 monitoring handlers)
+- **`models.rs`** - Data structures with TEXT+CHECK enum patterns
+- **`services.rs`** - Business logic (function-based, not class-based)
+- **`mod.rs`** - Module exports and organization
+
+### Event Type Validation Pattern
+
+**Key Implementation Detail**: Events accept string event types that are validated in the service layer:
+
+```rust
+// API Request - accepts strings
+#[derive(Debug, Clone, Serialize, Deserialize, utoipa::ToSchema)]
+pub struct CreateEventRequest {
+    pub event_type: String, // Validated against EventType enum
+    pub source: String,
+    pub message: Option<String>,
+    // ...
+}
+
+// Service layer validation
+pub async fn create_event(conn: &mut DbConn, request: CreateEventRequest) -> Result<Event> {
+    // Validate event_type string and convert to enum
+    let event_type = EventType::from_str(&request.event_type)
+        .map_err(|_| Error::validation("event_type", "Invalid event type"))?;
+    // ...
+}
+```
+
+**Validation Behavior**: Invalid event types return `400 Bad Request` (not 422) with descriptive error messages.
+
+### Monitoring Testing
+- **Integration Tests**: `starter/tests/monitoring/mod.rs` (13 comprehensive tests)
+- **Total Coverage**: All 14 endpoints with RBAC validation and error scenarios
+- **Validation Testing**: Event type validation with proper HTTP status codes
+- **Timeline Testing**: Incident timeline reconstruction with event correlation
+
+### Monitoring Development Patterns
+
+**Event Creation Pattern:**
+```rust
+// Create monitoring events
+let event = services::create_event(&mut conn, CreateEventRequest {
+    event_type: "log".to_string(), // String validation in service layer
+    source: "user-service".to_string(),
+    message: Some("User action completed".to_string()),
+    level: Some("info".to_string()),
+    tags: HashMap::from([
+        ("user_id".to_string(), json!(user.id)),
+        ("action".to_string(), json!("login"))
+    ]),
+    payload: HashMap::new(),
+    timestamp: None,
+}).await?;
+```
+
+**Incident Management Pattern:**
+```rust
+// Create and manage incidents
+let incident = services::create_incident(&mut conn, CreateIncidentRequest {
+    title: "Service Degradation".to_string(),
+    description: Some("Response times elevated".to_string()),
+    severity: IncidentSeverity::Medium,
+    assigned_to: None,
+}, Some(auth_user.id)).await?;
+```
+
+**Documentation**: Comprehensive monitoring documentation available at:
+- `docs/monitoring.md` - Main monitoring system overview
+- `docs/guides/15-monitoring-and-observability.md` - Implementation guide
+
 ## GitHub CLI Workflow
 
 **Standard GitHub CLI commands for PR management and code review workflows:**

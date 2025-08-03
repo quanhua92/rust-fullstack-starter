@@ -12,6 +12,7 @@ pub mod cli;
 pub mod health;
 pub mod helpers;
 pub mod middleware;
+pub mod monitoring;
 pub mod tasks;
 pub mod users;
 

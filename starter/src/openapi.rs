@@ -8,6 +8,11 @@ use crate::auth::{
     AuthUser,
     models::{LoginRequest, LoginResponse, RegisterRequest},
 };
+use crate::monitoring::models::{
+    Alert, CreateAlertRequest, CreateEventRequest, CreateIncidentRequest, CreateMetricRequest,
+    Event, EventFilter, EventType, Incident, IncidentSeverity, IncidentStatus, IncidentTimeline,
+    Metric, MetricFilter, MetricType, MonitoringStats, TimelineEntry, UpdateIncidentRequest,
+};
 use crate::rbac::models::UserRole;
 use crate::tasks::api::{
     CreateTaskApiRequest, RegisterTaskTypeRequest, TaskQueryParams, TaskTypeResponse,
@@ -78,6 +83,22 @@ use crate::users::models::{
         crate::tasks::api::get_dead_letter_queue,
         crate::tasks::api::retry_task,
         crate::tasks::api::delete_task,
+
+        // Monitoring endpoints (will be added when utoipa::path attributes are added)
+        // crate::monitoring::api::create_event,
+        // crate::monitoring::api::get_events,
+        // crate::monitoring::api::get_event_by_id,
+        // crate::monitoring::api::create_metric,
+        // crate::monitoring::api::get_metrics,
+        // crate::monitoring::api::create_alert,
+        // crate::monitoring::api::get_alerts,
+        // crate::monitoring::api::create_incident,
+        // crate::monitoring::api::get_incidents,
+        // crate::monitoring::api::get_incident_by_id,
+        // crate::monitoring::api::update_incident,
+        // crate::monitoring::api::get_incident_timeline,
+        // crate::monitoring::api::get_monitoring_stats,
+        // crate::monitoring::api::get_prometheus_metrics,
     ),
     components(
         schemas(
@@ -114,6 +135,26 @@ use crate::users::models::{
             RegisterTaskTypeRequest,
             TaskTypeResponse,
 
+            // Monitoring models
+            Event,
+            CreateEventRequest,
+            EventType,
+            EventFilter,
+            Metric,
+            CreateMetricRequest,
+            MetricType,
+            MetricFilter,
+            Alert,
+            CreateAlertRequest,
+            Incident,
+            CreateIncidentRequest,
+            UpdateIncidentRequest,
+            IncidentSeverity,
+            IncidentStatus,
+            IncidentTimeline,
+            TimelineEntry,
+            MonitoringStats,
+
             // Common response types
             ErrorResponse,
 
@@ -128,6 +169,7 @@ use crate::users::models::{
         (name = "Authentication", description = "User authentication and session management"),
         (name = "Users", description = "User management operations"),
         (name = "Tasks", description = "Background task management"),
+        (name = "Monitoring", description = "Observability and monitoring system"),
     )
 )]
 pub struct ApiDoc;

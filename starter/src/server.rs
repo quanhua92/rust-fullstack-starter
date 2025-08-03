@@ -7,6 +7,7 @@ use crate::{
     config::AppConfig,
     database::Database,
     error::Error,
+    monitoring::api as monitoring_api,
     openapi,
     rbac::middleware::require_moderator_role,
     tasks::api as tasks_api,
@@ -140,6 +141,37 @@ pub fn create_router(state: AppState) -> Router {
         .route("/tasks/{id}", delete(tasks_api::delete_task))
         .route("/tasks/{id}/cancel", post(tasks_api::cancel_task))
         .route("/tasks/{id}/retry", post(tasks_api::retry_task))
+        // Monitoring routes (basic access)
+        .route("/monitoring/events", post(monitoring_api::create_event))
+        .route("/monitoring/events", get(monitoring_api::get_events))
+        .route(
+            "/monitoring/events/{id}",
+            get(monitoring_api::get_event_by_id),
+        )
+        .route("/monitoring/metrics", post(monitoring_api::create_metric))
+        .route("/monitoring/metrics", get(monitoring_api::get_metrics))
+        .route("/monitoring/alerts", get(monitoring_api::get_alerts))
+        .route(
+            "/monitoring/incidents",
+            post(monitoring_api::create_incident),
+        )
+        .route("/monitoring/incidents", get(monitoring_api::get_incidents))
+        .route(
+            "/monitoring/incidents/{id}",
+            get(monitoring_api::get_incident_by_id),
+        )
+        .route(
+            "/monitoring/incidents/{id}",
+            put(monitoring_api::update_incident),
+        )
+        .route(
+            "/monitoring/incidents/{id}/timeline",
+            get(monitoring_api::get_incident_timeline),
+        )
+        .route(
+            "/monitoring/metrics/prometheus",
+            get(monitoring_api::get_prometheus_metrics),
+        )
         .layer(middleware::from_fn_with_state(
             state.clone(),
             auth_middleware,
@@ -152,6 +184,12 @@ pub fn create_router(state: AppState) -> Router {
         .route(
             "/users/{id}/reset-password",
             post(users_api::reset_user_password),
+        )
+        // Monitoring routes requiring moderator access
+        .route("/monitoring/alerts", post(monitoring_api::create_alert))
+        .route(
+            "/monitoring/stats",
+            get(monitoring_api::get_monitoring_stats),
         )
         .layer(middleware::from_fn(require_moderator_role))
         .layer(middleware::from_fn_with_state(
