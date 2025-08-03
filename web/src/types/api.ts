@@ -1613,6 +1613,8 @@ export interface operations {
                 start_time?: string;
                 /** @description End time filter (ISO 8601) */
                 end_time?: string;
+                /** @description Filter by tags using key:value pairs separated by commas (e.g., 'user_id:123,env:prod') */
+                tags?: string;
                 /** @description Maximum number of events to return */
                 limit?: number;
                 /** @description Number of events to skip */

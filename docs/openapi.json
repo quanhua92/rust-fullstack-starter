@@ -191,6 +191,15 @@
             }
           },
           {
+            "name": "tags",
+            "in": "query",
+            "description": "Filter by tags using key:value pairs separated by commas (e.g., 'user_id:123,env:prod')",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
             "name": "limit",
             "in": "query",
             "description": "Maximum number of events to return",
