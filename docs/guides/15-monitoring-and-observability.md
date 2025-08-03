@@ -45,7 +45,7 @@ pub async fn login(/* ... */) -> Result</* ... */> {
                 ("user_id".to_string(), json!(user.id))
             ]),
             payload: HashMap::new(),
-            timestamp: None,
+            recorded_at: None,
         }).await?;
     }
 }
@@ -108,7 +108,7 @@ CREATE TABLE events (
     level TEXT,
     tags JSONB NOT NULL DEFAULT '{}',
     payload JSONB NOT NULL DEFAULT '{}',
-    timestamp TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    recorded_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 ```
@@ -171,7 +171,7 @@ pub async fn login(
                 ("action".to_string(), json!("login"))
             ]),
             payload: HashMap::new(),
-            timestamp: None,
+            recorded_at: None,
         }).await?;
     }
 }
@@ -218,7 +218,7 @@ pub async fn track_request<B>(
                     ("duration_ms".to_string(), json!(duration_ms))
                 ]),
                 payload: HashMap::new(),
-                timestamp: None,
+                recorded_at: None,
             }).await;
         }
     });
@@ -251,7 +251,7 @@ pub async fn track_endpoint_performance(
             ("path".to_string(), path.to_string()),
             ("status".to_string(), status.to_string())
         ]),
-        timestamp: None,
+        recorded_at: None,
     }).await?;
     
     // Request counter
@@ -263,7 +263,7 @@ pub async fn track_endpoint_performance(
             ("method".to_string(), method.to_string()),
             ("status".to_string(), status.to_string())
         ]),
-        timestamp: None,
+        recorded_at: None,
     }).await?;
     
     Ok(())
@@ -320,7 +320,7 @@ pub async fn debug_incident(
     println!("🔍 Incident Timeline for {}:", incident_id);
     for entry in timeline.entries {
         println!("{}: {} - {} ({})", 
-            entry.timestamp.format("%H:%M:%S"),
+            entry.recorded_at.format("%H:%M:%S"),
             entry.source,
             entry.message,
             entry.level.unwrap_or_default()
@@ -372,7 +372,7 @@ Content-Type: application/json
     "level": "info",
     "tags": { "request_id": "req-123", "user_id": "user-456" },
     "payload": { "payment_method": "credit_card" },
-    "timestamp": "2024-01-15T10:30:00Z",
+    "recorded_at": "2024-01-15T10:30:00Z",
     "created_at": "2024-01-15T10:30:00Z"
   }
 }
@@ -458,7 +458,7 @@ Authorization: Bearer <token>
     "entries": [
       {
         "id": "evt-456",
-        "timestamp": "2024-01-15T09:15:00Z",
+        "recorded_at": "2024-01-15T09:15:00Z",
         "event_type": "log",
         "source": "payment-service",
         "message": "Gateway response time increased",
@@ -560,7 +560,7 @@ impl<'a> EventLogger<'a> {
             level: Some("info".to_string()),
             tags: event_tags,
             payload: HashMap::new(),
-            timestamp: None,
+            recorded_at: None,
         }).await?;
         
         Ok(())
@@ -579,7 +579,7 @@ impl<'a> EventLogger<'a> {
             payload: HashMap::from([
                 ("error_details".to_string(), json!(format!("{:?}", error)))
             ]),
-            timestamp: None,
+            recorded_at: None,
         }).await?;
         
         Ok(())
@@ -631,7 +631,7 @@ pub async fn track_conversion_step(
             ("outcome".to_string(), if success { "success" } else { "failure" }.to_string()),
             ("user_tier".to_string(), "free".to_string()) // from user context
         ]),
-        timestamp: None,
+        recorded_at: None,
     }).await?;
     
     Ok(())
@@ -662,10 +662,10 @@ pub async fn get_request_timeline(
     let events = sqlx::query_as!(
         Event,
         r#"
-        SELECT id, event_type, source, message, level, tags, payload, timestamp, created_at
+        SELECT id, event_type, source, message, level, tags, payload, recorded_at, created_at
         FROM events 
         WHERE tags->>'request_id' = $1 
-        ORDER BY timestamp ASC
+        ORDER BY recorded_at ASC
         "#,
         request_id
     )
@@ -685,11 +685,11 @@ pub async fn get_user_session_events(
     let events = sqlx::query_as!(
         Event,
         r#"
-        SELECT id, event_type, source, message, level, tags, payload, timestamp, created_at
+        SELECT id, event_type, source, message, level, tags, payload, recorded_at, created_at
         FROM events 
         WHERE tags->>'user_id' = $1 
-        AND timestamp >= $2 
-        ORDER BY timestamp ASC
+        AND recorded_at >= $2 
+        ORDER BY recorded_at ASC
         "#,
         user_id.to_string(),
         session_start

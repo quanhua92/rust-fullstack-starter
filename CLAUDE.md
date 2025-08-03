@@ -84,8 +84,8 @@ show_elapsed
   - **Full multi-browser**: `./scripts/check-web.sh --skip-lint --full` (~5-10min)
   - **Custom timeouts**: `./scripts/check-web.sh --skip-lint --global-timeout=60000 --max-failures=3`
   - **No fail-fast**: `./scripts/check-web.sh --skip-lint --no-fail-fast` (run all tests)
-- **Integration Tests**: `cd starter && cargo nextest run` (123 tests, ~17 seconds)
-- **API Testing**: `./scripts/test-with-curl.sh [host] [port]` (44+ endpoint tests)
+- **Integration Tests**: `cd starter && cargo nextest run` (136 tests, ~17 seconds)
+- **API Testing**: `./scripts/test-with-curl.sh [host] [port]` (83 endpoint tests)
   - Default: `./scripts/test-with-curl.sh` (localhost:3000)
   - Custom: `./scripts/test-with-curl.sh localhost 8080`
   - HTTPS: `./scripts/test-with-curl.sh api.example.com 443`
@@ -163,7 +163,7 @@ This starter template includes comprehensive development infrastructure:
    - **IMPORTANT**: Workers must start to register task types before creating tasks
 2. **Quality Checks**: `./scripts/check.sh` (**MANDATORY before every commit**)
    - Validates: web build, formatting, linting, compilation, SQLx, tests, static serving
-3. **API Testing**: `./scripts/test-with-curl.sh` (44+ endpoint tests including web serving)
+3. **API Testing**: `./scripts/test-with-curl.sh` (83 endpoint tests including web serving)
 4. **Chaos Testing**: `./scripts/test-chaos.sh` (Docker-based resilience validation)
 5. **Stop Services**: `./scripts/stop-server.sh 3000`
 
