@@ -439,11 +439,10 @@ pub struct MonitoringStats {
     pub metrics_last_hour: i64,
 }
 
-// Safe From<String> implementations that handle invalid data gracefully
-// These are required by SQLx but designed to never panic
+// Safe From<String> implementations required by SQLx query_as! macros
+// These are designed with safe fallbacks instead of panicking
 impl From<String> for EventType {
     fn from(s: String) -> Self {
-        // Fall back to Log for any invalid data instead of panicking
         EventType::from_str(&s).unwrap_or_else(|_| {
             tracing::error!(
                 "Invalid event_type in database: '{}', falling back to 'log'",
@@ -456,7 +455,6 @@ impl From<String> for EventType {
 
 impl From<String> for MetricType {
     fn from(s: String) -> Self {
-        // Fall back to Gauge for any invalid data instead of panicking
         MetricType::from_str(&s).unwrap_or_else(|_| {
             tracing::error!(
                 "Invalid metric_type in database: '{}', falling back to 'gauge'",
@@ -469,7 +467,6 @@ impl From<String> for MetricType {
 
 impl From<String> for AlertStatus {
     fn from(s: String) -> Self {
-        // Fall back to Active for any invalid data instead of panicking
         AlertStatus::from_str(&s).unwrap_or_else(|_| {
             tracing::error!(
                 "Invalid alert_status in database: '{}', falling back to 'active'",
@@ -482,7 +479,6 @@ impl From<String> for AlertStatus {
 
 impl From<String> for IncidentSeverity {
     fn from(s: String) -> Self {
-        // Fall back to Medium for any invalid data instead of panicking
         IncidentSeverity::from_str(&s).unwrap_or_else(|_| {
             tracing::error!(
                 "Invalid incident_severity in database: '{}', falling back to 'medium'",
@@ -495,7 +491,6 @@ impl From<String> for IncidentSeverity {
 
 impl From<String> for IncidentStatus {
     fn from(s: String) -> Self {
-        // Fall back to Open for any invalid data instead of panicking
         IncidentStatus::from_str(&s).unwrap_or_else(|_| {
             tracing::error!(
                 "Invalid incident_status in database: '{}', falling back to 'open'",

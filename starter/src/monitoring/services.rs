@@ -60,81 +60,50 @@ pub async fn create_event(conn: &mut DbConn, request: CreateEventRequest) -> Res
     Ok(event)
 }
 
-#[allow(unused_variables)]
 pub async fn find_events_with_filter(conn: &mut DbConn, filter: EventFilter) -> Result<Vec<Event>> {
-    let mut query = String::from(
-        r#"
-        SELECT id, event_type, source, message, level, tags, payload, timestamp, created_at
-        FROM events
-        WHERE 1=1
-        "#,
+    let mut query_builder = sqlx::QueryBuilder::new(
+        "SELECT id, event_type, source, message, level, tags, payload, timestamp, created_at FROM events WHERE 1=1",
     );
 
-    let mut conditions = Vec::new();
-    let mut param_index = 1;
-
     if let Some(event_type) = &filter.event_type {
-        conditions.push(format!("AND event_type = ${param_index}"));
-        param_index += 1;
+        query_builder.push(" AND event_type = ");
+        query_builder.push_bind(event_type.to_string());
     }
 
     if let Some(source) = &filter.source {
-        conditions.push(format!("AND source = ${param_index}"));
-        param_index += 1;
+        query_builder.push(" AND source = ");
+        query_builder.push_bind(source);
     }
 
     if let Some(level) = &filter.level {
-        conditions.push(format!("AND level = ${param_index}"));
-        param_index += 1;
+        query_builder.push(" AND level = ");
+        query_builder.push_bind(level);
     }
 
     if let Some(start_time) = &filter.start_time {
-        conditions.push(format!("AND timestamp >= ${param_index}"));
-        param_index += 1;
+        query_builder.push(" AND timestamp >= ");
+        query_builder.push_bind(start_time);
     }
 
     if let Some(end_time) = &filter.end_time {
-        conditions.push(format!("AND timestamp <= ${param_index}"));
-        param_index += 1;
+        query_builder.push(" AND timestamp <= ");
+        query_builder.push_bind(end_time);
     }
 
-    query.push_str(&conditions.join(" "));
-    query.push_str(" ORDER BY timestamp DESC");
+    query_builder.push(" ORDER BY timestamp DESC");
 
     if let Some(limit) = filter.limit {
-        query.push_str(&format!(" LIMIT ${param_index}"));
-        param_index += 1;
+        query_builder.push(" LIMIT ");
+        query_builder.push_bind(limit);
     }
 
     if let Some(offset) = filter.offset {
-        query.push_str(&format!(" OFFSET ${param_index}"));
-    }
-
-    let mut query_builder = sqlx::query_as::<_, Event>(&query);
-
-    if let Some(event_type) = &filter.event_type {
-        query_builder = query_builder.bind(event_type.to_string());
-    }
-    if let Some(source) = &filter.source {
-        query_builder = query_builder.bind(source);
-    }
-    if let Some(level) = &filter.level {
-        query_builder = query_builder.bind(level);
-    }
-    if let Some(start_time) = &filter.start_time {
-        query_builder = query_builder.bind(start_time);
-    }
-    if let Some(end_time) = &filter.end_time {
-        query_builder = query_builder.bind(end_time);
-    }
-    if let Some(limit) = filter.limit {
-        query_builder = query_builder.bind(limit);
-    }
-    if let Some(offset) = filter.offset {
-        query_builder = query_builder.bind(offset);
+        query_builder.push(" OFFSET ");
+        query_builder.push_bind(offset);
     }
 
     let events = query_builder
+        .build_query_as::<Event>()
         .fetch_all(&mut **conn)
         .await
         .map_err(Error::from_sqlx)?;
@@ -201,76 +170,48 @@ pub async fn create_metric(conn: &mut DbConn, request: CreateMetricRequest) -> R
     Ok(metric)
 }
 
-#[allow(unused_variables)]
 pub async fn find_metrics_with_filter(
     conn: &mut DbConn,
     filter: MetricFilter,
 ) -> Result<Vec<Metric>> {
-    let mut query = String::from(
-        r#"
-        SELECT id, name, metric_type, value, labels, timestamp, created_at
-        FROM metrics
-        WHERE 1=1
-        "#,
+    let mut query_builder = sqlx::QueryBuilder::new(
+        "SELECT id, name, metric_type, value, labels, timestamp, created_at FROM metrics WHERE 1=1",
     );
 
-    let mut conditions = Vec::new();
-    let mut param_index = 1;
-
     if let Some(name) = &filter.name {
-        conditions.push(format!("AND name = ${param_index}"));
-        param_index += 1;
+        query_builder.push(" AND name = ");
+        query_builder.push_bind(name);
     }
 
     if let Some(metric_type) = &filter.metric_type {
-        conditions.push(format!("AND metric_type = ${param_index}"));
-        param_index += 1;
+        query_builder.push(" AND metric_type = ");
+        query_builder.push_bind(metric_type.to_string());
     }
 
     if let Some(start_time) = &filter.start_time {
-        conditions.push(format!("AND timestamp >= ${param_index}"));
-        param_index += 1;
+        query_builder.push(" AND timestamp >= ");
+        query_builder.push_bind(start_time);
     }
 
     if let Some(end_time) = &filter.end_time {
-        conditions.push(format!("AND timestamp <= ${param_index}"));
-        param_index += 1;
+        query_builder.push(" AND timestamp <= ");
+        query_builder.push_bind(end_time);
     }
 
-    query.push_str(&conditions.join(" "));
-    query.push_str(" ORDER BY timestamp DESC");
+    query_builder.push(" ORDER BY timestamp DESC");
 
     if let Some(limit) = filter.limit {
-        query.push_str(&format!(" LIMIT ${param_index}"));
-        param_index += 1;
+        query_builder.push(" LIMIT ");
+        query_builder.push_bind(limit);
     }
 
     if let Some(offset) = filter.offset {
-        query.push_str(&format!(" OFFSET ${param_index}"));
-    }
-
-    let mut query_builder = sqlx::query_as::<_, Metric>(&query);
-
-    if let Some(name) = &filter.name {
-        query_builder = query_builder.bind(name);
-    }
-    if let Some(metric_type) = &filter.metric_type {
-        query_builder = query_builder.bind(metric_type.to_string());
-    }
-    if let Some(start_time) = &filter.start_time {
-        query_builder = query_builder.bind(start_time);
-    }
-    if let Some(end_time) = &filter.end_time {
-        query_builder = query_builder.bind(end_time);
-    }
-    if let Some(limit) = filter.limit {
-        query_builder = query_builder.bind(limit);
-    }
-    if let Some(offset) = filter.offset {
-        query_builder = query_builder.bind(offset);
+        query_builder.push(" OFFSET ");
+        query_builder.push_bind(offset);
     }
 
     let metrics = query_builder
+        .build_query_as::<Metric>()
         .fetch_all(&mut **conn)
         .await
         .map_err(Error::from_sqlx)?;
