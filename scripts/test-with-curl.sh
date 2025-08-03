@@ -607,6 +607,34 @@ if [ -n "$USER_TOKEN" ]; then
     
     test_api "GET /api/v1/monitoring/events" "GET" "/api/v1/monitoring/events?limit=10" "200" "$USER_TOKEN"
     
+    # Test tag filtering functionality
+    echo "🏷️  Testing tag filtering..."
+    
+    # Create events with specific tags for filtering tests
+    TAGGED_EVENT_1="{\"event_type\": \"log\", \"source\": \"payment-service\", \"message\": \"Payment processed\", \"level\": \"info\", \"tags\": {\"user_id\": \"123\", \"environment\": \"production\", \"service\": \"payment\"}}"
+    TAGGED_EVENT_2="{\"event_type\": \"log\", \"source\": \"user-service\", \"message\": \"User login\", \"level\": \"info\", \"tags\": {\"user_id\": \"456\", \"environment\": \"production\", \"service\": \"auth\"}}"
+    TAGGED_EVENT_3="{\"event_type\": \"log\", \"source\": \"payment-service\", \"message\": \"Payment failed\", \"level\": \"error\", \"tags\": {\"user_id\": \"123\", \"environment\": \"staging\", \"service\": \"payment\"}}"
+    
+    # Create tagged events
+    curl -s -X POST "$BASE_URL/api/v1/monitoring/events" -H "Authorization: Bearer $USER_TOKEN" -H "Content-Type: application/json" -d "$TAGGED_EVENT_1" > /dev/null
+    curl -s -X POST "$BASE_URL/api/v1/monitoring/events" -H "Authorization: Bearer $USER_TOKEN" -H "Content-Type: application/json" -d "$TAGGED_EVENT_2" > /dev/null  
+    curl -s -X POST "$BASE_URL/api/v1/monitoring/events" -H "Authorization: Bearer $USER_TOKEN" -H "Content-Type: application/json" -d "$TAGGED_EVENT_3" > /dev/null
+    
+    # Test single tag filtering
+    test_api "GET /api/v1/monitoring/events (single tag)" "GET" "/api/v1/monitoring/events?tags=user_id:123" "200" "$USER_TOKEN"
+    
+    # Test multiple tag filtering (AND logic)
+    test_api "GET /api/v1/monitoring/events (multiple tags)" "GET" "/api/v1/monitoring/events?tags=user_id:123,environment:production" "200" "$USER_TOKEN"
+    
+    # Test combined filtering (tags + other filters)
+    test_api "GET /api/v1/monitoring/events (tags + level)" "GET" "/api/v1/monitoring/events?tags=service:payment&level=error" "200" "$USER_TOKEN"
+    
+    # Test non-matching tag filtering
+    test_api "GET /api/v1/monitoring/events (non-matching tags)" "GET" "/api/v1/monitoring/events?tags=nonexistent:value" "200" "$USER_TOKEN"
+    
+    # Test invalid tag format (should return 400)
+    test_api "GET /api/v1/monitoring/events (invalid tag format)" "GET" "/api/v1/monitoring/events?tags=invalid_format" "400" "$USER_TOKEN"
+    
     # Create an event to get an ID for testing individual event retrieval
     EVENT_RESPONSE=$(curl -s -X POST "$BASE_URL/api/v1/monitoring/events" -H "Authorization: Bearer $USER_TOKEN" -H "Content-Type: application/json" -d "$EVENT_DATA")
     EVENT_ID=$(echo "$EVENT_RESPONSE" | python3 -c "import json,sys; print(json.load(sys.stdin)['data']['id'])" 2>/dev/null || echo "")

@@ -44,7 +44,7 @@ graph TB
         USERS_READ["👥 /api/v1/users<br/>GET: List users<br/>GET: /users/{id}<br/>Moderator+: All users<br/>User: Own profile only"]
         TASKS[⚙️ /api/v1/tasks<br/>POST: Create, GET: List<br/>📊 /api/v1/tasks/stats<br/>💀 /api/v1/tasks/dead-letter<br/>Moderator/Admin: All tasks<br/>User: Own tasks only]
         TASK_OPS["🔧 /api/v1/tasks/{id}<br/>GET, DELETE<br/>🔄 /api/v1/tasks/{id}/retry<br/>🛑 /api/v1/tasks/{id}/cancel<br/>Role-based access applies"]
-        MONITORING[📊 /api/v1/monitoring/events<br/>📈 /api/v1/monitoring/metrics<br/>🔧 /api/v1/monitoring/incidents<br/>📉 /api/v1/monitoring/metrics/prometheus<br/>All users: Create/view own data]
+        MONITORING[📊 /api/v1/monitoring/events<br/>📈 /api/v1/monitoring/metrics<br/>🔧 /api/v1/monitoring/incidents<br/>📉 /api/v1/monitoring/metrics/prometheus<br/>**Tag filtering**: ?tags=key:value,key2:value2<br/>All users: Create/view own data]
     end
     
     subgraph "👨‍💼 Moderator+ Endpoints"
@@ -1423,13 +1423,24 @@ Query events with optional filters.
 - `event_type`: Filter by event type (`log`, `metric`, `trace`, `alert`)
 - `source`: Filter by service name
 - `level`: Filter by level (`error`, `warn`, `info`, `debug`)
+- `tags`: **Filter by tags using key:value pairs** - `user_id:123,environment:production`
 - `start_time`, `end_time`: ISO 8601 timestamps
 - `limit`: Max results (default: 100)
 - `offset`: Skip results (default: 0)
 
-**Example**:
+**Examples**:
 ```bash
+# Basic filtering
 GET /api/v1/monitoring/events?event_type=log&source=payment-service&limit=50
+
+# Tag filtering with single tag
+GET /api/v1/monitoring/events?tags=user_id:123
+
+# Tag filtering with multiple tags (AND logic)
+GET /api/v1/monitoring/events?tags=user_id:123,environment:production
+
+# Combined filtering
+GET /api/v1/monitoring/events?event_type=log&level=error&tags=service:payment,severity:high
 ```
 
 #### GET /api/v1/monitoring/events/{id}

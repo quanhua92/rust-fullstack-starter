@@ -57,6 +57,10 @@ pub async fn login(/* ... */) -> Result</* ... */> {
 # Query your events
 curl -H "Authorization: Bearer $TOKEN" \
   "http://localhost:3000/api/v1/monitoring/events?limit=10"
+
+# Query with tag filtering
+curl -H "Authorization: Bearer $TOKEN" \
+  "http://localhost:3000/api/v1/monitoring/events?tags=user_id:123,environment:production"
 ```
 
 ---
@@ -384,9 +388,22 @@ Authorization: Bearer <token>
 - `event_type`: `log`, `metric`, `trace`, `alert`
 - `source`: Filter by service name
 - `level`: `error`, `warn`, `info`, `debug`
+- `tags`: **Filter by tags using key:value pairs** - `user_id:123,environment:production`
 - `start_time`, `end_time`: ISO 8601 timestamps
 - `limit`: Max results (default: 100)
 - `offset`: Skip results (default: 0)
+
+**Tag Filtering Examples:**
+```bash
+# Single tag filter - find all events for user 123
+GET /api/v1/monitoring/events?tags=user_id:123
+
+# Multiple tag filter (AND logic) - user 123 in production
+GET /api/v1/monitoring/events?tags=user_id:123,environment:production
+
+# Combined with other filters
+GET /api/v1/monitoring/events?event_type=log&level=error&tags=service:payment,severity:high
+```
 
 ### Metrics Management
 
