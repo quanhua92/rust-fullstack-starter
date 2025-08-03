@@ -741,7 +741,7 @@ let event = services::create_event(&mut conn, CreateEventRequest {
     level: Some("info".to_string()),
     tags: HashMap::new(),
     payload: HashMap::new(),
-    timestamp: None,
+    recorded_at: None,
 }).await?;
 ```
 
@@ -825,7 +825,7 @@ let churn_risk = services::create_metric(&mut conn, CreateMetricRequest {
         ("region".to_string(), user.region.clone()),
         ("signup_date".to_string(), user.created_at.to_string())
     ]),
-    timestamp: None,
+    recorded_at: None,
 }).await?;
 ```
 

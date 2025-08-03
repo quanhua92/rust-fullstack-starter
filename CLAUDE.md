@@ -535,7 +535,7 @@ let event = services::create_event(&mut conn, CreateEventRequest {
         ("action".to_string(), json!("login"))
     ]),
     payload: HashMap::new(),
-    timestamp: None,
+    recorded_at: None,
 }).await?;
 ```
 

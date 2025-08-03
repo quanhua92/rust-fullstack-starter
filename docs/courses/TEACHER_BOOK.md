@@ -1117,7 +1117,7 @@ let event = services::create_event(&mut conn, CreateEventRequest {
         ("action".to_string(), json!("profile_update"))
     ]),
     payload: HashMap::new(),
-    timestamp: None,
+    recorded_at: None,
 }).await?;
 
 // Track performance metrics
@@ -1129,7 +1129,7 @@ let metric = services::create_metric(&mut conn, CreateMetricRequest {
         ("endpoint".to_string(), "/api/v1/users".to_string()),
         ("method".to_string(), "PUT".to_string())
     ]),
-    timestamp: None,
+    recorded_at: None,
 }).await?;
 ```
 
