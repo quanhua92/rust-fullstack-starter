@@ -458,7 +458,7 @@ pub async fn create_user(
 - **RBAC Integration** - Role-based access to monitoring features and data
 - **Prometheus Integration** - Standard metrics exposition endpoint
 
-### Monitoring Endpoints (12 total)
+### Monitoring Endpoints (14 total)
 | Endpoint | Method | Access Level | Description |
 |----------|--------|-------------|-------------|
 | **Event Management** | | | |

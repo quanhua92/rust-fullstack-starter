@@ -440,33 +440,45 @@ pub struct MonitoringStats {
 }
 
 // From<String> implementations for database conversion
+// Safe From<String> implementations that detect database corruption
+// These will panic with descriptive messages if invalid data is found in the database
 impl From<String> for EventType {
     fn from(s: String) -> Self {
-        EventType::from_str(&s).unwrap_or(EventType::Log)
+        EventType::from_str(&s).unwrap_or_else(|_| {
+            panic!("Database corruption detected: invalid event_type '{s}' found in database. This should never happen due to CHECK constraints.")
+        })
     }
 }
 
 impl From<String> for MetricType {
     fn from(s: String) -> Self {
-        MetricType::from_str(&s).unwrap_or(MetricType::Gauge)
+        MetricType::from_str(&s).unwrap_or_else(|_| {
+            panic!("Database corruption detected: invalid metric_type '{s}' found in database. This should never happen due to CHECK constraints.")
+        })
     }
 }
 
 impl From<String> for AlertStatus {
     fn from(s: String) -> Self {
-        AlertStatus::from_str(&s).unwrap_or(AlertStatus::Active)
+        AlertStatus::from_str(&s).unwrap_or_else(|_| {
+            panic!("Database corruption detected: invalid alert status '{s}' found in database. This should never happen due to CHECK constraints.")
+        })
     }
 }
 
 impl From<String> for IncidentSeverity {
     fn from(s: String) -> Self {
-        IncidentSeverity::from_str(&s).unwrap_or(IncidentSeverity::Low)
+        IncidentSeverity::from_str(&s).unwrap_or_else(|_| {
+            panic!("Database corruption detected: invalid incident severity '{s}' found in database. This should never happen due to CHECK constraints.")
+        })
     }
 }
 
 impl From<String> for IncidentStatus {
     fn from(s: String) -> Self {
-        IncidentStatus::from_str(&s).unwrap_or(IncidentStatus::Open)
+        IncidentStatus::from_str(&s).unwrap_or_else(|_| {
+            panic!("Database corruption detected: invalid incident status '{s}' found in database. This should never happen due to CHECK constraints.")
+        })
     }
 }
 

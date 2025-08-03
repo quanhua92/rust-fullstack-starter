@@ -592,6 +592,28 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        Alert: {
+            /** Format: date-time */
+            created_at: string;
+            /** Format: uuid */
+            created_by?: string | null;
+            description?: string | null;
+            /** Format: uuid */
+            id: string;
+            name: string;
+            query: string;
+            /** Format: date-time */
+            resolved_at?: string | null;
+            status: components["schemas"]["AlertStatus"];
+            /** Format: double */
+            threshold_value?: number | null;
+            /** Format: date-time */
+            triggered_at?: string | null;
+            /** Format: date-time */
+            updated_at: string;
+        };
+        /** @enum {string} */
+        AlertStatus: "active" | "resolved" | "silenced";
         ApiResponse_AuthUser: {
             data?: {
                 email: string;
@@ -833,6 +855,45 @@ export interface components {
             message?: string | null;
             status: string;
         };
+        CreateAlertRequest: {
+            description?: string | null;
+            name: string;
+            query: string;
+            /** Format: double */
+            threshold_value?: number | null;
+        };
+        CreateEventRequest: {
+            event_type: string;
+            level?: string | null;
+            message?: string | null;
+            payload?: {
+                [key: string]: unknown;
+            };
+            source: string;
+            tags?: {
+                [key: string]: unknown;
+            };
+            /** Format: date-time */
+            timestamp?: string | null;
+        };
+        CreateIncidentRequest: {
+            /** Format: uuid */
+            assigned_to?: string | null;
+            description?: string | null;
+            severity: components["schemas"]["IncidentSeverity"];
+            title: string;
+        };
+        CreateMetricRequest: {
+            labels?: {
+                [key: string]: string;
+            };
+            metric_type: components["schemas"]["MetricType"];
+            name: string;
+            /** Format: date-time */
+            timestamp?: string | null;
+            /** Format: double */
+            value: number;
+        };
         CreateTaskApiRequest: {
             metadata?: {
                 [key: string]: unknown;
@@ -885,11 +946,79 @@ export interface components {
         ErrorResponse: {
             error: components["schemas"]["ErrorDetail"];
         };
+        Event: {
+            /** Format: date-time */
+            created_at: string;
+            event_type: components["schemas"]["EventType"];
+            /** Format: uuid */
+            id: string;
+            level?: string | null;
+            message?: string | null;
+            payload: unknown;
+            source: string;
+            tags: unknown;
+            /** Format: date-time */
+            timestamp: string;
+        };
+        EventFilter: {
+            /** Format: date-time */
+            end_time?: string | null;
+            event_type?: null | components["schemas"]["EventType"];
+            level?: string | null;
+            /** Format: int64 */
+            limit?: number | null;
+            /** Format: int64 */
+            offset?: number | null;
+            source?: string | null;
+            /** Format: date-time */
+            start_time?: string | null;
+            tags?: {
+                [key: string]: string;
+            } | null;
+        };
+        /** @enum {string} */
+        EventType: "log" | "metric" | "trace" | "alert";
         HealthResponse: {
             status: string;
             /** Format: double */
             uptime: number;
             version: string;
+        };
+        Incident: {
+            /** Format: uuid */
+            assigned_to?: string | null;
+            /** Format: date-time */
+            created_at: string;
+            /** Format: uuid */
+            created_by?: string | null;
+            description?: string | null;
+            /** Format: uuid */
+            id: string;
+            /** Format: date-time */
+            resolved_at?: string | null;
+            root_cause?: string | null;
+            severity: components["schemas"]["IncidentSeverity"];
+            /** Format: date-time */
+            started_at: string;
+            status: components["schemas"]["IncidentStatus"];
+            title: string;
+            /** Format: date-time */
+            updated_at: string;
+        };
+        /** @enum {string} */
+        IncidentSeverity: "low" | "medium" | "high" | "critical";
+        /** @enum {string} */
+        IncidentStatus: "open" | "investigating" | "resolved" | "closed";
+        IncidentTimeline: {
+            /** Format: date-time */
+            end_time?: string | null;
+            entries: components["schemas"]["TimelineEntry"][];
+            /** Format: uuid */
+            incident_id: string;
+            /** Format: date-time */
+            start_time: string;
+            /** Format: int64 */
+            total_count: number;
         };
         LoginRequest: {
             /** @example john@example.com */
@@ -905,6 +1034,50 @@ export interface components {
             expires_at: string;
             session_token: string;
             user: components["schemas"]["UserProfile"];
+        };
+        Metric: {
+            /** Format: date-time */
+            created_at: string;
+            /** Format: uuid */
+            id: string;
+            labels: unknown;
+            metric_type: components["schemas"]["MetricType"];
+            name: string;
+            /** Format: date-time */
+            timestamp: string;
+            /** Format: double */
+            value: number;
+        };
+        MetricFilter: {
+            /** Format: date-time */
+            end_time?: string | null;
+            labels?: {
+                [key: string]: string;
+            } | null;
+            /** Format: int64 */
+            limit?: number | null;
+            metric_type?: null | components["schemas"]["MetricType"];
+            name?: string | null;
+            /** Format: int64 */
+            offset?: number | null;
+            /** Format: date-time */
+            start_time?: string | null;
+        };
+        /** @enum {string} */
+        MetricType: "counter" | "gauge" | "histogram" | "summary";
+        MonitoringStats: {
+            /** Format: int64 */
+            active_alerts: number;
+            /** Format: int64 */
+            events_last_hour: number;
+            /** Format: int64 */
+            metrics_last_hour: number;
+            /** Format: int64 */
+            open_incidents: number;
+            /** Format: int64 */
+            total_events: number;
+            /** Format: int64 */
+            total_metrics: number;
         };
         RecentRegistrations: {
             /** Format: int64 */
@@ -1027,6 +1200,28 @@ export interface components {
             task_type: string;
             /** Format: date-time */
             updated_at: string;
+        };
+        TimelineEntry: {
+            event_type: components["schemas"]["EventType"];
+            /** Format: uuid */
+            id: string;
+            level?: string | null;
+            message: string;
+            source: string;
+            tags: {
+                [key: string]: unknown;
+            };
+            /** Format: date-time */
+            timestamp: string;
+        };
+        UpdateIncidentRequest: {
+            /** Format: uuid */
+            assigned_to?: string | null;
+            description?: string | null;
+            root_cause?: string | null;
+            severity?: null | components["schemas"]["IncidentSeverity"];
+            status?: null | components["schemas"]["IncidentStatus"];
+            title?: string | null;
         };
         UpdateProfileRequest: {
             email?: string | null;

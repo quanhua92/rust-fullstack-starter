@@ -344,11 +344,16 @@ pub async fn get_prometheus_metrics(
         .await
         .map_err(Error::from_sqlx)?;
 
-    // For now, return a simple Prometheus format
-    // In production, this would be more sophisticated
+    // Get system statistics
     let stats = services::get_monitoring_stats(&mut conn).await?;
 
-    let prometheus_output = format!(
+    // Get recent metrics from the database (last 24 hours)
+    let recent_metrics = services::get_prometheus_metrics(&mut conn).await?;
+
+    let mut prometheus_output = String::new();
+
+    // Add system-level monitoring metrics
+    prometheus_output.push_str(&format!(
         r#"# HELP monitoring_total_events Total number of events in the system
 # TYPE monitoring_total_events counter
 monitoring_total_events {}
@@ -372,6 +377,7 @@ monitoring_events_last_hour {}
 # HELP monitoring_metrics_last_hour Number of metrics in the last hour
 # TYPE monitoring_metrics_last_hour gauge
 monitoring_metrics_last_hour {}
+
 "#,
         stats.total_events,
         stats.total_metrics,
@@ -379,7 +385,10 @@ monitoring_metrics_last_hour {}
         stats.open_incidents,
         stats.events_last_hour,
         stats.metrics_last_hour
-    );
+    ));
+
+    // Add user-submitted metrics from the database
+    prometheus_output.push_str(&recent_metrics);
 
     Ok(prometheus_output)
 }

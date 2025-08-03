@@ -42,7 +42,12 @@ pub async fn create_event(conn: &mut DbConn, request: CreateEventRequest) -> Res
 
     let event = Event {
         id: event.id,
-        event_type: EventType::from_str(&event.event_type).unwrap_or(EventType::Log),
+        event_type: EventType::from_str(&event.event_type).map_err(|_| {
+            Error::InvalidInput(format!(
+                "Invalid event_type in database: {}",
+                event.event_type
+            ))
+        })?,
         source: event.source,
         message: event.message,
         level: event.level,
@@ -181,7 +186,12 @@ pub async fn create_metric(conn: &mut DbConn, request: CreateMetricRequest) -> R
     let metric = Metric {
         id: metric.id,
         name: metric.name,
-        metric_type: metric.metric_type.into(),
+        metric_type: MetricType::from_str(&metric.metric_type).map_err(|_| {
+            Error::InvalidInput(format!(
+                "Invalid metric_type in database: {}",
+                metric.metric_type
+            ))
+        })?,
         value: metric.value,
         labels: metric.labels,
         timestamp: metric.timestamp,
@@ -302,7 +312,12 @@ pub async fn create_alert(
         description: alert.description,
         query: alert.query,
         threshold_value: alert.threshold_value,
-        status: alert.status.into(),
+        status: AlertStatus::from_str(&alert.status).map_err(|_| {
+            Error::InvalidInput(format!(
+                "Invalid alert status in database: {}",
+                alert.status
+            ))
+        })?,
         triggered_at: alert.triggered_at,
         resolved_at: alert.resolved_at,
         created_by: alert.created_by,
@@ -364,8 +379,18 @@ pub async fn create_incident(
         id: incident.id,
         title: incident.title,
         description: incident.description,
-        severity: incident.severity.into(),
-        status: incident.status.into(),
+        severity: IncidentSeverity::from_str(&incident.severity).map_err(|_| {
+            Error::InvalidInput(format!(
+                "Invalid incident severity in database: {}",
+                incident.severity
+            ))
+        })?,
+        status: IncidentStatus::from_str(&incident.status).map_err(|_| {
+            Error::InvalidInput(format!(
+                "Invalid incident status in database: {}",
+                incident.status
+            ))
+        })?,
         started_at: incident.started_at,
         resolved_at: incident.resolved_at,
         root_cause: incident.root_cause,
@@ -469,8 +494,18 @@ pub async fn update_incident(
         id: updated_incident.id,
         title: updated_incident.title,
         description: updated_incident.description,
-        severity: updated_incident.severity.into(),
-        status: updated_incident.status.into(),
+        severity: IncidentSeverity::from_str(&updated_incident.severity).map_err(|_| {
+            Error::InvalidInput(format!(
+                "Invalid incident severity in database: {}",
+                updated_incident.severity
+            ))
+        })?,
+        status: IncidentStatus::from_str(&updated_incident.status).map_err(|_| {
+            Error::InvalidInput(format!(
+                "Invalid incident status in database: {}",
+                updated_incident.status
+            ))
+        })?,
         started_at: updated_incident.started_at,
         resolved_at: updated_incident.resolved_at,
         root_cause: updated_incident.root_cause,
@@ -529,26 +564,29 @@ pub async fn get_incident_timeline(
     .map_err(Error::from_sqlx)?
     .unwrap_or(0);
 
-    let entries: Vec<TimelineEntry> = events
-        .into_iter()
-        .map(|row| {
-            let tags: HashMap<String, serde_json::Value> =
-                serde_json::from_value(row.tags).unwrap_or_default();
+    let mut entries: Vec<TimelineEntry> = Vec::new();
+    for row in events {
+        let tags: HashMap<String, serde_json::Value> =
+            serde_json::from_value(row.tags).unwrap_or_default();
 
-            // Parse event_type string back to enum for API response
-            let event_type = row.event_type.parse().unwrap_or(EventType::Log);
+        // Parse event_type string back to enum for API response
+        let event_type = row.event_type.parse().map_err(|_| {
+            Error::InvalidInput(format!(
+                "Invalid event_type in database: {}",
+                row.event_type
+            ))
+        })?;
 
-            TimelineEntry {
-                id: row.id,
-                timestamp: row.timestamp,
-                event_type,
-                source: row.source,
-                message: row.message.unwrap_or_default(),
-                level: row.level,
-                tags,
-            }
-        })
-        .collect();
+        entries.push(TimelineEntry {
+            id: row.id,
+            timestamp: row.timestamp,
+            event_type,
+            source: row.source,
+            message: row.message.unwrap_or_default(),
+            level: row.level,
+            tags,
+        });
+    }
 
     Ok(IncidentTimeline {
         incident_id,
@@ -616,4 +654,68 @@ pub async fn get_monitoring_stats(conn: &mut DbConn) -> Result<MonitoringStats> 
         events_last_hour,
         metrics_last_hour,
     })
+}
+
+pub async fn get_prometheus_metrics(conn: &mut DbConn) -> Result<String> {
+    // Get metrics from the last 24 hours to keep output manageable
+    let last_24h = Utc::now() - chrono::Duration::hours(24);
+
+    let metrics = sqlx::query!(
+        r#"
+        SELECT name, metric_type, value, labels, timestamp
+        FROM metrics 
+        WHERE timestamp >= $1
+        ORDER BY name, timestamp DESC
+        "#,
+        last_24h
+    )
+    .fetch_all(&mut **conn)
+    .await
+    .map_err(Error::from_sqlx)?;
+
+    let mut output = String::new();
+    let mut current_metric = String::new();
+
+    for metric in metrics {
+        // Parse labels from JSONB
+        let labels: std::collections::HashMap<String, serde_json::Value> =
+            serde_json::from_value(metric.labels).unwrap_or_default();
+
+        // Format labels for Prometheus
+        let labels_str = if labels.is_empty() {
+            String::new()
+        } else {
+            let label_pairs: Vec<String> = labels
+                .iter()
+                .map(|(k, v)| format!("{}=\"{}\"", k, v.as_str().unwrap_or("unknown")))
+                .collect();
+            format!("{{{}}}", label_pairs.join(","))
+        };
+
+        // Add metric type header if this is a new metric
+        if current_metric != metric.name {
+            if !current_metric.is_empty() {
+                output.push('\n');
+            }
+
+            current_metric = metric.name.clone();
+
+            // Add HELP and TYPE comments
+            output.push_str(&format!(
+                "# HELP {} User-submitted metric\n# TYPE {} {}\n",
+                metric.name, metric.name, metric.metric_type
+            ));
+        }
+
+        // Add the metric value line
+        output.push_str(&format!(
+            "{}{} {} {}\n",
+            metric.name,
+            labels_str,
+            metric.value,
+            metric.timestamp.timestamp_millis()
+        ));
+    }
+
+    Ok(output)
 }

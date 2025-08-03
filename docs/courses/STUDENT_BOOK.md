@@ -391,9 +391,6 @@ let metric = services::create_metric(&mut conn, CreateMetricRequest {
     ]),
     timestamp: None,
 }).await?;
-    ]),
-    // ...
-}).await?;
 ```
 
 **✅ Success Criteria:**
