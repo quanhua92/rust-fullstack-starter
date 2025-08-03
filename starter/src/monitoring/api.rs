@@ -47,6 +47,7 @@ pub struct IncidentQueryParams {
 pub struct TimelineQueryParams {
     pub limit: Option<i64>,
     pub offset: Option<i64>,
+    pub lookback_hours: Option<i64>,
 }
 
 /// Create a new event
@@ -403,8 +404,14 @@ pub async fn get_incident_timeline(
         .await
         .map_err(Error::from_sqlx)?;
 
-    let timeline =
-        services::get_incident_timeline(&mut conn, id, params.limit, params.offset).await?;
+    let timeline = services::get_incident_timeline(
+        &mut conn,
+        id,
+        params.limit,
+        params.offset,
+        params.lookback_hours,
+    )
+    .await?;
 
     Ok(Json(ApiResponse::success(timeline)))
 }

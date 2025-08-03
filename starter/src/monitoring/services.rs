@@ -464,6 +464,7 @@ pub async fn get_incident_timeline(
     incident_id: Uuid,
     limit: Option<i64>,
     offset: Option<i64>,
+    lookback_hours: Option<i64>,
 ) -> Result<IncidentTimeline> {
     // Get incident details first
     let incident = find_incident_by_id(conn, incident_id)
@@ -472,9 +473,10 @@ pub async fn get_incident_timeline(
 
     let limit = limit.unwrap_or(100);
     let offset = offset.unwrap_or(0);
+    let lookback_hours = lookback_hours.unwrap_or(1); // Default 1 hour lookback
 
-    // Get events around the incident timeframe
-    let start_time = incident.started_at - chrono::Duration::hours(1); // 1 hour before
+    // Get events around the incident timeframe with configurable lookback window
+    let start_time = incident.started_at - chrono::Duration::hours(lookback_hours);
     let end_time = incident.resolved_at.unwrap_or_else(Utc::now);
 
     let events = sqlx::query!(
@@ -622,13 +624,23 @@ pub async fn get_prometheus_metrics(conn: &mut DbConn) -> Result<String> {
         let labels: std::collections::HashMap<String, serde_json::Value> =
             serde_json::from_value(metric.labels).unwrap_or_default();
 
-        // Format labels for Prometheus
+        // Format labels for Prometheus with proper type handling and escaping
         let labels_str = if labels.is_empty() {
             String::new()
         } else {
             let label_pairs: Vec<String> = labels
                 .iter()
-                .map(|(k, v)| format!("{}=\"{}\"", k, v.as_str().unwrap_or("unknown")))
+                .filter_map(|(k, v)| {
+                    let v_str = match v {
+                        serde_json::Value::String(s) => s.clone(),
+                        serde_json::Value::Number(n) => n.to_string(),
+                        serde_json::Value::Bool(b) => b.to_string(),
+                        _ => return None, // Skip complex types like arrays/objects
+                    };
+                    // Properly escape backslashes and double quotes for Prometheus format
+                    let escaped_v = v_str.replace('\\', r"\\").replace('"', r#"\""#);
+                    Some(format!("{}=\"{}\"", k, escaped_v))
+                })
                 .collect();
             format!("{{{}}}", label_pairs.join(","))
         };

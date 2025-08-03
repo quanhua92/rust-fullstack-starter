@@ -439,8 +439,22 @@ pub struct MonitoringStats {
     pub metrics_last_hour: i64,
 }
 
-// Safe From<String> implementations required by SQLx query_as! macros
-// These are designed with safe fallbacks instead of panicking
+// IMPORTANT: From<String> implementations are REQUIRED by SQLx query_as! macros
+// 
+// These implementations exist solely to support SQLx's query_as! macro which
+// automatically converts database strings to enums. Without these, query_as!
+// compilation will fail with "the trait bound `EventType: From<String>`" errors.
+//
+// DESIGN CHOICE: We use safe fallbacks with error logging instead of panicking
+// to prevent server crashes from corrupted database data. The sqlx::Decode 
+// implementation (below) provides proper error handling when used directly.
+//
+// Alternative approaches considered:
+// 1. Remove From<String> and use manual field mapping - more verbose, error-prone
+// 2. Panic on invalid data - could crash the server from bad database state  
+// 3. Return Result<Self> - not compatible with From trait requirements
+//
+// Current approach balances convenience, safety, and SQLx compatibility.
 impl From<String> for EventType {
     fn from(s: String) -> Self {
         EventType::from_str(&s).unwrap_or_else(|_| {
@@ -453,6 +467,7 @@ impl From<String> for EventType {
     }
 }
 
+// Required by SQLx query_as! macro - see EventType implementation above for details
 impl From<String> for MetricType {
     fn from(s: String) -> Self {
         MetricType::from_str(&s).unwrap_or_else(|_| {
@@ -465,6 +480,7 @@ impl From<String> for MetricType {
     }
 }
 
+// Required by SQLx query_as! macro - see EventType implementation above for details
 impl From<String> for AlertStatus {
     fn from(s: String) -> Self {
         AlertStatus::from_str(&s).unwrap_or_else(|_| {
@@ -477,6 +493,7 @@ impl From<String> for AlertStatus {
     }
 }
 
+// Required by SQLx query_as! macro - see EventType implementation above for details
 impl From<String> for IncidentSeverity {
     fn from(s: String) -> Self {
         IncidentSeverity::from_str(&s).unwrap_or_else(|_| {
@@ -489,6 +506,7 @@ impl From<String> for IncidentSeverity {
     }
 }
 
+// Required by SQLx query_as! macro - see EventType implementation above for details
 impl From<String> for IncidentStatus {
     fn from(s: String) -> Self {
         IncidentStatus::from_str(&s).unwrap_or_else(|_| {
