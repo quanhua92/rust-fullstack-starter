@@ -315,6 +315,7 @@ Master the comprehensive monitoring system with 14 API endpoints, 4 database tab
 - [ ] **Enhanced Prometheus Export**: Industry-standard metrics export with system stats + detailed database metrics at `/api/v1/monitoring/metrics/prometheus`
 - [ ] **Timeline Magic**: How incidents automatically correlate with related events
 - [ ] **Data Integrity Protection**: Robust error handling prevents database corruption and silent failures with proper validation
+- [ ] **Advanced Tag Filtering**: Query events with `?tags=key:value,key2:value2` syntax using PostgreSQL JSONB @> operators
 - [ ] **Comprehensive API Testing**: 60+ endpoints tested including all 14 monitoring endpoints with authentication and error scenarios
 
 **🧪 Hands-On Experiments:**
@@ -342,7 +343,8 @@ Master the comprehensive monitoring system with 14 API endpoints, 4 database tab
 4. **API Endpoint Tour**: Test all 14 monitoring endpoints with different user roles using actual patterns from test-with-curl.sh
 5. **Prometheus Integration**: Export metrics and understand the enhanced format with database stats
 6. **Incident Timeline**: Create an incident and watch how events get correlated
-7. **Error Handling Validation**: Test invalid inputs and see robust error responses (400 Bad Request for validation errors)
+7. **Advanced Tag Filtering**: Test event queries with `?tags=user_id:123,environment:production`
+8. **Error Handling Validation**: Test invalid inputs and see robust error responses (400 Bad Request for validation errors)
 
 **📊 Your Learning Journey:**
 
@@ -360,6 +362,7 @@ Master the comprehensive monitoring system with 14 API endpoints, 4 database tab
 - Create and manage alert rules
 - Master incident lifecycle tracking
 - Understand timeline reconstruction
+- Master advanced tag filtering with JSONB queries
 
 **Week 4: Production Integration**
 - Learn Prometheus metrics export
@@ -382,6 +385,11 @@ Master the comprehensive monitoring system with 14 API endpoints, 4 database tab
 - Users can create events/metrics and incidents
 - Moderators can manage alerts and view all incidents
 - Admins get full system statistics and configuration
+
+*"Tag filtering works like advanced search?"*
+- Query events with multiple tags: `?tags=user_id:123,environment:production`
+- Uses AND logic - events must match ALL specified tags
+- Powered by PostgreSQL JSONB containment queries (@> operator)
 
 **🔧 Key Code Patterns:**
 
@@ -418,6 +426,7 @@ let metric = services::create_metric(&mut conn, CreateMetricRequest {
 - [ ] Can create events, metrics, alerts, and incidents programmatically with proper error handling
 - [ ] Know how to export comprehensive metrics (system + database) for external monitoring systems
 - [ ] Can correlate events into incident timelines for analysis
+- [ ] Master advanced tag filtering with key:value syntax and understand JSONB @> operators
 - [ ] Understand data integrity features and error detection mechanisms
 - [ ] Can run and understand the 60+ endpoint test suite including all monitoring scenarios
 - [ ] Know how to validate API responses and handle authentication across different user roles

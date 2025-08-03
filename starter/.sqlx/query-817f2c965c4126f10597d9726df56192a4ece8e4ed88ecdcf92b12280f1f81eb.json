@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n        SELECT id, event_type, source, message, level, tags, payload, timestamp, created_at\n        FROM events\n        WHERE id = $1\n        ",
+  "query": "\n        INSERT INTO events (id, event_type, source, message, level, tags, payload, recorded_at)\n        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)\n        RETURNING id, event_type, source, message, level, tags, payload, recorded_at, created_at\n        ",
   "describe": {
     "columns": [
       {
@@ -40,7 +40,7 @@
       },
       {
         "ordinal": 7,
-        "name": "timestamp",
+        "name": "recorded_at",
         "type_info": "Timestamptz"
       },
       {
@@ -51,7 +51,14 @@
     ],
     "parameters": {
       "Left": [
-        "Uuid"
+        "Uuid",
+        "Text",
+        "Text",
+        "Text",
+        "Text",
+        "Jsonb",
+        "Jsonb",
+        "Timestamptz"
       ]
     },
     "nullable": [
@@ -66,5 +73,5 @@
       false
     ]
   },
-  "hash": "16128effaff207916ba3bbdc125b0c5189c14bb44bb5145ec72f55c504e47742"
+  "hash": "817f2c965c4126f10597d9726df56192a4ece8e4ed88ecdcf92b12280f1f81eb"
 }

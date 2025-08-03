@@ -10,18 +10,18 @@ CREATE TABLE events (
     level TEXT,
     tags JSONB NOT NULL DEFAULT '{}',
     payload JSONB NOT NULL DEFAULT '{}',
-    timestamp TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    recorded_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 -- Indexes for events table
-CREATE INDEX idx_events_timestamp ON events(timestamp);
+CREATE INDEX idx_events_recorded_at ON events(recorded_at);
 CREATE INDEX idx_events_source ON events(source);
 CREATE INDEX idx_events_type ON events(event_type);
 CREATE INDEX idx_events_level ON events(level);
 CREATE INDEX idx_events_tags ON events USING GIN(tags);
 CREATE INDEX idx_events_payload ON events USING GIN(payload);
-CREATE INDEX idx_events_source_timestamp ON events(source, timestamp);
+CREATE INDEX idx_events_source_recorded_at ON events(source, recorded_at);
 
 -- Metrics table for time-series data
 CREATE TABLE metrics (
@@ -31,14 +31,14 @@ CREATE TABLE metrics (
         CONSTRAINT valid_metric_type CHECK (metric_type IN ('counter', 'gauge', 'histogram', 'summary')),
     value DOUBLE PRECISION NOT NULL,
     labels JSONB NOT NULL DEFAULT '{}',
-    timestamp TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    recorded_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 -- Indexes for metrics table
 CREATE INDEX idx_metrics_name ON metrics(name);
-CREATE INDEX idx_metrics_timestamp ON metrics(timestamp);
-CREATE INDEX idx_metrics_name_timestamp ON metrics(name, timestamp);
+CREATE INDEX idx_metrics_recorded_at ON metrics(recorded_at);
+CREATE INDEX idx_metrics_name_recorded_at ON metrics(name, recorded_at);
 CREATE INDEX idx_metrics_labels ON metrics USING GIN(labels);
 CREATE INDEX idx_metrics_type ON metrics(metric_type);
 

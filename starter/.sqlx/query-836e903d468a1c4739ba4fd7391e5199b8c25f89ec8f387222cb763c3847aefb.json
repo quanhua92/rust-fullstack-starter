@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT COUNT(*) FROM events WHERE timestamp BETWEEN $1 AND $2",
+  "query": "SELECT COUNT(*) FROM events WHERE recorded_at BETWEEN $1 AND $2",
   "describe": {
     "columns": [
       {
@@ -19,5 +19,5 @@
       null
     ]
   },
-  "hash": "f625982b5b51caab7c733c61e2ca3a59c29695c0694e4fe2629f2d38af410d41"
+  "hash": "836e903d468a1c4739ba4fd7391e5199b8c25f89ec8f387222cb763c3847aefb"
 }

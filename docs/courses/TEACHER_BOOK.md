@@ -1067,17 +1067,18 @@ Guide students through implementing a comprehensive monitoring system that demon
    - Demonstrate JSONB flexibility for tags and labels
 
 3. **API Endpoint Tour**:
-   - Events: Create, query, retrieve with filtering
+   - Events: Create, query, retrieve with advanced tag filtering
    - Metrics: Submit, query, Prometheus export
    - Alerts: Rule creation (moderator+ required)
    - Incidents: Lifecycle management with RBAC
    - Statistics: System health overview
 
 4. **Real-Time Monitoring**:
-   - Create events from different sources
+   - Create events from different sources with tag filtering
    - Submit metrics with labels and timestamps
    - Trigger alerts and create incidents
    - Export timeline for incident analysis
+   - Query events with advanced tag filtering (key:value pairs)
 
 **🎭 Student Discovery Moments:**
 
@@ -1095,6 +1096,11 @@ Guide students through implementing a comprehensive monitoring system that demon
 - Test alert creation with different user roles
 - Show moderator+ requirement for system operations
 - Demonstrate ownership-based incident updates
+
+*"Tag filtering works like a search engine?"*
+- Query events with `?tags=user_id:123,environment:production`
+- Show AND logic for multiple tag filtering
+- Demonstrate JSONB containment queries with PostgreSQL @> operator
 
 **🔧 Implementation Patterns to Emphasize:**
 
@@ -1145,6 +1151,7 @@ let metric = services::create_metric(&mut conn, CreateMetricRequest {
 - Alert rule management
 - Incident lifecycle tracking
 - Timeline reconstruction
+- Advanced tag filtering with JSONB queries
 
 **Week 4: Production Integration**
 - Prometheus metrics export
@@ -1157,6 +1164,7 @@ let metric = services::create_metric(&mut conn, CreateMetricRequest {
 - [ ] Can create events, metrics, alerts, and incidents programmatically
 - [ ] Knows how to export metrics for external monitoring systems
 - [ ] Can correlate events into incident timelines for analysis
+- [ ] Masters advanced tag filtering with key:value syntax and AND logic
 
 **🎓 Advanced Extensions:**
 - Integrate monitoring into existing task handlers

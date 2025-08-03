@@ -13,7 +13,7 @@ use uuid::Uuid;
 
 pub async fn create_event(conn: &mut DbConn, request: CreateEventRequest) -> Result<Event> {
     let id = Uuid::new_v4();
-    let timestamp = request.timestamp.unwrap_or_else(Utc::now);
+    let recorded_at = request.recorded_at.unwrap_or_else(Utc::now);
     let tags = json!(request.tags);
     let payload = json!(request.payload);
 
@@ -23,9 +23,9 @@ pub async fn create_event(conn: &mut DbConn, request: CreateEventRequest) -> Res
 
     let event = sqlx::query!(
         r#"
-        INSERT INTO events (id, event_type, source, message, level, tags, payload, timestamp)
+        INSERT INTO events (id, event_type, source, message, level, tags, payload, recorded_at)
         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-        RETURNING id, event_type, source, message, level, tags, payload, timestamp, created_at
+        RETURNING id, event_type, source, message, level, tags, payload, recorded_at, created_at
         "#,
         id,
         event_type.to_string(),
@@ -34,7 +34,7 @@ pub async fn create_event(conn: &mut DbConn, request: CreateEventRequest) -> Res
         request.level,
         tags,
         payload,
-        timestamp
+        recorded_at
     )
     .fetch_one(&mut **conn)
     .await
@@ -53,7 +53,7 @@ pub async fn create_event(conn: &mut DbConn, request: CreateEventRequest) -> Res
         level: event.level,
         tags: event.tags,
         payload: event.payload,
-        timestamp: event.timestamp,
+        recorded_at: event.recorded_at,
         created_at: event.created_at,
     };
 
@@ -62,7 +62,7 @@ pub async fn create_event(conn: &mut DbConn, request: CreateEventRequest) -> Res
 
 pub async fn find_events_with_filter(conn: &mut DbConn, filter: EventFilter) -> Result<Vec<Event>> {
     let mut query_builder = sqlx::QueryBuilder::new(
-        "SELECT id, event_type, source, message, level, tags, payload, timestamp, created_at FROM events WHERE 1=1",
+        "SELECT id, event_type, source, message, level, tags, payload, recorded_at, created_at FROM events WHERE 1=1",
     );
 
     if let Some(event_type) = &filter.event_type {
@@ -81,12 +81,12 @@ pub async fn find_events_with_filter(conn: &mut DbConn, filter: EventFilter) -> 
     }
 
     if let Some(start_time) = &filter.start_time {
-        query_builder.push(" AND timestamp >= ");
+        query_builder.push(" AND recorded_at >= ");
         query_builder.push_bind(start_time);
     }
 
     if let Some(end_time) = &filter.end_time {
-        query_builder.push(" AND timestamp <= ");
+        query_builder.push(" AND recorded_at <= ");
         query_builder.push_bind(end_time);
     }
 
@@ -100,7 +100,7 @@ pub async fn find_events_with_filter(conn: &mut DbConn, filter: EventFilter) -> 
         }
     }
 
-    query_builder.push(" ORDER BY timestamp DESC");
+    query_builder.push(" ORDER BY recorded_at DESC");
 
     if let Some(limit) = filter.limit {
         query_builder.push(" LIMIT ");
@@ -125,7 +125,7 @@ pub async fn find_event_by_id(conn: &mut DbConn, id: Uuid) -> Result<Option<Even
     let event = sqlx::query_as!(
         Event,
         r#"
-        SELECT id, event_type, source, message, level, tags, payload, timestamp, created_at
+        SELECT id, event_type, source, message, level, tags, payload, recorded_at, created_at
         FROM events
         WHERE id = $1
         "#,
@@ -142,21 +142,21 @@ pub async fn find_event_by_id(conn: &mut DbConn, id: Uuid) -> Result<Option<Even
 
 pub async fn create_metric(conn: &mut DbConn, request: CreateMetricRequest) -> Result<Metric> {
     let id = Uuid::new_v4();
-    let timestamp = request.timestamp.unwrap_or_else(Utc::now);
+    let recorded_at = request.recorded_at.unwrap_or_else(Utc::now);
     let labels = json!(request.labels);
 
     let metric = sqlx::query!(
         r#"
-        INSERT INTO metrics (id, name, metric_type, value, labels, timestamp)
+        INSERT INTO metrics (id, name, metric_type, value, labels, recorded_at)
         VALUES ($1, $2, $3, $4, $5, $6)
-        RETURNING id, name, metric_type, value, labels, timestamp, created_at
+        RETURNING id, name, metric_type, value, labels, recorded_at, created_at
         "#,
         id,
         request.name,
         request.metric_type.to_string(),
         request.value,
         labels,
-        timestamp
+        recorded_at
     )
     .fetch_one(&mut **conn)
     .await
@@ -173,7 +173,7 @@ pub async fn create_metric(conn: &mut DbConn, request: CreateMetricRequest) -> R
         })?,
         value: metric.value,
         labels: metric.labels,
-        timestamp: metric.timestamp,
+        recorded_at: metric.recorded_at,
         created_at: metric.created_at,
     };
 
@@ -185,7 +185,7 @@ pub async fn find_metrics_with_filter(
     filter: MetricFilter,
 ) -> Result<Vec<Metric>> {
     let mut query_builder = sqlx::QueryBuilder::new(
-        "SELECT id, name, metric_type, value, labels, timestamp, created_at FROM metrics WHERE 1=1",
+        "SELECT id, name, metric_type, value, labels, recorded_at, created_at FROM metrics WHERE 1=1",
     );
 
     if let Some(name) = &filter.name {
@@ -199,16 +199,16 @@ pub async fn find_metrics_with_filter(
     }
 
     if let Some(start_time) = &filter.start_time {
-        query_builder.push(" AND timestamp >= ");
+        query_builder.push(" AND recorded_at >= ");
         query_builder.push_bind(start_time);
     }
 
     if let Some(end_time) = &filter.end_time {
-        query_builder.push(" AND timestamp <= ");
+        query_builder.push(" AND recorded_at <= ");
         query_builder.push_bind(end_time);
     }
 
-    query_builder.push(" ORDER BY timestamp DESC");
+    query_builder.push(" ORDER BY recorded_at DESC");
 
     if let Some(limit) = filter.limit {
         query_builder.push(" LIMIT ");
@@ -491,11 +491,11 @@ pub async fn get_incident_timeline(
 
     let events = sqlx::query!(
         r#"
-        SELECT id, timestamp, event_type, source, 
+        SELECT id, recorded_at, event_type, source, 
                COALESCE(message, '') as message, level, tags
         FROM events
-        WHERE timestamp BETWEEN $1 AND $2
-        ORDER BY timestamp ASC
+        WHERE recorded_at BETWEEN $1 AND $2
+        ORDER BY recorded_at ASC
         LIMIT $3 OFFSET $4
         "#,
         start_time,
@@ -508,7 +508,7 @@ pub async fn get_incident_timeline(
     .map_err(Error::from_sqlx)?;
 
     let total_count = sqlx::query_scalar!(
-        "SELECT COUNT(*) FROM events WHERE timestamp BETWEEN $1 AND $2",
+        "SELECT COUNT(*) FROM events WHERE recorded_at BETWEEN $1 AND $2",
         start_time,
         end_time
     )
@@ -532,7 +532,7 @@ pub async fn get_incident_timeline(
 
         entries.push(TimelineEntry {
             id: row.id,
-            timestamp: row.timestamp,
+            recorded_at: row.recorded_at,
             event_type,
             source: row.source,
             message: row.message.unwrap_or_default(),
@@ -615,10 +615,10 @@ pub async fn get_prometheus_metrics(conn: &mut DbConn) -> Result<String> {
 
     let metrics = sqlx::query!(
         r#"
-        SELECT name, metric_type, value, labels, timestamp
+        SELECT name, metric_type, value, labels, recorded_at
         FROM metrics 
-        WHERE timestamp >= $1
-        ORDER BY name, timestamp DESC
+        WHERE recorded_at >= $1
+        ORDER BY name, recorded_at DESC
         "#,
         last_24h
     )
@@ -676,7 +676,7 @@ pub async fn get_prometheus_metrics(conn: &mut DbConn) -> Result<String> {
             metric.name,
             labels_str,
             metric.value,
-            metric.timestamp.timestamp_millis()
+            metric.recorded_at.timestamp_millis()
         ));
     }
 

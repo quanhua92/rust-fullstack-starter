@@ -249,7 +249,7 @@ pub struct Event {
     pub level: Option<String>,
     pub tags: serde_json::Value,
     pub payload: serde_json::Value,
-    pub timestamp: DateTime<Utc>,
+    pub recorded_at: DateTime<Utc>,
     pub created_at: DateTime<Utc>,
 }
 
@@ -264,7 +264,7 @@ pub struct CreateEventRequest {
     pub tags: HashMap<String, serde_json::Value>,
     #[serde(default)]
     pub payload: HashMap<String, serde_json::Value>,
-    pub timestamp: Option<DateTime<Utc>>,
+    pub recorded_at: Option<DateTime<Utc>>,
 }
 
 // Metrics structure for time-series data
@@ -275,7 +275,7 @@ pub struct Metric {
     pub metric_type: MetricType,
     pub value: f64,
     pub labels: serde_json::Value,
-    pub timestamp: DateTime<Utc>,
+    pub recorded_at: DateTime<Utc>,
     pub created_at: DateTime<Utc>,
 }
 
@@ -287,7 +287,7 @@ pub struct CreateMetricRequest {
     pub value: f64,
     #[serde(default)]
     pub labels: HashMap<String, String>,
-    pub timestamp: Option<DateTime<Utc>>,
+    pub recorded_at: Option<DateTime<Utc>>,
 }
 
 // Alert structure for monitoring rules
@@ -410,7 +410,7 @@ impl Default for MetricFilter {
 #[derive(Debug, Clone, Serialize, Deserialize, utoipa::ToSchema)]
 pub struct TimelineEntry {
     pub id: Uuid,
-    pub timestamp: DateTime<Utc>,
+    pub recorded_at: DateTime<Utc>,
     pub event_type: EventType,
     pub source: String,
     pub message: String,

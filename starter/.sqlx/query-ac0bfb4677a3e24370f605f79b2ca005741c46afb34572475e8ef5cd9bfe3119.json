@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n        SELECT id, timestamp, event_type, source, \n               COALESCE(message, '') as message, level, tags\n        FROM events\n        WHERE timestamp BETWEEN $1 AND $2\n        ORDER BY timestamp ASC\n        LIMIT $3 OFFSET $4\n        ",
+  "query": "\n        SELECT id, recorded_at, event_type, source, \n               COALESCE(message, '') as message, level, tags\n        FROM events\n        WHERE recorded_at BETWEEN $1 AND $2\n        ORDER BY recorded_at ASC\n        LIMIT $3 OFFSET $4\n        ",
   "describe": {
     "columns": [
       {
@@ -10,7 +10,7 @@
       },
       {
         "ordinal": 1,
-        "name": "timestamp",
+        "name": "recorded_at",
         "type_info": "Timestamptz"
       },
       {
@@ -57,5 +57,5 @@
       false
     ]
   },
-  "hash": "307dc848770c0cda07df41e94fc3c2d11f1518ee1e2ccebba85ba7d19e48e861"
+  "hash": "ac0bfb4677a3e24370f605f79b2ca005741c46afb34572475e8ef5cd9bfe3119"
 }

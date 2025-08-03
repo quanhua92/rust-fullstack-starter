@@ -60,6 +60,18 @@ if [ "$RESET_DATABASE" = true ]; then
     run_cmd "Resetting database" bash -c "cd starter && sqlx database reset -y" || {
         print_status "warning" "Database reset failed, continuing anyway..."
     }
+    
+    # Also drop test template database to avoid version mismatch issues
+    print_status "info" "Dropping test template database..."
+    bash -c "
+        # Get database config from root .env file
+        DB_URL=\$(grep 'DATABASE_URL' .env 2>/dev/null | cut -d'=' -f2 | tr -d '\"' || echo 'postgresql://starter_user:starter_pass@localhost:5432/starter_db')
+        ADMIN_URL=\${DB_URL%/*}/postgres
+        
+        # Drop template database using psql
+        psql \"\$ADMIN_URL\" -c 'DROP DATABASE IF EXISTS \"starter_test_template\"' 2>/dev/null || true
+    "
+    
     DATABASE_STATUS="and database reset"
 else
     print_status "info" "Database preserved (use --reset-database to reset database)"
