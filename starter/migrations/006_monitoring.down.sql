@@ -1,11 +1,8 @@
 -- Drop monitoring and observability tables
 
--- Drop triggers first
+-- Drop triggers first (function stays since it's from migration 001)
 DROP TRIGGER IF EXISTS update_incidents_updated_at ON incidents;
 DROP TRIGGER IF EXISTS update_alerts_updated_at ON alerts;
-
--- Drop function
-DROP FUNCTION IF EXISTS update_updated_at_column();
 
 -- Drop tables in reverse dependency order
 DROP TABLE IF EXISTS incidents;

@@ -345,6 +345,39 @@ sqlx migrate run --source starter/migrations
 
 ## API Reference
 
+### Monitoring Endpoints
+
+All monitoring endpoints require authentication unless otherwise noted. Moderator+ role required for system-level operations.
+
+#### Events
+
+- **POST** `/api/v1/monitoring/events` - Create event
+- **GET** `/api/v1/monitoring/events` - Query events with filters
+- **GET** `/api/v1/monitoring/events/{id}` - Get specific event
+
+#### Metrics
+
+- **POST** `/api/v1/monitoring/metrics` - Submit metric
+- **GET** `/api/v1/monitoring/metrics` - Query metrics with filters
+- **GET** `/api/v1/monitoring/metrics/prometheus` - Export in Prometheus format
+
+#### Alerts (Moderator+ required)
+
+- **POST** `/api/v1/monitoring/alerts` - Create alert rule
+- **GET** `/api/v1/monitoring/alerts` - List all alerts
+
+#### Incidents
+
+- **POST** `/api/v1/monitoring/incidents` - Create incident
+- **GET** `/api/v1/monitoring/incidents` - List incidents (paginated)
+- **GET** `/api/v1/monitoring/incidents/{id}` - Get incident details
+- **PUT** `/api/v1/monitoring/incidents/{id}` - Update incident (moderator+ or creator)
+- **GET** `/api/v1/monitoring/incidents/{id}/timeline` - Get incident timeline
+
+#### System Statistics (Moderator+ required)
+
+- **GET** `/api/v1/monitoring/stats` - Get monitoring system statistics
+
 For complete API documentation, see:
 - [Monitoring Guide](guides/15-monitoring-and-observability.md) - Comprehensive implementation guide
 - [OpenAPI Specification](openapi.json) - Complete API reference
