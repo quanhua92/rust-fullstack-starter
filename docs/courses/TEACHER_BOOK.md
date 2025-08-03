@@ -33,7 +33,7 @@ This course is NOT about general web development. It's about achieving complete 
 
 ### 🦀 Phase 1: Backend Mastery (Lessons 1-9)
 **Goal**: Complete understanding of every Rust file in `starter/src/`
-**Duration**: 7-9 weeks  
+**Duration**: 8-10 weeks  
 **Philosophy**: Master the server completely before adding frontend complexity
 
 ### 🌐 Phase 2: Frontend Integration (Lessons 10-14)
@@ -48,7 +48,7 @@ This course is NOT about general web development. It's about achieving complete 
 
 ---
 
-## 🎯 PHASE 1: BACKEND MASTERY (Lessons 1-8)
+## 🎯 PHASE 1: BACKEND MASTERY (Lessons 1-9)
 
 ### **Lesson 1: The Starter System Overview**
 *"Before we dissect the frog, let's understand what makes it alive"*
@@ -1019,10 +1019,8 @@ Docker Compose → System Spawn → Failure Injection → Recovery Validation
 
 ---
 
-## 🌐 PHASE 2: FRONTEND INTEGRATION (Lessons 10-14)
-
 ### 📊 **Lesson 9: Monitoring & Observability (`starter/src/monitoring/`)**
-*"If you can't measure it, you can't manage it"*
+> *"If you can't measure it, you can't manage it"*
 
 **Learning Objectives:**
 - Master the comprehensive monitoring system with 14 API endpoints, 4 database tables, and real-time observability patterns
@@ -1082,22 +1080,22 @@ Guide students through implementing a comprehensive monitoring system that demon
 
 **🎭 Student Discovery Moments:**
 
-*"Wait, this exports Prometheus metrics automatically?"*
+> *"Wait, this exports Prometheus metrics automatically?"*
 - Show `/api/v1/monitoring/metrics/prometheus` endpoint
 - Explain industry-standard observability patterns
 - Demonstrate how metrics become dashboards
 
-*"The timeline rebuilds incidents automatically?"*
+> *"The timeline rebuilds incidents automatically?"*
 - Create incident, add related events
 - Show timeline reconstruction with correlation
 - Explain root cause analysis patterns
 
-*"RBAC controls who can create alerts?"*
+> *"RBAC controls who can create alerts?"*
 - Test alert creation with different user roles
 - Show moderator+ requirement for system operations
 - Demonstrate ownership-based incident updates
 
-*"Tag filtering works like a search engine?"*
+> *"Tag filtering works like a search engine?"*
 - Query events with `?tags=user_id:123,environment:production`
 - Show AND logic for multiple tag filtering
 - Demonstrate JSONB containment queries with PostgreSQL @> operator
@@ -1182,6 +1180,8 @@ let metric = services::create_metric(&mut conn, CreateMetricRequest {
 - **Next Lessons**: React Frontend (dashboard integration), Admin Dashboard (real monitoring data)
 
 ---
+
+## 🌐 PHASE 2: FRONTEND INTEGRATION (Lessons 10-14)
 
 ### **Lesson 10: React Frontend Overview (`web/src/`)**
 *"Now that we know the server, let's meet the client"*

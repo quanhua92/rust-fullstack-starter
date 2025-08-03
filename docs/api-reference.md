@@ -1492,7 +1492,7 @@ Export metrics in Prometheus exposition format.
 **Authentication**: Required (Bearer token)
 
 **Response**: Plain text Prometheus format
-```
+```prometheus
 # HELP monitoring_total_events Total number of events in the system
 # TYPE monitoring_total_events counter
 monitoring_total_events 15420

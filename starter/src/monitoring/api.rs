@@ -255,6 +255,27 @@ pub async fn create_metric(
 }
 
 /// Get metrics with filters
+#[utoipa::path(
+    get,
+    path = "/api/v1/monitoring/metrics",
+    params(
+        ("name" = Option<String>, Query, description = "Filter by metric name"),
+        ("metric_type" = Option<MetricType>, Query, description = "Filter by metric type"),
+        ("start_time" = Option<String>, Query, description = "Start time filter (ISO 8601)"),
+        ("end_time" = Option<String>, Query, description = "End time filter (ISO 8601)"),
+        ("limit" = Option<i64>, Query, description = "Maximum number of metrics to return"),
+        ("offset" = Option<i64>, Query, description = "Number of metrics to skip")
+    ),
+    responses(
+        (status = 200, description = "Metrics retrieved successfully", body = ApiResponse<Vec<Metric>>),
+        (status = 400, description = "Invalid query parameters", body = ErrorResponse),
+        (status = 401, description = "Unauthorized", body = ErrorResponse)
+    ),
+    security(
+        ("bearer_auth" = [])
+    ),
+    tag = "Monitoring"
+)]
 pub async fn get_metrics(
     State(app_state): State<AppState>,
     Extension(_auth_user): Extension<AuthUser>,
@@ -316,6 +337,18 @@ pub async fn create_alert(
 }
 
 /// Get all alerts
+#[utoipa::path(
+    get,
+    path = "/api/v1/monitoring/alerts",
+    responses(
+        (status = 200, description = "Alerts retrieved successfully", body = ApiResponse<Vec<Alert>>),
+        (status = 401, description = "Unauthorized", body = ErrorResponse)
+    ),
+    security(
+        ("bearer_auth" = [])
+    ),
+    tag = "Monitoring"
+)]
 pub async fn get_alerts(
     State(app_state): State<AppState>,
     Extension(_auth_user): Extension<AuthUser>,
@@ -368,6 +401,23 @@ pub async fn create_incident(
 }
 
 /// Get incidents with pagination
+#[utoipa::path(
+    get,
+    path = "/api/v1/monitoring/incidents",
+    params(
+        ("limit" = Option<i64>, Query, description = "Maximum number of incidents to return"),
+        ("offset" = Option<i64>, Query, description = "Number of incidents to skip")
+    ),
+    responses(
+        (status = 200, description = "Incidents retrieved successfully", body = ApiResponse<Vec<Incident>>),
+        (status = 400, description = "Invalid query parameters", body = ErrorResponse),
+        (status = 401, description = "Unauthorized", body = ErrorResponse)
+    ),
+    security(
+        ("bearer_auth" = [])
+    ),
+    tag = "Monitoring"
+)]
 pub async fn get_incidents(
     State(app_state): State<AppState>,
     Extension(_auth_user): Extension<AuthUser>,
@@ -386,6 +436,22 @@ pub async fn get_incidents(
 }
 
 /// Get incident by ID
+#[utoipa::path(
+    get,
+    path = "/api/v1/monitoring/incidents/{id}",
+    params(
+        ("id" = Uuid, Path, description = "Incident ID")
+    ),
+    responses(
+        (status = 200, description = "Incident retrieved successfully", body = ApiResponse<Incident>),
+        (status = 404, description = "Incident not found", body = ErrorResponse),
+        (status = 401, description = "Unauthorized", body = ErrorResponse)
+    ),
+    security(
+        ("bearer_auth" = [])
+    ),
+    tag = "Monitoring"
+)]
 pub async fn get_incident_by_id(
     State(app_state): State<AppState>,
     Extension(_auth_user): Extension<AuthUser>,
@@ -404,6 +470,25 @@ pub async fn get_incident_by_id(
 }
 
 /// Update incident (requires moderator or higher, or be the creator)
+#[utoipa::path(
+    put,
+    path = "/api/v1/monitoring/incidents/{id}",
+    params(
+        ("id" = Uuid, Path, description = "Incident ID")
+    ),
+    request_body = UpdateIncidentRequest,
+    responses(
+        (status = 200, description = "Incident updated successfully", body = ApiResponse<Incident>),
+        (status = 400, description = "Invalid input", body = ErrorResponse),
+        (status = 401, description = "Unauthorized", body = ErrorResponse),
+        (status = 403, description = "Forbidden - requires moderator role or incident ownership", body = ErrorResponse),
+        (status = 404, description = "Incident not found", body = ErrorResponse)
+    ),
+    security(
+        ("bearer_auth" = [])
+    ),
+    tag = "Monitoring"
+)]
 pub async fn update_incident(
     State(app_state): State<AppState>,
     Extension(auth_user): Extension<AuthUser>,
@@ -438,6 +523,26 @@ pub async fn update_incident(
 }
 
 /// Get incident timeline
+#[utoipa::path(
+    get,
+    path = "/api/v1/monitoring/incidents/{id}/timeline",
+    params(
+        ("id" = Uuid, Path, description = "Incident ID"),
+        ("limit" = Option<i64>, Query, description = "Maximum number of timeline entries to return"),
+        ("offset" = Option<i64>, Query, description = "Number of timeline entries to skip"),
+        ("lookback_hours" = Option<i64>, Query, description = "Hours to look back before incident start (default: 1)")
+    ),
+    responses(
+        (status = 200, description = "Incident timeline retrieved successfully", body = ApiResponse<IncidentTimeline>),
+        (status = 400, description = "Invalid query parameters", body = ErrorResponse),
+        (status = 401, description = "Unauthorized", body = ErrorResponse),
+        (status = 404, description = "Incident not found", body = ErrorResponse)
+    ),
+    security(
+        ("bearer_auth" = [])
+    ),
+    tag = "Monitoring"
+)]
 pub async fn get_incident_timeline(
     State(app_state): State<AppState>,
     Extension(_auth_user): Extension<AuthUser>,
@@ -464,6 +569,19 @@ pub async fn get_incident_timeline(
 }
 
 /// Get monitoring system statistics (requires moderator or higher)
+#[utoipa::path(
+    get,
+    path = "/api/v1/monitoring/stats",
+    responses(
+        (status = 200, description = "Monitoring statistics retrieved successfully", body = ApiResponse<MonitoringStats>),
+        (status = 401, description = "Unauthorized", body = ErrorResponse),
+        (status = 403, description = "Forbidden - requires moderator role", body = ErrorResponse)
+    ),
+    security(
+        ("bearer_auth" = [])
+    ),
+    tag = "Monitoring"
+)]
 pub async fn get_monitoring_stats(
     State(app_state): State<AppState>,
     Extension(auth_user): Extension<AuthUser>,

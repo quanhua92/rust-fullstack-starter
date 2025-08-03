@@ -774,10 +774,10 @@ export interface components {
                 level?: string | null;
                 message?: string | null;
                 payload: unknown;
+                /** Format: date-time */
+                recorded_at: string;
                 source: string;
                 tags: unknown;
-                /** Format: date-time */
-                timestamp: string;
             };
             message?: string | null;
             success: boolean;
@@ -837,7 +837,7 @@ export interface components {
                 metric_type: components["schemas"]["MetricType"];
                 name: string;
                 /** Format: date-time */
-                timestamp: string;
+                recorded_at: string;
                 /** Format: double */
                 value: number;
             };
@@ -975,10 +975,10 @@ export interface components {
                 level?: string | null;
                 message?: string | null;
                 payload: unknown;
+                /** Format: date-time */
+                recorded_at: string;
                 source: string;
                 tags: unknown;
-                /** Format: date-time */
-                timestamp: string;
             }[];
             message?: string | null;
             success: boolean;
@@ -1074,12 +1074,12 @@ export interface components {
             payload?: {
                 [key: string]: unknown;
             };
+            /** Format: date-time */
+            recorded_at?: string | null;
             source: string;
             tags?: {
                 [key: string]: unknown;
             };
-            /** Format: date-time */
-            timestamp?: string | null;
         };
         CreateIncidentRequest: {
             /** Format: uuid */
@@ -1095,7 +1095,7 @@ export interface components {
             metric_type: components["schemas"]["MetricType"];
             name: string;
             /** Format: date-time */
-            timestamp?: string | null;
+            recorded_at?: string | null;
             /** Format: double */
             value: number;
         };
@@ -1160,10 +1160,10 @@ export interface components {
             level?: string | null;
             message?: string | null;
             payload: unknown;
+            /** Format: date-time */
+            recorded_at: string;
             source: string;
             tags: unknown;
-            /** Format: date-time */
-            timestamp: string;
         };
         EventFilter: {
             /** Format: date-time */
@@ -1249,7 +1249,7 @@ export interface components {
             metric_type: components["schemas"]["MetricType"];
             name: string;
             /** Format: date-time */
-            timestamp: string;
+            recorded_at: string;
             /** Format: double */
             value: number;
         };
@@ -1412,12 +1412,12 @@ export interface components {
             id: string;
             level?: string | null;
             message: string;
+            /** Format: date-time */
+            recorded_at: string;
             source: string;
             tags: {
                 [key: string]: unknown;
             };
-            /** Format: date-time */
-            timestamp: string;
         };
         UpdateIncidentRequest: {
             /** Format: uuid */

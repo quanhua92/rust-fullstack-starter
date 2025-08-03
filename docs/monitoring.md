@@ -205,7 +205,7 @@ curl http://localhost:3000/api/v1/monitoring/metrics/prometheus
 ```
 
 **Output includes:**
-```
+```prometheus
 # HELP monitoring_total_events Total number of events in the system
 # TYPE monitoring_total_events counter
 monitoring_total_events 15420
@@ -331,28 +331,28 @@ sqlx migrate run --source starter/migrations
 
 ### Common Issues
 
-**Q: Getting 400 Bad Request when creating events**
+#### Q: Getting 400 Bad Request when creating events
 - Verify `event_type` uses valid values: `log`, `metric`, `trace`, `alert`
 - Invalid event types return 400 Bad Request with descriptive error message
 - Check JSON payload structure matches `CreateEventRequest` schema
 
-**Q: Database corruption errors in logs**
+#### Q: Database corruption errors in logs
 - The system now detects invalid enum values in the database
 - If you see panic messages about "Database corruption detected", this indicates CHECK constraints were bypassed
 - Review recent database changes and data imports for invalid values
 - This is a safety feature that prevents silent data corruption
 
-**Q: Events not appearing in timeline**
+#### Q: Events not appearing in timeline
 - Check event timestamps are within incident timeframe
 - Verify events have correct source attribution
 - Ensure database transaction completed successfully
 
-**Q: Metrics not visible in Prometheus**  
+#### Q: Metrics not visible in Prometheus  
 - Verify authentication token has required permissions
 - Check metrics endpoint returns valid Prometheus format
 - Confirm scrape configuration targets correct endpoint
 
-**Q: Alerts not triggering**
+#### Q: Alerts not triggering
 - Verify user has moderator+ role to create alerts
 - Check alert query syntax matches available data
 - Ensure alert evaluation task handler is registered

@@ -264,10 +264,10 @@ Master the 12-endpoint user management system with 3 authorization patterns, Arg
 *"How we know the system works"*
 
 **🎯 Your Mission:**
-Master the 91-test integration suite, 9-step quality pipeline, 10-scenario chaos testing framework, and comprehensive API validation with 60+ endpoint tests.
+Master the 136-test integration suite, 9-step quality pipeline, 10-scenario chaos testing framework, and comprehensive API validation with 60+ endpoint tests.
 
 **📂 Files to Explore:**
-1. **`starter/tests/`** - 91 integration tests (14 files, 3,994 lines)
+1. **`starter/tests/`** - 136 integration tests (14 files, 3,994 lines)
 2. **`scripts/check.sh`** - 9-step quality pipeline
 3. **`scripts/test-chaos.sh`** - 10 chaos testing scenarios
 4. **`scripts/test-with-curl.sh`** - 60+ API endpoint tests including monitoring APIs
@@ -394,6 +394,9 @@ Master the comprehensive monitoring system with 14 API endpoints, 4 database tab
 **🔧 Key Code Patterns:**
 
 ```rust
+use std::collections::HashMap;
+use serde_json::json;
+
 // Log application events with robust error handling
 let event = services::create_event(&mut conn, CreateEventRequest {
     event_type: "log".to_string(), // String validated in service layer
@@ -405,7 +408,7 @@ let event = services::create_event(&mut conn, CreateEventRequest {
         ("action".to_string(), json!("registration"))
     ]),
     payload: HashMap::new(),
-    timestamp: None,
+    recorded_at: None,
 }).await?; // Proper error propagation instead of silent failures
 
 // Track performance metrics
@@ -416,7 +419,7 @@ let metric = services::create_metric(&mut conn, CreateMetricRequest {
     labels: HashMap::from([
         ("outcome".to_string(), "success".to_string())
     ]),
-    timestamp: None,
+    recorded_at: None,
 }).await?;
 ```
 
