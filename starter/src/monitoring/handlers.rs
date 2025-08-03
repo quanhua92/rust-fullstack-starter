@@ -65,11 +65,11 @@ impl TaskHandler for MonitoringEventProcessingHandler {
         }
 
         // Detect potential correlation keys
-        if let Some(request_id) = extract_request_id(&message) {
+        if let Some(request_id) = extract_request_id(message) {
             enriched_tags.insert("request_id".to_string(), serde_json::json!(request_id));
         }
 
-        if let Some(user_id) = extract_user_id(&message) {
+        if let Some(user_id) = extract_user_id(message) {
             enriched_tags.insert("user_id".to_string(), serde_json::json!(user_id));
         }
 
@@ -108,7 +108,7 @@ impl TaskHandler for MonitoringAlertEvaluationHandler {
         tokio::time::sleep(std::time::Duration::from_millis(200)).await;
 
         // Simple alert evaluation logic (in production, this would query the database)
-        let current_value = simulate_metric_query(&query).await?;
+        let current_value = simulate_metric_query(query).await?;
         let triggered = current_value > threshold;
 
         if triggered {
@@ -164,7 +164,7 @@ impl TaskHandler for MonitoringIncidentAnalysisHandler {
         tokio::time::sleep(std::time::Duration::from_millis(500)).await;
 
         // Basic correlation analysis
-        let correlated_events = simulate_event_correlation(&incident_id).await?;
+        let correlated_events = simulate_event_correlation(incident_id).await?;
         let potential_causes = analyze_potential_causes(&correlated_events);
         let confidence_score = calculate_confidence_score(&potential_causes);
 

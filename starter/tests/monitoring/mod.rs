@@ -81,7 +81,7 @@ async fn test_get_events_with_filters() {
     assert_json_field_exists(&json, "data");
 
     let data = json["data"].as_array().unwrap();
-    assert!(data.len() >= 1);
+    assert!(!data.is_empty());
     // All returned events should be log type
     for event in data {
         assert_json_field(event, "event_type", &json!("log"));
@@ -228,7 +228,7 @@ async fn test_update_incident() {
 
     let update_response = app
         .put_json_auth(
-            &format!("/api/v1/monitoring/incidents/{}", incident_id),
+            &format!("/api/v1/monitoring/incidents/{incident_id}"),
             &update_data,
             &token.token,
         )
@@ -280,7 +280,7 @@ async fn test_get_incident_timeline() {
     // Get timeline
     let timeline_response = app
         .get_auth(
-            &format!("/api/v1/monitoring/incidents/{}/timeline", incident_id),
+            &format!("/api/v1/monitoring/incidents/{incident_id}/timeline"),
             &token.token,
         )
         .await;

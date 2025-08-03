@@ -69,27 +69,27 @@ pub async fn find_events_with_filter(conn: &mut DbConn, filter: EventFilter) -> 
     let mut param_index = 1;
 
     if let Some(event_type) = &filter.event_type {
-        conditions.push(format!("AND event_type = ${}", param_index));
+        conditions.push(format!("AND event_type = ${param_index}"));
         param_index += 1;
     }
 
     if let Some(source) = &filter.source {
-        conditions.push(format!("AND source = ${}", param_index));
+        conditions.push(format!("AND source = ${param_index}"));
         param_index += 1;
     }
 
     if let Some(level) = &filter.level {
-        conditions.push(format!("AND level = ${}", param_index));
+        conditions.push(format!("AND level = ${param_index}"));
         param_index += 1;
     }
 
     if let Some(start_time) = &filter.start_time {
-        conditions.push(format!("AND timestamp >= ${}", param_index));
+        conditions.push(format!("AND timestamp >= ${param_index}"));
         param_index += 1;
     }
 
     if let Some(end_time) = &filter.end_time {
-        conditions.push(format!("AND timestamp <= ${}", param_index));
+        conditions.push(format!("AND timestamp <= ${param_index}"));
         param_index += 1;
     }
 
@@ -97,12 +97,12 @@ pub async fn find_events_with_filter(conn: &mut DbConn, filter: EventFilter) -> 
     query.push_str(" ORDER BY timestamp DESC");
 
     if let Some(limit) = filter.limit {
-        query.push_str(&format!(" LIMIT ${}", param_index));
+        query.push_str(&format!(" LIMIT ${param_index}"));
         param_index += 1;
     }
 
     if let Some(offset) = filter.offset {
-        query.push_str(&format!(" OFFSET ${}", param_index));
+        query.push_str(&format!(" OFFSET ${param_index}"));
     }
 
     let mut query_builder = sqlx::query_as::<_, Event>(&query);
@@ -208,22 +208,22 @@ pub async fn find_metrics_with_filter(
     let mut param_index = 1;
 
     if let Some(name) = &filter.name {
-        conditions.push(format!("AND name = ${}", param_index));
+        conditions.push(format!("AND name = ${param_index}"));
         param_index += 1;
     }
 
     if let Some(metric_type) = &filter.metric_type {
-        conditions.push(format!("AND metric_type = ${}", param_index));
+        conditions.push(format!("AND metric_type = ${param_index}"));
         param_index += 1;
     }
 
     if let Some(start_time) = &filter.start_time {
-        conditions.push(format!("AND timestamp >= ${}", param_index));
+        conditions.push(format!("AND timestamp >= ${param_index}"));
         param_index += 1;
     }
 
     if let Some(end_time) = &filter.end_time {
-        conditions.push(format!("AND timestamp <= ${}", param_index));
+        conditions.push(format!("AND timestamp <= ${param_index}"));
         param_index += 1;
     }
 
@@ -231,12 +231,12 @@ pub async fn find_metrics_with_filter(
     query.push_str(" ORDER BY timestamp DESC");
 
     if let Some(limit) = filter.limit {
-        query.push_str(&format!(" LIMIT ${}", param_index));
+        query.push_str(&format!(" LIMIT ${param_index}"));
         param_index += 1;
     }
 
     if let Some(offset) = filter.offset {
-        query.push_str(&format!(" OFFSET ${}", param_index));
+        query.push_str(&format!(" OFFSET ${param_index}"));
     }
 
     let mut query_builder = sqlx::query_as::<_, Metric>(&query);
@@ -492,7 +492,7 @@ pub async fn get_incident_timeline(
     // Get incident details first
     let incident = find_incident_by_id(conn, incident_id)
         .await?
-        .ok_or_else(|| Error::NotFound(format!("Incident with id {}", incident_id)))?;
+        .ok_or_else(|| Error::NotFound(format!("Incident with id {incident_id}")))?;
 
     let limit = limit.unwrap_or(100);
     let offset = offset.unwrap_or(0);
