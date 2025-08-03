@@ -198,31 +198,34 @@ Master the 1,200+ line task processing system with TaskProcessor, retry strategi
 *"How the outside world talks to our system"*
 
 **🎯 Your Mission:**
-Master the 36-route HTTP API with 4-tier security, OpenAPI documentation, and comprehensive health checks.
+Master the comprehensive HTTP API with 60+ tested endpoints, 4-tier security, OpenAPI documentation, and comprehensive health checks.
 
 **📂 Files to Explore:**
 1. **`starter/src/server.rs`** - Complete router (265 lines)
 2. **`starter/src/openapi.rs`** - OpenAPI docs (190 lines)
 3. **`starter/src/api/health.rs`** - 5 health endpoints (260 lines)
-4. **`scripts/test-with-curl.sh`** - 44+ endpoint tests
+4. **`scripts/test-with-curl.sh`** - 60+ endpoint tests including monitoring APIs
 
 **🔍 Your Discoveries:**
 - [ ] **4-Tier Security**: Public (8) → Protected (17) → Moderator (3) → Admin (8) routes
 - [ ] **5 Health Endpoints**: basic, detailed, live, ready, startup for different monitoring needs
 - [ ] **OpenAPI Magic**: 34 documented endpoints with auto-generated schemas
 - [ ] **Unified Server**: Single binary serves both API and static React files
+- [ ] **Comprehensive Testing**: 60+ endpoints tested including authentication, user management, tasks, and monitoring APIs
 
 **🧪 Hands-On Experiments:**
-1. **Security Tiers**: Test endpoints with different authentication levels
+1. **Security Tiers**: Test endpoints with different authentication levels using curl patterns
 2. **Health Monitoring**: Test each health endpoint under failure conditions
 3. **OpenAPI Generation**: Add a new endpoint and see docs auto-update
-4. **Load Testing**: Use `test-with-curl.sh` to validate all 44+ endpoints
+4. **Comprehensive Testing**: Use `test-with-curl.sh` to validate all 60+ endpoints including monitoring APIs
+5. **API Testing Patterns**: Study the curl script to understand authentication flows and error handling
 
 **✅ Success Criteria:**
-- [ ] Can categorize all 36 routes by security tier
+- [ ] Can categorize all routes by security tier and understand the complete API surface
 - [ ] Understand the purpose of each health endpoint
 - [ ] Know how OpenAPI documentation stays in sync
 - [ ] Can design new API endpoints following existing patterns
+- [ ] Can run and understand the comprehensive 60+ endpoint test suite
 
 ---
 
@@ -261,31 +264,34 @@ Master the 12-endpoint user management system with 3 authorization patterns, Arg
 *"How we know the system works"*
 
 **🎯 Your Mission:**
-Master the 91-test integration suite, 9-step quality pipeline, and 10-scenario chaos testing framework.
+Master the 91-test integration suite, 9-step quality pipeline, 10-scenario chaos testing framework, and comprehensive API validation with 60+ endpoint tests.
 
 **📂 Files to Explore:**
 1. **`starter/tests/`** - 91 integration tests (14 files, 3,994 lines)
 2. **`scripts/check.sh`** - 9-step quality pipeline
 3. **`scripts/test-chaos.sh`** - 10 chaos testing scenarios
-4. **`scripts/test-with-curl.sh`** - 44+ API endpoint tests
+4. **`scripts/test-with-curl.sh`** - 60+ API endpoint tests including monitoring APIs
 
 **🔍 Your Discoveries:**
 - [ ] **91 Integration Tests**: Per-test database isolation, real HTTP servers, comprehensive coverage
 - [ ] **9-Step Pipeline**: Frontend build → compilation → linting → tests → API validation
 - [ ] **10 Chaos Scenarios**: Database failure, server restart, task flood, circuit breaker, etc.
 - [ ] **Test Infrastructure**: TestApp architecture, data factories, cleanup utilities
+- [ ] **60+ API Endpoint Tests**: Complete validation of authentication, user management, tasks, and monitoring APIs with curl
 
 **🧪 Hands-On Experiments:**
 1. **Test Isolation**: Run multiple tests simultaneously and verify database separation
 2. **Quality Gates**: Break each pipeline step and see what failures it catches
 3. **Chaos Engineering**: Run scenarios against live system and observe recovery
 4. **Coverage Analysis**: Add new features and ensure test coverage
+5. **API Testing Deep Dive**: Study the curl script patterns for authentication, RBAC testing, and error validation
 
 **✅ Success Criteria:**
 - [ ] Can run the complete quality pipeline without failures
 - [ ] Understand how per-test database isolation works
 - [ ] Know all 10 chaos testing scenarios and their purposes
 - [ ] Can write new integration tests following established patterns
+- [ ] Can run and understand the 60+ endpoint API test suite including monitoring scenarios
 
 ---
 
@@ -293,21 +299,23 @@ Master the 91-test integration suite, 9-step quality pipeline, and 10-scenario c
 *"If you can't measure it, you can't manage it"*
 
 **🎯 Your Mission:**
-Master the comprehensive monitoring system with 14 API endpoints, 4 database tables, enhanced error handling with data integrity protection, and real-time observability patterns.
+Master the comprehensive monitoring system with 14 API endpoints, 4 database tables, enhanced error handling with data integrity protection, and production-ready observability patterns tested with comprehensive API validation.
 
 **📂 Files to Explore:**
 1. **`starter/src/monitoring/`** - Complete monitoring module (5 files, ~2,000 lines)
 2. **`starter/migrations/006_monitoring.up.sql`** - 4-table schema with PostgreSQL enums
 3. **`docs/guides/15-monitoring-and-observability.md`** - 891-line implementation guide
-4. **`starter/tests/monitoring/`** - Comprehensive test suite
+4. **`starter/tests/monitoring/`** - Comprehensive test suite (15 tests)
+5. **`scripts/test-with-curl.sh`** - Monitoring API testing section (60+ total endpoints)
 
 **🔍 Your Discoveries:**
 - [ ] **The 4-Table Schema**: events, metrics, alerts, incidents with TEXT + CHECK constraints for data integrity
-- [ ] **14 API Endpoints**: Event collection, metrics submission, alert management, incident tracking
-- [ ] **RBAC Integration**: How monitoring permissions work with User → Moderator → Admin hierarchy
+- [ ] **14 API Endpoints**: Event collection, metrics submission, alert management, incident tracking (validated via curl testing)
+- [ ] **RBAC Integration**: How monitoring permissions work with User → Moderator → Admin hierarchy (tested across all user roles)
 - [ ] **Enhanced Prometheus Export**: Industry-standard metrics export with system stats + detailed database metrics at `/api/v1/monitoring/metrics/prometheus`
 - [ ] **Timeline Magic**: How incidents automatically correlate with related events
-- [ ] **Data Integrity Protection**: Robust error handling prevents database corruption and silent failures
+- [ ] **Data Integrity Protection**: Robust error handling prevents database corruption and silent failures with proper validation
+- [ ] **Comprehensive API Testing**: 60+ endpoints tested including all 14 monitoring endpoints with authentication and error scenarios
 
 **🧪 Hands-On Experiments:**
 1. **30-Second Setup**: Start monitoring and create your first event
@@ -321,10 +329,20 @@ Master the comprehensive monitoring system with 14 API endpoints, 4 database tab
      -d '{"event_type": "log", "source": "my-app", "message": "Hello monitoring!"}'
    ```
 
-2. **Database Schema Exploration**: Examine migration 006 and understand the PostgreSQL enums
-3. **API Endpoint Tour**: Test all 14 monitoring endpoints with different user roles
-4. **Prometheus Integration**: Export metrics and understand the standard format
-5. **Incident Timeline**: Create an incident and watch how events get correlated
+2. **Comprehensive API Testing**: Run the complete monitoring test suite
+   ```bash
+   # Test all 60+ endpoints including 14 monitoring endpoints
+   ./scripts/test-with-curl.sh
+   
+   # Focus on monitoring section only (search for "Monitoring API Tests")
+   grep -A 50 "Monitoring API Tests" scripts/test-with-curl.sh
+   ```
+
+3. **Database Schema Exploration**: Examine migration 006 and understand the PostgreSQL enums
+4. **API Endpoint Tour**: Test all 14 monitoring endpoints with different user roles using actual patterns from test-with-curl.sh
+5. **Prometheus Integration**: Export metrics and understand the enhanced format with database stats
+6. **Incident Timeline**: Create an incident and watch how events get correlated
+7. **Error Handling Validation**: Test invalid inputs and see robust error responses (400 Bad Request for validation errors)
 
 **📊 Your Learning Journey:**
 
@@ -396,11 +414,13 @@ let metric = services::create_metric(&mut conn, CreateMetricRequest {
 
 **✅ Success Criteria:**
 - [ ] Can explain all 4 monitoring database tables and their relationships with TEXT + CHECK constraints
-- [ ] Understand the 14 API endpoints and their RBAC requirements
+- [ ] Understand the 14 API endpoints and their RBAC requirements (tested with comprehensive curl suite)
 - [ ] Can create events, metrics, alerts, and incidents programmatically with proper error handling
 - [ ] Know how to export comprehensive metrics (system + database) for external monitoring systems
 - [ ] Can correlate events into incident timelines for analysis
 - [ ] Understand data integrity features and error detection mechanisms
+- [ ] Can run and understand the 60+ endpoint test suite including all monitoring scenarios
+- [ ] Know how to validate API responses and handle authentication across different user roles
 
 **🎓 Advanced Challenges:**
 - Integrate monitoring into your own task handlers
@@ -409,9 +429,10 @@ let metric = services::create_metric(&mut conn, CreateMetricRequest {
 - Implement automated incident response workflows
 
 **📖 Essential Reading:**
-- `docs/guides/15-monitoring-and-observability.md` - Complete implementation guide with enhanced Prometheus integration
+- `docs/guides/15-monitoring-and-observability.md` - Complete implementation guide with enhanced Prometheus integration  
 - `docs/monitoring.md` - API reference and integration patterns with data integrity features
 - `tasks/MONITORING.md` - Technical architecture documentation with database schema details
+- `scripts/test-with-curl.sh` - Comprehensive API testing patterns including all 14 monitoring endpoints
 - Study monitoring tests to understand usage patterns and error handling
 
 **🔗 Connects To:**
