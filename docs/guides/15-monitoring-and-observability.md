@@ -284,6 +284,312 @@ let task = CreateTaskRequest::new(
 3. **`monitoring_incident_analysis`**: Perform root cause analysis
 4. **`monitoring_data_retention`**: Clean up old monitoring data
 
+## Practical Implementation Guide
+
+### **🚀 Getting Started: Incremental Adoption**
+
+You don't need to instrument everything at once. Start with high-value, low-effort monitoring:
+
+#### **Phase 1: Critical Events Only**
+```rust
+// Start with just authentication events
+pub async fn login(
+    State(app_state): State<AppState>,
+    Json(request): Json<LoginRequest>,
+) -> Result<Json<ApiResponse<LoginResponse>>, Error> {
+    let request_id = Uuid::new_v4(); // Generate correlation ID
+    
+    // ... authentication logic ...
+    
+    // Log successful login
+    if login_successful {
+        let _event = monitoring::services::create_event(&mut conn, CreateEventRequest {
+            event_type: "log".to_string(),
+            source: "auth-service".to_string(),
+            message: Some(format!("User {} logged in successfully", user.username)),
+            level: Some("info".to_string()),
+            tags: HashMap::from([
+                ("request_id".to_string(), json!(request_id)),
+                ("user_id".to_string(), json!(user.id)),
+                ("action".to_string(), json!("login")),
+                ("ip_address".to_string(), json!(client_ip))
+            ]),
+            payload: HashMap::new(),
+            timestamp: None,
+        }).await?;
+    }
+    
+    Ok(Json(ApiResponse::success(response)))
+}
+```
+
+#### **Phase 2: Add Request Correlation**
+Create middleware for automatic request tracking:
+
+```rust
+// middleware/monitoring.rs
+use tower_http::request_id::{RequestId, MakeRequestId};
+
+pub struct MonitoringMiddleware;
+
+impl MonitoringMiddleware {
+    pub async fn track_request<B>(
+        request: Request<B>,
+        next: Next<B>,
+    ) -> impl IntoResponse {
+        let request_id = request
+            .headers()
+            .get("x-request-id")
+            .and_then(|v| v.to_str().ok())
+            .unwrap_or_else(|| &Uuid::new_v4().to_string());
+            
+        let method = request.method().clone();
+        let uri = request.uri().clone();
+        let start_time = Instant::now();
+        
+        // Process request
+        let response = next.run(request).await;
+        
+        let duration_ms = start_time.elapsed().as_millis() as f64;
+        let status = response.status();
+        
+        // Log request completion (fire-and-forget)
+        tokio::spawn(async move {
+            if let Ok(mut conn) = app_state.database.pool.acquire().await {
+                let _event = monitoring::services::create_event(&mut conn, CreateEventRequest {
+                    event_type: "log".to_string(),
+                    source: "api-gateway".to_string(),
+                    message: Some(format!("{} {} completed", method, uri.path())),
+                    level: Some(if status.is_success() { "info" } else { "warn" }),
+                    tags: HashMap::from([
+                        ("request_id".to_string(), json!(request_id)),
+                        ("method".to_string(), json!(method.as_str())),
+                        ("path".to_string(), json!(uri.path())),
+                        ("status".to_string(), json!(status.as_u16())),
+                        ("duration_ms".to_string(), json!(duration_ms))
+                    ]),
+                    payload: HashMap::new(),
+                    timestamp: None,
+                }).await;
+            }
+        });
+        
+        response
+    }
+}
+```
+
+### **🔍 Request Correlation Strategy**
+
+#### **Use Request IDs for Tracing**
+```rust
+// Extract request ID in handlers
+pub async fn create_task(
+    State(app_state): State<AppState>,
+    Extension(auth_user): Extension<AuthUser>,
+    headers: HeaderMap,
+    Json(request): Json<CreateTaskRequest>,
+) -> Result<Json<ApiResponse<Task>>, Error> {
+    let request_id = headers
+        .get("x-request-id")
+        .and_then(|v| v.to_str().ok())
+        .unwrap_or("unknown");
+    
+    // Business logic
+    let task = task_services::create_task(&mut conn, request, auth_user.id).await?;
+    
+    // Log business event with correlation
+    monitoring::services::create_event(&mut conn, CreateEventRequest {
+        event_type: "log".to_string(),
+        source: "task-service".to_string(),
+        message: Some(format!("Task created: {}", task.task_type)),
+        level: Some("info".to_string()),
+        tags: HashMap::from([
+            ("request_id".to_string(), json!(request_id)),
+            ("user_id".to_string(), json!(auth_user.id)),
+            ("task_id".to_string(), json!(task.id)),
+            ("task_type".to_string(), json!(task.task_type))
+        ]),
+        payload: HashMap::from([
+            ("priority".to_string(), json!(task.priority)),
+            ("scheduled_for".to_string(), json!(task.scheduled_for))
+        ]),
+        timestamp: None,
+    }).await?;
+    
+    Ok(Json(ApiResponse::success(task)))
+}
+```
+
+### **📊 Strategic Monitoring Points**
+
+#### **High-Value Events to Monitor**
+1. **Authentication Events**: Login, logout, registration, password changes
+2. **Business Critical Operations**: Order creation, payment processing, user upgrades
+3. **Error Conditions**: Failed API calls, database errors, external service failures
+4. **Security Events**: Failed logins, permission denials, suspicious activity
+
+#### **What NOT to Monitor**
+- Health check endpoints (too noisy)
+- Static file requests
+- Successful GET requests for common data
+- Internal system heartbeats
+
+### **🛠️ Implementation Patterns**
+
+#### **Pattern 1: Event Helper Functions**
+```rust
+// services/monitoring_helpers.rs
+pub struct EventLogger<'a> {
+    conn: &'a mut DbConn,
+    request_id: String,
+    source: String,
+}
+
+impl<'a> EventLogger<'a> {
+    pub fn new(conn: &'a mut DbConn, request_id: String, source: String) -> Self {
+        Self { conn, request_id, source }
+    }
+    
+    pub async fn log_info(&mut self, message: &str, tags: HashMap<String, serde_json::Value>) -> Result<()> {
+        let mut event_tags = HashMap::from([
+            ("request_id".to_string(), json!(self.request_id))
+        ]);
+        event_tags.extend(tags);
+        
+        monitoring::services::create_event(self.conn, CreateEventRequest {
+            event_type: "log".to_string(),
+            source: self.source.clone(),
+            message: Some(message.to_string()),
+            level: Some("info".to_string()),
+            tags: event_tags,
+            payload: HashMap::new(),
+            timestamp: None,
+        }).await?;
+        
+        Ok(())
+    }
+    
+    pub async fn log_error(&mut self, message: &str, error: &Error) -> Result<()> {
+        monitoring::services::create_event(self.conn, CreateEventRequest {
+            event_type: "alert".to_string(),
+            source: self.source.clone(),
+            message: Some(message.to_string()),
+            level: Some("error".to_string()),
+            tags: HashMap::from([
+                ("request_id".to_string(), json!(self.request_id)),
+                ("error_type".to_string(), json!(error.to_string()))
+            ]),
+            payload: HashMap::from([
+                ("error_details".to_string(), json!(format!("{:?}", error)))
+            ]),
+            timestamp: None,
+        }).await?;
+        
+        Ok(())
+    }
+}
+
+// Usage in handlers
+pub async fn process_payment(/* ... */) -> Result<Json<ApiResponse<Payment>>, Error> {
+    let mut logger = EventLogger::new(&mut conn, request_id, "payment-service".to_string());
+    
+    logger.log_info("Payment processing started", HashMap::from([
+        ("amount".to_string(), json!(amount)),
+        ("currency".to_string(), json!(currency))
+    ])).await?;
+    
+    match payment_gateway.charge(amount, currency).await {
+        Ok(payment) => {
+            logger.log_info("Payment completed successfully", HashMap::from([
+                ("payment_id".to_string(), json!(payment.id))
+            ])).await?;
+            Ok(Json(ApiResponse::success(payment)))
+        }
+        Err(e) => {
+            logger.log_error("Payment failed", &e).await?;
+            Err(e)
+        }
+    }
+}
+```
+
+#### **Pattern 2: Metrics for Performance Tracking**
+```rust
+// Track API performance automatically
+pub async fn track_endpoint_performance(
+    method: &str,
+    path: &str,
+    status: u16,
+    duration_ms: f64,
+    conn: &mut DbConn,
+) -> Result<()> {
+    monitoring::services::create_metric(conn, CreateMetricRequest {
+        name: "http_request_duration_ms".to_string(),
+        metric_type: MetricType::Histogram,
+        value: duration_ms,
+        labels: HashMap::from([
+            ("method".to_string(), method.to_string()),
+            ("path".to_string(), path.to_string()),
+            ("status".to_string(), status.to_string())
+        ]),
+        timestamp: None,
+    }).await?;
+    
+    monitoring::services::create_metric(conn, CreateMetricRequest {
+        name: "http_requests_total".to_string(),
+        metric_type: MetricType::Counter,
+        value: 1.0,
+        labels: HashMap::from([
+            ("method".to_string(), method.to_string()),
+            ("path".to_string(), path.to_string()),
+            ("status".to_string(), status.to_string())
+        ]),
+        timestamp: None,
+    }).await?;
+    
+    Ok(())
+}
+```
+
+### **🔄 Gradual Rollout Strategy**
+
+#### **Week 1: Core Events**
+- Add monitoring to authentication endpoints
+- Add request ID middleware
+- Monitor critical business operations
+
+#### **Week 2: Error Tracking**
+- Add error event logging to all handlers
+- Create incidents for repeated failures
+- Set up basic alerting for error rates
+
+#### **Week 3: Performance Metrics**
+- Add response time tracking
+- Monitor database query performance
+- Track business metrics (user signups, orders, etc.)
+
+#### **Week 4: Correlation & Analysis**
+- Use incident timelines for debugging
+- Create custom dashboards
+- Set up alerts for SLA violations
+
+### **🎯 Practical Dos and Don'ts**
+
+#### **✅ DO:**
+- Use consistent source naming (`auth-service`, `task-service`, `payment-service`)
+- Always include request_id for correlation
+- Log both successful operations and failures
+- Use structured tags for filtering
+- Include user context when available
+
+#### **❌ DON'T:**
+- Log sensitive data (passwords, API keys, PII)
+- Create events for every single operation
+- Use monitoring for debugging (use regular logs)
+- Block request processing for monitoring calls
+- Store large payloads in events
+
 ## Usage Patterns
 
 ### Application Monitoring
