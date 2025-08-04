@@ -92,7 +92,7 @@ Master the 5-table PostgreSQL schema, understand the 126 lines of migrations, an
 1. **Migration Order**: What happens if you run migration 002 before 001?
 2. **Index Performance**: Use `EXPLAIN ANALYZE` to see query performance with/without indexes
 3. **Pool Limits**: Set max_connections to 2 and create 10 concurrent requests
-4. **Enum Constraints**: Try inserting invalid task_status values
+4. **Text Constraints**: Try inserting invalid task status values
 
 **✅ Success Criteria:**
 - [ ] Can draw the complete database schema from memory

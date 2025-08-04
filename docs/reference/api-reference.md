@@ -1173,7 +1173,7 @@ Get details about a specific task.
     "id": "uuid-here",
     "task_type": "email",
     "payload": { "to": "recipient@example.com", "subject": "...", "body": "..." },
-    "status": "Completed",
+    "status": "completed",
     "priority": "normal",
     "retry_strategy": {
       "exponential": {

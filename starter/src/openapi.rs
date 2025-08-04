@@ -17,7 +17,7 @@ use crate::rbac::models::UserRole;
 use crate::tasks::api::{
     CreateTaskApiRequest, RegisterTaskTypeRequest, TaskQueryParams, TaskTypeResponse,
 };
-use crate::tasks::types::{CreateTaskRequest, TaskResponse, TaskStats, TaskStatus};
+use crate::tasks::types::{CreateTaskRequest, TaskPriority, TaskResponse, TaskStats, TaskStatus};
 use crate::types::{DetailedHealthResponse, ErrorResponse, HealthResponse};
 use crate::users::models::{
     ChangePasswordRequest, CreateUserRequest, DeleteAccountRequest, DeleteUserRequest,
@@ -131,6 +131,7 @@ use crate::users::models::{
             CreateTaskApiRequest,
             TaskResponse,
             TaskStatus,
+            TaskPriority,
             TaskStats,
             TaskQueryParams,
             RegisterTaskTypeRequest,

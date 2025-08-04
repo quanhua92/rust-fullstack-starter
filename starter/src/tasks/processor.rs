@@ -170,8 +170,8 @@ impl TaskProcessor {
                 created_by, metadata
             FROM tasks 
             WHERE ($1::TEXT IS NULL OR task_type = $1)
-              AND ($2::task_status IS NULL OR status = $2)
-              AND ($3::task_priority IS NULL OR priority = $3)
+              AND ($2::TEXT IS NULL OR status = $2)
+              AND ($3::TEXT IS NULL OR priority = $3)
               AND ($4::UUID IS NULL OR created_by = $4)
               AND ($5::TIMESTAMPTZ IS NULL OR created_at >= $5)
               AND ($6::TIMESTAMPTZ IS NULL OR created_at <= $6)

@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n            SELECT \n                id, task_type, payload, \n                status as \"status: TaskStatus\", \n                priority as \"priority: TaskPriority\",\n                retry_strategy, max_attempts, current_attempt, last_error,\n                created_at, updated_at, scheduled_at, started_at, completed_at,\n                created_by, metadata\n            FROM tasks \n            WHERE (status = 'pending' OR status = 'retrying')\n              AND (scheduled_at IS NULL OR scheduled_at <= NOW())\n            ORDER BY priority DESC, created_at ASC\n            LIMIT $1\n            ",
+  "query": "\n            SELECT \n                id, task_type, payload, \n                status as \"status: TaskStatus\", \n                priority as \"priority: TaskPriority\",\n                retry_strategy, max_attempts, current_attempt, last_error,\n                created_at, updated_at, scheduled_at, started_at, completed_at,\n                created_by, metadata\n            FROM tasks \n            WHERE ($1::TEXT IS NULL OR task_type = $1)\n              AND ($2::TEXT IS NULL OR status = $2)\n              AND ($3::TEXT IS NULL OR priority = $3)\n              AND ($4::UUID IS NULL OR created_by = $4)\n              AND ($5::TIMESTAMPTZ IS NULL OR created_at >= $5)\n              AND ($6::TIMESTAMPTZ IS NULL OR created_at <= $6)\n            ORDER BY priority DESC, created_at ASC\n            LIMIT $7\n            OFFSET $8\n            ",
   "describe": {
     "columns": [
       {
@@ -86,6 +86,13 @@
     ],
     "parameters": {
       "Left": [
+        "Text",
+        "Text",
+        "Text",
+        "Uuid",
+        "Timestamptz",
+        "Timestamptz",
+        "Int8",
         "Int8"
       ]
     },
@@ -108,5 +115,5 @@
       false
     ]
   },
-  "hash": "212b95039aa00800ddddf4387af93a7ae80bf15ef80bee4fb47efa84c8365e44"
+  "hash": "36a1edf93ccb7e06cd8bbf26dbe8d1e4fb8057d01d6e449c959f8d6258abbac8"
 }

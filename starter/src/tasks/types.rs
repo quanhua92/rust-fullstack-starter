@@ -1,12 +1,15 @@
+use crate::error::Error;
 use crate::tasks::retry::RetryStrategy;
+use crate::types::Result;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
 use std::collections::HashMap;
+use std::str::FromStr;
 use uuid::Uuid;
 
-#[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type, utoipa::ToSchema)]
-#[sqlx(type_name = "task_status", rename_all = "lowercase")]
+// Task status for background job queue
+#[derive(Debug, Clone, Serialize, Deserialize, utoipa::ToSchema)]
 #[serde(rename_all = "lowercase")]
 pub enum TaskStatus {
     Pending,
@@ -25,6 +28,42 @@ pub enum TaskPriority {
     Normal,
     High,
     Critical,
+}
+
+impl TaskPriority {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            TaskPriority::Low => "low",
+            TaskPriority::Normal => "normal",
+            TaskPriority::High => "high",
+            TaskPriority::Critical => "critical",
+        }
+    }
+}
+
+impl std::fmt::Display for TaskPriority {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            TaskPriority::Low => write!(f, "low"),
+            TaskPriority::Normal => write!(f, "normal"),
+            TaskPriority::High => write!(f, "high"),
+            TaskPriority::Critical => write!(f, "critical"),
+        }
+    }
+}
+
+impl std::str::FromStr for TaskPriority {
+    type Err = Error;
+
+    fn from_str(s: &str) -> Result<Self> {
+        match s {
+            "low" => Ok(TaskPriority::Low),
+            "normal" => Ok(TaskPriority::Normal),
+            "high" => Ok(TaskPriority::High),
+            "critical" => Ok(TaskPriority::Critical),
+            _ => Err(Error::validation("task_priority", "Invalid task priority")),
+        }
+    }
 }
 
 impl Default for TaskPriority {
@@ -54,7 +93,7 @@ pub struct Task {
 }
 
 impl Task {
-    pub fn get_retry_strategy(&self) -> Result<RetryStrategy, serde_json::Error> {
+    pub fn get_retry_strategy(&self) -> std::result::Result<RetryStrategy, serde_json::Error> {
         serde_json::from_value(self.retry_strategy.clone())
     }
 
@@ -332,4 +371,88 @@ impl TaskError {
     }
 }
 
-pub type TaskResult2<T> = Result<T, TaskError>;
+pub type TaskResult2<T> = std::result::Result<T, TaskError>;
+
+// IMPORTANT: From<String> implementations are REQUIRED by SQLx query_as! macros
+//
+// These implementations exist solely to support SQLx's query_as! macro which
+// automatically converts database strings to enums. Without these, query_as!
+// compilation will fail with "the trait bound `TaskStatus: From<String>`" errors.
+//
+// DESIGN CHOICE: We use safe fallbacks with error logging instead of panicking
+// to prevent server crashes from corrupted database data. The sqlx::Decode
+// implementation (below) provides proper error handling when used directly.
+impl From<String> for TaskStatus {
+    fn from(s: String) -> Self {
+        TaskStatus::from_str(&s).unwrap_or_else(|_| {
+            tracing::error!(
+                "Invalid task_status in database: '{}', falling back to 'pending'",
+                s
+            );
+            TaskStatus::Pending
+        })
+    }
+}
+
+// Required by SQLx query_as! macro - see TaskStatus implementation above for details
+impl From<String> for TaskPriority {
+    fn from(s: String) -> Self {
+        TaskPriority::from_str(&s).unwrap_or_else(|_| {
+            tracing::error!(
+                "Invalid task_priority in database: '{}', falling back to 'normal'",
+                s
+            );
+            TaskPriority::Normal
+        })
+    }
+}
+
+// SQLx implementations for TaskStatus
+impl<'r> sqlx::Decode<'r, sqlx::Postgres> for TaskStatus {
+    fn decode(
+        value: sqlx::postgres::PgValueRef<'r>,
+    ) -> std::result::Result<Self, sqlx::error::BoxDynError> {
+        let s = <&str as sqlx::Decode<sqlx::Postgres>>::decode(value)?;
+        Ok(TaskStatus::from_str(s)?)
+    }
+}
+
+impl sqlx::Encode<'_, sqlx::Postgres> for TaskStatus {
+    fn encode_by_ref(
+        &self,
+        buf: &mut sqlx::postgres::PgArgumentBuffer,
+    ) -> std::result::Result<sqlx::encode::IsNull, Box<dyn std::error::Error + Send + Sync>> {
+        <&str as sqlx::Encode<sqlx::Postgres>>::encode(self.as_str(), buf)
+    }
+}
+
+impl sqlx::Type<sqlx::Postgres> for TaskStatus {
+    fn type_info() -> sqlx::postgres::PgTypeInfo {
+        <&str as sqlx::Type<sqlx::Postgres>>::type_info()
+    }
+}
+
+// SQLx implementations for TaskPriority
+impl<'r> sqlx::Decode<'r, sqlx::Postgres> for TaskPriority {
+    fn decode(
+        value: sqlx::postgres::PgValueRef<'r>,
+    ) -> std::result::Result<Self, sqlx::error::BoxDynError> {
+        let s = <&str as sqlx::Decode<sqlx::Postgres>>::decode(value)?;
+        Ok(TaskPriority::from_str(s)?)
+    }
+}
+
+impl sqlx::Encode<'_, sqlx::Postgres> for TaskPriority {
+    fn encode_by_ref(
+        &self,
+        buf: &mut sqlx::postgres::PgArgumentBuffer,
+    ) -> std::result::Result<sqlx::encode::IsNull, Box<dyn std::error::Error + Send + Sync>> {
+        <&str as sqlx::Encode<sqlx::Postgres>>::encode(self.as_str(), buf)
+    }
+}
+
+impl sqlx::Type<sqlx::Postgres> for TaskPriority {
+    fn type_info() -> sqlx::postgres::PgTypeInfo {
+        <&str as sqlx::Type<sqlx::Postgres>>::type_info()
+    }
+}

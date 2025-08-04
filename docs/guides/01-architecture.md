@@ -331,8 +331,8 @@ tasks           -- Background job queue
 ├── id (UUID)
 ├── task_type (TEXT, references task_types)
 ├── payload (JSONB - flexible data)
-├── status (ENUM: pending → running → completed/failed/cancelled/retrying)
-├── priority (ENUM: low/normal/high/critical)
+├── status (TEXT with constraints: pending → running → completed/failed/cancelled/retrying)
+├── priority (TEXT with constraints: low/normal/high/critical)
 ├── retry_strategy (JSONB), max_attempts, current_attempt
 ├── last_error (TEXT for debugging)
 ├── scheduled_at, started_at, completed_at
@@ -393,8 +393,8 @@ erDiagram
         uuid id PK
         varchar task_type FK "References task_types"
         jsonb payload "Flexible data"
-        task_status status "Enum"
-        task_priority priority "Enum"
+        text status "TEXT with constraints"
+        text priority "TEXT with constraints"
         jsonb retry_strategy
         int max_attempts "Default: 3"
         int current_attempt "Default: 0"

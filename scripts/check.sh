@@ -2,8 +2,32 @@
 
 # Comprehensive quality check script
 # Runs all quality checks: format, lint, prepare SQLx, and tests
+# Usage: ./scripts/check.sh [--web]
+#   --web: Include comprehensive web frontend checks (adds ~30s)
 
 set -e
+
+# Parse command line arguments
+RUN_WEB_CHECKS=false
+for arg in "$@"; do
+    case $arg in
+        --web)
+            RUN_WEB_CHECKS=true
+            shift
+            ;;
+        --help|-h)
+            echo "Usage: $0 [--web]"
+            echo "  --web    Include comprehensive web frontend checks (TypeScript, linting, tests)"
+            echo "  --help   Show this help message"
+            exit 0
+            ;;
+        *)
+            echo "Unknown option: $arg"
+            echo "Use --help for usage information"
+            exit 1
+            ;;
+    esac
+done
 
 # Color codes
 RED='\033[0;31m'
@@ -26,18 +50,29 @@ cd "$PROJECT_ROOT"
 
 echo -e "${BLUE}📁 Working directory: $PROJECT_ROOT${NC}"
 
-# 1. Web frontend build (if exists)
-echo -e "\n${BLUE}🌐 Step 1/9: Web frontend build...${NC}"
+# 1. Web frontend checks (if exists)
+echo -e "\n${BLUE}🌐 Step 1/9: Web frontend checks...${NC}"
 
-# Check if web directory exists and build early
+# Check if web directory exists
 if [ -d "web" ]; then
-    echo -e "${BLUE}🏗️  Building web frontend...${NC}"
-    if ! ./scripts/build-web.sh; then
-        echo -e "${RED}❌ Web frontend build failed!${NC}"
-        echo -e "${YELLOW}   Run './scripts/build-web.sh' for details${NC}"
-        exit 1
+    if [ "$RUN_WEB_CHECKS" = true ]; then
+        echo -e "${BLUE}🏗️  Running comprehensive web frontend checks...${NC}"
+        if ! (cd web && ./scripts/check-web.sh); then
+            echo -e "${RED}❌ Web frontend checks failed!${NC}"
+            echo -e "${YELLOW}   Run 'cd web && ./scripts/check-web.sh' for details${NC}"
+            exit 1
+        fi
+        echo -e "${GREEN}✅ Web frontend comprehensive checks successful${NC}"
+    else
+        echo -e "${BLUE}🏗️  Building web frontend (basic check)...${NC}"
+        echo -e "${YELLOW}💡 Use --web flag for comprehensive frontend checks${NC}"
+        if ! ./scripts/build-web.sh; then
+            echo -e "${RED}❌ Web frontend build failed!${NC}"
+            echo -e "${YELLOW}   Run './scripts/build-web.sh' for details${NC}"
+            exit 1
+        fi
+        echo -e "${GREEN}✅ Web frontend build successful${NC}"
     fi
-    echo -e "${GREEN}✅ Web frontend build successful${NC}"
     
     # Check if build artifacts exist
     if [ ! -f "web/dist/index.html" ]; then
@@ -46,7 +81,7 @@ if [ -d "web" ]; then
     fi
     echo -e "${GREEN}✅ Web build artifacts verified${NC}"
 else
-    echo -e "${YELLOW}⚠️  Web directory not found, skipping frontend build${NC}"
+    echo -e "${YELLOW}⚠️  Web directory not found, skipping frontend checks${NC}"
 fi
 
 # 2. Cargo check
@@ -180,28 +215,13 @@ echo -e "${GREEN}✅ Integration tests passed${NC}"
 
 cd "$PROJECT_ROOT"
 
-# 8. Export OpenAPI specification
-echo -e "\n${BLUE}📋 Step 8/9: Exporting OpenAPI specification...${NC}"
-if ! cargo run --quiet --manifest-path starter/Cargo.toml -- export-openapi; then
-    echo -e "${RED}❌ OpenAPI export failed!${NC}"
+# 8. OpenAPI specification update
+echo -e "\n${BLUE}📋 Step 8/9: Updating OpenAPI specification...${NC}"
+if ! ./scripts/prepare-openapi.sh; then
+    echo -e "${RED}❌ OpenAPI preparation failed!${NC}"
     exit 1
 fi
-echo -e "${GREEN}✅ OpenAPI specification exported to docs/openapi.json${NC}"
-
-# Generate frontend API types from updated OpenAPI spec
-echo -e "${BLUE}🔄 Generating frontend API types...${NC}"
-if [ -d "web" ] && [ -f "web/package.json" ]; then
-    if ! command -v pnpm >/dev/null 2>&1; then
-        echo -e "${YELLOW}⚠️  pnpm not found – skipping API type generation${NC}"
-        echo -e "${YELLOW}   Install pnpm with: npm install -g pnpm${NC}"
-    elif ! (cd web && pnpm generate-api); then
-        echo -e "${YELLOW}⚠️  Frontend API type generation failed, but continuing...${NC}"
-    else
-        echo -e "${GREEN}✅ Frontend API types updated${NC}"
-    fi
-else
-    echo -e "${YELLOW}⚠️  Web directory not found, skipping API type generation${NC}"
-fi
+echo -e "${GREEN}✅ OpenAPI specification and TypeScript types updated${NC}"
 
 # 9. Web static file serving smoke test
 echo -e "\n${BLUE}🚀 Step 9/9: Web static file serving smoke test...${NC}"
@@ -321,13 +341,17 @@ echo -e "${BLUE}✨ Code is ready for commit${NC}"
 
 # Optional: Show summary of what was checked
 echo -e "\n${BLUE}📋 Summary of checks performed:${NC}"
-echo -e "   ✅ Web frontend build (early validation)"
+if [ "$RUN_WEB_CHECKS" = true ]; then
+    echo -e "   ✅ Web frontend comprehensive checks (TypeScript, linting, build, tests)"
+else
+    echo -e "   ✅ Web frontend build (basic check - use --web for comprehensive)"
+fi
 echo -e "   ✅ Cargo check (compilation)"
 echo -e "   ✅ Code formatting (cargo fmt)"
 echo -e "   ✅ Linting (cargo clippy)"
 echo -e "   ✅ SQLx query cache validation"
 echo -e "   ✅ Unit tests"
 echo -e "   ✅ Integration tests (cargo nextest)"
-echo -e "   ✅ OpenAPI specification export"
+echo -e "   ✅ OpenAPI specification and TypeScript types"
 echo -e "   ✅ Web static file serving smoke test"
 echo -e "   ✅ Code quality analysis"

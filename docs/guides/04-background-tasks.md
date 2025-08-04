@@ -244,8 +244,10 @@ CREATE TABLE tasks (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     task_type TEXT NOT NULL,      -- 'email', 'webhook', etc.
     payload JSONB NOT NULL DEFAULT '{}',  -- Task-specific data
-    status task_status NOT NULL DEFAULT 'pending',
-    priority task_priority NOT NULL DEFAULT 'normal',
+    status TEXT NOT NULL DEFAULT 'pending'
+        CONSTRAINT valid_task_status CHECK (status IN ('pending', 'running', 'completed', 'failed', 'cancelled', 'retrying')),
+    priority TEXT NOT NULL DEFAULT 'normal'
+        CONSTRAINT valid_task_priority CHECK (priority IN ('low', 'normal', 'high', 'critical')),
     
     -- Retry configuration
     retry_strategy JSONB NOT NULL DEFAULT '{}', -- How to retry failures

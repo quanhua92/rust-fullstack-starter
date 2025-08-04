@@ -21,38 +21,12 @@
       {
         "ordinal": 3,
         "name": "status: TaskStatus",
-        "type_info": {
-          "Custom": {
-            "name": "task_status",
-            "kind": {
-              "Enum": [
-                "pending",
-                "running",
-                "completed",
-                "failed",
-                "cancelled",
-                "retrying"
-              ]
-            }
-          }
-        }
+        "type_info": "Text"
       },
       {
         "ordinal": 4,
         "name": "priority: TaskPriority",
-        "type_info": {
-          "Custom": {
-            "name": "task_priority",
-            "kind": {
-              "Enum": [
-                "low",
-                "normal",
-                "high",
-                "critical"
-              ]
-            }
-          }
-        }
+        "type_info": "Text"
       },
       {
         "ordinal": 5,

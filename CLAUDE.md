@@ -21,7 +21,8 @@ This file provides guidance to Claude Code when working with this Rust fullstack
 # Quick start (recommended)
 ./scripts/dev-server.sh              # Complete environment: DB + web + API + worker
 ./scripts/check.sh                   # Quality checks (MANDATORY before commit)
-./scripts/test-with-curl.sh          # 81 API endpoint tests
+./scripts/check.sh --web             # Comprehensive checks including frontend tests
+./scripts/test-with-curl.sh          # 83 API endpoint tests
 ./scripts/reset-all.sh --reset-database  # Clean reset
 
 # Testing
@@ -31,13 +32,14 @@ cd web && ./scripts/check-web.sh    # Frontend quality checks
 ```
 
 ### Key Scripts
-- `check.sh` - **Comprehensive quality validation (9 steps, ~40s)**
+- `check.sh` - **Quality validation (9 steps, ~40s) - use `--web` for full frontend checks**
 - `dev-server.sh` - Complete development environment
 - `server.sh` / `worker.sh` - Individual services
 - `test-with-curl.sh` - API testing (81 endpoints)
 - `test-chaos.sh` - Resilience testing
 - `test-template-with-curl.sh` - Generated module API testing
 - `test-generate.sh` - Module generator system validation
+- `prepare-openapi.sh` - Update OpenAPI spec and TypeScript types
 
 ## Code Patterns
 
@@ -181,7 +183,8 @@ starter/src/
 1. **Pre-commit**: Always run `./scripts/check.sh`
 2. **Testing**: 137 integration tests must pass
 3. **SQLx**: Use `./scripts/prepare-sqlx.sh` for query cache updates
-4. **Frontend**: Run `cd web && ./scripts/check-web.sh` for React validation
+4. **OpenAPI**: Use `./scripts/prepare-openapi.sh` for API schema updates
+5. **Frontend**: Run `cd web && ./scripts/check-web.sh` for React validation
 
 ### Common Tasks
 - **Start workers before creating tasks** (registration requirement)

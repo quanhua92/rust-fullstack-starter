@@ -9,5 +9,3 @@ DROP INDEX IF EXISTS idx_tasks_task_type;
 DROP INDEX IF EXISTS idx_tasks_priority;
 DROP INDEX IF EXISTS idx_tasks_status;
 DROP TABLE IF EXISTS tasks;
-DROP TYPE IF EXISTS task_priority;
-DROP TYPE IF EXISTS task_status;

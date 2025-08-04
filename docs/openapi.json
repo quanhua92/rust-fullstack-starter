@@ -5500,10 +5500,10 @@
       "TaskPriority": {
         "type": "string",
         "enum": [
-          "Low",
-          "Normal",
-          "High",
-          "Critical"
+          "low",
+          "normal",
+          "high",
+          "critical"
         ]
       },
       "TaskQueryParams": {
@@ -5667,12 +5667,12 @@
       "TaskStatus": {
         "type": "string",
         "enum": [
-          "Pending",
-          "Running",
-          "Completed",
-          "Failed",
-          "Cancelled",
-          "Retrying"
+          "pending",
+          "running",
+          "completed",
+          "failed",
+          "cancelled",
+          "retrying"
         ]
       },
       "TaskTypeResponse": {

@@ -155,7 +155,7 @@ The 172-line bootstrap script demonstrates production-ready development practice
 - Automatic `updated_at` triggers using PostgreSQL functions
 
 **Task System Excellence:**
-- Custom PostgreSQL enums: `task_status` (6 states) and `task_priority` (4 levels)
+- TEXT columns with CHECK constraints: `status` (6 states) and `priority` (4 levels)
 - JSONB payload for flexible task data with GIN indexing potential
 - Composite index: `idx_tasks_ready_to_run` optimized for queue processing
 - Soft foreign key to users (`ON DELETE SET NULL`) preserving task history
@@ -183,7 +183,7 @@ The `ensure_initial_admin()` method (lines 56-115) showcases sophisticated initi
 
 **Deep Dive Questions:**
 1. **Schema Question**: What are the 5 tables and their 11 total indexes? How do the composite indexes optimize specific query patterns?
-2. **Enum Question**: Why does this starter use PostgreSQL enums for `task_status` and `task_priority` instead of string constants?
+2. **Text Constraints Question**: Why does this starter use TEXT columns with CHECK constraints for `task_status` and `task_priority` instead of PostgreSQL enums?
 3. **Pool Question**: How do the connection pool parameters (min: 5, max: 20, timeouts) prevent database overload under high concurrency?
 4. **Migration Question**: What would happen if you ran migration 002 before 001? How does the foreign key cascade behavior protect data integrity?
 5. **Bootstrap Question**: How does the admin user creation pattern balance security (Argon2 hashing) with development convenience?
@@ -192,11 +192,11 @@ The `ensure_initial_admin()` method (lines 56-115) showcases sophisticated initi
 1. **Index Performance**: Query `EXPLAIN ANALYZE` on tasks table with and without the composite index
 2. **Pool Behavior**: Set max_connections to 2 and see how the system handles 10 concurrent requests
 3. **Migration Rollback**: Run a down migration and observe the cascade effects
-4. **Enum Validation**: Try inserting invalid task_status values and see PostgreSQL constraints in action
+4. **Text Validation**: Try inserting invalid task_status values and see PostgreSQL CHECK constraints in action
 5. **Admin Creation**: Test the bootstrap process with various environment variable configurations
 
 **💡 Database Insights:**
-- **PostgreSQL-First**: Uses PG-specific features (enums, JSONB, generated UUIDs, triggers)
+- **PostgreSQL-First**: Uses PG-specific features (TEXT with CHECK constraints, JSONB, generated UUIDs, triggers)
 - **Performance-Conscious**: Strategic indexing for common query patterns
 - **Security-Focused**: Foreign key constraints, role validation, secure password storage
 - **Operations-Friendly**: Health checks, structured logging, graceful failure handling
@@ -1788,12 +1788,12 @@ export function TaskAnalytics() {
   const statusChartData = useMemo(() => {
     if (!stats) return [];
     return [
-      { name: "Completed", value: stats.completed, color: "#10B981" },
-      { name: "Pending", value: stats.pending, color: "#F59E0B" },
-      { name: "Running", value: stats.running, color: "#3B82F6" },
-      { name: "Failed", value: stats.failed, color: "#EF4444" },
-      { name: "Cancelled", value: stats.cancelled, color: "#6B7280" },
-      { name: "Retrying", value: stats.retrying, color: "#8B5CF6" },
+      { name: "completed", value: stats.completed, color: "#10B981" },
+      { name: "pending", value: stats.pending, color: "#F59E0B" },
+      { name: "running", value: stats.running, color: "#3B82F6" },
+      { name: "failed", value: stats.failed, color: "#EF4444" },
+      { name: "cancelled", value: stats.cancelled, color: "#6B7280" },
+      { name: "retrying", value: stats.retrying, color: "#8B5CF6" },
     ].filter((item) => item.value > 0);
   }, [stats]);
 }
