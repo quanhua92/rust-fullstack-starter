@@ -45,6 +45,9 @@ interface ProbeResponse {
 	checks?: Record<string, ComponentHealth>;
 }
 
+// Type for health check details
+type HealthCheckDetails = Record<string, string | number | boolean | unknown>;
+
 // Type guards for API responses
 const isProbeResponse = (data: unknown): data is ProbeResponse => {
 	return (
@@ -52,6 +55,10 @@ const isProbeResponse = (data: unknown): data is ProbeResponse => {
 		data !== null &&
 		typeof (data as ProbeResponse).status === "string"
 	);
+};
+
+const isHealthCheckDetails = (data: unknown): data is HealthCheckDetails => {
+	return typeof data === "object" && data !== null;
 };
 
 const getProbeStatus = (data: unknown): string => {
@@ -92,24 +99,22 @@ const renderDetails = (details: unknown) => {
 };
 
 const renderCheckDetails = (details: unknown) => {
-	if (!details || typeof details !== "object" || details === null) {
+	if (!isHealthCheckDetails(details)) {
 		return null;
 	}
 
 	return (
 		<div className="text-xs text-muted-foreground">
-			{Object.entries(details as Record<string, unknown>).map(
-				([key, value]) => (
-					<div key={key}>
-						{key}:{" "}
-						{typeof value === "string" ||
-						typeof value === "number" ||
-						typeof value === "boolean"
-							? String(value)
-							: JSON.stringify(value)}
-					</div>
-				),
-			)}
+			{Object.entries(details).map(([key, value]) => (
+				<div key={key}>
+					{key}:{" "}
+					{typeof value === "string" ||
+					typeof value === "number" ||
+					typeof value === "boolean"
+						? String(value)
+						: JSON.stringify(value)}
+				</div>
+			))}
 		</div>
 	);
 };

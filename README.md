@@ -96,6 +96,9 @@ curl -H "Authorization: Bearer TOKEN" http://localhost:3000/api/v1/tasks
 # Monitor events with tag filtering
 curl -H "Authorization: Bearer TOKEN" \
   "http://localhost:3000/api/v1/monitoring/events?tags=task_type:email,status:completed"
+
+# Access the monitoring dashboard (requires moderator+ role)
+open http://localhost:3000/admin/monitoring     # Full-featured monitoring interface
 ```
 
 ### 5. Build and Serve Full-Stack Application
@@ -129,6 +132,7 @@ cd web && pnpm dev
 - **🌐 Frontend**: http://localhost:3000 (React app served by Rust)
 - **🔌 API**: http://localhost:3000/api/v1 (REST API)
 - **📚 API Docs**: http://localhost:3000/api-docs (Interactive Swagger UI)
+- **📊 Monitoring Dashboard**: http://localhost:3000/admin/monitoring (Admin/Moderator interface with full CRUD capabilities)
 - **❤️ Health Check**: http://localhost:3000/api/v1/health (System status)
 - **🔧 Worker Logs**: Check `/tmp/starter-worker-0.log` for task processing
 
@@ -141,7 +145,7 @@ cd web && pnpm dev
 - **⚙️ Background Tasks** - Async job processing with retry logic and dead letter queue
 - **📊 API Documentation** - Interactive OpenAPI/Swagger docs
 - **🧪 Testing Framework** - 135 integration tests + comprehensive API endpoint testing (60+ endpoints)
-- **📊 Monitoring & Observability** - Complete monitoring system with 14 API endpoints, advanced tag filtering, 4-table schema, enhanced error handling
+- **📊 Monitoring & Observability** - Complete monitoring system with 14 API endpoints, comprehensive web UI dashboard, advanced tag filtering, RBAC-integrated interface, enhanced error handling
 - **🔥 Chaos Testing** - Docker-based resilience testing with 10 scenarios
 - **⚙️ Admin CLI** - Direct database access for monitoring and maintenance
 - **🐳 Docker Support** - Development and production containers with multi-stage builds

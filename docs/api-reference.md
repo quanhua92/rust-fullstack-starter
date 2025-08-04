@@ -1489,9 +1489,9 @@ Query metrics with filters.
 
 Export metrics in Prometheus exposition format.
 
-**Authentication**: Required (Bearer token)
+**Authentication**: Not required (publicly accessible)
 
-**Response**: Plain text Prometheus format
+**Response**: Plain text Prometheus format (text/plain; version=0.0.4; charset=utf-8)
 ```prometheus
 # HELP monitoring_total_events Total number of events in the system
 # TYPE monitoring_total_events counter

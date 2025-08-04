@@ -1,7 +1,7 @@
 import { apiClient, getAuthToken, setAuthToken } from "@/lib/api/client";
-import type { components } from "@/types/api";
 import type { UserRole } from "@/lib/rbac/types";
 import { hasRoleOrHigher } from "@/lib/rbac/types";
+import type { components } from "@/types/api";
 import {
 	type ReactNode,
 	createContext,

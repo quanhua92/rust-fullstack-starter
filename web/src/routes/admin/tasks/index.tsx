@@ -26,8 +26,8 @@ import {
 	TableRow,
 } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
+import { QUERY_KEYS, useTaskStats } from "@/hooks/useApiQueries";
 import { apiClient } from "@/lib/api/client";
-import { useTaskStats, QUERY_KEYS } from "@/hooks/useApiQueries";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { Link } from "@tanstack/react-router";
@@ -50,6 +50,12 @@ import { useState } from "react";
 import type { components } from "@/types/api";
 
 type TaskStatus = components["schemas"]["TaskStatus"];
+type TaskMetadata = Record<string, string | number | boolean>;
+
+// Type guard for task metadata
+const isTaskMetadata = (metadata: unknown): metadata is TaskMetadata => {
+	return typeof metadata === "object" && metadata !== null;
+};
 
 function TasksPage() {
 	const [searchTerm, setSearchTerm] = useState("");
@@ -374,7 +380,7 @@ function TasksPage() {
 														Task #{task.id?.slice(-8) || "Unknown"}
 													</div>
 													<div className="text-sm text-muted-foreground">
-														{task.metadata && typeof task.metadata === "object"
+														{isTaskMetadata(task.metadata)
 															? Object.keys(task.metadata)
 																	.slice(0, 2)
 																	.join(", ")

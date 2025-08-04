@@ -1,16 +1,16 @@
-import type { ReactNode } from "react";
 import { useAuth } from "@/lib/auth/context";
 import type {
-	UserRole,
-	Resource,
-	Permission,
 	AuthUser,
+	Permission,
+	Resource,
+	UserRole,
 } from "@/lib/rbac/types";
 import {
-	hasRoleOrHigher,
 	canAccessResource,
 	canAccessUser,
+	hasRoleOrHigher,
 } from "@/lib/rbac/types";
+import type { ReactNode } from "react";
 
 interface RoleGuardProps {
 	children: ReactNode;

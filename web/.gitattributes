@@ -1,0 +1,5 @@
+# Auto-generated API types - treat as binary to reduce diff noise
+src/types/api.ts linguist-generated=true
+
+# If you want to exclude from diffs completely (optional - comment out if you want to review changes):
+# src/types/api.ts -diff

@@ -20,7 +20,7 @@ import {
 	TrendingUp,
 	Zap,
 } from "lucide-react";
-import { useMemo, useCallback } from "react";
+import { useCallback, useMemo } from "react";
 import {
 	Area,
 	AreaChart,

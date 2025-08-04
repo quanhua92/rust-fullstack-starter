@@ -497,10 +497,11 @@ Authorization: Bearer <moderator_token>
 
 ```http
 GET /api/v1/monitoring/metrics/prometheus
-Authorization: Bearer <token>
 ```
 
 **Response:** Comprehensive Prometheus exposition format
+
+**Note:** This endpoint is publicly accessible and does not require authentication, making it compatible with standard Prometheus scraping configurations.
 ```
 # HELP monitoring_total_events Total number of events in the system
 # TYPE monitoring_total_events counter

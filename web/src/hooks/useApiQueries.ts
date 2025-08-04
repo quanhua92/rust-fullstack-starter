@@ -8,9 +8,9 @@
  * 4. No cache collisions between components
  */
 
-import { useQuery, type UseQueryResult } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api/client";
 import type { components } from "@/types/api";
+import { type UseQueryResult, useQuery } from "@tanstack/react-query";
 
 // Extract the inner data types for consistency
 type HealthData = NonNullable<
@@ -22,6 +22,24 @@ type TaskStatsData = NonNullable<
 type DetailedHealthData = NonNullable<
 	components["schemas"]["ApiResponse_DetailedHealthResponse"]["data"]
 >;
+
+// Monitoring types (allowing undefined for proper error handling)
+type MonitoringEventsData =
+	components["schemas"]["ApiResponse_Vec_Event"]["data"];
+type MonitoringEventData = components["schemas"]["ApiResponse_Event"]["data"];
+type MonitoringMetricsData =
+	components["schemas"]["ApiResponse_Vec_Metric"]["data"];
+type MonitoringAlertsData =
+	components["schemas"]["ApiResponse_Vec_Alert"]["data"];
+type MonitoringAlertData = components["schemas"]["ApiResponse_Alert"]["data"];
+type MonitoringIncidentsData =
+	components["schemas"]["ApiResponse_Vec_Incident"]["data"];
+type MonitoringIncidentData =
+	components["schemas"]["ApiResponse_Incident"]["data"];
+type MonitoringStatsData =
+	components["schemas"]["ApiResponse_MonitoringStats"]["data"];
+type IncidentTimelineData =
+	components["schemas"]["ApiResponse_IncidentTimeline"]["data"];
 
 // Standard refetch intervals
 const REFETCH_INTERVALS = {
@@ -159,7 +177,183 @@ export const QUERY_KEYS = {
 		detail: (id: string) => ["users", "detail", id] as const,
 		stats: ["users", "stats"] as const,
 	},
+	monitoring: {
+		events: (params?: Record<string, unknown>) =>
+			["monitoring", "events", params] as const,
+		event: (id: string) => ["monitoring", "events", id] as const,
+		metrics: (params?: Record<string, unknown>) =>
+			["monitoring", "metrics", params] as const,
+		prometheus: ["monitoring", "prometheus"] as const,
+		alerts: ["monitoring", "alerts"] as const,
+		alert: (id: string) => ["monitoring", "alerts", id] as const,
+		incidents: (params?: Record<string, unknown>) =>
+			["monitoring", "incidents", params] as const,
+		incident: (id: string) => ["monitoring", "incidents", id] as const,
+		incidentTimeline: (id: string, params?: Record<string, unknown>) =>
+			["monitoring", "incidents", id, "timeline", params] as const,
+		stats: ["monitoring", "stats"] as const,
+	},
 } as const;
+
+/**
+ * Monitoring Queries
+ */
+
+// Events
+export function useMonitoringEvents(
+	params?: {
+		event_type?: "log" | "metric" | "trace" | "alert";
+		source?: string;
+		level?: "error" | "warn" | "info" | "debug";
+		tags?: string;
+		start_time?: string;
+		end_time?: string;
+		limit?: number;
+		offset?: number;
+	},
+	refetchInterval?: number,
+): UseQueryResult<MonitoringEventsData> {
+	return useQuery({
+		queryKey: ["monitoring", "events", params],
+		queryFn: async () => {
+			const response = await apiClient.getEvents(params);
+			return response.data;
+		},
+		refetchInterval: refetchInterval ?? REFETCH_INTERVALS.NORMAL,
+	});
+}
+
+export function useMonitoringEvent(
+	id: string,
+): UseQueryResult<MonitoringEventData> {
+	return useQuery({
+		queryKey: ["monitoring", "events", id],
+		queryFn: async () => {
+			const response = await apiClient.getEvent(id);
+			return response.data;
+		},
+		enabled: !!id,
+	});
+}
+
+// Metrics
+export function useMonitoringMetrics(
+	params?: {
+		name?: string;
+		metric_type?: "counter" | "gauge" | "histogram" | "summary";
+		start_time?: string;
+		end_time?: string;
+		limit?: number;
+		offset?: number;
+	},
+	refetchInterval?: number,
+): UseQueryResult<MonitoringMetricsData> {
+	return useQuery({
+		queryKey: ["monitoring", "metrics", params],
+		queryFn: async () => {
+			const response = await apiClient.getMetrics(params);
+			return response.data;
+		},
+		refetchInterval: refetchInterval ?? REFETCH_INTERVALS.NORMAL,
+	});
+}
+
+export function usePrometheusMetrics(refetchInterval?: number) {
+	return useQuery({
+		queryKey: ["monitoring", "prometheus"],
+		queryFn: () => apiClient.getPrometheusMetrics(),
+		refetchInterval: refetchInterval ?? REFETCH_INTERVALS.SLOW,
+	});
+}
+
+// Alerts (Moderator+ only)
+export function useMonitoringAlerts(
+	refetchInterval?: number,
+): UseQueryResult<MonitoringAlertsData> {
+	return useQuery({
+		queryKey: ["monitoring", "alerts"],
+		queryFn: async () => {
+			const response = await apiClient.getAlerts();
+			return response.data;
+		},
+		refetchInterval: refetchInterval ?? REFETCH_INTERVALS.NORMAL,
+	});
+}
+
+export function useMonitoringAlert(
+	id: string,
+): UseQueryResult<MonitoringAlertData> {
+	return useQuery({
+		queryKey: ["monitoring", "alerts", id],
+		queryFn: async () => {
+			const response = await apiClient.getAlert(id);
+			return response.data;
+		},
+		enabled: !!id,
+	});
+}
+
+// Incidents
+export function useMonitoringIncidents(
+	params?: {
+		limit?: number;
+		offset?: number;
+	},
+	refetchInterval?: number,
+): UseQueryResult<MonitoringIncidentsData> {
+	return useQuery({
+		queryKey: ["monitoring", "incidents", params],
+		queryFn: async () => {
+			const response = await apiClient.getIncidents(params);
+			return response.data;
+		},
+		refetchInterval: refetchInterval ?? REFETCH_INTERVALS.NORMAL,
+	});
+}
+
+export function useMonitoringIncident(
+	id: string,
+): UseQueryResult<MonitoringIncidentData> {
+	return useQuery({
+		queryKey: ["monitoring", "incidents", id],
+		queryFn: async () => {
+			const response = await apiClient.getIncident(id);
+			return response.data;
+		},
+		enabled: !!id,
+	});
+}
+
+export function useMonitoringIncidentTimeline(
+	id: string,
+	params?: {
+		limit?: number;
+		offset?: number;
+	},
+): UseQueryResult<IncidentTimelineData> {
+	return useQuery({
+		queryKey: ["monitoring", "incidents", id, "timeline", params],
+		queryFn: async () => {
+			const response = await apiClient.getIncidentTimeline(id, params);
+			return response.data;
+		},
+		enabled: !!id,
+	});
+}
+
+// System Statistics (Moderator+ only)
+export function useMonitoringStats(
+	refetchInterval?: number,
+): UseQueryResult<MonitoringStatsData> {
+	return useQuery({
+		queryKey: ["monitoring", "stats"],
+		queryFn: async () => {
+			const response = await apiClient.getMonitoringStats();
+			return response.data;
+		},
+		refetchInterval: refetchInterval ?? REFETCH_INTERVALS.NORMAL,
+	});
+}
 
 /**
  * Type-safe query key utilities

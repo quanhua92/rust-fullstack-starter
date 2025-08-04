@@ -1,23 +1,23 @@
 import { AdminLayout } from "@/components/layout/AdminLayout";
+import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { apiClient } from "@/lib/api/client";
 import { useAuth } from "@/lib/auth/context";
 import {
-	getRoleDisplayName,
-	getRoleColorClasses,
 	type UserRole,
+	getRoleColorClasses,
+	getRoleDisplayName,
 } from "@/lib/rbac/types";
-import { Badge } from "@/components/ui/badge";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import {
+	Activity,
 	BarChart3,
 	Shield,
 	TrendingUp,
-	Users,
 	UserCheck,
 	UserPlus,
-	Activity,
+	Users,
 } from "lucide-react";
 
 function UserAnalyticsPage() {
@@ -181,7 +181,6 @@ function UserAnalyticsPage() {
 									<div className="space-y-4">
 										{userStats?.by_role ? (
 											Object.entries(userStats.by_role).map(([role, count]) => {
-												const roleCount = count as number;
 												return (
 													<div
 														key={role}
@@ -196,12 +195,10 @@ function UserAnalyticsPage() {
 															</Badge>
 														</div>
 														<div className="text-right">
-															<div className="text-2xl font-bold">
-																{roleCount}
-															</div>
+															<div className="text-2xl font-bold">{count}</div>
 															<div className="text-xs text-muted-foreground">
 																{userStats.total_users > 0
-																	? `${((roleCount / userStats.total_users) * 100).toFixed(1)}%`
+																	? `${((Number(count) / userStats.total_users) * 100).toFixed(1)}%`
 																	: "0%"}
 															</div>
 														</div>
