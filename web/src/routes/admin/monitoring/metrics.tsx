@@ -125,14 +125,19 @@ function MetricsDashboard() {
 	});
 
 	// Parse labels string (key:value,key2:value2) to object
+	// Handles values with colons (e.g., "url:https://example.com,env:prod")
 	const parseLabelsString = (labelString: string): Record<string, string> => {
 		const labels: Record<string, string> = {};
 		if (!labelString.trim()) return labels;
 
 		for (const pair of labelString.split(",")) {
-			const [key, value] = pair.split(":");
-			if (key && value) {
-				labels[key.trim()] = value.trim();
+			const colonIndex = pair.indexOf(":");
+			if (colonIndex > 0) {
+				const key = pair.substring(0, colonIndex).trim();
+				const value = pair.substring(colonIndex + 1).trim();
+				if (key && value) {
+					labels[key] = value;
+				}
 			}
 		}
 		return labels;

@@ -97,7 +97,8 @@ function EventsDashboard() {
 				try {
 					parsedPayload = JSON.parse(data.payload);
 				} catch (e) {
-					throw new Error("Invalid JSON in payload field.");
+					toast.error("Invalid JSON payload: Please check your payload syntax");
+					throw new Error("Invalid JSON payload");
 				}
 			}
 
