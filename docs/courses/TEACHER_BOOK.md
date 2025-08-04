@@ -1030,6 +1030,7 @@ Docker Compose → System Spawn → Failure Injection → Recovery Validation
 
 **Monitoring-Specific Materials:**
 - `starter/src/monitoring/` - Complete monitoring module (5 files, ~2,000 lines)
+- `web/src/routes/admin/monitoring/` - **6 monitoring web UI routes (~3,100 lines)**
 - `starter/migrations/006_monitoring.up.sql` - 4-table schema with PostgreSQL enums
 - `docs/guides/15-monitoring-and-observability.md` - 891-line implementation guide
 - `starter/tests/monitoring/` - Comprehensive test suite
@@ -1041,9 +1042,11 @@ Guide students through implementing a comprehensive monitoring system that demon
 **🔍 Core Concepts to Teach:**
 - [ ] **4-Table Schema**: events, metrics, alerts, incidents with JSONB and PostgreSQL enums
 - [ ] **14 API Endpoints**: Event collection, metrics submission, alert management, incident tracking
-- [ ] **RBAC Integration**: 3-tier permissions with role-based access control
+- [ ] **6 Web UI Routes**: Complete admin dashboard for monitoring (`/admin/monitoring/*`)
+- [ ] **RBAC Integration**: 3-tier permissions with role-based access control + route guards
 - [ ] **Prometheus Export**: Time-series metrics in industry-standard format
 - [ ] **Timeline Reconstruction**: Automated incident analysis with event correlation
+- [ ] **Real-time Dashboard**: Auto-refresh monitoring interface with charts and statistics
 
 **🧪 Hands-On Teaching Activities:**
 
@@ -1100,7 +1103,52 @@ Guide students through implementing a comprehensive monitoring system that demon
 - Show AND logic for multiple tag filtering
 - Demonstrate JSONB containment queries with PostgreSQL @> operator
 
+**🌐 Web UI Dashboard Teaching (NEW FEATURE):**
+
+5. **Complete Monitoring Dashboard Tour**:
+   ```bash
+   # Navigate to monitoring dashboard
+   open http://localhost:3000/admin/monitoring
+   
+   # Show 6 specialized routes:
+   # /admin/monitoring/           - Main dashboard with statistics cards
+   # /admin/monitoring/events     - Event viewing and creation
+   # /admin/monitoring/metrics    - Metrics with Recharts visualization  
+   # /admin/monitoring/alerts     - Alert management (Moderator+ only)
+   # /admin/monitoring/incidents  - Incident tracking with timeline
+   # /admin/monitoring/stats      - System statistics with charts
+   ```
+
+6. **RBAC Web Interface Demo**:
+   - Login as User: Show limited access, role badge display
+   - Login as Moderator: Show alert management access, system stats
+   - Demonstrate `requireModeratorOrHigher` route guard in action
+   - Show how UI adapts based on role permissions
+
+7. **Real-time Dashboard Features**:
+   - Auto-refresh intervals (15s-30s) with TanStack Query
+   - Form validation with visual feedback (alerts threshold validation)
+   - Confirmation dialogs for destructive operations (alert deletion)
+   - Interactive charts and progress bars with Recharts
+
 **🔧 Implementation Patterns to Emphasize:**
+
+```typescript
+// Web UI RBAC integration pattern
+export const Route = createFileRoute("/admin/monitoring/alerts")({
+  beforeLoad: requireModeratorOrHigher, // Route-level protection
+  component: AlertsManagement,
+});
+
+// Form validation with visual feedback
+const isThresholdValueValid = (value: string): boolean => {
+  if (!value.trim()) return true;
+  try {
+    validateThresholdValue(value);
+    return true;
+  } catch { return false; }
+};
+```
 
 ```rust
 // Show clean monitoring integration patterns
@@ -1159,10 +1207,13 @@ let metric = services::create_metric(&mut conn, CreateMetricRequest {
 **✅ Student Success Criteria:**
 - [ ] Can explain all 4 monitoring database tables and their relationships
 - [ ] Understands the 14 API endpoints and their RBAC requirements
+- [ ] **Can navigate and use all 6 web UI monitoring routes effectively**
+- [ ] **Understands RBAC route guards and role-based UI adaptation**
 - [ ] Can create events, metrics, alerts, and incidents programmatically
 - [ ] Knows how to export metrics for external monitoring systems
 - [ ] Can correlate events into incident timelines for analysis
 - [ ] Masters advanced tag filtering with key:value syntax and AND logic
+- [ ] **Can explain real-time dashboard features and auto-refresh patterns**
 
 **🎓 Advanced Extensions:**
 - Integrate monitoring into existing task handlers
@@ -1652,13 +1703,22 @@ Protected Component Access
 
 **Learning Objectives:**
 - Master the comprehensive admin dashboard: 10 custom components, 3,267 lines of monitoring code
+- **Explore the 6 dedicated monitoring routes with full CRUD capabilities (~3,100+ additional lines)**
 - Understand real-time system monitoring with TanStack Query auto-refresh
 - See production-grade data visualization with Recharts integration
 - Grasp the AdminLayout pattern with ProtectedRoute and sidebar navigation
+- **Master RBAC route guards and role-based UI adaptation**
 
 **Admin Dashboard Materials:**
 - `web/src/components/admin/` - 10 custom admin components (3,267 lines total)
 - `web/src/routes/admin/index.tsx` - Main dashboard route (351 lines)
+- **`web/src/routes/admin/monitoring/` - 6 monitoring routes (~3,100 lines total):**
+  - **`index.tsx` (319 lines) - Main monitoring dashboard with statistics cards**
+  - **`alerts.tsx` (565 lines) - Alert management with RBAC guards and validation**
+  - **`events.tsx` (536 lines) - Event dashboard with filtering and creation**
+  - **`incidents.tsx` (663 lines) - Incident management with timeline viewing**
+  - **`metrics.tsx` (566 lines) - Metrics visualization with Recharts**
+  - **`stats.tsx` (479 lines) - System statistics with interactive charts**
 - `web/src/components/layout/AdminLayout.tsx` - Layout with auth protection (26 lines)
 - `web/src/components/admin/SystemMetrics.tsx` - Real-time metrics (337 lines)
 - `web/src/components/admin/TaskAnalytics.tsx` - Task performance charts (291 lines)

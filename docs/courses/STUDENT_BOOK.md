@@ -303,17 +303,23 @@ Master the comprehensive monitoring system with 14 API endpoints, 4 database tab
 
 **📂 Files to Explore:**
 1. **`starter/src/monitoring/`** - Complete monitoring module (5 files, ~2,000 lines)
-2. **`starter/migrations/006_monitoring.up.sql`** - 4-table schema with PostgreSQL enums
-3. **`docs/guides/15-monitoring-and-observability.md`** - 891-line implementation guide
-4. **`starter/tests/monitoring/`** - Comprehensive test suite (15 tests)
-5. **`scripts/test-with-curl.sh`** - Monitoring API testing section (60+ total endpoints)
+2. **`web/src/routes/admin/monitoring/`** - **6 monitoring web UI routes (~3,100 lines)**
+3. **`starter/migrations/006_monitoring.up.sql`** - 4-table schema with PostgreSQL enums
+4. **`docs/guides/15-monitoring-and-observability.md`** - 891-line implementation guide
+5. **`starter/tests/monitoring/`** - Comprehensive test suite (15 tests)
+6. **`scripts/test-with-curl.sh`** - Monitoring API testing section (60+ total endpoints)
 
 **🔍 Your Discoveries:**
 - [ ] **The 4-Table Schema**: events, metrics, alerts, incidents with TEXT + CHECK constraints for data integrity
 - [ ] **14 API Endpoints**: Event collection, metrics submission, alert management, incident tracking (validated via curl testing)
+- [ ] **6 Web UI Routes**: Complete monitoring dashboard at `/admin/monitoring/*` with full CRUD capabilities
 - [ ] **RBAC Integration**: How monitoring permissions work with User → Moderator → Admin hierarchy (tested across all user roles)
+- [ ] **Route Guards**: `requireModeratorOrHigher` protecting sensitive monitoring features
 - [ ] **Enhanced Prometheus Export**: Industry-standard metrics export with system stats + detailed database metrics at `/api/v1/monitoring/metrics/prometheus`
 - [ ] **Timeline Magic**: How incidents automatically correlate with related events
+- [ ] **Real-time Dashboard**: Auto-refresh monitoring interface with charts and statistics
+- [ ] **Form Validation**: Smart validation with visual feedback (e.g., numeric threshold validation)
+- [ ] **Confirmation Dialogs**: Safety checks for destructive operations (alert deletion)
 - [ ] **Data Integrity Protection**: Robust error handling prevents database corruption and silent failures with proper validation
 - [ ] **Advanced Tag Filtering**: Query events with `?tags=key:value,key2:value2` syntax using PostgreSQL JSONB @> operators
 - [ ] **Comprehensive API Testing**: 60+ endpoints tested including all 14 monitoring endpoints with authentication and error scenarios
@@ -339,12 +345,27 @@ Master the comprehensive monitoring system with 14 API endpoints, 4 database tab
    grep -A 50 "Monitoring API Tests" scripts/test-with-curl.sh
    ```
 
-3. **Database Schema Exploration**: Examine migration 006 and understand the PostgreSQL enums
-4. **API Endpoint Tour**: Test all 14 monitoring endpoints with different user roles using actual patterns from test-with-curl.sh
-5. **Prometheus Integration**: Export metrics and understand the enhanced format with database stats
-6. **Incident Timeline**: Create an incident and watch how events get correlated
-7. **Advanced Tag Filtering**: Test event queries with `?tags=user_id:123,environment:production`
-8. **Error Handling Validation**: Test invalid inputs and see robust error responses (400 Bad Request for validation errors)
+3. **Web UI Dashboard Tour**: Explore the complete monitoring interface
+   ```bash
+   # Navigate to monitoring dashboard (login required)
+   open http://localhost:3000/admin/monitoring
+   
+   # Explore all 6 monitoring routes:
+   # /admin/monitoring/           - Main dashboard with statistics
+   # /admin/monitoring/events     - Event viewing and creation
+   # /admin/monitoring/metrics    - Metrics with charts
+   # /admin/monitoring/alerts     - Alert management (Moderator+ only)
+   # /admin/monitoring/incidents  - Incident tracking with timeline
+   # /admin/monitoring/stats      - System statistics with visualizations
+   ```
+
+4. **RBAC Web Interface Testing**: Login with different roles and observe UI changes
+5. **Database Schema Exploration**: Examine migration 006 and understand the PostgreSQL enums
+6. **API Endpoint Tour**: Test all 14 monitoring endpoints with different user roles using actual patterns from test-with-curl.sh
+7. **Prometheus Integration**: Export metrics and understand the enhanced format with database stats
+8. **Incident Timeline**: Create an incident and watch how events get correlated
+9. **Advanced Tag Filtering**: Test event queries with `?tags=user_id:123,environment:production`
+10. **Error Handling Validation**: Test invalid inputs and see robust error responses (400 Bad Request for validation errors)
 
 **📊 Your Learning Journey:**
 
@@ -426,13 +447,17 @@ let metric = services::create_metric(&mut conn, CreateMetricRequest {
 **✅ Success Criteria:**
 - [ ] Can explain all 4 monitoring database tables and their relationships with TEXT + CHECK constraints
 - [ ] Understand the 14 API endpoints and their RBAC requirements (tested with comprehensive curl suite)
+- [ ] **Can navigate and use all 6 web UI monitoring routes effectively**
+- [ ] **Understand RBAC route guards and how UI adapts based on user role**
 - [ ] Can create events, metrics, alerts, and incidents programmatically with proper error handling
+- [ ] **Know how to use the real-time dashboard features and form validation**
 - [ ] Know how to export comprehensive metrics (system + database) for external monitoring systems
 - [ ] Can correlate events into incident timelines for analysis
 - [ ] Master advanced tag filtering with key:value syntax and understand JSONB @> operators
 - [ ] Understand data integrity features and error detection mechanisms
 - [ ] Can run and understand the 60+ endpoint test suite including all monitoring scenarios
 - [ ] Know how to validate API responses and handle authentication across different user roles
+- [ ] **Can explain how confirmation dialogs and form validation enhance user experience**
 
 **🎓 Advanced Challenges:**
 - Integrate monitoring into your own task handlers
@@ -523,18 +548,29 @@ Master authentication components with sophisticated RBAC, Zod validation, and sm
 *"Building production monitoring dashboards"*
 
 **🎯 Your Mission:**
-Master the comprehensive admin dashboard with 10 components, 3,267 lines of monitoring code, and real-time data visualization.
+Master the comprehensive admin dashboard with 10 components, 3,267 lines of monitoring code, **plus 6 dedicated monitoring routes (~3,100 additional lines)**, and real-time data visualization.
 
 **📂 Files to Explore:**
 1. **`web/src/components/admin/`** - 10 custom admin components (3,267 total lines)
 2. **`web/src/routes/admin/index.tsx`** - Main dashboard route (351 lines)
-3. **`web/src/components/admin/TaskAnalytics.tsx`** - Charts with Recharts (291 lines)
-4. **`web/src/components/admin/SystemMetrics.tsx`** - Real-time metrics (337 lines)
-5. **`web/src/components/layout/AdminLayout.tsx`** - Layout with auth (26 lines)
+3. **`web/src/routes/admin/monitoring/` - 6 dedicated monitoring routes:**
+   - **`index.tsx` (319 lines) - Main monitoring dashboard with RBAC-aware statistics**
+   - **`alerts.tsx` (565 lines) - Alert management with validation and confirmation dialogs**
+   - **`events.tsx` (536 lines) - Event dashboard with filtering and real-time updates**
+   - **`incidents.tsx` (663 lines) - Incident management with timeline viewing**
+   - **`metrics.tsx` (566 lines) - Metrics visualization with Recharts charts**
+   - **`stats.tsx` (479 lines) - System statistics with interactive visualizations**
+4. **`web/src/components/admin/TaskAnalytics.tsx`** - Charts with Recharts (291 lines)
+5. **`web/src/components/admin/SystemMetrics.tsx`** - Real-time metrics (337 lines)
+6. **`web/src/components/layout/AdminLayout.tsx`** - Layout with auth (26 lines)
 
 **🔍 Your Discoveries:**
 - [ ] **10 Admin Components**: TaskAnalytics, SystemMetrics, UserActivity, Health monitoring
+- [ ] **6 Monitoring Routes**: Complete CRUD interface for events, metrics, alerts, incidents
+- [ ] **RBAC Route Guards**: `requireModeratorOrHigher` protecting sensitive routes
 - [ ] **Real-Time Updates**: Staggered refresh intervals (10s, 15s, 30s) for performance
+- [ ] **Form Validation**: Smart validation with visual feedback and error handling
+- [ ] **Confirmation Dialogs**: Safety checks for destructive operations
 - [ ] **Recharts Integration**: Area charts, pie charts, progress bars, custom indicators
 - [ ] **AdminLayout Pattern**: ProtectedRoute + sidebar navigation + responsive design
 
@@ -546,9 +582,13 @@ Master the comprehensive admin dashboard with 10 components, 3,267 lines of moni
 
 **✅ Success Criteria:**
 - [ ] Understand how all 10 admin components work together
+- [ ] **Can navigate and use all 6 monitoring routes effectively**
+- [ ] **Understand RBAC route guards and role-based UI behavior**
 - [ ] Can create new monitoring components with real-time data
+- [ ] **Know how form validation and confirmation dialogs work**
 - [ ] Know how to integrate Recharts for data visualization
 - [ ] Can explain the AdminLayout authentication and navigation
+- [ ] **Can explain the monitoring dashboard architecture and auto-refresh patterns**
 
 ---
 
