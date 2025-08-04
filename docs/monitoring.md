@@ -46,6 +46,7 @@ curl -X POST http://localhost:3000/api/v1/monitoring/metrics \
 
 ### View Monitoring Data
 
+- **Web Dashboard**: http://localhost:3000/admin/monitoring (Full-featured interface)
 - **Browse events**: `GET /api/v1/monitoring/events`
 - **Query metrics**: `GET /api/v1/monitoring/metrics`
 - **Check system stats**: `GET /api/v1/monitoring/stats` (moderator+ required)
@@ -79,6 +80,13 @@ curl -X POST http://localhost:3000/api/v1/monitoring/metrics \
 - Real-time monitoring system health
 - Event and metric volume tracking
 - Active alert and incident counts
+
+### 🌐 **Web Interface Dashboard**
+- **Admin Dashboard**: Full-featured monitoring interface at `/admin/monitoring`
+- **RBAC Integration**: Moderator+ access required for alerts and system stats
+- **Real-time Data**: Live event streams, metric visualization, incident management
+- **User Experience**: Confirmation dialogs for destructive operations, form validation
+- **Complete CRUD**: Create, read, update, delete operations for all monitoring entities
 
 ## Data Model
 
@@ -240,9 +248,10 @@ scrape_configs:
     static_configs:
       - targets: ['localhost:3000']
     metrics_path: '/api/v1/monitoring/metrics/prometheus'
-    bearer_token: 'your-auth-token'
     scrape_interval: 30s
 ```
+
+**Note**: The Prometheus metrics endpoint is publicly accessible and does not require authentication, making it compatible with standard Prometheus scraping configurations.
 
 ## Timeline Reconstruction
 
@@ -348,9 +357,9 @@ sqlx migrate run --source starter/migrations
 - Ensure database transaction completed successfully
 
 #### Q: Metrics not visible in Prometheus  
-- Verify authentication token has required permissions
 - Check metrics endpoint returns valid Prometheus format
 - Confirm scrape configuration targets correct endpoint
+- Verify Prometheus can access the endpoint (no authentication required)
 
 #### Q: Alerts not triggering
 - Verify user has moderator+ role to create alerts
@@ -380,7 +389,7 @@ All monitoring endpoints require authentication unless otherwise noted. Moderato
 
 - **POST** `/api/v1/monitoring/metrics` - Submit metric
 - **GET** `/api/v1/monitoring/metrics` - Query metrics with filters
-- **GET** `/api/v1/monitoring/metrics/prometheus` - Export in Prometheus format
+- **GET** `/api/v1/monitoring/metrics/prometheus` - Export in Prometheus format (public endpoint)
 
 #### Alerts (Moderator+ required)
 
