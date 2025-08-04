@@ -17,6 +17,8 @@ As you add more task types, you need a systematic way to:
 
 As of recent updates, the system now requires **explicit task type registration** before tasks can be created. This prevents API/worker mismatches that were previously only caught at runtime.
 
+**Database Enforcement:** The system now uses a foreign key constraint between `tasks.task_type` and `task_types.task_type` to ensure referential integrity. Attempting to create a task with an unregistered task type will result in a database constraint violation.
+
 ## Two-Step Registration Process
 
 ```mermaid

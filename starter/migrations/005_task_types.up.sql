@@ -1,4 +1,6 @@
 -- Create task_types table to store supported task types
+BEGIN;
+
 CREATE TABLE task_types (
     task_type TEXT PRIMARY KEY,
     description TEXT,
@@ -21,5 +23,8 @@ SELECT DISTINCT
 FROM tasks
 WHERE task_type IS NOT NULL;
 
--- Note: Foreign key constraint will be added later after workers register their types
--- This allows existing tasks to remain valid while we transition to the new system
+-- Add foreign key constraint to enforce referential integrity
+ALTER TABLE tasks ADD CONSTRAINT fk_tasks_task_type 
+    FOREIGN KEY (task_type) REFERENCES task_types(task_type);
+
+COMMIT;
