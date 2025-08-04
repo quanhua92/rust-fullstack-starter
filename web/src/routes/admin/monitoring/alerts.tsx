@@ -467,7 +467,14 @@ function AlertsManagement() {
 												<Button
 													variant="outline"
 													size="sm"
-													onClick={() => deleteAlertMutation.mutate(alert.id)}
+													onClick={() => {
+														const confirmed = window.confirm(
+															`Are you sure you want to delete the alert "${alert.name}"? This action cannot be undone.`,
+														);
+														if (confirmed) {
+															deleteAlertMutation.mutate(alert.id);
+														}
+													}}
 													disabled={deleteAlertMutation.isPending}
 												>
 													<Trash2 className="h-4 w-4" />

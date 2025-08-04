@@ -383,7 +383,7 @@ export interface paths {
 			path?: never;
 			cookie?: never;
 		};
-		/** Export metrics in Prometheus format */
+		/** Export metrics in Prometheus format (publicly accessible for scraping) */
 		get: operations["get_prometheus_metrics"];
 		put?: never;
 		post?: never;
@@ -2596,22 +2596,13 @@ export interface operations {
 		};
 		requestBody?: never;
 		responses: {
-			/** @description Prometheus metrics exported successfully */
+			/** @description Prometheus metrics in text/plain format (version=0.0.4; charset=utf-8) */
 			200: {
 				headers: {
 					[name: string]: unknown;
 				};
 				content: {
 					"text/plain": string;
-				};
-			};
-			/** @description Unauthorized */
-			401: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content: {
-					"application/json": components["schemas"]["ErrorResponse"];
 				};
 			};
 		};
