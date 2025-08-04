@@ -36,6 +36,10 @@ type Event = NonNullable<
 	components["schemas"]["ApiResponse_Vec_Event"]["data"]
 >[number];
 
+// Type definitions for event data structures
+type EventTags = Record<string, string | number | boolean>;
+type EventPayload = Record<string, string | number | boolean | object>;
+
 function EventsDashboard() {
 	// Authentication context (currently not used)
 	const { data: currentUser } = useCurrentUser(30000);
@@ -88,7 +92,7 @@ function EventsDashboard() {
 	// Create event mutation
 	const createEventMutation = useMutation({
 		mutationFn: async (data: typeof createForm) => {
-			let parsedPayload: Record<string, unknown> | undefined;
+			let parsedPayload: EventPayload | undefined;
 			if (data.payload) {
 				try {
 					parsedPayload = JSON.parse(data.payload);
@@ -126,8 +130,8 @@ function EventsDashboard() {
 	});
 
 	// Parse tag string (key:value,key2:value2) to object
-	const parseTagString = (tagString: string): Record<string, unknown> => {
-		const tags: Record<string, unknown> = {};
+	const parseTagString = (tagString: string): EventTags => {
+		const tags: EventTags = {};
 		if (!tagString.trim()) return tags;
 
 		for (const pair of tagString.split(",")) {
@@ -140,7 +144,7 @@ function EventsDashboard() {
 	};
 
 	// Format tags object to display string
-	const formatTags = (tags: Record<string, unknown>): string => {
+	const formatTags = (tags: EventTags): string => {
 		return Object.entries(tags)
 			.map(([key, value]) => `${key}:${value}`)
 			.join(", ");
@@ -483,7 +487,7 @@ function EventsDashboard() {
 													Tags:
 												</span>
 												<span className="text-xs bg-gray-100 px-2 py-1 rounded">
-													{formatTags(event.tags as Record<string, unknown>)}
+													{formatTags(event.tags as EventTags)}
 												</span>
 											</div>
 										) : null}

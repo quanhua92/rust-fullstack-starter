@@ -50,6 +50,13 @@ import { useState } from "react";
 import type { components } from "@/types/api";
 
 type TaskStatus = components["schemas"]["TaskStatus"];
+type Task = NonNullable<components["schemas"]["ApiResponse_Vec_Task"]["data"]>[number];
+type TaskMetadata = Record<string, string | number | boolean>;
+
+// Type guard for task metadata
+const isTaskMetadata = (metadata: unknown): metadata is TaskMetadata => {
+	return typeof metadata === "object" && metadata !== null;
+};
 
 function TasksPage() {
 	const [searchTerm, setSearchTerm] = useState("");
@@ -374,7 +381,7 @@ function TasksPage() {
 														Task #{task.id?.slice(-8) || "Unknown"}
 													</div>
 													<div className="text-sm text-muted-foreground">
-														{task.metadata && typeof task.metadata === "object"
+														{isTaskMetadata(task.metadata)
 															? Object.keys(task.metadata)
 																	.slice(0, 2)
 																	.join(", ")

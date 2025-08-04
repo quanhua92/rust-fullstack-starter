@@ -14,11 +14,44 @@ import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { apiClient } from "@/lib/api/client";
+import type { components } from "@/types/api";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { ArrowLeft, Code, Plus, Settings } from "lucide-react";
 import { useState } from "react";
+
+// Task payload type definitions
+interface EmailTaskPayload {
+	to: string;
+	subject: string;
+	template: string;
+	data: Record<string, unknown>;
+}
+
+interface WebhookTaskPayload {
+	url: string;
+	method: string;
+	headers: Record<string, string>;
+	payload: Record<string, unknown>;
+}
+
+interface NotificationTaskPayload {
+	user_id: string;
+	title: string;
+	body: string;
+	type: string;
+}
+
+interface DataSyncTaskPayload {
+	source: string;
+	target: string;
+	table: string;
+	batch_size: number;
+}
+
+// Union type for all task payloads
+type TaskPayload = EmailTaskPayload | WebhookTaskPayload | NotificationTaskPayload | DataSyncTaskPayload;
 
 interface CreateTaskForm {
 	taskType: string;
@@ -52,7 +85,7 @@ function NewTaskPage() {
 	const createTaskMutation = useMutation({
 		mutationFn: async (taskData: {
 			task_type: string;
-			payload: unknown;
+			payload: TaskPayload;
 			scheduled_at?: string;
 		}) => {
 			const response = await apiClient.createTask(taskData);
@@ -108,9 +141,9 @@ function NewTaskPage() {
 
 		if (!validateForm()) return;
 
-		let parsedData: unknown;
+		let parsedData: TaskPayload;
 		try {
-			parsedData = JSON.parse(formData.data);
+			parsedData = JSON.parse(formData.data) as TaskPayload;
 		} catch {
 			setErrors({ data: "Invalid JSON format" });
 			return;
