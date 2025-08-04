@@ -92,6 +92,10 @@ curl -X POST http://localhost:3000/api/v1/tasks \
 
 # Check task status (users see only their tasks, admins/moderators see all)
 curl -H "Authorization: Bearer TOKEN" http://localhost:3000/api/v1/tasks
+
+# Monitor events with tag filtering
+curl -H "Authorization: Bearer TOKEN" \
+  "http://localhost:3000/api/v1/monitoring/events?tags=task_type:email,status:completed"
 ```
 
 ### 5. Build and Serve Full-Stack Application
@@ -136,8 +140,9 @@ cd web && pnpm dev
 - **🔑 Role-Based Access Control** - Three-tier system (User/Moderator/Admin) with hierarchical permissions
 - **⚙️ Background Tasks** - Async job processing with retry logic and dead letter queue
 - **📊 API Documentation** - Interactive OpenAPI/Swagger docs
-- **🧪 Testing Framework** - 119 integration tests + comprehensive API endpoint testing
-- **🔥 Chaos Testing** - Docker-based resilience testing with 7 scenarios
+- **🧪 Testing Framework** - 135 integration tests + comprehensive API endpoint testing (60+ endpoints)
+- **📊 Monitoring & Observability** - Complete monitoring system with 14 API endpoints, advanced tag filtering, 4-table schema, enhanced error handling
+- **🔥 Chaos Testing** - Docker-based resilience testing with 10 scenarios
 - **⚙️ Admin CLI** - Direct database access for monitoring and maintenance
 - **🐳 Docker Support** - Development and production containers with multi-stage builds
 
@@ -149,9 +154,9 @@ cd web && pnpm dev
 ./scripts/build-web.sh              # Build React frontend only
 
 # Run tests
-cargo nextest run                    # Integration tests (123 tests)
-./scripts/test-with-curl.sh         # API endpoint tests (44+ tests)
-./scripts/test-chaos.sh             # Chaos testing (7 scenarios)
+cargo nextest run                    # Integration tests (135 tests)
+./scripts/test-with-curl.sh         # API endpoint tests (60+ tests including monitoring)
+./scripts/test-chaos.sh             # Chaos testing (10 scenarios)
 
 # Quality checks
 ./scripts/check.sh                  # Backend: format, lint, test (run before commits)
@@ -182,9 +187,10 @@ rust-fullstack-starter/
     │   ├── rbac/     # Role-based access control
     │   ├── cli/      # Admin command-line interface
     │   ├── tasks/    # Background job processing
+    │   ├── monitoring/ # Observability system (14 endpoints)
     │   └── ...       # Health, errors, database, server
-    ├── migrations/   # Database schema evolution
-    └── tests/        # Integration tests (93 tests)
+    ├── migrations/   # Database schema evolution (6 migrations)
+    └── tests/        # Integration tests (135 tests)
 ```
 
 ## Documentation
@@ -203,7 +209,8 @@ rust-fullstack-starter/
 - [User Management System](docs/guides/12-user-management.md) - **Complete user lifecycle with 12 endpoints**
 - [Background Tasks](docs/guides/04-background-tasks.md)
 - [Testing Framework](docs/guides/08-testing.md)
-- [Chaos Testing](docs/guides/09-chaos-testing.md) - **Enhanced with 7 scenarios**
+- [Chaos Testing](docs/guides/09-chaos-testing.md) - **Enhanced with 10 scenarios**
+- [Monitoring & Observability](docs/guides/15-monitoring-and-observability.md) - **Complete monitoring system with 14 endpoints**
 
 ## API Endpoints
 
@@ -224,6 +231,12 @@ Key endpoints (see [full API docs](http://localhost:3000/api-docs)):
 - `POST /api/v1/tasks` - Create background task
 - `GET /api/v1/tasks/dead-letter` - Failed task queue
 - `GET /api/v1/tasks/types` - Task type registry
+
+**Monitoring:**
+- `POST /api/v1/monitoring/events` - Create monitoring events
+- `GET /api/v1/monitoring/events?tags=key:value` - Query events with tag filtering
+- `GET /api/v1/monitoring/metrics/prometheus` - Prometheus metrics export
+- `POST /api/v1/monitoring/incidents` - Create incidents
 
 **System:**
 - `GET /api/v1/health` - Health check

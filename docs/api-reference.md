@@ -44,10 +44,12 @@ graph TB
         USERS_READ["👥 /api/v1/users<br/>GET: List users<br/>GET: /users/{id}<br/>Moderator+: All users<br/>User: Own profile only"]
         TASKS[⚙️ /api/v1/tasks<br/>POST: Create, GET: List<br/>📊 /api/v1/tasks/stats<br/>💀 /api/v1/tasks/dead-letter<br/>Moderator/Admin: All tasks<br/>User: Own tasks only]
         TASK_OPS["🔧 /api/v1/tasks/{id}<br/>GET, DELETE<br/>🔄 /api/v1/tasks/{id}/retry<br/>🛑 /api/v1/tasks/{id}/cancel<br/>Role-based access applies"]
+        MONITORING[📊 /api/v1/monitoring/events<br/>📈 /api/v1/monitoring/metrics<br/>🔧 /api/v1/monitoring/incidents<br/>📉 /api/v1/monitoring/metrics/prometheus<br/>**Tag filtering**: ?tags=key:value,key2:value2<br/>All users: Create/view own data]
     end
     
     subgraph "👨‍💼 Moderator+ Endpoints"
         USER_MOD[👮 /api/v1/users/{id}/status<br/>PUT: Activate/deactivate<br/>POST: /users/{id}/reset-password<br/>Force password reset<br/>Moderator/Admin only]
+        MONITORING_MOD[🚨 /api/v1/monitoring/alerts<br/>📊 /api/v1/monitoring/stats<br/>Alert management & system stats<br/>Moderator+ only]
     end
     
     subgraph "👑 Admin Only Endpoints"
@@ -67,7 +69,9 @@ graph TB
     MIDDLEWARE --> USERS_READ
     MIDDLEWARE --> TASKS
     MIDDLEWARE --> TASK_OPS
+    MIDDLEWARE --> MONITORING
     MIDDLEWARE --> USER_MOD
+    MIDDLEWARE --> MONITORING_MOD
     MIDDLEWARE --> ADMIN
     MIDDLEWARE --> USER_ADMIN
     
@@ -78,8 +82,8 @@ graph TB
     classDef authBox fill:#f3e5f5,stroke:#4a148c,stroke-width:2px
     
     class HEALTH,AUTH_PUB,TYPES_PUB,DOCS publicBox
-    class AUTH_PROT,USER_SELF,USERS_READ,TASKS,TASK_OPS protectedBox
-    class USER_MOD moderatorBox
+    class AUTH_PROT,USER_SELF,USERS_READ,TASKS,TASK_OPS,MONITORING protectedBox
+    class USER_MOD,MONITORING_MOD moderatorBox
     class ADMIN,USER_ADMIN adminBox
     class BEARER,MIDDLEWARE authBox
 ```
@@ -1359,6 +1363,305 @@ These are example task types to demonstrate different background job patterns:
 - `webhook` - HTTP request examples
 - `file_cleanup` - File management examples
 - `report_generation` - Report creation examples
+
+## Monitoring and Observability Endpoints
+
+The system includes comprehensive monitoring capabilities for tracking application health, collecting metrics, managing alerts, and performing incident management.
+
+### Event Management
+
+#### POST /api/v1/monitoring/events
+
+Create a monitoring event (log, metric, trace, or alert).
+
+**Authentication**: Required (Bearer token)
+
+**Request Body**:
+```json
+{
+  "event_type": "log",
+  "source": "payment-service",
+  "message": "Payment processed successfully",
+  "level": "info",
+  "tags": {
+    "request_id": "req-123",
+    "user_id": "user-456",
+    "amount": "100.00"
+  },
+  "payload": {
+    "payment_method": "credit_card",
+    "gateway": "stripe"
+  }
+}
+```
+
+**Response** (200 OK):
+```json
+{
+  "success": true,
+  "data": {
+    "id": "evt-789",
+    "event_type": "log",
+    "source": "payment-service",
+    "message": "Payment processed successfully",
+    "level": "info",
+    "tags": { "request_id": "req-123", "user_id": "user-456" },
+    "payload": { "payment_method": "credit_card" },
+    "timestamp": "2024-01-15T10:30:00Z",
+    "created_at": "2024-01-15T10:30:00Z"
+  }
+}
+```
+
+#### GET /api/v1/monitoring/events
+
+Query events with optional filters.
+
+**Authentication**: Required (Bearer token)
+
+**Query Parameters**:
+- `event_type`: Filter by event type (`log`, `metric`, `trace`, `alert`)
+- `source`: Filter by service name
+- `level`: Filter by level (`error`, `warn`, `info`, `debug`)
+- `tags`: **Filter by tags using key:value pairs** - `user_id:123,environment:production`
+- `start_time`, `end_time`: ISO 8601 timestamps
+- `limit`: Max results (default: 100)
+- `offset`: Skip results (default: 0)
+
+**Examples**:
+```bash
+# Basic filtering
+GET /api/v1/monitoring/events?event_type=log&source=payment-service&limit=50
+
+# Tag filtering with single tag
+GET /api/v1/monitoring/events?tags=user_id:123
+
+# Tag filtering with multiple tags (AND logic)
+GET /api/v1/monitoring/events?tags=user_id:123,environment:production
+
+# Combined filtering
+GET /api/v1/monitoring/events?event_type=log&level=error&tags=service:payment,severity:high
+```
+
+#### GET /api/v1/monitoring/events/{id}
+
+Get a specific event by ID.
+
+**Authentication**: Required (Bearer token)
+
+### Metric Management
+
+#### POST /api/v1/monitoring/metrics
+
+Submit a performance or business metric.
+
+**Authentication**: Required (Bearer token)
+
+**Request Body**:
+```json
+{
+  "name": "payment_processing_duration_ms",
+  "metric_type": "histogram",
+  "value": 245.5,
+  "labels": {
+    "payment_method": "credit_card",
+    "gateway": "stripe",
+    "currency": "USD"
+  }
+}
+```
+
+**Metric Types**: `counter`, `gauge`, `histogram`, `summary`
+
+#### GET /api/v1/monitoring/metrics
+
+Query metrics with filters.
+
+**Authentication**: Required (Bearer token)
+
+**Query Parameters**:
+- `name`: Filter by metric name
+- `metric_type`: Filter by metric type
+- `start_time`, `end_time`: Time range filters
+- `limit`, `offset`: Pagination
+
+#### GET /api/v1/monitoring/metrics/prometheus
+
+Export metrics in Prometheus exposition format.
+
+**Authentication**: Required (Bearer token)
+
+**Response**: Plain text Prometheus format
+```prometheus
+# HELP monitoring_total_events Total number of events in the system
+# TYPE monitoring_total_events counter
+monitoring_total_events 15420
+
+# HELP monitoring_active_alerts Number of currently active alerts
+# TYPE monitoring_active_alerts gauge
+monitoring_active_alerts 3
+```
+
+### Alert Management
+
+#### POST /api/v1/monitoring/alerts
+
+Create a new alert rule (Moderator+ required).
+
+**Authentication**: Required (Bearer token) - Moderator or Admin role
+
+**Request Body**:
+```json
+{
+  "name": "High Error Rate",
+  "description": "Alert when error rate exceeds threshold",
+  "query": "error_rate > 0.05",
+  "threshold_value": 0.05
+}
+```
+
+#### GET /api/v1/monitoring/alerts
+
+List all alert rules.
+
+**Authentication**: Required (Bearer token)
+
+### Incident Management
+
+#### POST /api/v1/monitoring/incidents
+
+Create a new incident for tracking outages or issues.
+
+**Authentication**: Required (Bearer token)
+
+**Request Body**:
+```json
+{
+  "title": "Payment Gateway Degradation",
+  "description": "Stripe API response time increased to 5+ seconds",
+  "severity": "high",
+  "assigned_to": "engineer-uuid-here"
+}
+```
+
+**Severity Levels**: `low`, `medium`, `high`, `critical`
+
+**Response** (200 OK):
+```json
+{
+  "success": true,
+  "data": {
+    "id": "inc-123",
+    "title": "Payment Gateway Degradation",
+    "description": "Stripe API response time increased to 5+ seconds",
+    "severity": "high",
+    "status": "open",
+    "started_at": "2024-01-15T10:00:00Z",
+    "created_by": "user-uuid",
+    "assigned_to": "engineer-uuid-here",
+    "created_at": "2024-01-15T10:00:00Z"
+  }
+}
+```
+
+#### GET /api/v1/monitoring/incidents
+
+List incidents with pagination.
+
+**Authentication**: Required (Bearer token)
+
+**Query Parameters**:
+- `limit`: Max results (default: 100)
+- `offset`: Skip results (default: 0)
+
+#### GET /api/v1/monitoring/incidents/{id}
+
+Get details about a specific incident.
+
+**Authentication**: Required (Bearer token)
+
+#### PUT /api/v1/monitoring/incidents/{id}
+
+Update an incident (Moderator+ or incident creator).
+
+**Authentication**: Required (Bearer token)
+
+**Request Body**:
+```json
+{
+  "status": "resolved",
+  "root_cause": "Third-party payment provider experienced regional outage"
+}
+```
+
+**Status Values**: `open`, `investigating`, `resolved`, `closed`
+
+#### GET /api/v1/monitoring/incidents/{id}/timeline
+
+Get incident timeline with correlated events.
+
+**Authentication**: Required (Bearer token)
+
+**Query Parameters**:
+- `limit`: Max timeline entries (default: 100)
+- `offset`: Skip entries (default: 0)
+
+**Response**:
+```json
+{
+  "success": true,
+  "data": {
+    "incident_id": "inc-123",
+    "start_time": "2024-01-15T09:00:00Z",
+    "end_time": "2024-01-15T10:30:00Z",
+    "entries": [
+      {
+        "id": "evt-456",
+        "timestamp": "2024-01-15T09:15:00Z",
+        "event_type": "log",
+        "source": "payment-service",
+        "message": "Gateway response time increased",
+        "level": "warn",
+        "tags": { "gateway": "stripe", "duration_ms": "3000" }
+      }
+    ],
+    "total_count": 45
+  }
+}
+```
+
+### System Statistics
+
+#### GET /api/v1/monitoring/stats
+
+Get monitoring system statistics (Moderator+ required).
+
+**Authentication**: Required (Bearer token) - Moderator or Admin role
+
+**Response**:
+```json
+{
+  "success": true,
+  "data": {
+    "total_events": 15420,
+    "total_metrics": 8934,
+    "active_alerts": 3,
+    "open_incidents": 1,
+    "events_last_hour": 245,
+    "metrics_last_hour": 189
+  }
+}
+```
+
+### RBAC Access Control
+
+| Role | Events | Metrics | Alerts | Incidents | Stats |
+|------|--------|---------|--------|-----------|-------|
+| **User** | ✅ Create/View | ✅ Create/View | ❌ View only | ✅ Create/View own | ❌ |
+| **Moderator** | ✅ Full access | ✅ Full access | ✅ Create/Manage | ✅ Full access | ✅ View |
+| **Admin** | ✅ Full access | ✅ Full access | ✅ Full access | ✅ Full access | ✅ View |
+
+For detailed implementation examples and patterns, see the [Monitoring and Observability Guide](guides/15-monitoring-and-observability.md).
 
 ## Admin Endpoints
 

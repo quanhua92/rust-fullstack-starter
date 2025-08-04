@@ -44,6 +44,7 @@ open http://localhost:3000
 - ✅ **Type-Safe Integration** - OpenAPI-generated TypeScript types, no API/frontend drift
 - ✅ **Authentication System** - Secure sessions, password hashing, 3-tier RBAC (User/Moderator/Admin)
 - ✅ **User Management** - Complete user lifecycle with 12 endpoints (profile, admin, analytics)
+- ✅ **Monitoring & Observability** - Complete monitoring system with 14 API endpoints, 4-table schema, enhanced error handling, comprehensive Prometheus integration with detailed database metrics
 - ✅ **Interactive API Docs** - OpenAPI/Swagger UI with bearer token auth, client generation
 - ✅ **Production Ready** - Single deployment artifact, Docker multi-stage builds, comprehensive testing
 
@@ -295,10 +296,10 @@ curl -X POST http://localhost:3000/api/v1/auth/login \
 # Install test runner (recommended)
 cargo install cargo-nextest
 
-# Run integration tests (123 tests, ~17 seconds)
+# Run integration tests (135 tests, ~17 seconds)
 cargo nextest run
 
-# Test API endpoints (44+ endpoint tests)
+# Test API endpoints (60+ endpoint tests including monitoring)
 ./scripts/test-with-curl.sh
 
 # Combined backend workflow
@@ -525,7 +526,7 @@ Comprehensive guides in **[`guides/`](guides/)**:
 
 ### 🚢 **Ready for Production?**
 - **[Production Deployment](production-deployment.md)** - Docker, Kubernetes, security
-- **[Testing Strategy](guides/08-testing.md)** - 123 tests (93 integration + 30 unit) + chaos testing
+- **[Testing Strategy](guides/08-testing.md)** - 135 integration tests + comprehensive API testing (60+ endpoints) + chaos testing
 - **[Debugging Guide](guides/11-debugging-and-troubleshooting.md)** - Systematic problem solving
 - **[Performance & Monitoring](reliability.md)** - Optimization and observability
 

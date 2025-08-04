@@ -188,6 +188,21 @@ if ! cargo run --quiet --manifest-path starter/Cargo.toml -- export-openapi; the
 fi
 echo -e "${GREEN}✅ OpenAPI specification exported to docs/openapi.json${NC}"
 
+# Generate frontend API types from updated OpenAPI spec
+echo -e "${BLUE}🔄 Generating frontend API types...${NC}"
+if [ -d "web" ] && [ -f "web/package.json" ]; then
+    if ! command -v pnpm >/dev/null 2>&1; then
+        echo -e "${YELLOW}⚠️  pnpm not found – skipping API type generation${NC}"
+        echo -e "${YELLOW}   Install pnpm with: npm install -g pnpm${NC}"
+    elif ! (cd web && pnpm generate-api); then
+        echo -e "${YELLOW}⚠️  Frontend API type generation failed, but continuing...${NC}"
+    else
+        echo -e "${GREEN}✅ Frontend API types updated${NC}"
+    fi
+else
+    echo -e "${YELLOW}⚠️  Web directory not found, skipping API type generation${NC}"
+fi
+
 # 9. Web static file serving smoke test
 echo -e "\n${BLUE}🚀 Step 9/9: Web static file serving smoke test...${NC}"
 

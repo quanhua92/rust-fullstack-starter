@@ -56,7 +56,7 @@ graph TD
     subgraph "🧪 Testing Strategy for Web Applications"
         E2E[🌐 E2E Tests<br/><i>Few, critical paths</i><br/>~5% of tests<br/>💡 User journeys]
         
-        INTEGRATION[🔌 Integration Tests<br/><b>Main focus - 119 tests</b><br/>~80% of tests<br/>💡 HTTP + Database + Business Logic]
+        INTEGRATION[🔌 Integration Tests<br/><b>Main focus - 135 tests</b><br/>~90% of tests<br/>💡 HTTP + Database + Business Logic]
         
         UNIT[⚙️ Unit Tests<br/><i>Pure functions only</i><br/>~15% of tests<br/>💡 Algorithms, validation]
     end
@@ -401,7 +401,7 @@ async fn test_get_user_profile_authenticated() {
 # Install faster test runner (recommended)
 cargo install cargo-nextest
 
-# Run all tests (123 tests, ~17 seconds)
+# Run all tests (135 tests, ~17 seconds)
 cargo nextest run
 
 # Run without stopping on first failure
@@ -448,7 +448,7 @@ Success rate: 100%
 ```
 
 **Features**:
-- Tests all 15 documented API endpoints
+- Tests 44+ API endpoints including edge cases and error scenarios
 - Validates input/output formats against documentation
 - Tests authentication flows and error cases
 - Supports custom server configurations
@@ -501,7 +501,7 @@ Template approach:
 Total: 3.4s for 3 tests (55% faster)
 ```
 
-With 123 tests, this saves significant development time.
+With 135 tests, this saves significant development time.
 
 ### Parallel Execution
 
@@ -731,7 +731,7 @@ Consider adding:
 
 Now that you understand the testing framework:
 
-1. **Run the Tests**: `cargo nextest run` to see all 123 tests pass
+1. **Run the Tests**: `cargo nextest run` to see all 135 tests pass
 2. **Explore Test Code**: Read through `starter/tests/` to understand patterns
 3. **Write New Tests**: Add tests for any new features you build
 4. **Learn from Failures**: When tests fail, use them to understand the system
