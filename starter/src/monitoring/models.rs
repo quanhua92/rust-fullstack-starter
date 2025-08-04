@@ -249,7 +249,9 @@ pub struct Event {
     pub level: Option<String>,
     pub tags: serde_json::Value,
     pub payload: serde_json::Value,
+    #[schema(format = "date-time")]
     pub recorded_at: DateTime<Utc>,
+    #[schema(format = "date-time")]
     pub created_at: DateTime<Utc>,
 }
 
@@ -264,6 +266,7 @@ pub struct CreateEventRequest {
     pub tags: HashMap<String, serde_json::Value>,
     #[serde(default)]
     pub payload: HashMap<String, serde_json::Value>,
+    #[schema(format = "date-time")]
     pub recorded_at: Option<DateTime<Utc>>,
 }
 

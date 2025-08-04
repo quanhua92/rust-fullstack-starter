@@ -116,7 +116,7 @@ fi
 if [ "$SKIP_LINT" = "true" ]; then
     print_status "info" "🎨 Step 5/9: Skipping code formatting check (--skip-lint)"
 else
-    if ! run_cmd "🎨 Step 5/9: Code formatting check" pnpm run format --write=false; then
+    if ! run_cmd "🎨 Step 5/9: Code formatting check" pnpm biome format .; then
         print_status "info" "Run 'pnpm run format' to fix formatting"
         exit 1
     fi

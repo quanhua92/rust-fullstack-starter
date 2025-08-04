@@ -11,6 +11,7 @@ use axum::{
 };
 use serde::Deserialize;
 use std::collections::HashMap;
+use utoipa::IntoParams;
 use uuid::Uuid;
 
 /// Parse tags query parameter string into HashMap
@@ -49,12 +50,14 @@ fn parse_tags_query(tags_str: &str) -> Result<HashMap<String, String>, Error> {
 }
 
 /// Query parameters for event listing
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, IntoParams)]
 pub struct EventQueryParams {
     pub event_type: Option<EventType>,
     pub source: Option<String>,
     pub level: Option<String>,
+    #[param(format = "date-time")]
     pub start_time: Option<chrono::DateTime<chrono::Utc>>,
+    #[param(format = "date-time")]
     pub end_time: Option<chrono::DateTime<chrono::Utc>>,
     pub limit: Option<i64>,
     pub offset: Option<i64>,
@@ -64,25 +67,27 @@ pub struct EventQueryParams {
 }
 
 /// Query parameters for metric listing
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, IntoParams)]
 pub struct MetricQueryParams {
     pub name: Option<String>,
     pub metric_type: Option<MetricType>,
+    #[param(format = "date-time")]
     pub start_time: Option<chrono::DateTime<chrono::Utc>>,
+    #[param(format = "date-time")]
     pub end_time: Option<chrono::DateTime<chrono::Utc>>,
     pub limit: Option<i64>,
     pub offset: Option<i64>,
 }
 
 /// Query parameters for incident listing
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, IntoParams)]
 pub struct IncidentQueryParams {
     pub limit: Option<i64>,
     pub offset: Option<i64>,
 }
 
 /// Query parameters for timeline
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, IntoParams)]
 pub struct TimelineQueryParams {
     pub limit: Option<i64>,
     pub offset: Option<i64>,
@@ -92,7 +97,7 @@ pub struct TimelineQueryParams {
 /// Create a new event
 #[utoipa::path(
     post,
-    path = "/api/v1/monitoring/events",
+    path = "/monitoring/events",
     request_body = CreateEventRequest,
     responses(
         (status = 200, description = "Event created successfully", body = ApiResponse<Event>),
@@ -133,17 +138,8 @@ pub async fn create_event(
 /// Get events with filters
 #[utoipa::path(
     get,
-    path = "/api/v1/monitoring/events",
-    params(
-        ("event_type" = Option<EventType>, Query, description = "Filter by event type"),
-        ("source" = Option<String>, Query, description = "Filter by source"),
-        ("level" = Option<String>, Query, description = "Filter by level"),
-        ("start_time" = Option<String>, Query, description = "Start time filter (ISO 8601)"),
-        ("end_time" = Option<String>, Query, description = "End time filter (ISO 8601)"),
-        ("tags" = Option<String>, Query, description = "Filter by tags using key:value pairs separated by commas (e.g., 'user_id:123,env:prod')"),
-        ("limit" = Option<i64>, Query, description = "Maximum number of events to return"),
-        ("offset" = Option<i64>, Query, description = "Number of events to skip")
-    ),
+    path = "/monitoring/events",
+    params(EventQueryParams),
     responses(
         (status = 200, description = "Events retrieved successfully", body = ApiResponse<Vec<Event>>),
         (status = 400, description = "Invalid query parameters", body = ErrorResponse),
@@ -192,7 +188,7 @@ pub async fn get_events(
 /// Get a specific event by ID
 #[utoipa::path(
     get,
-    path = "/api/v1/monitoring/events/{id}",
+    path = "/monitoring/events/{id}",
     params(
         ("id" = Uuid, Path, description = "Event ID")
     ),
@@ -226,7 +222,7 @@ pub async fn get_event_by_id(
 /// Create a new metric
 #[utoipa::path(
     post,
-    path = "/api/v1/monitoring/metrics",
+    path = "/monitoring/metrics",
     request_body = CreateMetricRequest,
     responses(
         (status = 200, description = "Metric created successfully", body = ApiResponse<Metric>),
@@ -257,15 +253,8 @@ pub async fn create_metric(
 /// Get metrics with filters
 #[utoipa::path(
     get,
-    path = "/api/v1/monitoring/metrics",
-    params(
-        ("name" = Option<String>, Query, description = "Filter by metric name"),
-        ("metric_type" = Option<MetricType>, Query, description = "Filter by metric type"),
-        ("start_time" = Option<String>, Query, description = "Start time filter (ISO 8601)"),
-        ("end_time" = Option<String>, Query, description = "End time filter (ISO 8601)"),
-        ("limit" = Option<i64>, Query, description = "Maximum number of metrics to return"),
-        ("offset" = Option<i64>, Query, description = "Number of metrics to skip")
-    ),
+    path = "/monitoring/metrics",
+    params(MetricQueryParams),
     responses(
         (status = 200, description = "Metrics retrieved successfully", body = ApiResponse<Vec<Metric>>),
         (status = 400, description = "Invalid query parameters", body = ErrorResponse),
@@ -305,7 +294,7 @@ pub async fn get_metrics(
 /// Create a new alert (requires moderator or higher)
 #[utoipa::path(
     post,
-    path = "/api/v1/monitoring/alerts",
+    path = "/monitoring/alerts",
     request_body = CreateAlertRequest,
     responses(
         (status = 200, description = "Alert created successfully", body = ApiResponse<Alert>),
@@ -339,7 +328,7 @@ pub async fn create_alert(
 /// Get all alerts
 #[utoipa::path(
     get,
-    path = "/api/v1/monitoring/alerts",
+    path = "/monitoring/alerts",
     responses(
         (status = 200, description = "Alerts retrieved successfully", body = ApiResponse<Vec<Alert>>),
         (status = 401, description = "Unauthorized", body = ErrorResponse)
@@ -367,7 +356,7 @@ pub async fn get_alerts(
 /// Create a new incident
 #[utoipa::path(
     post,
-    path = "/api/v1/monitoring/incidents",
+    path = "/monitoring/incidents",
     request_body = CreateIncidentRequest,
     responses(
         (status = 200, description = "Incident created successfully", body = ApiResponse<Incident>),
@@ -403,11 +392,8 @@ pub async fn create_incident(
 /// Get incidents with pagination
 #[utoipa::path(
     get,
-    path = "/api/v1/monitoring/incidents",
-    params(
-        ("limit" = Option<i64>, Query, description = "Maximum number of incidents to return"),
-        ("offset" = Option<i64>, Query, description = "Number of incidents to skip")
-    ),
+    path = "/monitoring/incidents",
+    params(IncidentQueryParams),
     responses(
         (status = 200, description = "Incidents retrieved successfully", body = ApiResponse<Vec<Incident>>),
         (status = 400, description = "Invalid query parameters", body = ErrorResponse),
@@ -438,7 +424,7 @@ pub async fn get_incidents(
 /// Get incident by ID
 #[utoipa::path(
     get,
-    path = "/api/v1/monitoring/incidents/{id}",
+    path = "/monitoring/incidents/{id}",
     params(
         ("id" = Uuid, Path, description = "Incident ID")
     ),
@@ -472,7 +458,7 @@ pub async fn get_incident_by_id(
 /// Update incident (requires moderator or higher, or be the creator)
 #[utoipa::path(
     put,
-    path = "/api/v1/monitoring/incidents/{id}",
+    path = "/monitoring/incidents/{id}",
     params(
         ("id" = Uuid, Path, description = "Incident ID")
     ),
@@ -525,12 +511,10 @@ pub async fn update_incident(
 /// Get incident timeline
 #[utoipa::path(
     get,
-    path = "/api/v1/monitoring/incidents/{id}/timeline",
+    path = "/monitoring/incidents/{id}/timeline",
     params(
         ("id" = Uuid, Path, description = "Incident ID"),
-        ("limit" = Option<i64>, Query, description = "Maximum number of timeline entries to return"),
-        ("offset" = Option<i64>, Query, description = "Number of timeline entries to skip"),
-        ("lookback_hours" = Option<i64>, Query, description = "Hours to look back before incident start (default: 1)")
+        TimelineQueryParams
     ),
     responses(
         (status = 200, description = "Incident timeline retrieved successfully", body = ApiResponse<IncidentTimeline>),
@@ -571,7 +555,7 @@ pub async fn get_incident_timeline(
 /// Get monitoring system statistics (requires moderator or higher)
 #[utoipa::path(
     get,
-    path = "/api/v1/monitoring/stats",
+    path = "/monitoring/stats",
     responses(
         (status = 200, description = "Monitoring statistics retrieved successfully", body = ApiResponse<MonitoringStats>),
         (status = 401, description = "Unauthorized", body = ErrorResponse),
@@ -602,7 +586,7 @@ pub async fn get_monitoring_stats(
 /// Export metrics in Prometheus format
 #[utoipa::path(
     get,
-    path = "/api/v1/monitoring/metrics/prometheus",
+    path = "/monitoring/metrics/prometheus",
     responses(
         (status = 200, description = "Prometheus metrics exported successfully", body = String),
         (status = 401, description = "Unauthorized", body = ErrorResponse)
