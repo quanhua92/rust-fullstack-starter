@@ -1,23 +1,23 @@
 import { AdminLayout } from "@/components/layout/AdminLayout";
+import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { apiClient } from "@/lib/api/client";
 import { useAuth } from "@/lib/auth/context";
 import {
-	getRoleDisplayName,
-	getRoleColorClasses,
 	type UserRole,
+	getRoleColorClasses,
+	getRoleDisplayName,
 } from "@/lib/rbac/types";
-import { Badge } from "@/components/ui/badge";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import {
+	Activity,
 	BarChart3,
 	Shield,
 	TrendingUp,
-	Users,
 	UserCheck,
 	UserPlus,
-	Activity,
+	Users,
 } from "lucide-react";
 
 function UserAnalyticsPage() {

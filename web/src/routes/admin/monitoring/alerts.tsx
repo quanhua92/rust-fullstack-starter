@@ -16,6 +16,7 @@ import { useCurrentUser, useMonitoringAlerts } from "@/hooks/useApiQueries";
 import { apiClient } from "@/lib/api/client";
 import { useAuth } from "@/lib/auth/context";
 import { getRoleColorClasses, getRoleDisplayName } from "@/lib/rbac/types";
+import type { components } from "@/types/api";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { formatDistanceToNow } from "date-fns";
@@ -31,6 +32,11 @@ import {
 import { useState } from "react";
 import { toast } from "sonner";
 
+// Type definition for Alert
+type Alert = NonNullable<
+	components["schemas"]["ApiResponse_Vec_Alert"]["data"]
+>[number];
+
 function AlertsManagement() {
 	const { isModeratorOrHigher } = useAuth();
 	const { data: currentUser } = useCurrentUser(30000);
@@ -38,7 +44,7 @@ function AlertsManagement() {
 
 	// Create alert form state
 	const [showCreateForm, setShowCreateForm] = useState(false);
-	const [editingAlert, setEditingAlert] = useState<any>(null);
+	const [editingAlert, setEditingAlert] = useState<Alert | null>(null);
 	const [createForm, setCreateForm] = useState({
 		name: "",
 		description: "",
@@ -114,7 +120,7 @@ function AlertsManagement() {
 		},
 	});
 
-	const handleEdit = (alert: any) => {
+	const handleEdit = (alert: Alert) => {
 		setEditingAlert(alert);
 		setCreateForm({
 			name: alert.name || "",
@@ -375,9 +381,9 @@ function AlertsManagement() {
 							</div>
 						) : alerts &&
 							Array.isArray(alerts) &&
-							(alerts as any[]).length > 0 ? (
+							(alerts as Alert[]).length > 0 ? (
 							<div className="space-y-4">
-								{(alerts as any[]).map((alert: any, index) => (
+								{(alerts as Alert[]).map((alert: Alert, index) => (
 									<div
 										key={alert.id || index}
 										className="border rounded-lg p-4 space-y-3"
@@ -464,14 +470,14 @@ function AlertsManagement() {
 						<div className="grid grid-cols-1 md:grid-cols-3 gap-4">
 							<div className="text-center">
 								<div className="text-2xl font-bold text-blue-600">
-									{alerts ? (alerts as any[]).length : 0}
+									{alerts ? (alerts as Alert[]).length : 0}
 								</div>
 								<p className="text-sm text-muted-foreground">Total Rules</p>
 							</div>
 							<div className="text-center">
 								<div className="text-2xl font-bold text-green-600">
 									{alerts
-										? (alerts as any[]).filter((a: any) => a.is_active).length
+										? (alerts as Alert[]).filter((a: Alert) => a.is_active).length
 										: 0}
 								</div>
 								<p className="text-sm text-muted-foreground">Active Rules</p>

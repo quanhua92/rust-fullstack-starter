@@ -88,13 +88,22 @@ function EventsDashboard() {
 	// Create event mutation
 	const createEventMutation = useMutation({
 		mutationFn: async (data: typeof createForm) => {
+			let parsedPayload: Record<string, unknown> | undefined;
+			if (data.payload) {
+				try {
+					parsedPayload = JSON.parse(data.payload);
+				} catch (e) {
+					throw new Error("Invalid JSON in payload field.");
+				}
+			}
+
 			const payload = {
 				event_type: data.event_type,
 				source: data.source,
 				message: data.message || undefined,
 				level: data.level || undefined,
 				tags: data.tags ? parseTagString(data.tags) : undefined,
-				payload: data.payload ? JSON.parse(data.payload) : undefined,
+				payload: parsedPayload,
 			};
 			return apiClient.createEvent(payload);
 		},

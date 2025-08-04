@@ -63,7 +63,7 @@ function SystemStatsOverview() {
 
 	// Generate event type distribution data
 	const generateEventTypeData = () => {
-		const total = (stats as any)?.total_events || 100;
+		const total = stats?.total_events || 100;
 		return [
 			{ name: "Log", value: Math.floor(total * 0.6), color: "#3b82f6" },
 			{ name: "Metric", value: Math.floor(total * 0.25), color: "#10b981" },
@@ -154,14 +154,14 @@ function SystemStatsOverview() {
 								</CardHeader>
 								<CardContent>
 									<div className="text-2xl font-bold">
-										{(stats as any)?.total_events?.toLocaleString() || 0}
+										{stats?.total_events?.toLocaleString() || 0}
 									</div>
 									<p className="text-xs text-muted-foreground">
 										All monitoring events
 									</p>
 									<div className="mt-2">
 										<div className="text-xs text-green-600">
-											↗ {(stats as any)?.events_last_hour || 0} this hour
+											↗ {stats?.events_last_hour || 0} this hour
 										</div>
 									</div>
 								</CardContent>
@@ -176,14 +176,14 @@ function SystemStatsOverview() {
 								</CardHeader>
 								<CardContent>
 									<div className="text-2xl font-bold">
-										{(stats as any)?.total_metrics?.toLocaleString() || 0}
+										{stats?.total_metrics?.toLocaleString() || 0}
 									</div>
 									<p className="text-xs text-muted-foreground">
 										Performance metrics
 									</p>
 									<div className="mt-2">
 										<div className="text-xs text-blue-600">
-											↗ {(stats as any)?.metrics_last_hour || 0} this hour
+											↗ {stats?.metrics_last_hour || 0} this hour
 										</div>
 									</div>
 								</CardContent>
@@ -198,7 +198,7 @@ function SystemStatsOverview() {
 								</CardHeader>
 								<CardContent>
 									<div className="text-2xl font-bold">
-										{(stats as any)?.active_alerts || 0}
+										{stats?.active_alerts || 0}
 									</div>
 									<p className="text-xs text-muted-foreground">
 										Requiring attention
@@ -206,7 +206,7 @@ function SystemStatsOverview() {
 									<div className="mt-2">
 										<Progress
 											value={Math.min(
-												((stats as any)?.active_alerts || 0) * 20,
+												(stats?.active_alerts || 0) * 20,
 												100,
 											)}
 											className="h-2"
@@ -224,7 +224,7 @@ function SystemStatsOverview() {
 								</CardHeader>
 								<CardContent>
 									<div className="text-2xl font-bold">
-										{(stats as any)?.open_incidents || 0}
+										{stats?.open_incidents || 0}
 									</div>
 									<p className="text-xs text-muted-foreground">
 										Active incidents
@@ -233,7 +233,7 @@ function SystemStatsOverview() {
 										<div
 											className={`text-xs ${(stats?.open_incidents || 0) > 0 ? "text-red-600" : "text-green-600"}`}
 										>
-											{((stats as any)?.open_incidents || 0) > 0
+											{(stats?.open_incidents || 0) > 0
 												? "⚠ Needs attention"
 												: "✓ All clear"}
 										</div>
@@ -398,11 +398,11 @@ function SystemStatsOverview() {
 								<h4 className="font-medium mb-3">Last Hour</h4>
 								<div className="space-y-2">
 									<div className="text-2xl font-bold text-blue-600">
-										{(stats as any)?.events_last_hour || 0}
+										{stats?.events_last_hour || 0}
 									</div>
 									<div className="text-sm text-muted-foreground">Events</div>
 									<div className="text-lg font-semibold text-green-600">
-										{(stats as any)?.metrics_last_hour || 0}
+										{stats?.metrics_last_hour || 0}
 									</div>
 									<div className="text-sm text-muted-foreground">Metrics</div>
 								</div>
@@ -412,11 +412,11 @@ function SystemStatsOverview() {
 								<h4 className="font-medium mb-3">Last 24 Hours</h4>
 								<div className="space-y-2">
 									<div className="text-2xl font-bold text-blue-600">
-										{Math.floor(((stats as any)?.total_events || 0) * 0.1)}
+										{Math.floor((stats?.total_events || 0) * 0.1)}
 									</div>
 									<div className="text-sm text-muted-foreground">Events</div>
 									<div className="text-lg font-semibold text-green-600">
-										{Math.floor(((stats as any)?.total_metrics || 0) * 0.15)}
+										{Math.floor((stats?.total_metrics || 0) * 0.15)}
 									</div>
 									<div className="text-sm text-muted-foreground">Metrics</div>
 								</div>
@@ -426,11 +426,11 @@ function SystemStatsOverview() {
 								<h4 className="font-medium mb-3">All Time</h4>
 								<div className="space-y-2">
 									<div className="text-2xl font-bold text-blue-600">
-										{(stats as any)?.total_events?.toLocaleString() || 0}
+										{stats?.total_events?.toLocaleString() || 0}
 									</div>
 									<div className="text-sm text-muted-foreground">Events</div>
 									<div className="text-lg font-semibold text-green-600">
-										{(stats as any)?.total_metrics?.toLocaleString() || 0}
+										{stats?.total_metrics?.toLocaleString() || 0}
 									</div>
 									<div className="text-sm text-muted-foreground">Metrics</div>
 								</div>

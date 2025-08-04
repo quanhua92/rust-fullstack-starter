@@ -26,6 +26,7 @@ import {
 import { apiClient } from "@/lib/api/client";
 import { useAuth } from "@/lib/auth/context";
 import { getRoleColorClasses, getRoleDisplayName } from "@/lib/rbac/types";
+import type { components } from "@/types/api";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { formatDistanceToNow } from "date-fns";
@@ -47,6 +48,11 @@ import {
 	YAxis,
 } from "recharts";
 import { toast } from "sonner";
+
+// Type definition for Metric
+type Metric = NonNullable<
+	components["schemas"]["ApiResponse_Vec_Metric"]["data"]
+>[number];
 
 function MetricsDashboard() {
 	const {} = useAuth();
@@ -465,7 +471,7 @@ function MetricsDashboard() {
 							</div>
 						) : metrics && Array.isArray(metrics) && metrics.length > 0 ? (
 							<div className="space-y-4">
-								{metrics.map((metric: any, index) => (
+								{metrics.map((metric: Metric, index) => (
 									<div
 										key={metric.id || index}
 										className="border rounded-lg p-4 space-y-2"

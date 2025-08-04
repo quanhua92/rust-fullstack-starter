@@ -13,9 +13,9 @@ import {
 } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
+	useCurrentUser,
 	useHealthBasic,
 	useTaskStats,
-	useCurrentUser,
 } from "@/hooks/useApiQueries";
 import { Link, createFileRoute } from "@tanstack/react-router";
 import {
@@ -24,6 +24,7 @@ import {
 	BarChart3,
 	CheckSquare,
 	Clock,
+	Heart,
 	TrendingUp,
 	Users,
 	Zap,
@@ -236,14 +237,24 @@ function AdminDashboard() {
 					<RecentActivity activities={[]} /> {/* Uses mock data internally */}
 				</div>
 
-				{/* Quick Actions & Phase 4 Features */}
+				{/* Quick Actions & Monitoring Features */}
 				<div className="space-y-4">
 					<h2 className="text-xl font-semibold">Quick Actions</h2>
 					<div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
 						<Button asChild className="h-20 flex-col space-y-2">
-							<Link to="/admin/analytics">
-								<BarChart3 className="h-6 w-6" />
-								<span>Analytics Dashboard</span>
+							<Link to="/admin/monitoring">
+								<Zap className="h-6 w-6" />
+								<span>Monitoring Overview</span>
+							</Link>
+						</Button>
+						<Button
+							asChild
+							variant="outline"
+							className="h-20 flex-col space-y-2"
+						>
+							<Link to="/admin/monitoring/events">
+								<Activity className="h-6 w-6" />
+								<span>Live Events</span>
 							</Link>
 						</Button>
 						<Button
@@ -252,18 +263,8 @@ function AdminDashboard() {
 							className="h-20 flex-col space-y-2"
 						>
 							<Link to="/admin/tasks">
-								<Activity className="h-6 w-6" />
-								<span>Live Task Monitor</span>
-							</Link>
-						</Button>
-						<Button
-							asChild
-							variant="outline"
-							className="h-20 flex-col space-y-2"
-						>
-							<Link to="/admin/health">
-								<Zap className="h-6 w-6" />
-								<span>Health Trends</span>
+								<CheckSquare className="h-6 w-6" />
+								<span>Task Management</span>
 							</Link>
 						</Button>
 						<Button
@@ -273,6 +274,53 @@ function AdminDashboard() {
 						>
 							<Link to="/admin/users">
 								<Users className="h-6 w-6" />
+								<span>User Management</span>
+							</Link>
+						</Button>
+					</div>
+				</div>
+
+				{/* Monitoring Features */}
+				<div className="space-y-4">
+					<h2 className="text-xl font-semibold">Monitoring & Observability</h2>
+					<div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+						<Button
+							asChild
+							variant="secondary"
+							className="h-20 flex-col space-y-2"
+						>
+							<Link to="/admin/monitoring/metrics">
+								<TrendingUp className="h-6 w-6" />
+								<span>Metrics & Charts</span>
+							</Link>
+						</Button>
+						<Button
+							asChild
+							variant="secondary"
+							className="h-20 flex-col space-y-2"
+						>
+							<Link to="/admin/monitoring/incidents">
+								<AlertTriangle className="h-6 w-6" />
+								<span>Incident Tracking</span>
+							</Link>
+						</Button>
+						<Button
+							asChild
+							variant="secondary"
+							className="h-20 flex-col space-y-2"
+						>
+							<Link to="/admin/health">
+								<Heart className="h-6 w-6" />
+								<span>System Health</span>
+							</Link>
+						</Button>
+						<Button
+							asChild
+							variant="secondary"
+							className="h-20 flex-col space-y-2"
+						>
+							<Link to="/admin/analytics">
+								<BarChart3 className="h-6 w-6" />
 								<span>User Analytics</span>
 							</Link>
 						</Button>

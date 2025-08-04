@@ -27,6 +27,7 @@ import {
 import { apiClient } from "@/lib/api/client";
 // import { useAuth } from "@/lib/auth/context"; // Not currently needed
 import { getRoleColorClasses, getRoleDisplayName } from "@/lib/rbac/types";
+import type { components } from "@/types/api";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { formatDistanceToNow } from "date-fns";
@@ -43,6 +44,14 @@ import {
 import { useState } from "react";
 import { toast } from "sonner";
 
+// Type definitions for Incident and Timeline Entry
+type Incident = NonNullable<
+	components["schemas"]["ApiResponse_Vec_Incident"]["data"]
+>[number];
+type TimelineEntry = NonNullable<
+	components["schemas"]["ApiResponse_IncidentTimeline"]["data"]
+>["entries"][number];
+
 function IncidentsTracking() {
 	// Auth context (not currently needed since incidents are accessible to all authenticated users)
 	// const { isModeratorOrHigher } = useAuth();
@@ -51,9 +60,9 @@ function IncidentsTracking() {
 
 	// State management
 	const [showCreateForm, setShowCreateForm] = useState(false);
-	const [selectedIncident, setSelectedIncident] = useState<any>(null);
+	const [selectedIncident, setSelectedIncident] = useState<Incident | null>(null);
 	const [showTimeline, setShowTimeline] = useState(false);
-	const [editingIncident, setEditingIncident] = useState<any>(null);
+	const [editingIncident, setEditingIncident] = useState<Incident | null>(null);
 
 	// Create incident form state
 	const [createForm, setCreateForm] = useState({
@@ -161,7 +170,7 @@ function IncidentsTracking() {
 		}
 	};
 
-	const handleEdit = (incident: any) => {
+	const handleEdit = (incident: Incident) => {
 		setEditingIncident(incident);
 		setUpdateForm({
 			status: incident.status || "open",
@@ -170,7 +179,7 @@ function IncidentsTracking() {
 		});
 	};
 
-	const handleViewTimeline = (incident: any) => {
+	const handleViewTimeline = (incident: Incident) => {
 		setSelectedIncident(incident);
 		setShowTimeline(true);
 	};
@@ -413,11 +422,11 @@ function IncidentsTracking() {
 									))}
 								</div>
 							) : timeline &&
-								(timeline as any).entries &&
-								(timeline as any).entries.length > 0 ? (
+								timeline.entries &&
+								timeline.entries.length > 0 ? (
 								<div className="space-y-4 max-h-96 overflow-y-auto">
-									{(timeline as any).entries.map(
-										(entry: any, index: number) => (
+									{timeline.entries.map(
+										(entry: TimelineEntry, index: number) => (
 											<div
 												key={entry.id || index}
 												className="border-l-2 border-blue-200 pl-4 pb-4"
@@ -492,7 +501,7 @@ function IncidentsTracking() {
 							Array.isArray(incidents) &&
 							incidents.length > 0 ? (
 							<div className="space-y-4">
-								{incidents.map((incident: any, index) => (
+								{incidents.map((incident: Incident, index) => (
 									<div
 										key={incident.id || index}
 										className="border rounded-lg p-4 space-y-3"
@@ -598,8 +607,8 @@ function IncidentsTracking() {
 							<div className="text-center">
 								<div className="text-2xl font-bold text-red-600">
 									{incidents
-										? (incidents as any[]).filter(
-												(i: any) => i.status === "open",
+										? (incidents as Incident[]).filter(
+												(i: Incident) => i.status === "open",
 											).length
 										: 0}
 								</div>
@@ -608,8 +617,8 @@ function IncidentsTracking() {
 							<div className="text-center">
 								<div className="text-2xl font-bold text-yellow-600">
 									{incidents
-										? (incidents as any[]).filter(
-												(i: any) => i.status === "investigating",
+										? (incidents as Incident[]).filter(
+												(i: Incident) => i.status === "investigating",
 											).length
 										: 0}
 								</div>
@@ -618,8 +627,8 @@ function IncidentsTracking() {
 							<div className="text-center">
 								<div className="text-2xl font-bold text-green-600">
 									{incidents
-										? (incidents as any[]).filter(
-												(i: any) => i.status === "resolved",
+										? (incidents as Incident[]).filter(
+												(i: Incident) => i.status === "resolved",
 											).length
 										: 0}
 								</div>
@@ -628,8 +637,8 @@ function IncidentsTracking() {
 							<div className="text-center">
 								<div className="text-2xl font-bold text-gray-600">
 									{incidents
-										? (incidents as any[]).filter(
-												(i: any) => i.status === "closed",
+										? (incidents as Incident[]).filter(
+												(i: Incident) => i.status === "closed",
 											).length
 										: 0}
 								</div>
