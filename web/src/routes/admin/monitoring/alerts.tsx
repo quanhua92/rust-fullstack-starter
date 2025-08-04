@@ -15,6 +15,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useCurrentUser, useMonitoringAlerts } from "@/hooks/useApiQueries";
 import { apiClient } from "@/lib/api/client";
 import { useAuth } from "@/lib/auth/context";
+import { requireModeratorOrHigher } from "@/lib/auth/guards";
 import { getRoleColorClasses, getRoleDisplayName } from "@/lib/rbac/types";
 import type { components } from "@/types/api";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -552,5 +553,6 @@ function AlertsManagement() {
 }
 
 export const Route = createFileRoute("/admin/monitoring/alerts")({
+	beforeLoad: requireModeratorOrHigher,
 	component: AlertsManagement,
 });
