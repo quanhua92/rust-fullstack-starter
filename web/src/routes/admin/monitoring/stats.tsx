@@ -12,6 +12,7 @@ import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useCurrentUser, useMonitoringStats } from "@/hooks/useApiQueries";
 import { useAuth } from "@/lib/auth/context";
+import { requireModeratorOrHigher } from "@/lib/auth/guards";
 import { getRoleColorClasses, getRoleDisplayName } from "@/lib/rbac/types";
 import { createFileRoute } from "@tanstack/react-router";
 import {
@@ -475,5 +476,6 @@ function SystemStatsOverview() {
 }
 
 export const Route = createFileRoute("/admin/monitoring/stats")({
+	beforeLoad: requireModeratorOrHigher,
 	component: SystemStatsOverview,
 });
