@@ -19,9 +19,9 @@ import {
 } from "@/components/ui/sidebar";
 import { useAuth } from "@/lib/auth/context";
 import {
-	getRoleDisplayName,
-	getRoleColorClasses,
 	type UserRole,
+	getRoleColorClasses,
+	getRoleDisplayName,
 } from "@/lib/rbac/types";
 import { Link, useLocation } from "@tanstack/react-router";
 import {
@@ -31,8 +31,9 @@ import {
 	Heart,
 	Home,
 	LogOut,
-	Users,
 	UserCheck,
+	Users,
+	Zap,
 } from "lucide-react";
 
 interface MenuItem {
@@ -107,6 +108,38 @@ const getMenuItems = (
 				{
 					title: "Health Dashboard",
 					url: "/admin/health",
+				},
+			],
+		},
+		{
+			title: "Monitoring & Observability",
+			icon: Zap,
+			items: [
+				{
+					title: "Overview",
+					url: "/admin/monitoring",
+				},
+				{
+					title: "Events",
+					url: "/admin/monitoring/events",
+				},
+				{
+					title: "Metrics",
+					url: "/admin/monitoring/metrics",
+				},
+				{
+					title: "Alerts",
+					url: "/admin/monitoring/alerts",
+					visible: isModeratorOrHigher, // Only moderator+ can manage alerts
+				},
+				{
+					title: "Incidents",
+					url: "/admin/monitoring/incidents",
+				},
+				{
+					title: "System Stats",
+					url: "/admin/monitoring/stats",
+					visible: isModeratorOrHigher, // Only moderator+ can view system stats
 				},
 			],
 		},

@@ -18,11 +18,17 @@ import { Route as AdminHealthRouteImport } from './routes/admin/health'
 import { Route as AdminAnalyticsRouteImport } from './routes/admin/analytics'
 import { Route as AdminUsersIndexRouteImport } from './routes/admin/users/index'
 import { Route as AdminTasksIndexRouteImport } from './routes/admin/tasks/index'
+import { Route as AdminMonitoringIndexRouteImport } from './routes/admin/monitoring/index'
 import { Route as AdminUsersNewRouteImport } from './routes/admin/users/new'
 import { Route as AdminUsersUserIdRouteImport } from './routes/admin/users/$userId'
 import { Route as AdminTasksNewRouteImport } from './routes/admin/tasks/new'
 import { Route as AdminTasksDeadLetterRouteImport } from './routes/admin/tasks/dead-letter'
 import { Route as AdminTasksTaskIdRouteImport } from './routes/admin/tasks/$taskId'
+import { Route as AdminMonitoringStatsRouteImport } from './routes/admin/monitoring/stats'
+import { Route as AdminMonitoringMetricsRouteImport } from './routes/admin/monitoring/metrics'
+import { Route as AdminMonitoringIncidentsRouteImport } from './routes/admin/monitoring/incidents'
+import { Route as AdminMonitoringEventsRouteImport } from './routes/admin/monitoring/events'
+import { Route as AdminMonitoringAlertsRouteImport } from './routes/admin/monitoring/alerts'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -69,6 +75,11 @@ const AdminTasksIndexRoute = AdminTasksIndexRouteImport.update({
   path: '/admin/tasks/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminMonitoringIndexRoute = AdminMonitoringIndexRouteImport.update({
+  id: '/admin/monitoring/',
+  path: '/admin/monitoring/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminUsersNewRoute = AdminUsersNewRouteImport.update({
   id: '/admin/users/new',
   path: '/admin/users/new',
@@ -94,6 +105,32 @@ const AdminTasksTaskIdRoute = AdminTasksTaskIdRouteImport.update({
   path: '/admin/tasks/$taskId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminMonitoringStatsRoute = AdminMonitoringStatsRouteImport.update({
+  id: '/admin/monitoring/stats',
+  path: '/admin/monitoring/stats',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminMonitoringMetricsRoute = AdminMonitoringMetricsRouteImport.update({
+  id: '/admin/monitoring/metrics',
+  path: '/admin/monitoring/metrics',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminMonitoringIncidentsRoute =
+  AdminMonitoringIncidentsRouteImport.update({
+    id: '/admin/monitoring/incidents',
+    path: '/admin/monitoring/incidents',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const AdminMonitoringEventsRoute = AdminMonitoringEventsRouteImport.update({
+  id: '/admin/monitoring/events',
+  path: '/admin/monitoring/events',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminMonitoringAlertsRoute = AdminMonitoringAlertsRouteImport.update({
+  id: '/admin/monitoring/alerts',
+  path: '/admin/monitoring/alerts',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -103,11 +140,17 @@ export interface FileRoutesByFullPath {
   '/auth/register': typeof AuthRegisterRoute
   '/demo/tanstack-query': typeof DemoTanstackQueryRoute
   '/admin': typeof AdminIndexRoute
+  '/admin/monitoring/alerts': typeof AdminMonitoringAlertsRoute
+  '/admin/monitoring/events': typeof AdminMonitoringEventsRoute
+  '/admin/monitoring/incidents': typeof AdminMonitoringIncidentsRoute
+  '/admin/monitoring/metrics': typeof AdminMonitoringMetricsRoute
+  '/admin/monitoring/stats': typeof AdminMonitoringStatsRoute
   '/admin/tasks/$taskId': typeof AdminTasksTaskIdRoute
   '/admin/tasks/dead-letter': typeof AdminTasksDeadLetterRoute
   '/admin/tasks/new': typeof AdminTasksNewRoute
   '/admin/users/$userId': typeof AdminUsersUserIdRoute
   '/admin/users/new': typeof AdminUsersNewRoute
+  '/admin/monitoring': typeof AdminMonitoringIndexRoute
   '/admin/tasks': typeof AdminTasksIndexRoute
   '/admin/users': typeof AdminUsersIndexRoute
 }
@@ -119,11 +162,17 @@ export interface FileRoutesByTo {
   '/auth/register': typeof AuthRegisterRoute
   '/demo/tanstack-query': typeof DemoTanstackQueryRoute
   '/admin': typeof AdminIndexRoute
+  '/admin/monitoring/alerts': typeof AdminMonitoringAlertsRoute
+  '/admin/monitoring/events': typeof AdminMonitoringEventsRoute
+  '/admin/monitoring/incidents': typeof AdminMonitoringIncidentsRoute
+  '/admin/monitoring/metrics': typeof AdminMonitoringMetricsRoute
+  '/admin/monitoring/stats': typeof AdminMonitoringStatsRoute
   '/admin/tasks/$taskId': typeof AdminTasksTaskIdRoute
   '/admin/tasks/dead-letter': typeof AdminTasksDeadLetterRoute
   '/admin/tasks/new': typeof AdminTasksNewRoute
   '/admin/users/$userId': typeof AdminUsersUserIdRoute
   '/admin/users/new': typeof AdminUsersNewRoute
+  '/admin/monitoring': typeof AdminMonitoringIndexRoute
   '/admin/tasks': typeof AdminTasksIndexRoute
   '/admin/users': typeof AdminUsersIndexRoute
 }
@@ -136,11 +185,17 @@ export interface FileRoutesById {
   '/auth/register': typeof AuthRegisterRoute
   '/demo/tanstack-query': typeof DemoTanstackQueryRoute
   '/admin/': typeof AdminIndexRoute
+  '/admin/monitoring/alerts': typeof AdminMonitoringAlertsRoute
+  '/admin/monitoring/events': typeof AdminMonitoringEventsRoute
+  '/admin/monitoring/incidents': typeof AdminMonitoringIncidentsRoute
+  '/admin/monitoring/metrics': typeof AdminMonitoringMetricsRoute
+  '/admin/monitoring/stats': typeof AdminMonitoringStatsRoute
   '/admin/tasks/$taskId': typeof AdminTasksTaskIdRoute
   '/admin/tasks/dead-letter': typeof AdminTasksDeadLetterRoute
   '/admin/tasks/new': typeof AdminTasksNewRoute
   '/admin/users/$userId': typeof AdminUsersUserIdRoute
   '/admin/users/new': typeof AdminUsersNewRoute
+  '/admin/monitoring/': typeof AdminMonitoringIndexRoute
   '/admin/tasks/': typeof AdminTasksIndexRoute
   '/admin/users/': typeof AdminUsersIndexRoute
 }
@@ -154,11 +209,17 @@ export interface FileRouteTypes {
     | '/auth/register'
     | '/demo/tanstack-query'
     | '/admin'
+    | '/admin/monitoring/alerts'
+    | '/admin/monitoring/events'
+    | '/admin/monitoring/incidents'
+    | '/admin/monitoring/metrics'
+    | '/admin/monitoring/stats'
     | '/admin/tasks/$taskId'
     | '/admin/tasks/dead-letter'
     | '/admin/tasks/new'
     | '/admin/users/$userId'
     | '/admin/users/new'
+    | '/admin/monitoring'
     | '/admin/tasks'
     | '/admin/users'
   fileRoutesByTo: FileRoutesByTo
@@ -170,11 +231,17 @@ export interface FileRouteTypes {
     | '/auth/register'
     | '/demo/tanstack-query'
     | '/admin'
+    | '/admin/monitoring/alerts'
+    | '/admin/monitoring/events'
+    | '/admin/monitoring/incidents'
+    | '/admin/monitoring/metrics'
+    | '/admin/monitoring/stats'
     | '/admin/tasks/$taskId'
     | '/admin/tasks/dead-letter'
     | '/admin/tasks/new'
     | '/admin/users/$userId'
     | '/admin/users/new'
+    | '/admin/monitoring'
     | '/admin/tasks'
     | '/admin/users'
   id:
@@ -186,11 +253,17 @@ export interface FileRouteTypes {
     | '/auth/register'
     | '/demo/tanstack-query'
     | '/admin/'
+    | '/admin/monitoring/alerts'
+    | '/admin/monitoring/events'
+    | '/admin/monitoring/incidents'
+    | '/admin/monitoring/metrics'
+    | '/admin/monitoring/stats'
     | '/admin/tasks/$taskId'
     | '/admin/tasks/dead-letter'
     | '/admin/tasks/new'
     | '/admin/users/$userId'
     | '/admin/users/new'
+    | '/admin/monitoring/'
     | '/admin/tasks/'
     | '/admin/users/'
   fileRoutesById: FileRoutesById
@@ -203,11 +276,17 @@ export interface RootRouteChildren {
   AuthRegisterRoute: typeof AuthRegisterRoute
   DemoTanstackQueryRoute: typeof DemoTanstackQueryRoute
   AdminIndexRoute: typeof AdminIndexRoute
+  AdminMonitoringAlertsRoute: typeof AdminMonitoringAlertsRoute
+  AdminMonitoringEventsRoute: typeof AdminMonitoringEventsRoute
+  AdminMonitoringIncidentsRoute: typeof AdminMonitoringIncidentsRoute
+  AdminMonitoringMetricsRoute: typeof AdminMonitoringMetricsRoute
+  AdminMonitoringStatsRoute: typeof AdminMonitoringStatsRoute
   AdminTasksTaskIdRoute: typeof AdminTasksTaskIdRoute
   AdminTasksDeadLetterRoute: typeof AdminTasksDeadLetterRoute
   AdminTasksNewRoute: typeof AdminTasksNewRoute
   AdminUsersUserIdRoute: typeof AdminUsersUserIdRoute
   AdminUsersNewRoute: typeof AdminUsersNewRoute
+  AdminMonitoringIndexRoute: typeof AdminMonitoringIndexRoute
   AdminTasksIndexRoute: typeof AdminTasksIndexRoute
   AdminUsersIndexRoute: typeof AdminUsersIndexRoute
 }
@@ -277,6 +356,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminTasksIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/monitoring/': {
+      id: '/admin/monitoring/'
+      path: '/admin/monitoring'
+      fullPath: '/admin/monitoring'
+      preLoaderRoute: typeof AdminMonitoringIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin/users/new': {
       id: '/admin/users/new'
       path: '/admin/users/new'
@@ -312,6 +398,41 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminTasksTaskIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/monitoring/stats': {
+      id: '/admin/monitoring/stats'
+      path: '/admin/monitoring/stats'
+      fullPath: '/admin/monitoring/stats'
+      preLoaderRoute: typeof AdminMonitoringStatsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/monitoring/metrics': {
+      id: '/admin/monitoring/metrics'
+      path: '/admin/monitoring/metrics'
+      fullPath: '/admin/monitoring/metrics'
+      preLoaderRoute: typeof AdminMonitoringMetricsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/monitoring/incidents': {
+      id: '/admin/monitoring/incidents'
+      path: '/admin/monitoring/incidents'
+      fullPath: '/admin/monitoring/incidents'
+      preLoaderRoute: typeof AdminMonitoringIncidentsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/monitoring/events': {
+      id: '/admin/monitoring/events'
+      path: '/admin/monitoring/events'
+      fullPath: '/admin/monitoring/events'
+      preLoaderRoute: typeof AdminMonitoringEventsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/monitoring/alerts': {
+      id: '/admin/monitoring/alerts'
+      path: '/admin/monitoring/alerts'
+      fullPath: '/admin/monitoring/alerts'
+      preLoaderRoute: typeof AdminMonitoringAlertsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -323,11 +444,17 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRegisterRoute: AuthRegisterRoute,
   DemoTanstackQueryRoute: DemoTanstackQueryRoute,
   AdminIndexRoute: AdminIndexRoute,
+  AdminMonitoringAlertsRoute: AdminMonitoringAlertsRoute,
+  AdminMonitoringEventsRoute: AdminMonitoringEventsRoute,
+  AdminMonitoringIncidentsRoute: AdminMonitoringIncidentsRoute,
+  AdminMonitoringMetricsRoute: AdminMonitoringMetricsRoute,
+  AdminMonitoringStatsRoute: AdminMonitoringStatsRoute,
   AdminTasksTaskIdRoute: AdminTasksTaskIdRoute,
   AdminTasksDeadLetterRoute: AdminTasksDeadLetterRoute,
   AdminTasksNewRoute: AdminTasksNewRoute,
   AdminUsersUserIdRoute: AdminUsersUserIdRoute,
   AdminUsersNewRoute: AdminUsersNewRoute,
+  AdminMonitoringIndexRoute: AdminMonitoringIndexRoute,
   AdminTasksIndexRoute: AdminTasksIndexRoute,
   AdminUsersIndexRoute: AdminUsersIndexRoute,
 }

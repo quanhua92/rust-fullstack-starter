@@ -395,6 +395,267 @@ class ApiClient {
 			"/admin/users/stats",
 		);
 	}
+
+	// Monitoring endpoints
+
+	// Event Management
+	async createEvent(data: {
+		event_type: "log" | "metric" | "trace" | "alert";
+		source: string;
+		message?: string;
+		level?: string;
+		tags?: Record<string, unknown>;
+		payload?: Record<string, unknown>;
+	}): Promise<components["schemas"]["ApiResponse_Event"]> {
+		return this.request<components["schemas"]["ApiResponse_Event"]>(
+			"/monitoring/events",
+			{
+				method: "POST",
+				body: JSON.stringify(data),
+			},
+		);
+	}
+
+	async getEvents(params?: {
+		event_type?: "log" | "metric" | "trace" | "alert";
+		source?: string;
+		level?: "error" | "warn" | "info" | "debug";
+		tags?: string; // Format: "key:value,key2:value2"
+		start_time?: string;
+		end_time?: string;
+		limit?: number;
+		offset?: number;
+	}): Promise<components["schemas"]["ApiResponse_Vec_Event"]> {
+		const searchParams = new URLSearchParams();
+		if (params?.event_type) searchParams.set("event_type", params.event_type);
+		if (params?.source) searchParams.set("source", params.source);
+		if (params?.level) searchParams.set("level", params.level);
+		if (params?.tags) searchParams.set("tags", params.tags);
+		if (params?.start_time) searchParams.set("start_time", params.start_time);
+		if (params?.end_time) searchParams.set("end_time", params.end_time);
+		if (params?.limit) searchParams.set("limit", params.limit.toString());
+		if (params?.offset) searchParams.set("offset", params.offset.toString());
+
+		const query = searchParams.toString();
+		const endpoint = query
+			? `/monitoring/events?${query}`
+			: "/monitoring/events";
+		return this.request<components["schemas"]["ApiResponse_Vec_Event"]>(
+			endpoint,
+		);
+	}
+
+	async getEvent(
+		id: string,
+	): Promise<components["schemas"]["ApiResponse_Event"]> {
+		return this.request<components["schemas"]["ApiResponse_Event"]>(
+			`/monitoring/events/${id}`,
+		);
+	}
+
+	// Metrics Management
+	async createMetric(data: {
+		name: string;
+		metric_type: "counter" | "gauge" | "histogram" | "summary";
+		value: number;
+		labels?: Record<string, string>;
+	}): Promise<components["schemas"]["ApiResponse_Metric"]> {
+		return this.request<components["schemas"]["ApiResponse_Metric"]>(
+			"/monitoring/metrics",
+			{
+				method: "POST",
+				body: JSON.stringify(data),
+			},
+		);
+	}
+
+	async getMetrics(params?: {
+		name?: string;
+		metric_type?: "counter" | "gauge" | "histogram" | "summary";
+		start_time?: string;
+		end_time?: string;
+		limit?: number;
+		offset?: number;
+	}): Promise<components["schemas"]["ApiResponse_Vec_Metric"]> {
+		const searchParams = new URLSearchParams();
+		if (params?.name) searchParams.set("name", params.name);
+		if (params?.metric_type)
+			searchParams.set("metric_type", params.metric_type);
+		if (params?.start_time) searchParams.set("start_time", params.start_time);
+		if (params?.end_time) searchParams.set("end_time", params.end_time);
+		if (params?.limit) searchParams.set("limit", params.limit.toString());
+		if (params?.offset) searchParams.set("offset", params.offset.toString());
+
+		const query = searchParams.toString();
+		const endpoint = query
+			? `/monitoring/metrics?${query}`
+			: "/monitoring/metrics";
+		return this.request<components["schemas"]["ApiResponse_Vec_Metric"]>(
+			endpoint,
+		);
+	}
+
+	async getPrometheusMetrics(): Promise<string> {
+		const url = `${this.baseUrl}/monitoring/metrics/prometheus`;
+		const token = getAuthToken();
+
+		const headers: Record<string, string> = {};
+		if (token) {
+			headers.Authorization = `Bearer ${token}`;
+		}
+
+		const response = await fetch(url, { headers });
+		if (!response.ok) {
+			throw new Error(`HTTP ${response.status}`);
+		}
+		return response.text(); // Return plain text for Prometheus format
+	}
+
+	// Alert Management (Moderator+ required)
+	async createAlert(data: {
+		name: string;
+		description?: string;
+		query: string;
+		threshold_value: number;
+	}): Promise<components["schemas"]["ApiResponse_Alert"]> {
+		return this.request<components["schemas"]["ApiResponse_Alert"]>(
+			"/monitoring/alerts",
+			{
+				method: "POST",
+				body: JSON.stringify(data),
+			},
+		);
+	}
+
+	async getAlerts(): Promise<components["schemas"]["ApiResponse_Vec_Alert"]> {
+		return this.request<components["schemas"]["ApiResponse_Vec_Alert"]>(
+			"/monitoring/alerts",
+		);
+	}
+
+	async getAlert(
+		id: string,
+	): Promise<components["schemas"]["ApiResponse_Alert"]> {
+		return this.request<components["schemas"]["ApiResponse_Alert"]>(
+			`/monitoring/alerts/${id}`,
+		);
+	}
+
+	async updateAlert(
+		id: string,
+		data: {
+			name?: string;
+			description?: string;
+			query?: string;
+			threshold_value?: number;
+		},
+	): Promise<components["schemas"]["ApiResponse_Alert"]> {
+		return this.request<components["schemas"]["ApiResponse_Alert"]>(
+			`/monitoring/alerts/${id}`,
+			{
+				method: "PUT",
+				body: JSON.stringify(data),
+			},
+		);
+	}
+
+	async deleteAlert(
+		id: string,
+	): Promise<components["schemas"]["ApiResponse_Alert"]> {
+		return this.request<components["schemas"]["ApiResponse_Alert"]>(
+			`/monitoring/alerts/${id}`,
+			{
+				method: "DELETE",
+			},
+		);
+	}
+
+	// Incident Management
+	async createIncident(data: {
+		title: string;
+		description?: string;
+		severity: "low" | "medium" | "high" | "critical";
+		assigned_to?: string;
+	}): Promise<components["schemas"]["ApiResponse_Incident"]> {
+		return this.request<components["schemas"]["ApiResponse_Incident"]>(
+			"/monitoring/incidents",
+			{
+				method: "POST",
+				body: JSON.stringify(data),
+			},
+		);
+	}
+
+	async getIncidents(params?: {
+		limit?: number;
+		offset?: number;
+	}): Promise<components["schemas"]["ApiResponse_Vec_Incident"]> {
+		const searchParams = new URLSearchParams();
+		if (params?.limit) searchParams.set("limit", params.limit.toString());
+		if (params?.offset) searchParams.set("offset", params.offset.toString());
+
+		const query = searchParams.toString();
+		const endpoint = query
+			? `/monitoring/incidents?${query}`
+			: "/monitoring/incidents";
+		return this.request<components["schemas"]["ApiResponse_Vec_Incident"]>(
+			endpoint,
+		);
+	}
+
+	async getIncident(
+		id: string,
+	): Promise<components["schemas"]["ApiResponse_Incident"]> {
+		return this.request<components["schemas"]["ApiResponse_Incident"]>(
+			`/monitoring/incidents/${id}`,
+		);
+	}
+
+	async updateIncident(
+		id: string,
+		data: {
+			status?: "open" | "investigating" | "resolved" | "closed";
+			root_cause?: string;
+			assigned_to?: string;
+		},
+	): Promise<components["schemas"]["ApiResponse_Incident"]> {
+		return this.request<components["schemas"]["ApiResponse_Incident"]>(
+			`/monitoring/incidents/${id}`,
+			{
+				method: "PUT",
+				body: JSON.stringify(data),
+			},
+		);
+	}
+
+	async getIncidentTimeline(
+		id: string,
+		params?: {
+			limit?: number;
+			offset?: number;
+		},
+	): Promise<components["schemas"]["ApiResponse_IncidentTimeline"]> {
+		const searchParams = new URLSearchParams();
+		if (params?.limit) searchParams.set("limit", params.limit.toString());
+		if (params?.offset) searchParams.set("offset", params.offset.toString());
+
+		const query = searchParams.toString();
+		const endpoint = query
+			? `/monitoring/incidents/${id}/timeline?${query}`
+			: `/monitoring/incidents/${id}/timeline`;
+		return this.request<components["schemas"]["ApiResponse_IncidentTimeline"]>(
+			endpoint,
+		);
+	}
+
+	// System Statistics (Moderator+ required)
+	async getMonitoringStats(): Promise<
+		components["schemas"]["ApiResponse_MonitoringStats"]
+	> {
+		return this.request<components["schemas"]["ApiResponse_MonitoringStats"]>(
+			"/monitoring/stats",
+		);
+	}
 }
 
 // Export singleton instance
