@@ -60,7 +60,9 @@ function IncidentsTracking() {
 
 	// State management
 	const [showCreateForm, setShowCreateForm] = useState(false);
-	const [selectedIncident, setSelectedIncident] = useState<Incident | null>(null);
+	const [selectedIncident, setSelectedIncident] = useState<Incident | null>(
+		null,
+	);
 	const [showTimeline, setShowTimeline] = useState(false);
 	const [editingIncident, setEditingIncident] = useState<Incident | null>(null);
 
@@ -417,13 +419,14 @@ function IncidentsTracking() {
 						<CardContent>
 							{isLoadingTimeline ? (
 								<div className="space-y-4">
-									{[...Array(5)].map((_, i) => (
-										<Skeleton key={i} className="h-16" />
+									{Array.from({ length: 5 }, () => (
+										<Skeleton
+											key={`timeline-skeleton-${Math.random()}`}
+											className="h-16"
+										/>
 									))}
 								</div>
-							) : timeline &&
-								timeline.entries &&
-								timeline.entries.length > 0 ? (
+							) : timeline?.entries?.length && timeline.entries.length > 0 ? (
 								<div className="space-y-4 max-h-96 overflow-y-auto">
 									{timeline.entries.map(
 										(entry: TimelineEntry, index: number) => (
@@ -493,8 +496,11 @@ function IncidentsTracking() {
 					<CardContent>
 						{isLoading ? (
 							<div className="space-y-4">
-								{[...Array(3)].map((_, i) => (
-									<Skeleton key={i} className="h-24" />
+								{Array.from({ length: 3 }, () => (
+									<Skeleton
+										key={`incidents-skeleton-${Math.random()}`}
+										className="h-24"
+									/>
 								))}
 							</div>
 						) : incidents &&

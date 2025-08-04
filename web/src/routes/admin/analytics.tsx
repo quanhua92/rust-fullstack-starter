@@ -8,7 +8,6 @@ import {
 	getRoleColorClasses,
 	getRoleDisplayName,
 } from "@/lib/rbac/types";
-import type { components } from "@/types/api";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import {
@@ -20,11 +19,6 @@ import {
 	UserPlus,
 	Users,
 } from "lucide-react";
-
-// Type definition for User Stats
-type UserStats = NonNullable<
-	components["schemas"]["ApiResponse_UserStats"]["data"]
->;
 
 function UserAnalyticsPage() {
 	const { isAdmin } = useAuth();
@@ -201,9 +195,7 @@ function UserAnalyticsPage() {
 															</Badge>
 														</div>
 														<div className="text-right">
-															<div className="text-2xl font-bold">
-																{count}
-															</div>
+															<div className="text-2xl font-bold">{count}</div>
 															<div className="text-xs text-muted-foreground">
 																{userStats.total_users > 0
 																	? `${((Number(count) / userStats.total_users) * 100).toFixed(1)}%`

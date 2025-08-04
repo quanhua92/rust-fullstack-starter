@@ -14,7 +14,6 @@ import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { apiClient } from "@/lib/api/client";
-import type { components } from "@/types/api";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { Link, useNavigate } from "@tanstack/react-router";
@@ -51,7 +50,11 @@ interface DataSyncTaskPayload {
 }
 
 // Union type for all task payloads
-type TaskPayload = EmailTaskPayload | WebhookTaskPayload | NotificationTaskPayload | DataSyncTaskPayload;
+type TaskPayload =
+	| EmailTaskPayload
+	| WebhookTaskPayload
+	| NotificationTaskPayload
+	| DataSyncTaskPayload;
 
 interface CreateTaskForm {
 	taskType: string;

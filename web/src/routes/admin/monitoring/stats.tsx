@@ -52,7 +52,7 @@ function SystemStatsOverview() {
 			const hour = new Date();
 			hour.setHours(hour.getHours() - i);
 			data.push({
-				time: hour.getHours().toString().padStart(2, "0") + ":00",
+				time: `${hour.getHours().toString().padStart(2, "0")}:00`,
 				events: Math.floor(Math.random() * 50) + 10,
 				metrics: Math.floor(Math.random() * 30) + 5,
 				alerts: Math.floor(Math.random() * 5),
@@ -205,10 +205,7 @@ function SystemStatsOverview() {
 									</p>
 									<div className="mt-2">
 										<Progress
-											value={Math.min(
-												(stats?.active_alerts || 0) * 20,
-												100,
-											)}
+											value={Math.min((stats?.active_alerts || 0) * 20, 100)}
 											className="h-2"
 										/>
 									</div>
@@ -315,16 +312,16 @@ function SystemStatsOverview() {
 										paddingAngle={5}
 										dataKey="value"
 									>
-										{eventTypeData.map((entry, index) => (
-											<Cell key={`cell-${index}`} fill={entry.color} />
+										{eventTypeData.map((entry) => (
+											<Cell key={entry.name} fill={entry.color} />
 										))}
 									</Pie>
 									<Tooltip />
 								</PieChart>
 							</ResponsiveContainer>
 							<div className="grid grid-cols-2 gap-2 mt-4">
-								{eventTypeData.map((entry, index) => (
-									<div key={index} className="flex items-center space-x-2">
+								{eventTypeData.map((entry) => (
+									<div key={entry.name} className="flex items-center space-x-2">
 										<div
 											className="w-3 h-3 rounded-full"
 											style={{ backgroundColor: entry.color }}

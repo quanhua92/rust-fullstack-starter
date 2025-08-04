@@ -375,8 +375,11 @@ function AlertsManagement() {
 					<CardContent>
 						{isLoading ? (
 							<div className="space-y-4">
-								{[...Array(3)].map((_, i) => (
-									<Skeleton key={i} className="h-24" />
+								{Array.from({ length: 3 }, () => (
+									<Skeleton
+										key={`alerts-skeleton-${Math.random()}`}
+										className="h-24"
+									/>
 								))}
 							</div>
 						) : alerts &&
@@ -393,7 +396,7 @@ function AlertsManagement() {
 												<div className="flex items-center space-x-2">
 													<h4 className="font-semibold">{alert.name}</h4>
 													<Badge variant="outline">
-														{alert.is_active ? "Active" : "Inactive"}
+														{alert.status === "active" ? "Active" : "Inactive"}
 													</Badge>
 												</div>
 												{alert.description && (
@@ -477,7 +480,9 @@ function AlertsManagement() {
 							<div className="text-center">
 								<div className="text-2xl font-bold text-green-600">
 									{alerts
-										? (alerts as Alert[]).filter((a: Alert) => a.is_active).length
+										? (alerts as Alert[]).filter(
+												(a: Alert) => a.status === "active",
+											).length
 										: 0}
 								</div>
 								<p className="text-sm text-muted-foreground">Active Rules</p>

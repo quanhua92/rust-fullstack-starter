@@ -50,7 +50,6 @@ import { useState } from "react";
 import type { components } from "@/types/api";
 
 type TaskStatus = components["schemas"]["TaskStatus"];
-type Task = NonNullable<components["schemas"]["ApiResponse_Vec_Task"]["data"]>[number];
 type TaskMetadata = Record<string, string | number | boolean>;
 
 // Type guard for task metadata

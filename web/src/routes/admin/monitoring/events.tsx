@@ -445,8 +445,11 @@ function EventsDashboard() {
 					<CardContent>
 						{isLoading ? (
 							<div className="space-y-4">
-								{[...Array(5)].map((_, i) => (
-									<Skeleton key={`skeleton-${i}`} className="h-20" />
+								{Array.from({ length: 5 }, () => (
+									<Skeleton
+										key={`events-skeleton-${Math.random()}`}
+										className="h-20"
+									/>
 								))}
 							</div>
 						) : events && Array.isArray(events) && events.length > 0 ? (
@@ -481,7 +484,10 @@ function EventsDashboard() {
 										{event.message && (
 											<p className="text-sm">{event.message}</p>
 										)}
-										{event.tags && typeof event.tags === 'object' && event.tags !== null && Object.keys(event.tags).length > 0 ? (
+										{event.tags &&
+										typeof event.tags === "object" &&
+										event.tags !== null &&
+										Object.keys(event.tags).length > 0 ? (
 											<div className="flex items-center space-x-2">
 												<span className="text-xs text-muted-foreground">
 													Tags:
@@ -491,7 +497,10 @@ function EventsDashboard() {
 												</span>
 											</div>
 										) : null}
-										{event.payload && typeof event.payload === 'object' && event.payload !== null && Object.keys(event.payload).length > 0 ? (
+										{event.payload &&
+										typeof event.payload === "object" &&
+										event.payload !== null &&
+										Object.keys(event.payload).length > 0 ? (
 											<details className="text-xs">
 												<summary className="cursor-pointer text-muted-foreground">
 													Show payload

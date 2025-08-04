@@ -24,7 +24,6 @@ import {
 	usePrometheusMetrics,
 } from "@/hooks/useApiQueries";
 import { apiClient } from "@/lib/api/client";
-import { useAuth } from "@/lib/auth/context";
 import { getRoleColorClasses, getRoleDisplayName } from "@/lib/rbac/types";
 import type { components } from "@/types/api";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -55,7 +54,6 @@ type Metric = NonNullable<
 >[number];
 
 function MetricsDashboard() {
-	const {} = useAuth();
 	const { data: currentUser } = useCurrentUser(30000);
 	const queryClient = useQueryClient();
 
@@ -131,13 +129,20 @@ function MetricsDashboard() {
 		const labels: Record<string, string> = {};
 		if (!labelString.trim()) return labels;
 
-		labelString.split(",").forEach((pair) => {
+		for (const pair of labelString.split(",")) {
 			const [key, value] = pair.split(":");
 			if (key && value) {
 				labels[key.trim()] = value.trim();
 			}
-		});
+		}
 		return labels;
+	};
+
+	// Type guard for metric labels
+	const isLabelsObject = (
+		labels: unknown,
+	): labels is Record<string, string> => {
+		return typeof labels === "object" && labels !== null;
 	};
 
 	// Format labels object to display string
@@ -465,8 +470,11 @@ function MetricsDashboard() {
 					<CardContent>
 						{isLoading ? (
 							<div className="space-y-4">
-								{[...Array(5)].map((_, i) => (
-									<Skeleton key={i} className="h-16" />
+								{Array.from({ length: 5 }, () => (
+									<Skeleton
+										key={`metrics-skeleton-${Math.random()}`}
+										className="h-16"
+									/>
 								))}
 							</div>
 						) : metrics && Array.isArray(metrics) && metrics.length > 0 ? (
@@ -496,16 +504,17 @@ function MetricsDashboard() {
 													: "Unknown time"}
 											</span>
 										</div>
-										{metric.labels && Object.keys(metric.labels).length > 0 && (
-											<div className="flex items-center space-x-2">
-												<span className="text-xs text-muted-foreground">
-													Labels:
-												</span>
-												<span className="text-xs bg-gray-100 px-2 py-1 rounded">
-													{formatLabels(metric.labels)}
-												</span>
-											</div>
-										)}
+										{isLabelsObject(metric.labels) &&
+											Object.keys(metric.labels).length > 0 && (
+												<div className="flex items-center space-x-2">
+													<span className="text-xs text-muted-foreground">
+														Labels:
+													</span>
+													<span className="text-xs bg-gray-100 px-2 py-1 rounded">
+														{formatLabels(metric.labels)}
+													</span>
+												</div>
+											)}
 									</div>
 								))}
 							</div>

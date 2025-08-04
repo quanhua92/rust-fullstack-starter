@@ -105,18 +105,16 @@ const renderCheckDetails = (details: unknown) => {
 
 	return (
 		<div className="text-xs text-muted-foreground">
-			{Object.entries(details).map(
-				([key, value]) => (
-					<div key={key}>
-						{key}:{" "}
-						{typeof value === "string" ||
-						typeof value === "number" ||
-						typeof value === "boolean"
-							? String(value)
-							: JSON.stringify(value)}
-					</div>
-				),
-			)}
+			{Object.entries(details).map(([key, value]) => (
+				<div key={key}>
+					{key}:{" "}
+					{typeof value === "string" ||
+					typeof value === "number" ||
+					typeof value === "boolean"
+						? String(value)
+						: JSON.stringify(value)}
+				</div>
+			))}
 		</div>
 	);
 };
