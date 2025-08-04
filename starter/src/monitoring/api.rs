@@ -6,8 +6,10 @@ use crate::rbac::services as rbac_services;
 use crate::types::{ApiResponse, AppState, ErrorResponse};
 use axum::{
     Extension,
+    body::Body,
     extract::{Path, Query, State},
-    response::Json,
+    http::{StatusCode, header},
+    response::{Json, Response},
 };
 use serde::Deserialize;
 use std::collections::HashMap;
@@ -583,23 +585,16 @@ pub async fn get_monitoring_stats(
     Ok(Json(ApiResponse::success(stats)))
 }
 
-/// Export metrics in Prometheus format
+/// Export metrics in Prometheus format (publicly accessible for scraping)
 #[utoipa::path(
     get,
     path = "/monitoring/metrics/prometheus",
     responses(
-        (status = 200, description = "Prometheus metrics exported successfully", body = String),
-        (status = 401, description = "Unauthorized", body = ErrorResponse)
-    ),
-    security(
-        ("bearer_auth" = [])
+        (status = 200, description = "Prometheus metrics in text/plain format (version=0.0.4; charset=utf-8)", body = String)
     ),
     tag = "Monitoring"
 )]
-pub async fn get_prometheus_metrics(
-    State(app_state): State<AppState>,
-    Extension(_auth_user): Extension<AuthUser>,
-) -> Result<String, Error> {
+pub async fn get_prometheus_metrics(State(app_state): State<AppState>) -> Result<Response, Error> {
     let mut conn = app_state
         .database
         .pool
@@ -653,5 +648,13 @@ monitoring_metrics_last_hour {}
     // Add user-submitted metrics from the database
     prometheus_output.push_str(&recent_metrics);
 
-    Ok(prometheus_output)
+    // Create response with proper Prometheus content type
+    Response::builder()
+        .status(StatusCode::OK)
+        .header(
+            header::CONTENT_TYPE,
+            "text/plain; version=0.0.4; charset=utf-8",
+        )
+        .body(Body::from(prometheus_output))
+        .map_err(|e| Error::internal(&format!("Failed to build response: {e}")))
 }

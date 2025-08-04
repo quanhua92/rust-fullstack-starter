@@ -118,7 +118,12 @@ pub fn create_router(state: AppState) -> Router {
         .route("/auth/register", post(auth_api::register))
         // Task type registration (public for workers)
         .route("/tasks/types", post(tasks_api::register_task_type))
-        .route("/tasks/types", get(tasks_api::list_task_types));
+        .route("/tasks/types", get(tasks_api::list_task_types))
+        // Prometheus metrics endpoint (public for scraping)
+        .route(
+            "/monitoring/metrics/prometheus",
+            get(monitoring_api::get_prometheus_metrics),
+        );
 
     // Protected routes (authentication required)
     let protected_routes = Router::new()
@@ -167,10 +172,6 @@ pub fn create_router(state: AppState) -> Router {
         .route(
             "/monitoring/incidents/{id}/timeline",
             get(monitoring_api::get_incident_timeline),
-        )
-        .route(
-            "/monitoring/metrics/prometheus",
-            get(monitoring_api::get_prometheus_metrics),
         )
         .layer(middleware::from_fn_with_state(
             state.clone(),

@@ -649,8 +649,8 @@ if [ -n "$USER_TOKEN" ]; then
     
     test_api "GET /api/v1/monitoring/metrics" "GET" "/api/v1/monitoring/metrics?limit=10" "200" "$USER_TOKEN"
     
-    # Test Prometheus metrics endpoint (requires auth)
-    test_api "GET /api/v1/monitoring/metrics/prometheus" "GET" "/api/v1/monitoring/metrics/prometheus" "200" "$USER_TOKEN"
+    # Test Prometheus metrics endpoint (public endpoint, no auth required)
+    test_api "GET /api/v1/monitoring/metrics/prometheus" "GET" "/api/v1/monitoring/metrics/prometheus" "200"
     
     # Test incident creation and retrieval
     INCIDENT_DATA='{"title": "Test API Incident", "description": "Testing incident management via API", "severity": "low"}'

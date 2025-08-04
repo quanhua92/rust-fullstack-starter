@@ -1385,11 +1385,11 @@
         "tags": [
           "Monitoring"
         ],
-        "summary": "Export metrics in Prometheus format",
+        "summary": "Export metrics in Prometheus format (publicly accessible for scraping)",
         "operationId": "get_prometheus_metrics",
         "responses": {
           "200": {
-            "description": "Prometheus metrics exported successfully",
+            "description": "Prometheus metrics in text/plain format (version=0.0.4; charset=utf-8)",
             "content": {
               "text/plain": {
                 "schema": {
@@ -1397,23 +1397,8 @@
                 }
               }
             }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
           }
-        },
-        "security": [
-          {
-            "bearer_auth": []
-          }
-        ]
+        }
       }
     },
     "/monitoring/stats": {
