@@ -65,7 +65,7 @@ This course is NOT about general web development. It's about achieving complete 
 - `starter/src/` - Complete module structure (8 core domains + 5 infrastructure)
 - `starter/Cargo.toml` - The exact dependencies and features (24 production deps)
 - `scripts/dev-server.sh` - Complete system bootstrap (172 lines of orchestration)
-- `docs/getting-started.md` - This system's setup guide
+- `docs/getting-started/getting-started.md` - This system's setup guide
 - `docs/guides/01-architecture.md` - This system's design philosophy
 
 **🎯 Key Insights for Teaching:**
@@ -135,7 +135,7 @@ The 172-line bootstrap script demonstrates production-ready development practice
 - `starter/migrations/004_tasks.up.sql` - Background tasks with enums (42 lines)
 - `starter/migrations/005_task_types.up.sql` - Task type registration (33 lines)
 - `.env.example` - Database configuration template
-- `docs/configuration.md` - Database configuration for this system
+- `docs/reference/configuration.md` - Database configuration for this system
 
 **🎯 Key Insights for Teaching:**
 
@@ -1034,7 +1034,7 @@ Docker Compose → System Spawn → Failure Injection → Recovery Validation
 - `starter/migrations/006_monitoring.up.sql` - 4-table schema with PostgreSQL enums
 - `docs/guides/15-monitoring-and-observability.md` - 891-line implementation guide
 - `starter/tests/monitoring/` - Comprehensive test suite
-- `docs/monitoring.md` - API reference and integration patterns
+- `docs/architecture/monitoring.md` - API reference and integration patterns
 
 **🎯 Teaching Goals:**
 Guide students through implementing a comprehensive monitoring system that demonstrates industry-standard observability patterns.
@@ -1223,7 +1223,7 @@ let metric = services::create_metric(&mut conn, CreateMetricRequest {
 
 **📖 Required Reading:**
 - `docs/guides/15-monitoring-and-observability.md` - Complete implementation guide
-- `docs/monitoring.md` - API reference and integration patterns
+- `docs/architecture/monitoring.md` - API reference and integration patterns
 - Study existing monitoring tests for usage patterns
 
 **🔗 Connects To:**

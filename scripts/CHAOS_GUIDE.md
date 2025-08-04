@@ -594,7 +594,7 @@ curl -X GET http://localhost:3000/api/v1/tasks/stats
 
 - [Chaos Engineering Principles](https://principlesofchaos.org/)
 - [Netflix Chaos Engineering](https://netflix.github.io/chaosmonkey/)
-- [Rust Reliability Patterns](../docs/reliability.md)
+- [Rust Reliability Patterns](../docs/quality/reliability.md)
 - [Background Tasks Guide](../docs/guides/04-background-tasks.md)
 - [Circuit Breaker Pattern](../docs/guides/03-patterns.md)
 

@@ -976,7 +976,7 @@ Create these problems intentionally to practice debugging:
 - [Web Frontend Integration](10-web-frontend-integration.md) - Full-stack debugging strategies
 - [Testing Guide](08-testing.md) - Testing approaches that prevent bugs
 - [Chaos Testing](09-chaos-testing.md) - Proactive failure discovery
-- [Production Deployment](../production-deployment.md) - Production debugging tools
+- [Production Deployment](../deployment/production-deployment.md) - Production debugging tools
 
 ---
 

@@ -1159,7 +1159,7 @@ Now that you understand the background task system, explore related concepts:
 - **[Task Registry →](./07-task-registry.md)** - Organize and manage task handlers
 - **[Testing Guide →](./08-testing.md)** - Learn how to test your task handlers with the comprehensive testing framework
 - **[Chaos Testing →](./09-chaos-testing.md)** - Test task system resilience under failure conditions
-- **[Reliability Patterns →](../reliability.md)** - Understand the circuit breakers and retry strategies used by the task system
+- **[Reliability Patterns →](../quality/reliability.md)** - Understand the circuit breakers and retry strategies used by the task system
 
 ## Testing Your Tasks
 

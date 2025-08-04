@@ -111,7 +111,7 @@ GET /api/v1/tasks → Returns all tasks from all users
 GET /api/v1/admin/health → Detailed system status (admin-only endpoint)
 ```
 
-For detailed authentication and authorization information, see the [Authentication & Authorization Guide](./guides/02-authentication-and-authorization.md).
+For detailed authentication and authorization information, see the [Authentication & Authorization Guide](../guides/02-authentication-and-authorization.md).
 
 ### 📖 Using the Interactive Docs
 1. Start your server: `./scripts/server.sh 3000`
@@ -1661,7 +1661,7 @@ Get monitoring system statistics (Moderator+ required).
 | **Moderator** | ✅ Full access | ✅ Full access | ✅ Create/Manage | ✅ Full access | ✅ View |
 | **Admin** | ✅ Full access | ✅ Full access | ✅ Full access | ✅ Full access | ✅ View |
 
-For detailed implementation examples and patterns, see the [Monitoring and Observability Guide](guides/15-monitoring-and-observability.md).
+For detailed implementation examples and patterns, see the [Monitoring and Observability Guide](../guides/15-monitoring-and-observability.md).
 
 ## Admin Endpoints
 
