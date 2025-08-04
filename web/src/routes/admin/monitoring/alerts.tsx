@@ -52,6 +52,26 @@ function AlertsManagement() {
 		threshold_value: "",
 	});
 
+	// Add validation for numeric threshold values
+	const validateThresholdValue = (value: string): number => {
+		const parsed = Number.parseFloat(value);
+		if (Number.isNaN(parsed)) {
+			throw new Error("Invalid threshold value: must be a valid number");
+		}
+		return parsed;
+	};
+
+	// Check if threshold value is valid for form validation
+	const isThresholdValueValid = (value: string): boolean => {
+		if (!value.trim()) return true; // Allow empty for optional fields
+		try {
+			validateThresholdValue(value);
+			return true;
+		} catch {
+			return false;
+		}
+	};
+
 	// Fetch alerts (Moderator+ only)
 	const { data: alerts, isLoading, refetch } = useMonitoringAlerts(15000);
 
@@ -62,7 +82,7 @@ function AlertsManagement() {
 				name: data.name,
 				description: data.description || undefined,
 				query: data.query,
-				threshold_value: Number.parseFloat(data.threshold_value),
+				threshold_value: validateThresholdValue(data.threshold_value),
 			};
 			return apiClient.createAlert(payload);
 		},
@@ -93,7 +113,7 @@ function AlertsManagement() {
 				description: data.updates.description || undefined,
 				query: data.updates.query,
 				threshold_value: data.updates.threshold_value
-					? Number.parseFloat(data.updates.threshold_value)
+					? validateThresholdValue(data.updates.threshold_value)
 					: undefined,
 			};
 			return apiClient.updateAlert(data.id, payload);
@@ -132,6 +152,18 @@ function AlertsManagement() {
 	};
 
 	const handleSubmit = () => {
+		// Validate threshold value before submission
+		try {
+			if (createForm.threshold_value) {
+				validateThresholdValue(createForm.threshold_value);
+			}
+		} catch (error) {
+			toast.error(
+				error instanceof Error ? error.message : "Invalid threshold value",
+			);
+			return;
+		}
+
 		if (editingAlert) {
 			updateAlertMutation.mutate({
 				id: editingAlert.id,
@@ -251,6 +283,7 @@ function AlertsManagement() {
 									<Input
 										id="threshold_value"
 										type="number"
+										step="any"
 										placeholder="e.g., 0.05, 90, 1000"
 										value={createForm.threshold_value}
 										onChange={(e) =>
@@ -259,7 +292,23 @@ function AlertsManagement() {
 												threshold_value: e.target.value,
 											})
 										}
+										className={
+											createForm.threshold_value &&
+											!isThresholdValueValid(createForm.threshold_value)
+												? "border-red-500 focus:border-red-500"
+												: ""
+										}
 									/>
+									{createForm.threshold_value &&
+									!isThresholdValueValid(createForm.threshold_value) ? (
+										<p className="text-xs text-red-600">
+											Please enter a valid numeric value
+										</p>
+									) : (
+										<p className="text-xs text-muted-foreground">
+											Enter a numeric value for the alert threshold
+										</p>
+									)}
 								</div>
 							</div>
 							<div className="space-y-2">
@@ -298,6 +347,7 @@ function AlertsManagement() {
 										!createForm.name ||
 										!createForm.query ||
 										!createForm.threshold_value ||
+										!isThresholdValueValid(createForm.threshold_value) ||
 										createAlertMutation.isPending ||
 										updateAlertMutation.isPending
 									}
