@@ -83,6 +83,31 @@ The system provides two carefully designed templates optimized for different use
 - **Use `production`** for full-featured applications requiring search/filtering/bulk operations
 - **Custom templates** for domain-specific patterns and specialized use cases
 
+#### Template Feature Matrix
+
+**Basic Template (6 Endpoints):**
+- `POST /{resources}` - Create single resource
+- `GET /{resources}/{id}` - Get resource by ID  
+- `GET /{resources}` - List with basic filters (search, pagination, sorting)
+- `PUT /{resources}/{id}` - Update single resource
+- `DELETE /{resources}/{id}` - Delete single resource (soft delete)
+- `GET /admin/{resources}/stats` - Admin analytics
+
+**Production Template (12 Endpoints = Basic + 6 Advanced):**
+- All Basic Template endpoints PLUS:
+- `GET /{resources}/search` - Dedicated full-text search with ranking
+- `GET /{resources}/filter` - Advanced filtering (date ranges, status, user)
+- `GET /{resources}/count` - Efficient counting for pagination UI
+- `POST /{resources}/bulk` - Bulk create (max 100 items)
+- `PUT /{resources}/bulk` - Bulk update (max 100 items)  
+- `DELETE /{resources}/bulk` - Bulk delete (max 100 items)
+
+**Code Complexity Comparison:**
+- **Basic Template**: ~1,300 lines of generated code
+- **Production Template**: ~2,450 lines of generated code (1.9x larger)
+- **Compilation Time**: Basic <5s, Production <10s
+- **Database Performance**: Basic suitable for <10K records, Production handles >100K records
+
 #### Template Structure
 
 ```rust
