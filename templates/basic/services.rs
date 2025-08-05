@@ -1,6 +1,6 @@
 //! __MODULE_STRUCT__ business logic and database operations
 
-use crate::{error::Error, Database};
+use crate::{types::Result, Database};
 use super::models::*;
 use uuid::Uuid;
 
@@ -8,7 +8,7 @@ use uuid::Uuid;
 pub async fn list___MODULE_NAME_PLURAL___service(
     database: &Database,
     request: List__MODULE_STRUCT__Request,
-) -> Result<Vec<__MODULE_STRUCT__>, Error> {
+) -> Result<Vec<__MODULE_STRUCT__>> {
     let mut query = format!(
         "SELECT id, name, description, created_at, updated_at 
          FROM __MODULE_TABLE__ 
@@ -37,8 +37,7 @@ pub async fn list___MODULE_NAME_PLURAL___service(
 
     let __MODULE_NAME_PLURAL__ = sqlx_query
         .fetch_all(&database.pool)
-        .await
-        .map_err(|e| Error::Database(format!("Failed to list __MODULE_NAME_PLURAL__: {}", e)))?;
+        .await?;
 
     Ok(__MODULE_NAME_PLURAL__)
 }
@@ -47,7 +46,7 @@ pub async fn list___MODULE_NAME_PLURAL___service(
 pub async fn get___MODULE_NAME___service(
     database: &Database,
     id: Uuid,
-) -> Result<__MODULE_STRUCT__, Error> {
+) -> Result<__MODULE_STRUCT__> {
     let __MODULE_NAME__ = sqlx::query_as::<_, __MODULE_STRUCT__>(
         "SELECT id, name, description, created_at, updated_at 
          FROM __MODULE_TABLE__ 
@@ -55,9 +54,8 @@ pub async fn get___MODULE_NAME___service(
     )
     .bind(id)
     .fetch_optional(&database.pool)
-    .await
-    .map_err(|e| Error::Database(format!("Failed to get __MODULE_NAME__: {}", e)))?
-    .ok_or_else(|| Error::NotFound("__MODULE_STRUCT__".to_string(), id.to_string()))?;
+    .await?
+    .ok_or_else(|| crate::error::Error::NotFound(format!("__MODULE_STRUCT__ with id {}", id)))?;
 
     Ok(__MODULE_NAME__)
 }
@@ -66,10 +64,10 @@ pub async fn get___MODULE_NAME___service(
 pub async fn create___MODULE_NAME___service(
     database: &Database,
     request: Create__MODULE_STRUCT__Request,
-) -> Result<__MODULE_STRUCT__, Error> {
+) -> Result<__MODULE_STRUCT__> {
     // Validate request
     if request.name.trim().is_empty() {
-        return Err(Error::validation("name", "Name cannot be empty"));
+        return Err(crate::error::Error::validation("name", "Name cannot be empty"));
     }
 
     let __MODULE_NAME__ = __MODULE_STRUCT__::new(request.name, request.description);
@@ -85,8 +83,7 @@ pub async fn create___MODULE_NAME___service(
     .bind(__MODULE_NAME__.created_at)
     .bind(__MODULE_NAME__.updated_at)
     .fetch_one(&database.pool)
-    .await
-    .map_err(|e| Error::Database(format!("Failed to create __MODULE_NAME__: {}", e)))?;
+    .await?;
 
     Ok(created___MODULE_NAME__)
 }
@@ -96,14 +93,14 @@ pub async fn update___MODULE_NAME___service(
     database: &Database,
     id: Uuid,
     request: Update__MODULE_STRUCT__Request,
-) -> Result<__MODULE_STRUCT__, Error> {
+) -> Result<__MODULE_STRUCT__> {
     // Get existing __MODULE_NAME__
     let mut __MODULE_NAME__ = get___MODULE_NAME___service(database, id).await?;
 
     // Validate request
     if let Some(ref name) = request.name {
         if name.trim().is_empty() {
-            return Err(Error::validation("name", "Name cannot be empty"));
+            return Err(crate::error::Error::validation("name", "Name cannot be empty"));
         }
     }
 
@@ -121,8 +118,7 @@ pub async fn update___MODULE_NAME___service(
     .bind(__MODULE_NAME__.description)
     .bind(__MODULE_NAME__.updated_at)
     .fetch_one(&database.pool)
-    .await
-    .map_err(|e| Error::Database(format!("Failed to update __MODULE_NAME__: {}", e)))?;
+    .await?;
 
     Ok(updated___MODULE_NAME__)
 }
@@ -131,16 +127,15 @@ pub async fn update___MODULE_NAME___service(
 pub async fn delete___MODULE_NAME___service(
     database: &Database,
     id: Uuid,
-) -> Result<(), Error> {
+) -> Result<()> {
     let rows_affected = sqlx::query("DELETE FROM __MODULE_TABLE__ WHERE id = $1")
         .bind(id)
         .execute(&database.pool)
-        .await
-        .map_err(|e| Error::Database(format!("Failed to delete __MODULE_NAME__: {}", e)))?
+        .await?
         .rows_affected();
 
     if rows_affected == 0 {
-        return Err(Error::NotFound("__MODULE_STRUCT__".to_string(), id.to_string()));
+        return Err(crate::error::Error::NotFound(format!("__MODULE_STRUCT__ with id {}", id)));
     }
 
     Ok(())

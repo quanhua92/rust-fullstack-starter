@@ -304,10 +304,22 @@ impl CliApp {
         println!("📄 Files created: {}", files_created.len());
         
         if !dry_run {
-            println!("\n⚠️  Next steps:");
-            println!("   1. Add routes to server.rs");
-            println!("   2. Add imports to openapi.rs");
-            println!("   3. Run migrations: sqlx migrate run");
+            println!("\n📋 Next steps - run these commands:");
+            println!("   1. Run the migration:");
+            println!("      cd starter && sqlx migrate run");
+            println!();
+            println!("   2. Update sqlx query cache:");
+            println!("      cd starter && cargo sqlx prepare");
+            println!();
+            println!("   3. Test compilation:");
+            println!("      cd starter && cargo check");
+            println!();
+            println!("   4. Add routes to server.rs (manual step):");
+            println!("      - Import: use crate::{}::api::{}_routes;", plural, plural);
+            println!("      - Add route: .nest(\"/api/v1/{}\", {}_routes())", plural, plural);
+            println!();
+            println!("   5. Add to openapi.rs (manual step):");
+            println!("      - Import the structs from {}::models", plural);
         }
 
         Ok(())
