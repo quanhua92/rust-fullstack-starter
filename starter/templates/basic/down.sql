@@ -1,0 +1,7 @@
+-- Drop __MODULE_TABLE__ table and related objects
+DROP TRIGGER IF EXISTS update___MODULE_TABLE___updated_at ON __MODULE_TABLE__;
+DROP INDEX IF EXISTS idx___MODULE_TABLE___active_user;
+DROP INDEX IF EXISTS idx___MODULE_TABLE___title;
+DROP INDEX IF EXISTS idx___MODULE_TABLE___created_at;
+DROP INDEX IF EXISTS idx___MODULE_TABLE___user_id;
+DROP TABLE IF EXISTS __MODULE_TABLE__;
