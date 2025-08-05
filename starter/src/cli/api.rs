@@ -1,5 +1,5 @@
 use super::{
-    models::{Cli, Commands},
+    models::{Cli, Commands, GenerateCommands},
     services::{TaskTypeService, execute_admin_command},
 };
 use crate::{AppConfig, Database, server, tasks};
@@ -43,6 +43,7 @@ impl CliApp {
             Commands::HealthCheck => self.run_health_check().await,
             Commands::ExportOpenApi { output } => self.export_openapi(output).await,
             Commands::Admin { admin_command } => self.run_admin_command(admin_command).await,
+            Commands::Generate { generator } => self.run_generate_command(generator).await,
         }
     }
 
@@ -156,6 +157,205 @@ impl CliApp {
         let database = Database::connect(&self.config).await?;
         execute_admin_command(database, admin_command).await
     }
+
+    /// Run generate commands
+    async fn run_generate_command(
+        &self,
+        generator: GenerateCommands,
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        match generator {
+            GenerateCommands::Module { name, template, dry_run, force } => {
+                self.generate_module(name, template, dry_run, force).await
+            }
+        }
+    }
+
+    /// Generate a module from templates
+    async fn generate_module(
+        &self,
+        name: String,
+        template: String,
+        dry_run: bool,
+        _force: bool,
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        use std::collections::HashMap;
+        use std::fs;
+        use std::path::Path;
+
+        println!("🚀 Generating module '{}' using '{}' template", name, template);
+        
+        if dry_run {
+            println!("🔍 DRY RUN MODE - No files will be created");
+        }
+
+        // Create singular/plural forms
+        let singular = &name;
+        let plural = if name.ends_with('s') {
+            name.clone()
+        } else {
+            format!("{}s", singular)
+        }; // Simple pluralization
+        let struct_name = capitalize_first(&singular);
+        let table_name = &plural;
+
+        // Template replacements
+        let mut replacements = HashMap::new();
+        replacements.insert("__MODULE_NAME__", singular);
+        replacements.insert("__MODULE_NAME_PLURAL__", &plural);
+        replacements.insert("__MODULE_STRUCT__", &struct_name);
+        replacements.insert("__MODULE_TABLE__", table_name);
+
+        let template_dir = format!("../templates/{}", template);
+        if !Path::new(&template_dir).exists() {
+            return Err(format!("Template '{}' not found in templates directory", template).into());
+        }
+
+        let mut files_created = Vec::new();
+
+        // Create module directory
+        let module_dir = format!("src/{}", plural);
+        if !dry_run {
+            fs::create_dir_all(&module_dir)?;
+        }
+        println!("📁 Created directory: {}", module_dir);
+
+        // Copy and process template files
+        let template_files = [
+            ("api.rs", "api.rs"),
+            ("models.rs", "models.rs"), 
+            ("services.rs", "services.rs"),
+            ("mod.rs", "mod.rs"),
+        ];
+
+        for (template_file, output_file) in template_files {
+            let template_path = format!("{}/{}", template_dir, template_file);
+            let output_path = format!("{}/{}", module_dir, output_file);
+            
+            if Path::new(&template_path).exists() {
+                let content = fs::read_to_string(&template_path)?;
+                let processed = process_template(&content, &replacements);
+                
+                if !dry_run {
+                    fs::write(&output_path, processed)?;
+                }
+                files_created.push(output_path.clone());
+                println!("📄 Created: {}", output_path);
+            }
+        }
+
+        // Create test directory and file
+        let test_dir = format!("tests/{}", plural);
+        if !dry_run {
+            fs::create_dir_all(&test_dir)?;
+        }
+
+        let test_template_path = format!("{}/tests.rs", template_dir);
+        if Path::new(&test_template_path).exists() {
+            let test_content = fs::read_to_string(&test_template_path)?;
+            let processed_test = process_template(&test_content, &replacements);
+            let test_output = format!("{}/mod.rs", test_dir);
+            
+            if !dry_run {
+                fs::write(&test_output, processed_test)?;
+            }
+            files_created.push(test_output.clone());
+            println!("📄 Created: {}", test_output);
+        }
+
+        // Create migrations
+        let migrations_dir = "migrations";
+        let migration_number = get_next_migration_number(migrations_dir)?;
+        
+        let migration_files = [
+            ("up.sql", format!("{:03}_{}.up.sql", migration_number, plural)),
+            ("down.sql", format!("{:03}_{}.down.sql", migration_number, plural)),
+        ];
+
+        for (template_file, output_file) in migration_files {
+            let template_path = format!("{}/{}", template_dir, template_file);
+            let output_path = format!("{}/{}", migrations_dir, output_file);
+            
+            if Path::new(&template_path).exists() {
+                let content = fs::read_to_string(&template_path)?;
+                let processed = process_template(&content, &replacements);
+                
+                if !dry_run {
+                    fs::write(&output_path, processed)?;
+                }
+                files_created.push(output_path.clone());
+                println!("📄 Created: {}", output_path);
+            }
+        }
+
+        // Update lib.rs
+        let lib_rs_path = "src/lib.rs";
+        if Path::new(lib_rs_path).exists() && !dry_run {
+            let lib_content = fs::read_to_string(lib_rs_path)?;
+            let module_declaration = format!("pub mod {};", plural);
+            
+            if !lib_content.contains(&module_declaration) {
+                let updated_content = format!("{}\n{}", lib_content.trim(), module_declaration);
+                fs::write(lib_rs_path, updated_content)?;
+                println!("📝 Updated: {}", lib_rs_path);
+            }
+        }
+
+        println!("✅ Module generation completed!");
+        println!("📄 Files created: {}", files_created.len());
+        
+        if !dry_run {
+            println!("\n⚠️  Next steps:");
+            println!("   1. Add routes to server.rs");
+            println!("   2. Add imports to openapi.rs");
+            println!("   3. Run migrations: sqlx migrate run");
+        }
+
+        Ok(())
+    }
+}
+
+/// Capitalize first letter of a string
+fn capitalize_first(s: &str) -> String {
+    let mut chars = s.chars();
+    match chars.next() {
+        None => String::new(),
+        Some(first) => first.to_uppercase().collect::<String>() + chars.as_str(),
+    }
+}
+
+/// Process template content by replacing placeholders
+fn process_template(content: &str, replacements: &std::collections::HashMap<&str, &String>) -> String {
+    let mut result = content.to_string();
+    for (placeholder, replacement) in replacements {
+        result = result.replace(placeholder, replacement);
+    }
+    result
+}
+
+/// Get the next migration number
+fn get_next_migration_number(migrations_dir: &str) -> Result<u32, Box<dyn std::error::Error>> {
+    use std::fs;
+    
+    if !std::path::Path::new(migrations_dir).exists() {
+        return Ok(1);
+    }
+
+    let mut max_number = 0;
+    let entries = fs::read_dir(migrations_dir)?;
+    
+    for entry in entries {
+        let entry = entry?;
+        let filename = entry.file_name();
+        let filename_str = filename.to_string_lossy();
+        
+        if let Some(number_str) = filename_str.split('_').next() {
+            if let Ok(number) = number_str.parse::<u32>() {
+                max_number = max_number.max(number);
+            }
+        }
+    }
+
+    Ok(max_number + 1)
 }
 
 #[cfg(test)]
