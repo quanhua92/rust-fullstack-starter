@@ -16,6 +16,7 @@ use axum::{
     Extension, Router,
 };
 use serde::Deserialize;
+use sqlx::Acquire;
 use uuid::Uuid;
 use utoipa::IntoParams;
 
