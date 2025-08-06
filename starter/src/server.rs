@@ -9,7 +9,6 @@ use crate::{
     error::Error,
     monitoring::api as monitoring_api,
     openapi,
-    products::api::products_routes,
     rbac::middleware::require_moderator_role,
     tasks::api as tasks_api,
     types::{AppState, Result},
@@ -148,7 +147,6 @@ pub fn create_router(state: AppState) -> Router {
         .route("/tasks/{id}/cancel", post(tasks_api::cancel_task))
         .route("/tasks/{id}/retry", post(tasks_api::retry_task))
         // Products routes
-        .nest("/products", products_routes())
         // Monitoring routes (basic access)
         .route("/monitoring/events", post(monitoring_api::create_event))
         .route("/monitoring/events", get(monitoring_api::get_events))

@@ -303,18 +303,7 @@ impl CliApp {
             }
         }
 
-        // Update lib.rs
-        let lib_rs_path = "starter/src/lib.rs";
-        if Path::new(lib_rs_path).exists() && !dry_run {
-            let lib_content = fs::read_to_string(lib_rs_path)?;
-            let module_declaration = format!("pub mod {plural};");
-
-            if !lib_content.contains(&module_declaration) {
-                let updated_content = format!("{}\n{module_declaration}", lib_content.trim());
-                fs::write(lib_rs_path, updated_content)?;
-                println!("📝 Updated: {lib_rs_path}");
-            }
-        }
+        // Note: lib.rs update is now a manual step for consistency
 
         println!("✅ Module generation completed!");
         let files_count = files_created.len();
@@ -333,11 +322,14 @@ impl CliApp {
             );
             println!("      ./scripts/check.sh");
             println!();
-            println!("   4. Add routes to server.rs (manual step):");
+            println!("   4. Add module to lib.rs (manual step):");
+            println!("      - Add: pub mod {plural};");
+            println!();
+            println!("   5. Add routes to server.rs (manual step):");
             println!("      - Import: use crate::{plural}::api::{plural}_routes;");
             println!("      - Add route: .nest(\"/api/v1/{plural}\", {plural}_routes())");
             println!();
-            println!("   5. Add to openapi.rs (manual step):");
+            println!("   6. Add to openapi.rs (manual step):");
             println!("      - Import the structs from {plural}::models");
         }
 
@@ -440,7 +432,7 @@ impl CliApp {
         }
 
         if lib_rs_has_module {
-            println!("   📝 Remove module declaration from lib.rs");
+            println!("   📝 Manual step: Remove module declaration from lib.rs");
         }
 
         if !module_exists && migration_files.is_empty() && !test_exists && !lib_rs_has_module {
@@ -539,21 +531,13 @@ impl CliApp {
             }
         }
 
-        // Step 5: Remove from lib.rs
+        // Step 5: Manual lib.rs cleanup (not automated)
         if lib_rs_has_module {
-            let lib_content = fs::read_to_string(lib_rs_path)?;
-            let module_declaration = format!("pub mod {plural};");
-            let updated_content = lib_content
-                .lines()
-                .filter(|line| line.trim() != module_declaration.trim())
-                .collect::<Vec<_>>()
-                .join("\n");
-
-            if let Err(e) = fs::write(lib_rs_path, updated_content) {
-                println!("⚠️  Failed to update {lib_rs_path}: {e}");
-            } else {
-                println!("📝 Updated: {lib_rs_path}");
-            }
+            println!("\n📋 Manual cleanup required:");
+            println!("   📝 Remove from lib.rs: pub mod {plural};");
+            println!("   📝 Remove from server.rs: use crate::{plural}::api::{plural}_routes;");
+            println!("   📝 Remove from server.rs: .nest(\"/api/v1/{plural}\", {plural}_routes())");
+            println!("   📝 Remove from openapi.rs: any imports from {plural}::models");
         }
 
         println!("\n✅ Module '{name}' reverted successfully!");

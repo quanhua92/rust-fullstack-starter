@@ -18,4 +18,3 @@ pub use config::AppConfig;
 pub use database::Database;
 pub use error::Error;
 pub use types::{DbConn, DbPool, Result};
-pub mod products;
