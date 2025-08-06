@@ -1,0 +1,12 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE sessions SET is_active = false WHERE expires_at < NOW() AND is_active = true",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": []
+  },
+  "hash": "26f7c38bbf5fcb5dfd197e9370c351b8bdd48f041aab344583aea0bb87fde3d7"
+}

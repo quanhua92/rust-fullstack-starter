@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            DELETE FROM tasks \n            WHERE id = $1 AND status IN ('completed', 'failed', 'cancelled')\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "69418c4d223fb77eed16fc174ab36c85fbcaaee59b1e54f1cb2b6dad5d42c876"
+}

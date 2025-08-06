@@ -14,21 +14,20 @@ use utoipa::IntoParams;
 use crate::{
     auth::AuthUser,
     __MODULE_NAME_PLURAL__::{models::*, services::*},
-    types::{ApiResponse, Result},
-    Database,
+    types::{ApiResponse, AppState, Result},
 };
 
 /// Create __MODULE_NAME_PLURAL__ router with all endpoints
-pub fn __MODULE_NAME_PLURAL___routes() -> Router<Database> {
+pub fn __MODULE_NAME_PLURAL___routes() -> Router<AppState> {
     Router::new()
         .route("/", get(list___MODULE_NAME_PLURAL__))
         .route("/", post(create___MODULE_NAME__))
         .route("/bulk", post(bulk_create___MODULE_NAME_PLURAL__))
         .route("/bulk", put(bulk_update___MODULE_NAME_PLURAL__))
         .route("/bulk", delete(bulk_delete___MODULE_NAME_PLURAL__))
-        .route("/:id", get(get___MODULE_NAME__))
-        .route("/:id", put(update___MODULE_NAME__))
-        .route("/:id", delete(delete___MODULE_NAME__))
+        .route("/{id}", get(get___MODULE_NAME__))
+        .route("/{id}", put(update___MODULE_NAME__))
+        .route("/{id}", delete(delete___MODULE_NAME__))
 }
 
 /// Query parameters for listing __MODULE_NAME_PLURAL__
@@ -68,7 +67,7 @@ pub struct List__MODULE_STRUCT__QueryParams {
     tag = "__MODULE_NAME_PLURAL__"
 )]
 pub async fn list___MODULE_NAME_PLURAL__(
-    State(database): State<Database>,
+    State(app_state): State<AppState>,
     Extension(auth_user): Extension<AuthUser>,
     Query(params): Query<List__MODULE_STRUCT__QueryParams>,
 ) -> Result<Json<ApiResponse<__MODULE_STRUCT__ListResponse>>> {
@@ -150,7 +149,14 @@ pub async fn list___MODULE_NAME_PLURAL__(
         sort_order,
     };
 
-    let response = list___MODULE_NAME_PLURAL___service(&database, request).await?;
+    let mut conn = app_state
+        .database
+        .pool
+        .acquire()
+        .await
+        .map_err(crate::error::Error::from_sqlx)?;
+
+    let response = list___MODULE_NAME_PLURAL___service(&mut conn, request).await?;
     Ok(Json(ApiResponse::success(response)))
 }
 
@@ -169,13 +175,20 @@ pub async fn list___MODULE_NAME_PLURAL__(
     tag = "__MODULE_NAME_PLURAL__"
 )]
 pub async fn get___MODULE_NAME__(
-    State(database): State<Database>,
+    State(app_state): State<AppState>,
     Extension(auth_user): Extension<AuthUser>,
     Path(id): Path<Uuid>,
 ) -> Result<Json<ApiResponse<__MODULE_STRUCT__>>> {
     // Authenticated access required - user must be logged in
     let _ = &auth_user; // Explicitly acknowledge the auth requirement
-    let __MODULE_NAME__ = get___MODULE_NAME___service(&database, id).await?;
+    let mut conn = app_state
+        .database
+        .pool
+        .acquire()
+        .await
+        .map_err(crate::error::Error::from_sqlx)?;
+
+    let __MODULE_NAME__ = get___MODULE_NAME___service(&mut conn, id).await?;
     Ok(Json(ApiResponse::success(__MODULE_NAME__)))
 }
 
@@ -192,13 +205,20 @@ pub async fn get___MODULE_NAME__(
     tag = "__MODULE_NAME_PLURAL__"
 )]
 pub async fn create___MODULE_NAME__(
-    State(database): State<Database>,
+    State(app_state): State<AppState>,
     Extension(auth_user): Extension<AuthUser>,
     Json(request): Json<Create__MODULE_STRUCT__Request>,
 ) -> Result<Json<ApiResponse<__MODULE_STRUCT__>>> {
     // Authenticated access required - user must be logged in
     let _ = &auth_user; // Explicitly acknowledge the auth requirement
-    let __MODULE_NAME__ = create___MODULE_NAME___service(&database, request).await?;
+    let mut conn = app_state
+        .database
+        .pool
+        .acquire()
+        .await
+        .map_err(crate::error::Error::from_sqlx)?;
+
+    let __MODULE_NAME__ = create___MODULE_NAME___service(&mut conn, request).await?;
     Ok(Json(ApiResponse::success(__MODULE_NAME__)))
 }
 
@@ -219,14 +239,21 @@ pub async fn create___MODULE_NAME__(
     tag = "__MODULE_NAME_PLURAL__"
 )]
 pub async fn update___MODULE_NAME__(
-    State(database): State<Database>,
+    State(app_state): State<AppState>,
     Extension(auth_user): Extension<AuthUser>,
     Path(id): Path<Uuid>,
     Json(request): Json<Update__MODULE_STRUCT__Request>,
 ) -> Result<Json<ApiResponse<__MODULE_STRUCT__>>> {
     // Authenticated access required - user must be logged in
     let _ = &auth_user; // Explicitly acknowledge the auth requirement
-    let __MODULE_NAME__ = update___MODULE_NAME___service(&database, id, request).await?;
+    let mut conn = app_state
+        .database
+        .pool
+        .acquire()
+        .await
+        .map_err(crate::error::Error::from_sqlx)?;
+
+    let __MODULE_NAME__ = update___MODULE_NAME___service(&mut conn, id, request).await?;
     Ok(Json(ApiResponse::success(__MODULE_NAME__)))
 }
 
@@ -245,13 +272,20 @@ pub async fn update___MODULE_NAME__(
     tag = "__MODULE_NAME_PLURAL__"
 )]
 pub async fn delete___MODULE_NAME__(
-    State(database): State<Database>,
+    State(app_state): State<AppState>,
     Extension(auth_user): Extension<AuthUser>,
     Path(id): Path<Uuid>,
 ) -> Result<Json<ApiResponse<()>>> {
     // Authenticated access required - user must be logged in
     let _ = &auth_user; // Explicitly acknowledge the auth requirement
-    delete___MODULE_NAME___service(&database, id).await?;
+    let mut conn = app_state
+        .database
+        .pool
+        .acquire()
+        .await
+        .map_err(crate::error::Error::from_sqlx)?;
+
+    delete___MODULE_NAME___service(&mut conn, id).await?;
     Ok(Json(ApiResponse::success(())))
 }
 
@@ -268,13 +302,20 @@ pub async fn delete___MODULE_NAME__(
     tag = "__MODULE_NAME_PLURAL__"
 )]
 pub async fn bulk_create___MODULE_NAME_PLURAL__(
-    State(database): State<Database>,
+    State(app_state): State<AppState>,
     Extension(auth_user): Extension<AuthUser>,
     Json(request): Json<Bulk__MODULE_STRUCT__CreateRequest>,
 ) -> Result<Json<ApiResponse<BulkOperationResponse<__MODULE_STRUCT__>>>> {
     // Authenticated access required - user must be logged in
     let _ = &auth_user; // Explicitly acknowledge the auth requirement
-    let response = bulk_create___MODULE_NAME_PLURAL___service(&database, request).await?;
+    let mut conn = app_state
+        .database
+        .pool
+        .acquire()
+        .await
+        .map_err(crate::error::Error::from_sqlx)?;
+
+    let response = bulk_create___MODULE_NAME_PLURAL___service(&mut conn, request).await?;
     Ok(Json(ApiResponse::success(response)))
 }
 
@@ -291,13 +332,20 @@ pub async fn bulk_create___MODULE_NAME_PLURAL__(
     tag = "__MODULE_NAME_PLURAL__"
 )]
 pub async fn bulk_update___MODULE_NAME_PLURAL__(
-    State(database): State<Database>,
+    State(app_state): State<AppState>,
     Extension(auth_user): Extension<AuthUser>,
     Json(request): Json<Bulk__MODULE_STRUCT__UpdateRequest>,
 ) -> Result<Json<ApiResponse<BulkOperationResponse<__MODULE_STRUCT__>>>> {
     // Authenticated access required - user must be logged in
     let _ = &auth_user; // Explicitly acknowledge the auth requirement
-    let response = bulk_update___MODULE_NAME_PLURAL___service(&database, request).await?;
+    let mut conn = app_state
+        .database
+        .pool
+        .acquire()
+        .await
+        .map_err(crate::error::Error::from_sqlx)?;
+
+    let response = bulk_update___MODULE_NAME_PLURAL___service(&mut conn, request).await?;
     Ok(Json(ApiResponse::success(response)))
 }
 
@@ -314,13 +362,20 @@ pub async fn bulk_update___MODULE_NAME_PLURAL__(
     tag = "__MODULE_NAME_PLURAL__"
 )]
 pub async fn bulk_delete___MODULE_NAME_PLURAL__(
-    State(database): State<Database>,
+    State(app_state): State<AppState>,
     Extension(auth_user): Extension<AuthUser>,
     Json(request): Json<Bulk__MODULE_STRUCT__DeleteRequest>,
 ) -> Result<Json<ApiResponse<BulkOperationResponse<Uuid>>>> {
     // Authenticated access required - user must be logged in
     let _ = &auth_user; // Explicitly acknowledge the auth requirement
-    let response = bulk_delete___MODULE_NAME_PLURAL___service(&database, request).await?;
+    let mut conn = app_state
+        .database
+        .pool
+        .acquire()
+        .await
+        .map_err(crate::error::Error::from_sqlx)?;
+
+    let response = bulk_delete___MODULE_NAME_PLURAL___service(&mut conn, request).await?;
     Ok(Json(ApiResponse::success(response)))
 }
 

@@ -1,11 +1,11 @@
-//! __MODULE_STRUCT__ API endpoints
+//! Basics API endpoints
 //!
-//! Provides CRUD operations for __MODULE_NAME__ management.
+//! Provides CRUD operations for basics management.
 
 use crate::{
     auth::AuthUser,
     rbac::services as rbac_services,
-    __MODULE_NAME_PLURAL__::{models::*, services::*},
+    basics::{models::*, services::*},
     types::{ApiResponse, AppState, Result},
 };
 #[allow(unused_imports)] // These are used in the routes function but compiler can't detect it
@@ -18,27 +18,27 @@ use axum::{
 use serde::Deserialize;
 use uuid::Uuid;
 
-/// Query parameters for listing __MODULE_NAME_PLURAL__
+/// Query parameters for listing basics
 #[derive(Deserialize)]
-pub struct List__MODULE_STRUCT__Query {
+pub struct ListBasicsQuery {
     pub limit: Option<i32>,
     pub offset: Option<i32>,
     pub search: Option<String>,
 }
 
-/// API endpoints for __MODULE_NAME__ management
-pub fn __MODULE_NAME_PLURAL___routes() -> Router<AppState> {
+/// API endpoints for basics management
+pub fn basics_routes() -> Router<AppState> {
     Router::new()
-        .route("/", get(list___MODULE_NAME_PLURAL__).post(create___MODULE_NAME__))
-        .route("/{id}", get(get___MODULE_NAME__).put(update___MODULE_NAME__).delete(delete___MODULE_NAME__))
+        .route("/", get(list_basics).post(create_basics))
+        .route("/{id}", get(get_basics).put(update_basics).delete(delete_basics))
 }
 
-/// List all __MODULE_NAME_PLURAL__
-pub async fn list___MODULE_NAME_PLURAL__(
+/// List all basics
+pub async fn list_basics(
     State(app_state): State<AppState>,
     Extension(auth_user): Extension<AuthUser>,
-    Query(query): Query<List__MODULE_STRUCT__Query>,
-) -> Result<Json<ApiResponse<Vec<__MODULE_STRUCT__>>>> {
+    Query(query): Query<ListBasicsQuery>,
+) -> Result<Json<ApiResponse<Vec<Basics>>>> {
     // Basic authenticated access - user just needs to be logged in
     // The auth_user parameter ensures user is authenticated
     let _ = &auth_user; // Explicitly acknowledge the auth requirement
@@ -53,9 +53,9 @@ pub async fn list___MODULE_NAME_PLURAL__(
         .await
         .map_err(crate::error::Error::from_sqlx)?;
 
-    let __MODULE_NAME_PLURAL__ = list___MODULE_NAME_PLURAL___service(
+    let basics = list_basics_service(
         &mut conn,
-        List__MODULE_STRUCT__Request {
+        ListBasicsRequest {
             limit,
             offset,
             search: query.search,
@@ -63,15 +63,15 @@ pub async fn list___MODULE_NAME_PLURAL__(
     )
     .await?;
 
-    Ok(Json(ApiResponse::success(__MODULE_NAME_PLURAL__)))
+    Ok(Json(ApiResponse::success(basics)))
 }
 
-/// Get a specific __MODULE_NAME__
-pub async fn get___MODULE_NAME__(
+/// Get a specific basics
+pub async fn get_basics(
     State(app_state): State<AppState>,
     Extension(auth_user): Extension<AuthUser>,
     Path(id): Path<Uuid>,
-) -> Result<Json<ApiResponse<__MODULE_STRUCT__>>> {
+) -> Result<Json<ApiResponse<Basics>>> {
     // Basic authenticated access - user just needs to be logged in
     // The auth_user parameter ensures user is authenticated
     let _ = &auth_user; // Explicitly acknowledge the auth requirement
@@ -83,16 +83,16 @@ pub async fn get___MODULE_NAME__(
         .await
         .map_err(crate::error::Error::from_sqlx)?;
 
-    let __MODULE_NAME__ = get___MODULE_NAME___service(&mut conn, id).await?;
-    Ok(Json(ApiResponse::success(__MODULE_NAME__)))
+    let basics = get_basics_service(&mut conn, id).await?;
+    Ok(Json(ApiResponse::success(basics)))
 }
 
-/// Create a new __MODULE_NAME__
-pub async fn create___MODULE_NAME__(
+/// Create a new basics
+pub async fn create_basics(
     State(app_state): State<AppState>,
     Extension(auth_user): Extension<AuthUser>,
-    Json(request): Json<Create__MODULE_STRUCT__Request>,
-) -> Result<Json<ApiResponse<__MODULE_STRUCT__>>> {
+    Json(request): Json<CreateBasicsRequest>,
+) -> Result<Json<ApiResponse<Basics>>> {
     // Basic authenticated access - user just needs to be logged in
     // The auth_user parameter ensures user is authenticated
     let _ = &auth_user; // Explicitly acknowledge the auth requirement
@@ -104,17 +104,17 @@ pub async fn create___MODULE_NAME__(
         .await
         .map_err(crate::error::Error::from_sqlx)?;
 
-    let __MODULE_NAME__ = create___MODULE_NAME___service(&mut conn, request).await?;
-    Ok(Json(ApiResponse::success(__MODULE_NAME__)))
+    let basics = create_basics_service(&mut conn, request).await?;
+    Ok(Json(ApiResponse::success(basics)))
 }
 
-/// Update an existing __MODULE_NAME__
-pub async fn update___MODULE_NAME__(
+/// Update an existing basics
+pub async fn update_basics(
     State(app_state): State<AppState>,
     Extension(auth_user): Extension<AuthUser>,
     Path(id): Path<Uuid>,
-    Json(request): Json<Update__MODULE_STRUCT__Request>,
-) -> Result<Json<ApiResponse<__MODULE_STRUCT__>>> {
+    Json(request): Json<UpdateBasicsRequest>,
+) -> Result<Json<ApiResponse<Basics>>> {
     // Check permissions - require moderator or higher for updates
     rbac_services::require_moderator_or_higher(&auth_user)?;
 
@@ -125,12 +125,12 @@ pub async fn update___MODULE_NAME__(
         .await
         .map_err(crate::error::Error::from_sqlx)?;
 
-    let __MODULE_NAME__ = update___MODULE_NAME___service(&mut conn, id, request).await?;
-    Ok(Json(ApiResponse::success(__MODULE_NAME__)))
+    let basics = update_basics_service(&mut conn, id, request).await?;
+    Ok(Json(ApiResponse::success(basics)))
 }
 
-/// Delete a __MODULE_NAME__
-pub async fn delete___MODULE_NAME__(
+/// Delete a basics
+pub async fn delete_basics(
     State(app_state): State<AppState>,
     Extension(auth_user): Extension<AuthUser>,
     Path(id): Path<Uuid>,
@@ -145,7 +145,7 @@ pub async fn delete___MODULE_NAME__(
         .await
         .map_err(crate::error::Error::from_sqlx)?;
 
-    delete___MODULE_NAME___service(&mut conn, id).await?;
+    delete_basics_service(&mut conn, id).await?;
     Ok(Json(ApiResponse::success(())))
 }
 

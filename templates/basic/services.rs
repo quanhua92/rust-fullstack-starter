@@ -1,12 +1,12 @@
 //! __MODULE_STRUCT__ business logic and database operations
 
-use crate::{types::Result, Database};
+use crate::types::{DbConn, Result};
 use super::models::*;
 use uuid::Uuid;
 
 /// List __MODULE_NAME_PLURAL__ with optional filtering
 pub async fn list___MODULE_NAME_PLURAL___service(
-    database: &Database,
+    conn: &mut DbConn,
     request: List__MODULE_STRUCT__Request,
 ) -> Result<Vec<__MODULE_STRUCT__>> {
     // Use sqlx! macro for compile-time query validation
@@ -24,7 +24,7 @@ pub async fn list___MODULE_NAME_PLURAL___service(
             request.limit as i64,
             request.offset as i64
         )
-        .fetch_all(&database.pool)
+        .fetch_all(&mut **conn)
         .await?
     } else {
         sqlx::query_as!(
@@ -36,7 +36,7 @@ pub async fn list___MODULE_NAME_PLURAL___service(
             request.limit as i64,
             request.offset as i64
         )
-        .fetch_all(&database.pool)
+        .fetch_all(&mut **conn)
         .await?
     };
 
@@ -45,7 +45,7 @@ pub async fn list___MODULE_NAME_PLURAL___service(
 
 /// Get a specific __MODULE_NAME__ by ID
 pub async fn get___MODULE_NAME___service(
-    database: &Database,
+    conn: &mut DbConn,
     id: Uuid,
 ) -> Result<__MODULE_STRUCT__> {
     let __MODULE_NAME__ = sqlx::query_as!(
@@ -55,7 +55,7 @@ pub async fn get___MODULE_NAME___service(
          WHERE id = $1",
         id
     )
-    .fetch_optional(&database.pool)
+    .fetch_optional(&mut **conn)
     .await?
     .ok_or_else(|| crate::error::Error::NotFound(format!("__MODULE_STRUCT__ with id {}", id)))?;
 
@@ -64,7 +64,7 @@ pub async fn get___MODULE_NAME___service(
 
 /// Create a new __MODULE_NAME__
 pub async fn create___MODULE_NAME___service(
-    database: &Database,
+    conn: &mut DbConn,
     request: Create__MODULE_STRUCT__Request,
 ) -> Result<__MODULE_STRUCT__> {
     // Validate request
@@ -85,7 +85,7 @@ pub async fn create___MODULE_NAME___service(
         __MODULE_NAME__.created_at,
         __MODULE_NAME__.updated_at
     )
-    .fetch_one(&database.pool)
+    .fetch_one(&mut **conn)
     .await?;
 
     Ok(created___MODULE_NAME__)
@@ -93,12 +93,12 @@ pub async fn create___MODULE_NAME___service(
 
 /// Update an existing __MODULE_NAME__
 pub async fn update___MODULE_NAME___service(
-    database: &Database,
+    conn: &mut DbConn,
     id: Uuid,
     request: Update__MODULE_STRUCT__Request,
 ) -> Result<__MODULE_STRUCT__> {
     // Get existing __MODULE_NAME__
-    let mut __MODULE_NAME__ = get___MODULE_NAME___service(database, id).await?;
+    let mut __MODULE_NAME__ = get___MODULE_NAME___service(conn, id).await?;
 
     // Validate request
     if let Some(ref name) = request.name {
@@ -121,7 +121,7 @@ pub async fn update___MODULE_NAME___service(
         __MODULE_NAME__.description,
         __MODULE_NAME__.updated_at
     )
-    .fetch_one(&database.pool)
+    .fetch_one(&mut **conn)
     .await?;
 
     Ok(updated___MODULE_NAME__)
@@ -129,14 +129,14 @@ pub async fn update___MODULE_NAME___service(
 
 /// Delete a __MODULE_NAME__
 pub async fn delete___MODULE_NAME___service(
-    database: &Database,
+    conn: &mut DbConn,
     id: Uuid,
 ) -> Result<()> {
     let rows_affected = sqlx::query!(
         "DELETE FROM __MODULE_TABLE__ WHERE id = $1",
         id
     )
-    .execute(&database.pool)
+    .execute(&mut **conn)
     .await?
     .rows_affected();
 

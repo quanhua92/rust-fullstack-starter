@@ -1,13 +1,13 @@
 //! __MODULE_STRUCT__ business logic and database operations with advanced features
 
-use crate::{types::Result, Database};
+use crate::types::{DbConn, Result};
 use super::models::*;
 use uuid::Uuid;
 use base64::{Engine as _, engine::general_purpose::STANDARD as BASE64};
 
 /// List __MODULE_NAME_PLURAL__ with advanced filtering and pagination
 pub async fn list___MODULE_NAME_PLURAL___service(
-    database: &Database,
+    conn: &mut DbConn,
     request: List__MODULE_STRUCT__Request,
 ) -> Result<__MODULE_STRUCT__ListResponse> {
     let limit = request.limit.unwrap_or(20).min(100).max(1) as i64;
@@ -65,7 +65,7 @@ pub async fn list___MODULE_NAME_PLURAL___service(
 
 /// List items without filters (optimized path)
 async fn list_without_filters(
-    database: &Database,
+    conn: &mut DbConn,
     request: &List__MODULE_STRUCT__Request,
     limit: i64,
     offset: i64,
@@ -93,7 +93,7 @@ async fn list_without_filters(
              LIMIT $1 OFFSET $2",
             limit + 1,
             offset
-        ).fetch_all(&database.pool).await?,
+        ).fetch_all(&mut **conn).await?,
         ("created_at", "ASC") => sqlx::query_as!(
             __MODULE_STRUCT__,
             "SELECT id, name, description, status as \"status: __MODULE_STRUCT__Status\", priority, metadata, created_at, updated_at 
@@ -102,7 +102,7 @@ async fn list_without_filters(
              LIMIT $1 OFFSET $2",
             limit + 1,
             offset
-        ).fetch_all(&database.pool).await?,
+        ).fetch_all(&mut **conn).await?,
         ("name", "ASC") => sqlx::query_as!(
             __MODULE_STRUCT__,
             "SELECT id, name, description, status as \"status: __MODULE_STRUCT__Status\", priority, metadata, created_at, updated_at 
@@ -111,7 +111,7 @@ async fn list_without_filters(
              LIMIT $1 OFFSET $2",
             limit + 1,
             offset
-        ).fetch_all(&database.pool).await?,
+        ).fetch_all(&mut **conn).await?,
         ("name", "DESC") => sqlx::query_as!(
             __MODULE_STRUCT__,
             "SELECT id, name, description, status as \"status: __MODULE_STRUCT__Status\", priority, metadata, created_at, updated_at 
@@ -120,7 +120,7 @@ async fn list_without_filters(
              LIMIT $1 OFFSET $2",
             limit + 1,
             offset
-        ).fetch_all(&database.pool).await?,
+        ).fetch_all(&mut **conn).await?,
         ("priority", "ASC") => sqlx::query_as!(
             __MODULE_STRUCT__,
             "SELECT id, name, description, status as \"status: __MODULE_STRUCT__Status\", priority, metadata, created_at, updated_at 
@@ -129,7 +129,7 @@ async fn list_without_filters(
              LIMIT $1 OFFSET $2",
             limit + 1,
             offset
-        ).fetch_all(&database.pool).await?,
+        ).fetch_all(&mut **conn).await?,
         ("priority", "DESC") => sqlx::query_as!(
             __MODULE_STRUCT__,
             "SELECT id, name, description, status as \"status: __MODULE_STRUCT__Status\", priority, metadata, created_at, updated_at 
@@ -138,7 +138,7 @@ async fn list_without_filters(
              LIMIT $1 OFFSET $2",
             limit + 1,
             offset
-        ).fetch_all(&database.pool).await?,
+        ).fetch_all(&mut **conn).await?,
         _ => sqlx::query_as!(
             __MODULE_STRUCT__,
             "SELECT id, name, description, status as \"status: __MODULE_STRUCT__Status\", priority, metadata, created_at, updated_at 
@@ -147,14 +147,14 @@ async fn list_without_filters(
              LIMIT $1 OFFSET $2",
             limit + 1,
             offset
-        ).fetch_all(&database.pool).await?,
+        ).fetch_all(&mut **conn).await?,
     };
 
     // Get total count
     let total_count = sqlx::query_scalar!(
         "SELECT COUNT(*) FROM __MODULE_TABLE__"
     )
-    .fetch_one(&database.pool)
+    .fetch_one(&mut **conn)
     .await?
     .unwrap_or(0);
 
@@ -163,7 +163,7 @@ async fn list_without_filters(
 
 /// List items with filters applied
 async fn list_with_filters(
-    database: &Database,
+    conn: &mut DbConn,
     request: &List__MODULE_STRUCT__Request,
     limit: i64,
     offset: i64,
@@ -182,7 +182,7 @@ async fn list_with_filters(
             limit + 1,
             offset
         )
-        .fetch_all(&database.pool)
+        .fetch_all(&mut **conn)
         .await?
     } else if let Some(status_list) = &request.status {
         if !status_list.is_empty() {
@@ -198,7 +198,7 @@ async fn list_with_filters(
                 limit + 1,
                 offset
             )
-            .fetch_all(&database.pool)
+            .fetch_all(&mut **conn)
             .await?
         } else {
             Vec::new()
@@ -214,7 +214,7 @@ async fn list_with_filters(
             limit + 1,
             offset
         )
-        .fetch_all(&database.pool)
+        .fetch_all(&mut **conn)
         .await?
     };
 
@@ -222,7 +222,7 @@ async fn list_with_filters(
     let total_count = sqlx::query_scalar!(
         "SELECT COUNT(*) FROM __MODULE_TABLE__"
     )
-    .fetch_one(&database.pool)
+    .fetch_one(&mut **conn)
     .await?
     .unwrap_or(0);
 
@@ -231,7 +231,7 @@ async fn list_with_filters(
 
 /// Get a specific __MODULE_NAME__ by ID
 pub async fn get___MODULE_NAME___service(
-    database: &Database,
+    conn: &mut DbConn,
     id: Uuid,
 ) -> Result<__MODULE_STRUCT__> {
     let __MODULE_NAME__ = sqlx::query_as!(
@@ -241,7 +241,7 @@ pub async fn get___MODULE_NAME___service(
          WHERE id = $1",
         id
     )
-    .fetch_optional(&database.pool)
+    .fetch_optional(&mut **conn)
     .await?
     .ok_or_else(|| crate::error::Error::NotFound(format!("__MODULE_STRUCT__ with id {}", id)))?;
 
@@ -250,7 +250,7 @@ pub async fn get___MODULE_NAME___service(
 
 /// Create a new __MODULE_NAME__
 pub async fn create___MODULE_NAME___service(
-    database: &Database,
+    conn: &mut DbConn,
     request: Create__MODULE_STRUCT__Request,
 ) -> Result<__MODULE_STRUCT__> {
     // Validate request
@@ -280,7 +280,7 @@ pub async fn create___MODULE_NAME___service(
         __MODULE_NAME__.created_at,
         __MODULE_NAME__.updated_at
     )
-    .fetch_one(&database.pool)
+    .fetch_one(&mut **conn)
     .await?;
 
     Ok(created___MODULE_NAME__)
@@ -288,12 +288,12 @@ pub async fn create___MODULE_NAME___service(
 
 /// Update an existing __MODULE_NAME__
 pub async fn update___MODULE_NAME___service(
-    database: &Database,
+    conn: &mut DbConn,
     id: Uuid,
     request: Update__MODULE_STRUCT__Request,
 ) -> Result<__MODULE_STRUCT__> {
     // Get existing __MODULE_NAME__
-    let mut __MODULE_NAME__ = get___MODULE_NAME___service(database, id).await?;
+    let mut __MODULE_NAME__ = get___MODULE_NAME___service(conn, id).await?;
 
     // Validate request
     if let Some(ref name) = request.name {
@@ -319,7 +319,7 @@ pub async fn update___MODULE_NAME___service(
         __MODULE_NAME__.metadata,
         __MODULE_NAME__.updated_at
     )
-    .fetch_one(&database.pool)
+    .fetch_one(&mut **conn)
     .await?;
 
     Ok(updated___MODULE_NAME__)
@@ -327,14 +327,14 @@ pub async fn update___MODULE_NAME___service(
 
 /// Delete a __MODULE_NAME__
 pub async fn delete___MODULE_NAME___service(
-    database: &Database,
+    conn: &mut DbConn,
     id: Uuid,
 ) -> Result<()> {
     let rows_affected = sqlx::query!(
         "DELETE FROM __MODULE_TABLE__ WHERE id = $1",
         id
     )
-    .execute(&database.pool)
+    .execute(&mut **conn)
     .await?
     .rows_affected();
 
@@ -347,7 +347,7 @@ pub async fn delete___MODULE_NAME___service(
 
 /// Bulk create __MODULE_NAME_PLURAL__
 pub async fn bulk_create___MODULE_NAME_PLURAL___service(
-    database: &Database,
+    conn: &mut DbConn,
     request: Bulk__MODULE_STRUCT__CreateRequest,
 ) -> Result<BulkOperationResponse<__MODULE_STRUCT__>> {
     let mut results = Vec::new();
@@ -380,7 +380,7 @@ pub async fn bulk_create___MODULE_NAME_PLURAL___service(
 
 /// Bulk update __MODULE_NAME_PLURAL__
 pub async fn bulk_update___MODULE_NAME_PLURAL___service(
-    database: &Database,
+    conn: &mut DbConn,
     request: Bulk__MODULE_STRUCT__UpdateRequest,
 ) -> Result<BulkOperationResponse<__MODULE_STRUCT__>> {
     let mut results = Vec::new();
@@ -413,7 +413,7 @@ pub async fn bulk_update___MODULE_NAME_PLURAL___service(
 
 /// Bulk delete __MODULE_NAME_PLURAL__
 pub async fn bulk_delete___MODULE_NAME_PLURAL___service(
-    database: &Database,
+    conn: &mut DbConn,
     request: Bulk__MODULE_STRUCT__DeleteRequest,
 ) -> Result<BulkOperationResponse<Uuid>> {
     let mut results = Vec::new();
