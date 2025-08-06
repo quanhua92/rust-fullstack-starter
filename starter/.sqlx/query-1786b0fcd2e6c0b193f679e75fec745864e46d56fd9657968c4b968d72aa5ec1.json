@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE tasks SET status = 'failed', last_error = 'Test failure', completed_at = NOW() WHERE id = $1 OR id = $2",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "1786b0fcd2e6c0b193f679e75fec745864e46d56fd9657968c4b968d72aa5ec1"
+}

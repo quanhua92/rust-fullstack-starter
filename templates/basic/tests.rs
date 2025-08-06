@@ -1,136 +1,146 @@
 //! Integration tests for __MODULE_NAME_PLURAL__ module
 
-use crate::helpers::{db::*, test_app::*, test_data::*};
-use axum_test::TestServer;
+use crate::helpers::*;
+use reqwest::StatusCode;
 use serde_json::json;
 
 #[tokio::test]
 async fn test___MODULE_NAME___crud_workflow() {
-    let app = create_test_app().await;
-    let server = TestServer::new(app.into_make_service()).unwrap();
+    let app = spawn_app().await;
+    let factory = TestDataFactory::new(app.clone());
 
-    // Create test user and get auth token
-    let auth_user = create_test_user(&server).await;
-    let token = get_auth_token(&server, &auth_user).await;
+    // Create authenticated user
+    let (_user, token) = factory.create_authenticated_user("testuser").await;
 
     // Test CREATE
-    let create_request = json!({
+    let create_data = json!({
         "name": "Test __MODULE_STRUCT__",
         "description": "Test description"
     });
 
-    let create_response = server
-        .post("/api/v1/__MODULE_NAME_PLURAL__")
-        .add_header("authorization", format!("Bearer {}", token))
-        .json(&create_request)
+    let response = app
+        .post_auth("/api/v1/__MODULE_NAME_PLURAL__", &token.token, &create_data)
         .await;
 
-    create_response.assert_status_ok();
-    let created___MODULE_NAME__: serde_json::Value = create_response.json();
-    let __MODULE_NAME___id = created___MODULE_NAME__["data"]["id"].as_str().unwrap();
+    assert_status(&response, StatusCode::OK);
+    let created: serde_json::Value = response.json().await.unwrap();
+    assert_json_field_exists(&created, "data");
+    let __MODULE_NAME___id = created["data"]["id"].as_str().unwrap();
 
     // Test READ (get single)
-    let get_response = server
-        .get(&format!("/api/v1/__MODULE_NAME_PLURAL__/{}", __MODULE_NAME___id))
-        .add_header("authorization", format!("Bearer {}", token))
+    let response = app
+        .get_auth(&format!("/api/v1/__MODULE_NAME_PLURAL__/{}", __MODULE_NAME___id), &token.token)
         .await;
 
-    get_response.assert_status_ok();
-    let retrieved___MODULE_NAME__: serde_json::Value = get_response.json();
-    assert_eq!(retrieved___MODULE_NAME__["data"]["name"], "Test __MODULE_STRUCT__");
+    assert_status(&response, StatusCode::OK);
+    let retrieved: serde_json::Value = response.json().await.unwrap();
+    assert_eq!(retrieved["data"]["name"], "Test __MODULE_STRUCT__");
 
     // Test READ (list)
-    let list_response = server
-        .get("/api/v1/__MODULE_NAME_PLURAL__")
-        .add_header("authorization", format!("Bearer {}", token))
-        .await;
+    let response = app.get_auth("/api/v1/__MODULE_NAME_PLURAL__", &token.token).await;
 
-    list_response.assert_status_ok();
-    let __MODULE_NAME_PLURAL___list: serde_json::Value = list_response.json();
-    assert!(
-        __MODULE_NAME_PLURAL___list["data"].as_array().unwrap().len() >= 1
-    );
+    assert_status(&response, StatusCode::OK);
+    let list: serde_json::Value = response.json().await.unwrap();
+    assert!(list["data"].as_array().unwrap().len() >= 1);
 
     // Test UPDATE
-    let update_request = json!({
+    let update_data = json!({
         "name": "Updated __MODULE_STRUCT__",
         "description": "Updated description"
     });
 
-    let update_response = server
-        .put(&format!("/api/v1/__MODULE_NAME_PLURAL__/{}", __MODULE_NAME___id))
-        .add_header("authorization", format!("Bearer {}", token))
-        .json(&update_request)
+    let response = app
+        .put_auth(
+            &format!("/api/v1/__MODULE_NAME_PLURAL__/{}", __MODULE_NAME___id),
+            &token.token,
+            &update_data,
+        )
         .await;
 
-    update_response.assert_status_ok();
-    let updated___MODULE_NAME__: serde_json::Value = update_response.json();
-    assert_eq!(updated___MODULE_NAME__["data"]["name"], "Updated __MODULE_STRUCT__");
+    assert_status(&response, StatusCode::OK);
+    let updated: serde_json::Value = response.json().await.unwrap();
+    assert_eq!(updated["data"]["name"], "Updated __MODULE_STRUCT__");
 
     // Test DELETE
-    let delete_response = server
-        .delete(&format!("/api/v1/__MODULE_NAME_PLURAL__/{}", __MODULE_NAME___id))
-        .add_header("authorization", format!("Bearer {}", token))
+    let response = app
+        .delete_auth(&format!("/api/v1/__MODULE_NAME_PLURAL__/{}", __MODULE_NAME___id), &token.token)
         .await;
 
-    delete_response.assert_status_ok();
+    assert_status(&response, StatusCode::OK);
 
     // Verify deletion
-    let get_deleted_response = server
-        .get(&format!("/api/v1/__MODULE_NAME_PLURAL__/{}", __MODULE_NAME___id))
-        .add_header("authorization", format!("Bearer {}", token))
+    let response = app
+        .get_auth(&format!("/api/v1/__MODULE_NAME_PLURAL__/{}", __MODULE_NAME___id), &token.token)
         .await;
 
-    get_deleted_response.assert_status(404);
+    assert_status(&response, StatusCode::NOT_FOUND);
 }
 
 #[tokio::test]
 async fn test___MODULE_NAME___list_with_search() {
-    let app = create_test_app().await;
-    let server = TestServer::new(app.into_make_service()).unwrap();
+    let app = spawn_app().await;
+    let factory = TestDataFactory::new(app.clone());
 
-    let auth_user = create_test_user(&server).await;
-    let token = get_auth_token(&server, &auth_user).await;
+    let (_user, token) = factory.create_authenticated_user("searchuser").await;
 
     // Create test __MODULE_NAME_PLURAL__
     for i in 1..=3 {
-        let create_request = json!({
+        let create_data = json!({
             "name": format!("Test __MODULE_STRUCT__ {}", i),
             "description": format!("Description {}", i)
         });
 
-        server
-            .post("/api/v1/__MODULE_NAME_PLURAL__")
-            .add_header("authorization", format!("Bearer {}", token))
-            .json(&create_request)
-            .await
-            .assert_status_ok();
+        let response = app
+            .post_auth("/api/v1/__MODULE_NAME_PLURAL__", &token.token, &create_data)
+            .await;
+
+        assert_status(&response, StatusCode::OK);
     }
 
     // Test search
-    let search_response = server
-        .get("/api/v1/__MODULE_NAME_PLURAL__?search=Test")
-        .add_header("authorization", format!("Bearer {}", token))
+    let response = app
+        .get_auth("/api/v1/__MODULE_NAME_PLURAL__?search=Test", &token.token)
         .await;
 
-    search_response.assert_status_ok();
-    let search_results: serde_json::Value = search_response.json();
-    assert!(search_results["data"].as_array().unwrap().len() >= 3);
+    assert_status(&response, StatusCode::OK);
+    let results: serde_json::Value = response.json().await.unwrap();
+    assert!(results["data"].as_array().unwrap().len() >= 3);
 }
 
 #[tokio::test]
 async fn test___MODULE_NAME___access_control() {
-    let app = create_test_app().await;
-    let server = TestServer::new(app.into_make_service()).unwrap();
+    let app = spawn_app().await;
 
     // Test without authentication
-    let unauth_response = server.get("/api/v1/__MODULE_NAME_PLURAL__").await;
-    unauth_response.assert_status(401);
+    let response = app.client.get(&format!("{}/api/v1/__MODULE_NAME_PLURAL__", &app.address)).send().await.unwrap();
+    assert_status(&response, StatusCode::UNAUTHORIZED);
 
     // Test with invalid token
-    let invalid_response = server
-        .get("/api/v1/__MODULE_NAME_PLURAL__")
-        .add_header("authorization", "Bearer invalid_token")
+    let response = app.client
+        .get(&format!("{}/api/v1/__MODULE_NAME_PLURAL__", &app.address))
+        .header("Authorization", "Bearer invalid_token")
+        .send()
+        .await
+        .unwrap();
+    assert_status(&response, StatusCode::UNAUTHORIZED);
+}
+
+#[tokio::test]
+async fn test___MODULE_NAME___validation() {
+    let app = spawn_app().await;
+    let factory = TestDataFactory::new(app.clone());
+
+    let (_user, token) = factory.create_authenticated_user("validationuser").await;
+
+    // Test empty name
+    let create_data = json!({
+        "name": "",
+        "description": "Test description"
+    });
+
+    let response = app
+        .post_auth("/api/v1/__MODULE_NAME_PLURAL__", &token.token, &create_data)
         .await;
-    invalid_response.assert_status(401);
+
+    assert_status(&response, StatusCode::BAD_REQUEST);
 }

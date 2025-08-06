@@ -12,6 +12,9 @@ argon2 = "0.5.3"
 
 # Async traits
 async-trait = "0.1.82"
+
+# Base64 encoding
+base64 = "0.22.1"
 # Web framework
 axum = "0.8.4"
 

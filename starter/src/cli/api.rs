@@ -165,9 +165,12 @@ impl CliApp {
         generator: GenerateCommands,
     ) -> Result<(), Box<dyn std::error::Error>> {
         match generator {
-            GenerateCommands::Module { name, template, dry_run, force } => {
-                self.generate_module(name, template, dry_run, force).await
-            }
+            GenerateCommands::Module {
+                name,
+                template,
+                dry_run,
+                force,
+            } => self.generate_module(name, template, dry_run, force).await,
         }
     }
 
@@ -183,8 +186,8 @@ impl CliApp {
         use std::fs;
         use std::path::Path;
 
-        println!("🚀 Generating module '{}' using '{}' template", name, template);
-        
+        println!("🚀 Generating module '{name}' using '{template}' template");
+
         if dry_run {
             println!("🔍 DRY RUN MODE - No files will be created");
         }
@@ -194,18 +197,18 @@ impl CliApp {
         let plural = if name.ends_with('s') {
             name.clone()
         } else {
-            format!("{}s", singular)
+            format!("{singular}s")
         }; // Simple pluralization
-        let struct_name = capitalize_first(&singular);
+        let struct_name = capitalize_first(singular);
         let table_name = &plural;
 
         // Show transformations to user
         println!();
         println!("📝 Name transformations:");
-        println!("   Module name (singular): {}", singular);
-        println!("   Module name (plural):   {}", plural);
-        println!("   Struct name:           {}", struct_name);
-        println!("   Table name:            {}", table_name);
+        println!("   Module name (singular): {singular}");
+        println!("   Module name (plural):   {plural}");
+        println!("   Struct name:           {struct_name}");
+        println!("   Table name:            {table_name}");
         println!();
 
         // Template replacements
@@ -215,85 +218,88 @@ impl CliApp {
         replacements.insert("__MODULE_STRUCT__", &struct_name);
         replacements.insert("__MODULE_TABLE__", table_name);
 
-        let template_dir = format!("../templates/{}", template);
+        let template_dir = format!("../templates/{template}");
         if !Path::new(&template_dir).exists() {
-            return Err(format!("Template '{}' not found in templates directory", template).into());
+            return Err(format!("Template '{template}' not found in templates directory").into());
         }
 
         let mut files_created = Vec::new();
 
         // Create module directory
-        let module_dir = format!("src/{}", plural);
+        let module_dir = format!("src/{plural}");
         if !dry_run {
             fs::create_dir_all(&module_dir)?;
         }
-        println!("📁 Created directory: {}", module_dir);
+        println!("📁 Created directory: {module_dir}");
 
         // Copy and process template files
         let template_files = [
             ("api.rs", "api.rs"),
-            ("models.rs", "models.rs"), 
+            ("models.rs", "models.rs"),
             ("services.rs", "services.rs"),
             ("mod.rs", "mod.rs"),
         ];
 
         for (template_file, output_file) in template_files {
-            let template_path = format!("{}/{}", template_dir, template_file);
-            let output_path = format!("{}/{}", module_dir, output_file);
-            
+            let template_path = format!("{template_dir}/{template_file}");
+            let output_path = format!("{module_dir}/{output_file}");
+
             if Path::new(&template_path).exists() {
                 let content = fs::read_to_string(&template_path)?;
                 let processed = process_template(&content, &replacements);
-                
+
                 if !dry_run {
                     fs::write(&output_path, processed)?;
                 }
                 files_created.push(output_path.clone());
-                println!("📄 Created: {}", output_path);
+                println!("📄 Created: {output_path}");
             }
         }
 
         // Create test directory and file
-        let test_dir = format!("tests/{}", plural);
+        let test_dir = format!("tests/{plural}");
         if !dry_run {
             fs::create_dir_all(&test_dir)?;
         }
 
-        let test_template_path = format!("{}/tests.rs", template_dir);
+        let test_template_path = format!("{template_dir}/tests.rs");
         if Path::new(&test_template_path).exists() {
             let test_content = fs::read_to_string(&test_template_path)?;
             let processed_test = process_template(&test_content, &replacements);
-            let test_output = format!("{}/mod.rs", test_dir);
-            
+            let test_output = format!("{test_dir}/mod.rs");
+
             if !dry_run {
                 fs::write(&test_output, processed_test)?;
             }
             files_created.push(test_output.clone());
-            println!("📄 Created: {}", test_output);
+            println!("📄 Created: {test_output}");
         }
 
         // Create migrations
         let migrations_dir = "migrations";
         let migration_number = get_next_migration_number(migrations_dir)?;
-        
+
         let migration_files = [
-            ("up.sql", format!("{:03}_{}.up.sql", migration_number, plural)),
-            ("down.sql", format!("{:03}_{}.down.sql", migration_number, plural)),
+            ("up.sql", format!("{migration_number:03}_{plural}.up.sql")),
+            (
+                "down.sql",
+                format!("{migration_number:03}_{plural}.down.sql"),
+            ),
         ];
 
         for (template_file, output_file) in migration_files {
-            let template_path = format!("{}/{}", template_dir, template_file);
-            let output_path = format!("{}/{}", migrations_dir, output_file);
-            
+            let template_path = format!("{template_dir}/{template_file}");
+            let output_path = format!("{migrations_dir}/{output_file}");
+
             if Path::new(&template_path).exists() {
                 let content = fs::read_to_string(&template_path)?;
                 let processed = process_template(&content, &replacements);
-                
+
                 if !dry_run {
                     fs::write(&output_path, processed)?;
                 }
                 files_created.push(output_path.clone());
-                println!("📄 Created: {}", output_path);
+                println!("📄 Created: {output_path}");
             }
         }
 
@@ -301,42 +307,48 @@ impl CliApp {
         let lib_rs_path = "src/lib.rs";
         if Path::new(lib_rs_path).exists() && !dry_run {
             let lib_content = fs::read_to_string(lib_rs_path)?;
-            let module_declaration = format!("pub mod {};", plural);
-            
+            let module_declaration = format!("pub mod {plural};");
+
             if !lib_content.contains(&module_declaration) {
-                let updated_content = format!("{}\n{}", lib_content.trim(), module_declaration);
+                let updated_content = format!("{}\n{module_declaration}", lib_content.trim());
                 fs::write(lib_rs_path, updated_content)?;
-                println!("📝 Updated: {}", lib_rs_path);
+                println!("📝 Updated: {lib_rs_path}");
             }
         }
 
         println!("✅ Module generation completed!");
-        println!("📄 Files created: {}", files_created.len());
-        
+        let files_count = files_created.len();
+        println!("📄 Files created: {files_count}");
+
         if !dry_run {
             println!("\n📋 Next steps - run these commands:");
             println!("   1. Run the migration:");
             println!("      cd starter && sqlx migrate run");
             println!();
-            println!("   2. Update sqlx query cache:");
-            println!("      cd starter && cargo sqlx prepare");
+            println!("   2. Update sqlx cache (use script for reliability):");
+            println!("      ./scripts/prepare-sqlx.sh");
             println!();
-            println!("   3. Test compilation:");
-            println!("      cd starter && cargo check");
+            println!(
+                "   3. Run quality checks (recommended - includes compilation, linting, tests):"
+            );
+            println!("      ./scripts/check.sh");
             println!();
             println!("   4. Add routes to server.rs (manual step):");
-            println!("      - Import: use crate::{}::api::{}_routes;", plural, plural);
-            println!("      - Add route: .nest(\"/api/v1/{}\", {}_routes())", plural, plural);
+            println!("      - Import: use crate::{plural}::api::{plural}_routes;");
+            println!("      - Add route: .nest(\"/api/v1/{plural}\", {plural}_routes())");
             println!();
             println!("   5. Add to openapi.rs (manual step):");
-            println!("      - Import the structs from {}::models", plural);
+            println!("      - Import the structs from {plural}::models");
         }
 
         Ok(())
     }
 
     /// Run revert command
-    async fn run_revert_command(&self, revert: RevertCommands) -> Result<(), Box<dyn std::error::Error>> {
+    async fn run_revert_command(
+        &self,
+        revert: RevertCommands,
+    ) -> Result<(), Box<dyn std::error::Error>> {
         match revert {
             RevertCommands::Module { name, yes, dry_run } => {
                 self.revert_module(&name, yes, dry_run).await
@@ -345,35 +357,44 @@ impl CliApp {
     }
 
     /// Revert a generated module
-    async fn revert_module(&self, name: &str, yes: bool, dry_run: bool) -> Result<(), Box<dyn std::error::Error>> {
+    async fn revert_module(
+        &self,
+        name: &str,
+        yes: bool,
+        dry_run: bool,
+    ) -> Result<(), Box<dyn std::error::Error>> {
         use std::fs;
-        use std::path::Path;
         use std::io::{self, Write};
+        use std::path::Path;
 
-        let plural = if name.ends_with('s') { name.to_string() } else { format!("{}s", name) };
-        
-        println!("🔍 Analyzing module '{}' for revert...", name);
-        
+        let plural = if name.ends_with('s') {
+            name.to_string()
+        } else {
+            format!("{name}s")
+        };
+
+        println!("🔍 Analyzing module '{name}' for revert...");
+
         // Check what exists
-        let module_dir = format!("src/{}", plural);
-        let test_dir = format!("tests/{}", plural);
+        let module_dir = format!("src/{plural}");
+        let test_dir = format!("tests/{plural}");
         let lib_rs_path = "src/lib.rs";
-        
+
         let module_exists = Path::new(&module_dir).exists();
         let test_exists = Path::new(&test_dir).exists();
-        
+
         // Find migration files
         let migrations_dir = "migrations";
         let mut migration_files = Vec::new();
         let mut migration_number = None;
-        
+
         if Path::new(migrations_dir).exists() {
             let entries = fs::read_dir(migrations_dir)?;
             for entry in entries {
                 let entry = entry?;
                 let filename = entry.file_name();
                 let filename_str = filename.to_string_lossy();
-                
+
                 if filename_str.contains(&plural) {
                     migration_files.push(entry.path());
                     // Extract migration number for revert
@@ -389,39 +410,41 @@ impl CliApp {
         // Check lib.rs
         let lib_rs_has_module = if Path::new(lib_rs_path).exists() {
             let lib_content = fs::read_to_string(lib_rs_path)?;
-            lib_content.contains(&format!("pub mod {};", plural))
+            lib_content.contains(&format!("pub mod {plural};"))
         } else {
             false
         };
 
         // Show what will be done
-        println!("\n📋 Revert plan for module '{}':", name);
-        
-        if migration_number.is_some() {
-            println!("   ⚠️  Revert database migration #{:?}", migration_number.unwrap());
+        println!("\n📋 Revert plan for module '{name}':");
+
+        if let Some(num) = migration_number {
+            println!("   ⚠️  Revert database migration #{num}");
         }
-        
+
         if !migration_files.is_empty() {
-            println!("   🗑️  Delete {} migration files", migration_files.len());
+            let file_count = migration_files.len();
+            println!("   🗑️  Delete {file_count} migration files");
             for file in &migration_files {
-                println!("       - {}", file.display());
+                let file_display = file.display();
+                println!("       - {file_display}");
             }
         }
-        
+
         if module_exists {
-            println!("   🗑️  Delete module directory: {}", module_dir);
+            println!("   🗑️  Delete module directory: {module_dir}");
         }
-        
+
         if test_exists {
-            println!("   🗑️  Delete test directory: {}", test_dir);
+            println!("   🗑️  Delete test directory: {test_dir}");
         }
-        
+
         if lib_rs_has_module {
             println!("   📝 Remove module declaration from lib.rs");
         }
 
         if !module_exists && migration_files.is_empty() && !test_exists && !lib_rs_has_module {
-            println!("   ✅ No files found for module '{}' - nothing to revert", name);
+            println!("   ✅ No files found for module '{name}' - nothing to revert");
             return Ok(());
         }
 
@@ -432,10 +455,12 @@ impl CliApp {
 
         // Interactive confirmations unless --yes is provided
         if !yes {
-            println!("\n⚠️  WARNING: This operation will permanently delete files and revert database migrations!");
-            
-            if migration_number.is_some() {
-                print!("\n❓ Revert database migration #{:?}? [y/N]: ", migration_number.unwrap());
+            println!(
+                "\n⚠️  WARNING: This operation will permanently delete files and revert database migrations!"
+            );
+
+            if let Some(num) = migration_number {
+                print!("\n❓ Revert database migration #{num}? [y/N]: ");
                 io::stdout().flush()?;
                 let mut input = String::new();
                 io::stdin().read_line(&mut input)?;
@@ -460,26 +485,26 @@ impl CliApp {
         println!("\n🚀 Starting revert process...");
 
         // Step 1: Revert migration if exists
-        if let Some(_) = migration_number {
+        if migration_number.is_some() {
             println!("📦 Reverting database migration...");
-            
+
             let output = std::process::Command::new("sqlx")
-                .args(&["migrate", "revert"])
+                .args(["migrate", "revert"])
                 .current_dir(".")
                 .output();
-            
+
             match output {
                 Ok(result) => {
                     if result.status.success() {
                         println!("✅ Database migration reverted successfully");
                     } else {
                         let stderr = String::from_utf8_lossy(&result.stderr);
-                        println!("⚠️  Migration revert warning: {}", stderr);
+                        println!("⚠️  Migration revert warning: {stderr}");
                         println!("   (This might be expected if migration was already reverted)");
                     }
                 }
                 Err(e) => {
-                    println!("⚠️  Failed to run sqlx migrate revert: {}", e);
+                    println!("⚠️  Failed to run sqlx migrate revert: {e}");
                     println!("   You may need to run 'sqlx migrate revert' manually");
                 }
             }
@@ -488,51 +513,53 @@ impl CliApp {
         // Step 2: Delete migration files
         for file in migration_files {
             if let Err(e) = fs::remove_file(&file) {
-                println!("⚠️  Failed to delete {}: {}", file.display(), e);
+                let file_display = file.display();
+                println!("⚠️  Failed to delete {file_display}: {e}");
             } else {
-                println!("🗑️  Deleted: {}", file.display());
+                let file_display = file.display();
+                println!("🗑️  Deleted: {file_display}");
             }
         }
 
         // Step 3: Delete module directory
         if module_exists {
             if let Err(e) = fs::remove_dir_all(&module_dir) {
-                println!("⚠️  Failed to delete {}: {}", module_dir, e);
+                println!("⚠️  Failed to delete {module_dir}: {e}");
             } else {
-                println!("🗑️  Deleted: {}", module_dir);
+                println!("🗑️  Deleted: {module_dir}");
             }
         }
 
         // Step 4: Delete test directory
         if test_exists {
             if let Err(e) = fs::remove_dir_all(&test_dir) {
-                println!("⚠️  Failed to delete {}: {}", test_dir, e);
+                println!("⚠️  Failed to delete {test_dir}: {e}");
             } else {
-                println!("🗑️  Deleted: {}", test_dir);
+                println!("🗑️  Deleted: {test_dir}");
             }
         }
 
         // Step 5: Remove from lib.rs
         if lib_rs_has_module {
             let lib_content = fs::read_to_string(lib_rs_path)?;
-            let module_declaration = format!("pub mod {};", plural);
+            let module_declaration = format!("pub mod {plural};");
             let updated_content = lib_content
                 .lines()
                 .filter(|line| line.trim() != module_declaration.trim())
                 .collect::<Vec<_>>()
                 .join("\n");
-            
+
             if let Err(e) = fs::write(lib_rs_path, updated_content) {
-                println!("⚠️  Failed to update {}: {}", lib_rs_path, e);
+                println!("⚠️  Failed to update {lib_rs_path}: {e}");
             } else {
-                println!("📝 Updated: {}", lib_rs_path);
+                println!("📝 Updated: {lib_rs_path}");
             }
         }
 
-        println!("\n✅ Module '{}' reverted successfully!", name);
+        println!("\n✅ Module '{name}' reverted successfully!");
         println!("\n📋 You may want to run:");
         println!("   cargo check  # Verify compilation");
-        
+
         Ok(())
     }
 }
@@ -547,7 +574,10 @@ fn capitalize_first(s: &str) -> String {
 }
 
 /// Process template content by replacing placeholders
-fn process_template(content: &str, replacements: &std::collections::HashMap<&str, &String>) -> String {
+fn process_template(
+    content: &str,
+    replacements: &std::collections::HashMap<&str, &String>,
+) -> String {
     let mut result = content.to_string();
     for (placeholder, replacement) in replacements {
         result = result.replace(placeholder, replacement);
@@ -558,19 +588,19 @@ fn process_template(content: &str, replacements: &std::collections::HashMap<&str
 /// Get the next migration number
 fn get_next_migration_number(migrations_dir: &str) -> Result<u32, Box<dyn std::error::Error>> {
     use std::fs;
-    
+
     if !std::path::Path::new(migrations_dir).exists() {
         return Ok(1);
     }
 
     let mut max_number = 0;
     let entries = fs::read_dir(migrations_dir)?;
-    
+
     for entry in entries {
         let entry = entry?;
         let filename = entry.file_name();
         let filename_str = filename.to_string_lossy();
-        
+
         if let Some(number_str) = filename_str.split('_').next() {
             if let Ok(number) = number_str.parse::<u32>() {
                 max_number = max_number.max(number);
