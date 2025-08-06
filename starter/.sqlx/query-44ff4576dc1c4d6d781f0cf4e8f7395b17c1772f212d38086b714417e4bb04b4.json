@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id, name, description, status as \"status: ProductsStatus\", priority, metadata, created_at, updated_at \n             FROM products \n             WHERE name ILIKE $1 OR description ILIKE $1\n             ORDER BY created_at DESC \n             LIMIT $2 OFFSET $3",
+  "query": "SELECT id, name, description, status as \"status: TestproductStatus\", priority, metadata, created_at, updated_at \n             FROM testproducts \n             ORDER BY created_at ASC \n             LIMIT $1 OFFSET $2",
   "describe": {
     "columns": [
       {
@@ -20,10 +20,10 @@
       },
       {
         "ordinal": 3,
-        "name": "status: ProductsStatus",
+        "name": "status: TestproductStatus",
         "type_info": {
           "Custom": {
-            "name": "products_status",
+            "name": "testproduct_status",
             "kind": {
               "Enum": [
                 "active",
@@ -58,7 +58,6 @@
     ],
     "parameters": {
       "Left": [
-        "Text",
         "Int8",
         "Int8"
       ]
@@ -74,5 +73,5 @@
       false
     ]
   },
-  "hash": "381e82ff5977c41fe1207e5cef6eec838762523abc8e52def1c3fc40186a44f6"
+  "hash": "44ff4576dc1c4d6d781f0cf4e8f7395b17c1772f212d38086b714417e4bb04b4"
 }

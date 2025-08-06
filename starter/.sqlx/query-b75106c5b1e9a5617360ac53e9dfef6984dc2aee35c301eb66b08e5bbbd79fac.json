@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "UPDATE products \n         SET name = $2, description = $3, status = $4, priority = $5, metadata = $6, updated_at = $7\n         WHERE id = $1\n         RETURNING id, name, description, status as \"status: ProductsStatus\", priority, metadata, created_at, updated_at",
+  "query": "SELECT id, name, description, status as \"status: TestproductStatus\", priority, metadata, created_at, updated_at \n             FROM testproducts \n             WHERE name ILIKE $1 OR description ILIKE $1\n             ORDER BY created_at DESC \n             LIMIT $2 OFFSET $3",
   "describe": {
     "columns": [
       {
@@ -20,10 +20,10 @@
       },
       {
         "ordinal": 3,
-        "name": "status: ProductsStatus",
+        "name": "status: TestproductStatus",
         "type_info": {
           "Custom": {
-            "name": "products_status",
+            "name": "testproduct_status",
             "kind": {
               "Enum": [
                 "active",
@@ -58,25 +58,9 @@
     ],
     "parameters": {
       "Left": [
-        "Uuid",
-        "Varchar",
         "Text",
-        {
-          "Custom": {
-            "name": "products_status",
-            "kind": {
-              "Enum": [
-                "active",
-                "inactive",
-                "pending",
-                "archived"
-              ]
-            }
-          }
-        },
-        "Int4",
-        "Jsonb",
-        "Timestamptz"
+        "Int8",
+        "Int8"
       ]
     },
     "nullable": [
@@ -90,5 +74,5 @@
       false
     ]
   },
-  "hash": "041843d425573f421ad1e5717c95a4e6ce59e11aea6f3bc4b817e6225c434261"
+  "hash": "b75106c5b1e9a5617360ac53e9dfef6984dc2aee35c301eb66b08e5bbbd79fac"
 }

@@ -1,5 +1,5 @@
 use super::{
-    models::{Cli, Commands, GenerateCommands},
+    models::{Cli, Commands, GenerateCommands, RevertCommands},
     services::{TaskTypeService, execute_admin_command},
 };
 use crate::{AppConfig, Database, server, tasks};
@@ -44,6 +44,7 @@ impl CliApp {
             Commands::ExportOpenApi { output } => self.export_openapi(output).await,
             Commands::Admin { admin_command } => self.run_admin_command(admin_command).await,
             Commands::Generate { generator } => self.run_generate_command(generator).await,
+            Commands::Revert { revert } => self.run_revert_command(revert).await,
         }
     }
 
@@ -198,6 +199,15 @@ impl CliApp {
         let struct_name = capitalize_first(&singular);
         let table_name = &plural;
 
+        // Show transformations to user
+        println!();
+        println!("📝 Name transformations:");
+        println!("   Module name (singular): {}", singular);
+        println!("   Module name (plural):   {}", plural);
+        println!("   Struct name:           {}", struct_name);
+        println!("   Table name:            {}", table_name);
+        println!();
+
         // Template replacements
         let mut replacements = HashMap::new();
         replacements.insert("__MODULE_NAME__", singular);
@@ -322,6 +332,207 @@ impl CliApp {
             println!("      - Import the structs from {}::models", plural);
         }
 
+        Ok(())
+    }
+
+    /// Run revert command
+    async fn run_revert_command(&self, revert: RevertCommands) -> Result<(), Box<dyn std::error::Error>> {
+        match revert {
+            RevertCommands::Module { name, yes, dry_run } => {
+                self.revert_module(&name, yes, dry_run).await
+            }
+        }
+    }
+
+    /// Revert a generated module
+    async fn revert_module(&self, name: &str, yes: bool, dry_run: bool) -> Result<(), Box<dyn std::error::Error>> {
+        use std::fs;
+        use std::path::Path;
+        use std::io::{self, Write};
+
+        let plural = if name.ends_with('s') { name.to_string() } else { format!("{}s", name) };
+        
+        println!("🔍 Analyzing module '{}' for revert...", name);
+        
+        // Check what exists
+        let module_dir = format!("src/{}", plural);
+        let test_dir = format!("tests/{}", plural);
+        let lib_rs_path = "src/lib.rs";
+        
+        let module_exists = Path::new(&module_dir).exists();
+        let test_exists = Path::new(&test_dir).exists();
+        
+        // Find migration files
+        let migrations_dir = "migrations";
+        let mut migration_files = Vec::new();
+        let mut migration_number = None;
+        
+        if Path::new(migrations_dir).exists() {
+            let entries = fs::read_dir(migrations_dir)?;
+            for entry in entries {
+                let entry = entry?;
+                let filename = entry.file_name();
+                let filename_str = filename.to_string_lossy();
+                
+                if filename_str.contains(&plural) {
+                    migration_files.push(entry.path());
+                    // Extract migration number for revert
+                    if let Some(num_str) = filename_str.split('_').next() {
+                        if let Ok(num) = num_str.parse::<u32>() {
+                            migration_number = Some(num);
+                        }
+                    }
+                }
+            }
+        }
+
+        // Check lib.rs
+        let lib_rs_has_module = if Path::new(lib_rs_path).exists() {
+            let lib_content = fs::read_to_string(lib_rs_path)?;
+            lib_content.contains(&format!("pub mod {};", plural))
+        } else {
+            false
+        };
+
+        // Show what will be done
+        println!("\n📋 Revert plan for module '{}':", name);
+        
+        if migration_number.is_some() {
+            println!("   ⚠️  Revert database migration #{:?}", migration_number.unwrap());
+        }
+        
+        if !migration_files.is_empty() {
+            println!("   🗑️  Delete {} migration files", migration_files.len());
+            for file in &migration_files {
+                println!("       - {}", file.display());
+            }
+        }
+        
+        if module_exists {
+            println!("   🗑️  Delete module directory: {}", module_dir);
+        }
+        
+        if test_exists {
+            println!("   🗑️  Delete test directory: {}", test_dir);
+        }
+        
+        if lib_rs_has_module {
+            println!("   📝 Remove module declaration from lib.rs");
+        }
+
+        if !module_exists && migration_files.is_empty() && !test_exists && !lib_rs_has_module {
+            println!("   ✅ No files found for module '{}' - nothing to revert", name);
+            return Ok(());
+        }
+
+        if dry_run {
+            println!("\n🔍 DRY RUN - No changes will be made");
+            return Ok(());
+        }
+
+        // Interactive confirmations unless --yes is provided
+        if !yes {
+            println!("\n⚠️  WARNING: This operation will permanently delete files and revert database migrations!");
+            
+            if migration_number.is_some() {
+                print!("\n❓ Revert database migration #{:?}? [y/N]: ", migration_number.unwrap());
+                io::stdout().flush()?;
+                let mut input = String::new();
+                io::stdin().read_line(&mut input)?;
+                if !input.trim().to_lowercase().starts_with('y') {
+                    println!("❌ Operation cancelled by user");
+                    return Ok(());
+                }
+            }
+
+            if module_exists || test_exists || !migration_files.is_empty() {
+                print!("\n❓ Delete all generated files? [y/N]: ");
+                io::stdout().flush()?;
+                let mut input = String::new();
+                io::stdin().read_line(&mut input)?;
+                if !input.trim().to_lowercase().starts_with('y') {
+                    println!("❌ Operation cancelled by user");
+                    return Ok(());
+                }
+            }
+        }
+
+        println!("\n🚀 Starting revert process...");
+
+        // Step 1: Revert migration if exists
+        if let Some(_) = migration_number {
+            println!("📦 Reverting database migration...");
+            
+            let output = std::process::Command::new("sqlx")
+                .args(&["migrate", "revert"])
+                .current_dir(".")
+                .output();
+            
+            match output {
+                Ok(result) => {
+                    if result.status.success() {
+                        println!("✅ Database migration reverted successfully");
+                    } else {
+                        let stderr = String::from_utf8_lossy(&result.stderr);
+                        println!("⚠️  Migration revert warning: {}", stderr);
+                        println!("   (This might be expected if migration was already reverted)");
+                    }
+                }
+                Err(e) => {
+                    println!("⚠️  Failed to run sqlx migrate revert: {}", e);
+                    println!("   You may need to run 'sqlx migrate revert' manually");
+                }
+            }
+        }
+
+        // Step 2: Delete migration files
+        for file in migration_files {
+            if let Err(e) = fs::remove_file(&file) {
+                println!("⚠️  Failed to delete {}: {}", file.display(), e);
+            } else {
+                println!("🗑️  Deleted: {}", file.display());
+            }
+        }
+
+        // Step 3: Delete module directory
+        if module_exists {
+            if let Err(e) = fs::remove_dir_all(&module_dir) {
+                println!("⚠️  Failed to delete {}: {}", module_dir, e);
+            } else {
+                println!("🗑️  Deleted: {}", module_dir);
+            }
+        }
+
+        // Step 4: Delete test directory
+        if test_exists {
+            if let Err(e) = fs::remove_dir_all(&test_dir) {
+                println!("⚠️  Failed to delete {}: {}", test_dir, e);
+            } else {
+                println!("🗑️  Deleted: {}", test_dir);
+            }
+        }
+
+        // Step 5: Remove from lib.rs
+        if lib_rs_has_module {
+            let lib_content = fs::read_to_string(lib_rs_path)?;
+            let module_declaration = format!("pub mod {};", plural);
+            let updated_content = lib_content
+                .lines()
+                .filter(|line| line.trim() != module_declaration.trim())
+                .collect::<Vec<_>>()
+                .join("\n");
+            
+            if let Err(e) = fs::write(lib_rs_path, updated_content) {
+                println!("⚠️  Failed to update {}: {}", lib_rs_path, e);
+            } else {
+                println!("📝 Updated: {}", lib_rs_path);
+            }
+        }
+
+        println!("\n✅ Module '{}' reverted successfully!", name);
+        println!("\n📋 You may want to run:");
+        println!("   cargo check  # Verify compilation");
+        
         Ok(())
     }
 }

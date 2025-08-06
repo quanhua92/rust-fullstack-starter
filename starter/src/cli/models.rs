@@ -38,6 +38,11 @@ pub enum Commands {
         #[command(subcommand)]
         generator: GenerateCommands,
     },
+    /// Revert generated code (removes files and reverts migrations)
+    Revert {
+        #[command(subcommand)]
+        revert: RevertCommands,
+    },
 }
 
 #[derive(Subcommand)]
@@ -90,6 +95,21 @@ pub enum GenerateCommands {
         /// Force overwrite existing files
         #[arg(long)]
         force: bool,
+    },
+}
+
+#[derive(Subcommand)]
+pub enum RevertCommands {
+    /// Revert a generated module (removes files and reverts migrations)
+    Module {
+        /// Module name to revert (e.g., "books", "users")
+        name: String,
+        /// Skip all confirmation prompts (DANGEROUS)
+        #[arg(long)]
+        yes: bool,
+        /// Only show what would be reverted without doing it
+        #[arg(long)]
+        dry_run: bool,
     },
 }
 

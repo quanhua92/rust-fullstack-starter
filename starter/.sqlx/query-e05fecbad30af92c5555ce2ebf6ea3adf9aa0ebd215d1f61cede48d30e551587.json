@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id, name, description, status as \"status: ProductsStatus\", priority, metadata, created_at, updated_at \n                 FROM products \n                 WHERE status = $1\n                 ORDER BY created_at DESC \n                 LIMIT $2 OFFSET $3",
+  "query": "SELECT id, name, description, status as \"status: TestproductStatus\", priority, metadata, created_at, updated_at \n                 FROM testproducts \n                 WHERE status = $1\n                 ORDER BY created_at DESC \n                 LIMIT $2 OFFSET $3",
   "describe": {
     "columns": [
       {
@@ -20,10 +20,10 @@
       },
       {
         "ordinal": 3,
-        "name": "status: ProductsStatus",
+        "name": "status: TestproductStatus",
         "type_info": {
           "Custom": {
-            "name": "products_status",
+            "name": "testproduct_status",
             "kind": {
               "Enum": [
                 "active",
@@ -60,7 +60,7 @@
       "Left": [
         {
           "Custom": {
-            "name": "products_status",
+            "name": "testproduct_status",
             "kind": {
               "Enum": [
                 "active",
@@ -86,5 +86,5 @@
       false
     ]
   },
-  "hash": "7ebb78a90830d7fbc32e478710903c68c634c202965ae206974a34de7ad73cd9"
+  "hash": "e05fecbad30af92c5555ce2ebf6ea3adf9aa0ebd215d1f61cede48d30e551587"
 }

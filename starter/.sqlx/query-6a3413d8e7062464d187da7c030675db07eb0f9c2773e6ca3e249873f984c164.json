@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id, name, description, status as \"status: ProductsStatus\", priority, metadata, created_at, updated_at \n             FROM products \n             ORDER BY name DESC \n             LIMIT $1 OFFSET $2",
+  "query": "INSERT INTO testproducts (id, name, description, status, priority, metadata, created_at, updated_at)\n         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)\n         RETURNING id, name, description, status as \"status: TestproductStatus\", priority, metadata, created_at, updated_at",
   "describe": {
     "columns": [
       {
@@ -20,10 +20,10 @@
       },
       {
         "ordinal": 3,
-        "name": "status: ProductsStatus",
+        "name": "status: TestproductStatus",
         "type_info": {
           "Custom": {
-            "name": "products_status",
+            "name": "testproduct_status",
             "kind": {
               "Enum": [
                 "active",
@@ -58,8 +58,26 @@
     ],
     "parameters": {
       "Left": [
-        "Int8",
-        "Int8"
+        "Uuid",
+        "Varchar",
+        "Text",
+        {
+          "Custom": {
+            "name": "testproduct_status",
+            "kind": {
+              "Enum": [
+                "active",
+                "inactive",
+                "pending",
+                "archived"
+              ]
+            }
+          }
+        },
+        "Int4",
+        "Jsonb",
+        "Timestamptz",
+        "Timestamptz"
       ]
     },
     "nullable": [
@@ -73,5 +91,5 @@
       false
     ]
   },
-  "hash": "40d197b07fddceef95521cee8a4a2d47a7e9ef71b0d992a0fe99fd449cdc1310"
+  "hash": "6a3413d8e7062464d187da7c030675db07eb0f9c2773e6ca3e249873f984c164"
 }
