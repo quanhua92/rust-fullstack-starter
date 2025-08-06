@@ -1,7 +1,7 @@
 -- Create __MODULE_TABLE__ table
 CREATE TABLE __MODULE_TABLE__ (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    name VARCHAR NOT NULL,
+    name TEXT NOT NULL,
     description TEXT,
     created_by UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),

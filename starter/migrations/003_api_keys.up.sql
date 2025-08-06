@@ -1,10 +1,10 @@
 -- API Keys table for machine-to-machine authentication
 CREATE TABLE api_keys (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    name VARCHAR(100) NOT NULL,
+    name TEXT NOT NULL,
     description TEXT,
     key_hash TEXT NOT NULL UNIQUE,
-    key_prefix VARCHAR(20) NOT NULL,
+    key_prefix TEXT NOT NULL,
     created_by UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     expires_at TIMESTAMPTZ,
     is_active BOOLEAN NOT NULL DEFAULT true,

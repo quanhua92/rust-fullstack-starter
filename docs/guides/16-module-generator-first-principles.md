@@ -275,7 +275,7 @@ async fn test_book_crud_workflow() {
 -- Create table with proper types
 CREATE TABLE books (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    name VARCHAR NOT NULL,
+    name TEXT NOT NULL,
     description TEXT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
@@ -568,8 +568,8 @@ async fn test_book_search_functionality() {
    -- Add to up.sql
    CREATE TABLE __MODULE_TABLE__ (
        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-       name VARCHAR NOT NULL,
-       custom_field VARCHAR NOT NULL,  -- ← Added
+       name TEXT NOT NULL,
+       custom_field TEXT NOT NULL,  -- ← Added
        -- ...
    );
    ```

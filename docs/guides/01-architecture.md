@@ -329,7 +329,7 @@ api_keys        -- Machine-to-machine authentication
 
 tasks           -- Background job queue
 ├── id (UUID)
-├── task_type (VARCHAR, references task_types)
+├── task_type (TEXT, references task_types)
 ├── payload (JSONB - flexible data)
 ├── status (ENUM: pending → running → completed/failed/cancelled/retrying)
 ├── priority (ENUM: low/normal/high/critical)
@@ -340,7 +340,7 @@ tasks           -- Background job queue
 └── metadata (JSONB for extra context)
 
 task_types      -- Registered handlers
-├── task_type (VARCHAR primary key)
+├── task_type (TEXT primary key)
 ├── description (TEXT)
 ├── is_active (boolean)
 └── created_at, updated_at

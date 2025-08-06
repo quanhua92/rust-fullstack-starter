@@ -20,7 +20,7 @@ Every resource that uses ownership-based access control includes a `created_by` 
 ```sql
 CREATE TABLE example_table (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    name VARCHAR NOT NULL,
+    name TEXT NOT NULL,
     description TEXT,
     created_by UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),

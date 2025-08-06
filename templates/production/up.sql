@@ -4,7 +4,7 @@ CREATE TYPE __MODULE_NAME___status AS ENUM ('active', 'inactive', 'pending', 'ar
 -- Create __MODULE_TABLE__ table with advanced features
 CREATE TABLE __MODULE_TABLE__ (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    name VARCHAR NOT NULL,
+    name TEXT NOT NULL,
     description TEXT,
     status __MODULE_NAME___status NOT NULL DEFAULT 'active',
     priority INTEGER NOT NULL DEFAULT 0,

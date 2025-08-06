@@ -7,7 +7,7 @@ CREATE TYPE task_priority AS ENUM ('low', 'normal', 'high', 'critical');
 -- Tasks table for background job queue
 CREATE TABLE tasks (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    task_type VARCHAR(255) NOT NULL,
+    task_type TEXT NOT NULL,
     payload JSONB NOT NULL DEFAULT '{}',
     status task_status NOT NULL DEFAULT 'pending',
     priority task_priority NOT NULL DEFAULT 'normal',

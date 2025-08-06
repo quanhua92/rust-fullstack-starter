@@ -340,8 +340,8 @@ sequenceDiagram
 ```sql
 CREATE TABLE users (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  username VARCHAR(50) NOT NULL UNIQUE,
-  email VARCHAR(254) NOT NULL UNIQUE, 
+  username TEXT NOT NULL UNIQUE,
+  email TEXT NOT NULL UNIQUE, 
   password_hash TEXT NOT NULL,  -- Argon2 hash, never plain text
   role TEXT NOT NULL DEFAULT 'user', -- RBAC role with database constraint
   is_active BOOLEAN NOT NULL DEFAULT true,

@@ -232,12 +232,14 @@ mod tests {
 
     #[test]
     fn test___MODULE_NAME___creation() {
+        let created_by = Uuid::new_v4();
         let __MODULE_NAME__ = __MODULE_STRUCT__::new(
             "Test __MODULE_STRUCT__".to_string(),
             Some("Test description".to_string()),
             Some(__MODULE_STRUCT__Status::Active),
             Some(10),
             Some(serde_json::json!({"key": "value"})),
+            created_by,
         );
 
         assert_eq!(__MODULE_NAME__.name, "Test __MODULE_STRUCT__");
@@ -245,16 +247,21 @@ mod tests {
         assert!(matches!(__MODULE_NAME__.status, __MODULE_STRUCT__Status::Active));
         assert_eq!(__MODULE_NAME__.priority, 10);
         assert_eq!(__MODULE_NAME__.metadata["key"], "value");
+        assert_eq!(__MODULE_NAME__.created_by, created_by);
+        assert!(__MODULE_NAME__.created_at <= Utc::now());
+        assert!(__MODULE_NAME__.updated_at <= Utc::now());
     }
 
     #[test]
     fn test___MODULE_NAME___update() {
+        let created_by = Uuid::new_v4();
         let mut __MODULE_NAME__ = __MODULE_STRUCT__::new(
             "Original Name".to_string(),
             Some("Original description".to_string()),
             Some(__MODULE_STRUCT__Status::Pending),
             Some(5),
             None,
+            created_by,
         );
 
         let update_request = Update__MODULE_STRUCT__Request {
@@ -272,6 +279,8 @@ mod tests {
         assert!(matches!(__MODULE_NAME__.status, __MODULE_STRUCT__Status::Active));
         assert_eq!(__MODULE_NAME__.priority, 15);
         assert_eq!(__MODULE_NAME__.metadata["updated"], true);
+        assert_eq!(__MODULE_NAME__.created_by, created_by); // Should remain unchanged
+        assert!(__MODULE_NAME__.updated_at > __MODULE_NAME__.created_at);
     }
 
     #[test]
