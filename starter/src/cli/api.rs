@@ -219,10 +219,16 @@ impl CliApp {
         replacements.insert("__MODULE_TABLE__", table_name);
 
         // Determine template directory based on working directory with multiple checks
-        let template_dir = if Path::new("templates").exists() && Path::new("starter").exists() && Path::new("starter/Cargo.toml").exists() {
+        let template_dir = if Path::new("templates").exists()
+            && Path::new("starter").exists()
+            && Path::new("starter/Cargo.toml").exists()
+        {
             // Running from project root: has templates/ + starter/ + starter/Cargo.toml
             format!("./templates/{template}")
-        } else if Path::new("src").exists() && Path::new("Cargo.toml").exists() && Path::new("../templates").exists() {
+        } else if Path::new("src").exists()
+            && Path::new("Cargo.toml").exists()
+            && Path::new("../templates").exists()
+        {
             // Running from starter directory: has src/ + Cargo.toml + ../templates
             format!("../templates/{template}")
         } else {
@@ -233,45 +239,49 @@ impl CliApp {
         }
 
         // Determine working directory and paths
-        let (module_dir, test_dir, migrations_dir, _lib_rs_path, _sqlx_working_dir) = 
+        let (module_dir, test_dir, migrations_dir, _lib_rs_path, _sqlx_working_dir) =
             determine_project_paths(&plural)?;
 
         // Check for existing files and prompt if necessary
         let module_exists = Path::new(&module_dir).exists();
         let test_exists = Path::new(&test_dir).exists();
-        
+
         if !dry_run && (module_exists || test_exists) {
             if !force {
                 use std::io::{self, Write};
-                
+
                 // Print big warning in red
                 println!("\n🚨 \x1b[31m\x1b[1mWARNING: FILES ALREADY EXIST!\x1b[0m 🚨");
                 println!("\x1b[31mThe following files/directories will be OVERWRITTEN:\x1b[0m");
-                
+
                 if module_exists {
                     println!("   \x1b[91m📁 Module directory: {module_dir}\x1b[0m");
                 }
                 if test_exists {
                     println!("   \x1b[91m📁 Test directory: {test_dir}\x1b[0m");
                 }
-                
+
                 println!("\n\x1b[33m⚠️  This will permanently replace existing files!\x1b[0m");
                 print!("\n❓ \x1b[1mAre you sure you want to continue? [y/N]: \x1b[0m");
                 io::stdout().flush()?;
                 let mut input = String::new();
                 io::stdin().read_line(&mut input)?;
-                
+
                 if !input.trim().to_lowercase().starts_with('y') {
                     println!("\n\x1b[32m✅ Operation cancelled - no files were modified\x1b[0m");
                     println!("\x1b[36m💡 To skip this prompt, use: --force\x1b[0m");
-                    println!("\x1b[36m💡 To preview changes without writing files, use: --dry-run\x1b[0m");
+                    println!(
+                        "\x1b[36m💡 To preview changes without writing files, use: --dry-run\x1b[0m"
+                    );
                     return Ok(());
                 }
-                
+
                 println!("\n\x1b[33m⚠️  Proceeding with file overwrite...\x1b[0m");
             } else {
                 // Force mode - show what we're overwriting but proceed
-                println!("\n\x1b[33m🔥 FORCE MODE: Overwriting existing files without prompting\x1b[0m");
+                println!(
+                    "\n\x1b[33m🔥 FORCE MODE: Overwriting existing files without prompting\x1b[0m"
+                );
                 if module_exists {
                     println!("   \x1b[93m📁 Overwriting: {module_dir}\x1b[0m");
                 }
@@ -422,12 +432,12 @@ impl CliApp {
         println!("🔍 Analyzing module '{name}' for revert...");
 
         // Determine working directory and paths
-        let (module_dir, test_dir, migrations_dir, lib_rs_path, sqlx_working_dir) = 
+        let (module_dir, test_dir, migrations_dir, lib_rs_path, sqlx_working_dir) =
             determine_project_paths(&plural)?;
 
         let module_exists = Path::new(&module_dir).exists();
         let test_exists = Path::new(&test_dir).exists();
-        
+
         // Find migration files
         let mut migration_files = Vec::new();
         let mut migration_number = None;
@@ -670,12 +680,18 @@ fn get_latest_migration_number(migrations_dir: &str) -> Result<u32, Box<dyn std:
     Ok(max_number)
 }
 
+/// Project paths structure for organize paths based on working directory
+type ProjectPaths = (String, String, String, String, String);
+
 /// Determine project paths based on current working directory
 /// Returns (module_dir, test_dir, migrations_dir, lib_rs_path, sqlx_working_dir)
-fn determine_project_paths(plural: &str) -> Result<(String, String, String, String, String), Box<dyn std::error::Error>> {
+fn determine_project_paths(plural: &str) -> Result<ProjectPaths, Box<dyn std::error::Error>> {
     use std::path::Path;
 
-    if Path::new("templates").exists() && Path::new("starter").exists() && Path::new("starter/Cargo.toml").exists() {
+    if Path::new("templates").exists()
+        && Path::new("starter").exists()
+        && Path::new("starter/Cargo.toml").exists()
+    {
         // Running from project root: has templates/ + starter/ + starter/Cargo.toml
         Ok((
             format!("starter/src/{plural}"),
@@ -684,7 +700,10 @@ fn determine_project_paths(plural: &str) -> Result<(String, String, String, Stri
             "starter/src/lib.rs".to_string(),
             "starter".to_string(),
         ))
-    } else if Path::new("src").exists() && Path::new("Cargo.toml").exists() && Path::new("../templates").exists() {
+    } else if Path::new("src").exists()
+        && Path::new("Cargo.toml").exists()
+        && Path::new("../templates").exists()
+    {
         // Running from starter directory: has src/ + Cargo.toml + ../templates
         Ok((
             format!("src/{plural}"),
