@@ -12,6 +12,7 @@ pub struct __MODULE_STRUCT__ {
     pub id: Uuid,
     pub name: String,
     pub description: Option<String>,
+    pub created_by: Uuid,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
 }
@@ -40,11 +41,12 @@ pub struct List__MODULE_STRUCT__Request {
 
 impl __MODULE_STRUCT__ {
     /// Create a new __MODULE_NAME__ instance
-    pub fn new(name: String, description: Option<String>) -> Self {
+    pub fn new(name: String, description: Option<String>, created_by: Uuid) -> Self {
         Self {
             id: Uuid::new_v4(),
             name,
             description,
+            created_by,
             created_at: Utc::now(),
             updated_at: Utc::now(),
         }
@@ -68,22 +70,27 @@ mod tests {
 
     #[test]
     fn test___MODULE_NAME___creation() {
+        let created_by = Uuid::new_v4();
         let __MODULE_NAME__ = __MODULE_STRUCT__::new(
             "Test __MODULE_STRUCT__".to_string(),
             Some("Test description".to_string()),
+            created_by,
         );
 
         assert_eq!(__MODULE_NAME__.name, "Test __MODULE_STRUCT__");
         assert_eq!(__MODULE_NAME__.description, Some("Test description".to_string()));
+        assert_eq!(__MODULE_NAME__.created_by, created_by);
         assert!(__MODULE_NAME__.created_at <= Utc::now());
         assert!(__MODULE_NAME__.updated_at <= Utc::now());
     }
 
     #[test]
     fn test___MODULE_NAME___update() {
+        let created_by = Uuid::new_v4();
         let mut __MODULE_NAME__ = __MODULE_STRUCT__::new(
             "Original Name".to_string(),
             Some("Original description".to_string()),
+            created_by,
         );
 
         let original_created_at = __MODULE_NAME__.created_at;

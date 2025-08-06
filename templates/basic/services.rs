@@ -15,7 +15,7 @@ pub async fn list___MODULE_NAME_PLURAL___service(
         let search_param = format!("%{}%", search);
         sqlx::query_as!(
             __MODULE_STRUCT__,
-            "SELECT id, name, description, created_at, updated_at 
+            "SELECT id, name, description, created_by, created_at, updated_at 
              FROM __MODULE_TABLE__ 
              WHERE name ILIKE $1 OR description ILIKE $1
              ORDER BY created_at DESC 
@@ -30,7 +30,7 @@ pub async fn list___MODULE_NAME_PLURAL___service(
     } else {
         sqlx::query_as!(
             __MODULE_STRUCT__,
-            "SELECT id, name, description, created_at, updated_at 
+            "SELECT id, name, description, created_by, created_at, updated_at 
              FROM __MODULE_TABLE__ 
              ORDER BY created_at DESC 
              LIMIT $1 OFFSET $2",
@@ -52,7 +52,7 @@ pub async fn get___MODULE_NAME___service(
 ) -> Result<__MODULE_STRUCT__> {
     let __MODULE_NAME__ = sqlx::query_as!(
         __MODULE_STRUCT__,
-        "SELECT id, name, description, created_at, updated_at 
+        "SELECT id, name, description, created_by, created_at, updated_at 
          FROM __MODULE_TABLE__ 
          WHERE id = $1",
         id
@@ -69,22 +69,24 @@ pub async fn get___MODULE_NAME___service(
 pub async fn create___MODULE_NAME___service(
     conn: &mut DbConn,
     request: Create__MODULE_STRUCT__Request,
+    created_by: Uuid,
 ) -> Result<__MODULE_STRUCT__> {
     // Validate request
     if request.name.trim().is_empty() {
         return Err(Error::validation("name", "Name cannot be empty"));
     }
 
-    let __MODULE_NAME__ = __MODULE_STRUCT__::new(request.name, request.description);
+    let __MODULE_NAME__ = __MODULE_STRUCT__::new(request.name, request.description, created_by);
 
     let created___MODULE_NAME__ = sqlx::query_as!(
         __MODULE_STRUCT__,
-        "INSERT INTO __MODULE_TABLE__ (id, name, description, created_at, updated_at)
-         VALUES ($1, $2, $3, $4, $5)
-         RETURNING id, name, description, created_at, updated_at",
+        "INSERT INTO __MODULE_TABLE__ (id, name, description, created_by, created_at, updated_at)
+         VALUES ($1, $2, $3, $4, $5, $6)
+         RETURNING id, name, description, created_by, created_at, updated_at",
         __MODULE_NAME__.id,
         __MODULE_NAME__.name,
         __MODULE_NAME__.description,
+        __MODULE_NAME__.created_by,
         __MODULE_NAME__.created_at,
         __MODULE_NAME__.updated_at
     )
@@ -119,7 +121,7 @@ pub async fn update___MODULE_NAME___service(
         "UPDATE __MODULE_TABLE__ 
          SET name = $2, description = $3, updated_at = $4
          WHERE id = $1
-         RETURNING id, name, description, created_at, updated_at",
+         RETURNING id, name, description, created_by, created_at, updated_at",
         __MODULE_NAME__.id,
         __MODULE_NAME__.name,
         __MODULE_NAME__.description,

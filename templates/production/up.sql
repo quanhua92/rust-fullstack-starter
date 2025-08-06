@@ -9,6 +9,7 @@ CREATE TABLE __MODULE_TABLE__ (
     status __MODULE_NAME___status NOT NULL DEFAULT 'active',
     priority INTEGER NOT NULL DEFAULT 0,
     metadata JSONB NOT NULL DEFAULT '{}',
+    created_by UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
@@ -17,6 +18,7 @@ CREATE TABLE __MODULE_TABLE__ (
 CREATE INDEX idx___MODULE_TABLE___name ON __MODULE_TABLE__(name);
 CREATE INDEX idx___MODULE_TABLE___status ON __MODULE_TABLE__(status);
 CREATE INDEX idx___MODULE_TABLE___priority ON __MODULE_TABLE__(priority);
+CREATE INDEX idx___MODULE_TABLE___created_by ON __MODULE_TABLE__(created_by);
 CREATE INDEX idx___MODULE_TABLE___created_at ON __MODULE_TABLE__(created_at);
 CREATE INDEX idx___MODULE_TABLE___updated_at ON __MODULE_TABLE__(updated_at);
 

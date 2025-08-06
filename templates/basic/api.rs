@@ -112,7 +112,7 @@ pub async fn create___MODULE_NAME__(
         .await
         .map_err(crate::error::Error::from_sqlx)?;
 
-    let __MODULE_NAME__ = create___MODULE_NAME___service(&mut conn, request).await?;
+    let __MODULE_NAME__ = create___MODULE_NAME___service(&mut conn, request, auth_user.id).await?;
     Ok(Json(ApiResponse::success(__MODULE_NAME__)))
 }
 
@@ -123,17 +123,24 @@ pub async fn update___MODULE_NAME__(
     Path(id): Path<Uuid>,
     Json(request): Json<Update__MODULE_STRUCT__Request>,
 ) -> Result<Json<ApiResponse<__MODULE_STRUCT__>>> {
-    // Check permissions - require moderator or higher for updates
-    rbac_services::require_moderator_or_higher(&auth_user)?;
-
-    let mut conn = app_state
+    let mut tx = app_state
         .database
         .pool
-        .acquire()
+        .begin()
         .await
         .map_err(crate::error::Error::from_sqlx)?;
 
-    let __MODULE_NAME__ = update___MODULE_NAME___service(&mut conn, id, request).await?;
+    // First get the item to check ownership
+    let existing_item = get___MODULE_NAME___service(&mut tx, id).await?;
+    
+    // Check RBAC authorization - Admin/Moderator can update any item, users only their own
+    rbac_services::can_access_own_resource(&auth_user, existing_item.created_by)?;
+
+    let __MODULE_NAME__ = update___MODULE_NAME___service(&mut tx, id, request).await?;
+    
+    tx.commit()
+        .await
+        .map_err(crate::error::Error::from_sqlx)?;
     Ok(Json(ApiResponse::success(__MODULE_NAME__)))
 }
 
@@ -143,17 +150,24 @@ pub async fn delete___MODULE_NAME__(
     Extension(auth_user): Extension<AuthUser>,
     Path(id): Path<Uuid>,
 ) -> Result<Json<ApiResponse<()>>> {
-    // Check permissions - require moderator or higher for deletion
-    rbac_services::require_moderator_or_higher(&auth_user)?;
-
-    let mut conn = app_state
+    let mut tx = app_state
         .database
         .pool
-        .acquire()
+        .begin()
         .await
         .map_err(crate::error::Error::from_sqlx)?;
 
-    delete___MODULE_NAME___service(&mut conn, id).await?;
+    // First get the item to check ownership
+    let existing_item = get___MODULE_NAME___service(&mut tx, id).await?;
+    
+    // Check RBAC authorization - Admin/Moderator can delete any item, users only their own
+    rbac_services::can_access_own_resource(&auth_user, existing_item.created_by)?;
+
+    delete___MODULE_NAME___service(&mut tx, id).await?;
+    
+    tx.commit()
+        .await
+        .map_err(crate::error::Error::from_sqlx)?;
     Ok(Json(ApiResponse::success(())))
 }
 

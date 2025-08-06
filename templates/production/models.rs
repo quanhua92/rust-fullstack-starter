@@ -15,6 +15,7 @@ pub struct __MODULE_STRUCT__ {
     pub status: __MODULE_STRUCT__Status,
     pub priority: i32,
     pub metadata: serde_json::Value,
+    pub created_by: Uuid,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
 }
@@ -189,6 +190,7 @@ impl __MODULE_STRUCT__ {
         status: Option<__MODULE_STRUCT__Status>,
         priority: Option<i32>,
         metadata: Option<serde_json::Value>,
+        created_by: Uuid,
     ) -> Self {
         Self {
             id: Uuid::new_v4(),
@@ -197,6 +199,7 @@ impl __MODULE_STRUCT__ {
             status: status.unwrap_or_default(),
             priority: priority.unwrap_or(0),
             metadata: metadata.unwrap_or_else(|| serde_json::json!({})),
+            created_by,
             created_at: Utc::now(),
             updated_at: Utc::now(),
         }
