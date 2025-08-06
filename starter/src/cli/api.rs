@@ -137,6 +137,34 @@ impl CliApp {
     async fn export_openapi(&self, output: String) -> Result<(), Box<dyn std::error::Error>> {
         use crate::openapi;
         use std::fs;
+        use std::path::Path;
+
+        // Check if we're running from the correct location
+        let is_running_from_root = Path::new("templates").exists()
+            && Path::new("starter").exists()
+            && Path::new("starter/Cargo.toml").exists();
+
+        let is_running_from_starter = Path::new("src").exists()
+            && Path::new("Cargo.toml").exists()
+            && Path::new("../templates").exists();
+
+        if !is_running_from_root && !is_running_from_starter {
+            eprintln!("❌ You are not running from the correct location.");
+            eprintln!("   Expected to find 'starter' folder or 'templates' folder.");
+            eprintln!("   This command should be run from the project root.");
+            eprintln!();
+            print!("   Continue anyway? (y/N): ");
+            use std::io::{self, Write};
+            io::stdout().flush()?;
+
+            let mut input = String::new();
+            io::stdin().read_line(&mut input)?;
+            let input = input.trim().to_lowercase();
+
+            if input != "y" && input != "yes" {
+                return Err("Export cancelled by user".into());
+            }
+        }
 
         let json = openapi::openapi_json();
 
