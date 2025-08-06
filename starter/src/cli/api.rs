@@ -218,7 +218,16 @@ impl CliApp {
         replacements.insert("__MODULE_STRUCT__", &struct_name);
         replacements.insert("__MODULE_TABLE__", table_name);
 
-        let template_dir = format!("./templates/{template}");
+        // Determine template directory based on working directory with multiple checks
+        let template_dir = if Path::new("templates").exists() && Path::new("starter").exists() && Path::new("starter/Cargo.toml").exists() {
+            // Running from project root: has templates/ + starter/ + starter/Cargo.toml
+            format!("./templates/{template}")
+        } else if Path::new("src").exists() && Path::new("Cargo.toml").exists() && Path::new("../templates").exists() {
+            // Running from starter directory: has src/ + Cargo.toml + ../templates
+            format!("../templates/{template}")
+        } else {
+            return Err("Cannot determine project structure. Must run from project root (with templates/ and starter/ directories) or from starter directory (with src/ and Cargo.toml)".into());
+        };
         if !Path::new(&template_dir).exists() {
             return Err(format!("Template '{template}' not found in templates directory").into());
         }
