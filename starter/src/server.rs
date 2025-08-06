@@ -146,7 +146,6 @@ pub fn create_router(state: AppState) -> Router {
         .route("/tasks/{id}", delete(tasks_api::delete_task))
         .route("/tasks/{id}/cancel", post(tasks_api::cancel_task))
         .route("/tasks/{id}/retry", post(tasks_api::retry_task))
-        // Products routes
         // Monitoring routes (basic access)
         .route("/monitoring/events", post(monitoring_api::create_event))
         .route("/monitoring/events", get(monitoring_api::get_events))

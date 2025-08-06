@@ -24,6 +24,7 @@ use crate::{
     __MODULE_NAME_PLURAL__::{models::*, services::*},
     types::{ApiResponse, AppState, Result},
 };
+use sqlx::Acquire;
 
 /// Create __MODULE_NAME_PLURAL__ router with all endpoints
 pub fn __MODULE_NAME_PLURAL___routes() -> Router<AppState> {
@@ -390,3 +391,15 @@ pub async fn bulk_delete___MODULE_NAME_PLURAL__(
     Ok(Json(ApiResponse::success(response)))
 }
 
+/// Parse cursor for pagination
+fn parse_cursor(cursor: &str) -> Result<i64> {
+    use base64::{Engine as _, engine::general_purpose::STANDARD as BASE64};
+    let decoded = BASE64
+        .decode(cursor)
+        .map_err(|_| crate::error::Error::validation("cursor", "Invalid cursor format"))?;
+    let cursor_str = String::from_utf8(decoded)
+        .map_err(|_| crate::error::Error::validation("cursor", "Invalid cursor encoding"))?;
+    cursor_str
+        .parse::<i64>()
+        .map_err(|_| crate::error::Error::validation("cursor", "Invalid cursor value"))
+}

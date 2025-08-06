@@ -1,351 +1,71 @@
-//! __MODULE_STRUCT__ business logic and database operations with advanced features
+//! __MODULE_STRUCT__ business logic and database operations
 
-use crate::types::{DbConn, Result};
+use crate::{types::{DbConn, Result}, error::Error};
 use super::models::*;
 use uuid::Uuid;
-use base64::{Engine as _, engine::general_purpose::STANDARD as BASE64};
 
-/// List __MODULE_NAME_PLURAL__ with advanced filtering and pagination
+/// List __MODULE_NAME_PLURAL__ with optional filtering
 pub async fn list___MODULE_NAME_PLURAL___service(
     conn: &mut DbConn,
     request: List__MODULE_STRUCT__Request,
 ) -> Result<__MODULE_STRUCT__ListResponse> {
     let limit = request.limit.unwrap_or(20).min(100).max(1) as i64;
     let offset = request.offset.unwrap_or(0) as i64;
-    
-    // Use simplified queries based on filters
-    let (items, total_count) = if request.search.is_some() || request.status.is_some() || 
-                                 request.min_priority.is_some() || request.max_priority.is_some() ||
-                                 request.created_after.is_some() || request.created_before.is_some() {
-        // Filtered query
-        list_with_filters(conn, &request, limit, offset).await?
+
+    let __MODULE_NAME_PLURAL__ = if let Some(search) = &request.search {
+        let search_param = format!("%{}%", search);
+        sqlx::query_as!(
+            __MODULE_STRUCT__,
+            r#"SELECT id, name, description, status as "status: __MODULE_STRUCT__Status", priority, metadata, created_at, updated_at 
+               FROM __MODULE_TABLE_NAME__ 
+               WHERE name ILIKE $1 OR description ILIKE $1
+               ORDER BY created_at DESC 
+               LIMIT $2 OFFSET $3"#,
+            search_param,
+            limit,
+            offset
+        )
+        .fetch_all(&mut **conn)
+        .await
+        .map_err(Error::from_sqlx)?
     } else {
-        // Simple query without filters
-        list_without_filters(conn, &request, limit, offset).await?
+        sqlx::query_as!(
+            __MODULE_STRUCT__,
+            r#"SELECT id, name, description, status as "status: __MODULE_STRUCT__Status", priority, metadata, created_at, updated_at 
+               FROM __MODULE_TABLE_NAME__ 
+               ORDER BY created_at DESC 
+               LIMIT $1 OFFSET $2"#,
+            limit,
+            offset
+        )
+        .fetch_all(&mut **conn)
+        .await
+        .map_err(Error::from_sqlx)?
     };
-    
-    // Check if there are more items (for has_next)
-    let has_next = items.len() > limit as usize;
-    let mut final_items = items;
-    if has_next {
-        final_items.pop(); // Remove the extra item
-    }
-    
-    // Calculate pagination info
-    let current_page = (offset / limit) + 1;
-    let page_count = (total_count + limit - 1) / limit;
-    let has_prev = offset > 0;
-    
-    // Generate cursors for cursor-based pagination
-    let next_cursor = if has_next {
-        Some(generate_cursor(offset + limit))
-    } else {
-        None
-    };
-    
-    let prev_cursor = if has_prev {
-        Some(generate_cursor((offset - limit).max(0)))
-    } else {
-        None
-    };
-    
+
+    let total_count = sqlx::query_scalar!(
+        "SELECT COUNT(*) FROM __MODULE_TABLE_NAME__"
+    )
+    .fetch_one(&mut **conn)
+    .await
+    .map_err(Error::from_sqlx)?
+    .unwrap_or(0);
+
     let pagination = PaginationInfo {
         total_count,
-        page_count,
-        current_page,
+        page_count: (total_count + limit - 1) / limit,
+        current_page: (offset / limit) + 1,
         per_page: limit as i32,
-        has_next,
-        has_prev,
-        next_cursor,
-        prev_cursor,
-    };
-    
-    Ok(__MODULE_STRUCT__ListResponse { items: final_items, pagination })
-}
-
-/// List items without filters (optimized path using macro to reduce duplication)
-async fn list_without_filters(
-    conn: &mut DbConn,
-    request: &List__MODULE_STRUCT__Request,
-    limit: i64,
-    offset: i64,
-) -> Result<(Vec<__MODULE_STRUCT__>, i64)> {
-    let sort_field = match request.sort_by.as_ref().unwrap_or(&__MODULE_STRUCT__SortField::CreatedAt) {
-        __MODULE_STRUCT__SortField::Name => "name",
-        __MODULE_STRUCT__SortField::Priority => "priority", 
-        __MODULE_STRUCT__SortField::Status => "status",
-        __MODULE_STRUCT__SortField::CreatedAt => "created_at",
-        __MODULE_STRUCT__SortField::UpdatedAt => "updated_at",
-    };
-    
-    let sort_order = match request.sort_order.as_ref().unwrap_or(&SortOrder::Desc) {
-        SortOrder::Asc => "ASC",
-        SortOrder::Desc => "DESC",
-    };
-    
-    // Use a macro to reduce code duplication while maintaining sqlx compile-time checks
-    macro_rules! query_with_sort {
-        ($field:expr, $order:expr) => {
-            sqlx::query_as!(
-                __MODULE_STRUCT__,
-                concat!(
-                    "SELECT id, name, description, status as \"status: __MODULE_STRUCT__Status\", priority, metadata, created_at, updated_at ",
-                    "FROM __MODULE_TABLE__ ",
-                    "ORDER BY ", $field, " ", $order, " ",
-                    "LIMIT $1 OFFSET $2"
-                ),
-                limit + 1,
-                offset
-            ).fetch_all(&mut **conn).await
-        };
-    }
-    
-    // Get items with one extra to check for has_next
-    // Using match with string literals maintains sqlx compile-time validation
-    let items = match (sort_field, sort_order) {
-        ("created_at", "DESC") => query_with_sort!("created_at", "DESC")?,
-        ("created_at", "ASC") => query_with_sort!("created_at", "ASC")?,
-        ("name", "ASC") => query_with_sort!("name", "ASC")?,
-        ("name", "DESC") => query_with_sort!("name", "DESC")?,
-        ("priority", "ASC") => query_with_sort!("priority", "ASC")?,
-        ("priority", "DESC") => query_with_sort!("priority", "DESC")?,
-        ("status", "ASC") => query_with_sort!("status", "ASC")?,
-        ("status", "DESC") => query_with_sort!("status", "DESC")?,
-        ("updated_at", "ASC") => query_with_sort!("updated_at", "ASC")?,
-        ("updated_at", "DESC") => query_with_sort!("updated_at", "DESC")?,
-        _ => query_with_sort!("created_at", "DESC")?, // Default fallback
+        has_next: (offset + limit) < total_count,
+        has_prev: offset > 0,
+        next_cursor: None,
+        prev_cursor: None,
     };
 
-    // Get total count
-    let total_count = sqlx::query_scalar!(
-        "SELECT COUNT(*) FROM __MODULE_TABLE__"
-    )
-    .fetch_one(&mut **conn)
-    .await?
-    .unwrap_or(0);
-
-    Ok((items, total_count))
-}
-
-/// List items with filters applied (supports multiple concurrent filters)
-async fn list_with_filters(
-    conn: &mut DbConn,
-    request: &List__MODULE_STRUCT__Request,
-    limit: i64,
-    offset: i64,
-) -> Result<(Vec<__MODULE_STRUCT__>, i64)> {
-    // Prepare filter parameters with Option types for conditional inclusion
-    let search_param = request.search.as_ref().map(|s| format!("%{}%", s));
-    let status_filter = request.status.as_ref().filter(|list| !list.is_empty());
-    let min_priority = request.min_priority;
-    let max_priority = request.max_priority;
-    let created_after = request.created_after;
-    let created_before = request.created_before;
-    
-    // Determine sort parameters
-    let sort_field = match request.sort_by.as_ref().unwrap_or(&__MODULE_STRUCT__SortField::CreatedAt) {
-        __MODULE_STRUCT__SortField::Name => "name",
-        __MODULE_STRUCT__SortField::Priority => "priority", 
-        __MODULE_STRUCT__SortField::Status => "status",
-        __MODULE_STRUCT__SortField::CreatedAt => "created_at",
-        __MODULE_STRUCT__SortField::UpdatedAt => "updated_at",
-    };
-    
-    let sort_order = match request.sort_order.as_ref().unwrap_or(&SortOrder::Desc) {
-        SortOrder::Asc => "ASC",
-        SortOrder::Desc => "DESC",
-    };
-
-    // Use a comprehensive query that handles all filters with proper null handling
-    // This maintains compile-time validation while supporting multiple concurrent filters
-    let items = match (sort_field, sort_order) {
-        ("created_at", "DESC") => sqlx::query_as!(
-            __MODULE_STRUCT__,
-            r#"
-            SELECT id, name, description, status as "status: __MODULE_STRUCT__Status", priority, metadata, created_at, updated_at 
-            FROM __MODULE_TABLE__ 
-            WHERE ($1::TEXT IS NULL OR (name ILIKE $1 OR description ILIKE $1))
-              AND ($2::__MODULE_STRUCT__STATUS[] IS NULL OR status = ANY($2))
-              AND ($3::INTEGER IS NULL OR priority >= $3)
-              AND ($4::INTEGER IS NULL OR priority <= $4)
-              AND ($5::TIMESTAMPTZ IS NULL OR created_at >= $5)
-              AND ($6::TIMESTAMPTZ IS NULL OR created_at <= $6)
-            ORDER BY created_at DESC 
-            LIMIT $7 OFFSET $8
-            "#,
-            search_param.as_deref(),
-            status_filter.map(|s| s.as_slice()) as Option<&[__MODULE_STRUCT__Status]>,
-            min_priority,
-            max_priority,
-            created_after,
-            created_before,
-            limit + 1,
-            offset
-        ).fetch_all(&mut **conn).await?,
-        ("created_at", "ASC") => sqlx::query_as!(
-            __MODULE_STRUCT__,
-            r#"
-            SELECT id, name, description, status as "status: __MODULE_STRUCT__Status", priority, metadata, created_at, updated_at 
-            FROM __MODULE_TABLE__ 
-            WHERE ($1::TEXT IS NULL OR (name ILIKE $1 OR description ILIKE $1))
-              AND ($2::__MODULE_STRUCT__STATUS[] IS NULL OR status = ANY($2))
-              AND ($3::INTEGER IS NULL OR priority >= $3)
-              AND ($4::INTEGER IS NULL OR priority <= $4)
-              AND ($5::TIMESTAMPTZ IS NULL OR created_at >= $5)
-              AND ($6::TIMESTAMPTZ IS NULL OR created_at <= $6)
-            ORDER BY created_at ASC 
-            LIMIT $7 OFFSET $8
-            "#,
-            search_param.as_deref(),
-            status_filter.map(|s| s.as_slice()) as Option<&[__MODULE_STRUCT__Status]>,
-            min_priority,
-            max_priority,
-            created_after,
-            created_before,
-            limit + 1,
-            offset
-        ).fetch_all(&mut **conn).await?,
-        ("name", "ASC") => sqlx::query_as!(
-            __MODULE_STRUCT__,
-            r#"
-            SELECT id, name, description, status as "status: __MODULE_STRUCT__Status", priority, metadata, created_at, updated_at 
-            FROM __MODULE_TABLE__ 
-            WHERE ($1::TEXT IS NULL OR (name ILIKE $1 OR description ILIKE $1))
-              AND ($2::__MODULE_STRUCT__STATUS[] IS NULL OR status = ANY($2))
-              AND ($3::INTEGER IS NULL OR priority >= $3)
-              AND ($4::INTEGER IS NULL OR priority <= $4)
-              AND ($5::TIMESTAMPTZ IS NULL OR created_at >= $5)
-              AND ($6::TIMESTAMPTZ IS NULL OR created_at <= $6)
-            ORDER BY name ASC 
-            LIMIT $7 OFFSET $8
-            "#,
-            search_param.as_deref(),
-            status_filter.map(|s| s.as_slice()) as Option<&[__MODULE_STRUCT__Status]>,
-            min_priority,
-            max_priority,
-            created_after,
-            created_before,
-            limit + 1,
-            offset
-        ).fetch_all(&mut **conn).await?,
-        ("name", "DESC") => sqlx::query_as!(
-            __MODULE_STRUCT__,
-            r#"
-            SELECT id, name, description, status as "status: __MODULE_STRUCT__Status", priority, metadata, created_at, updated_at 
-            FROM __MODULE_TABLE__ 
-            WHERE ($1::TEXT IS NULL OR (name ILIKE $1 OR description ILIKE $1))
-              AND ($2::__MODULE_STRUCT__STATUS[] IS NULL OR status = ANY($2))
-              AND ($3::INTEGER IS NULL OR priority >= $3)
-              AND ($4::INTEGER IS NULL OR priority <= $4)
-              AND ($5::TIMESTAMPTZ IS NULL OR created_at >= $5)
-              AND ($6::TIMESTAMPTZ IS NULL OR created_at <= $6)
-            ORDER BY name DESC 
-            LIMIT $7 OFFSET $8
-            "#,
-            search_param.as_deref(),
-            status_filter.map(|s| s.as_slice()) as Option<&[__MODULE_STRUCT__Status]>,
-            min_priority,
-            max_priority,
-            created_after,
-            created_before,
-            limit + 1,
-            offset
-        ).fetch_all(&mut **conn).await?,
-        ("priority", "ASC") => sqlx::query_as!(
-            __MODULE_STRUCT__,
-            r#"
-            SELECT id, name, description, status as "status: __MODULE_STRUCT__Status", priority, metadata, created_at, updated_at 
-            FROM __MODULE_TABLE__ 
-            WHERE ($1::TEXT IS NULL OR (name ILIKE $1 OR description ILIKE $1))
-              AND ($2::__MODULE_STRUCT__STATUS[] IS NULL OR status = ANY($2))
-              AND ($3::INTEGER IS NULL OR priority >= $3)
-              AND ($4::INTEGER IS NULL OR priority <= $4)
-              AND ($5::TIMESTAMPTZ IS NULL OR created_at >= $5)
-              AND ($6::TIMESTAMPTZ IS NULL OR created_at <= $6)
-            ORDER BY priority ASC 
-            LIMIT $7 OFFSET $8
-            "#,
-            search_param.as_deref(),
-            status_filter.map(|s| s.as_slice()) as Option<&[__MODULE_STRUCT__Status]>,
-            min_priority,
-            max_priority,
-            created_after,
-            created_before,
-            limit + 1,
-            offset
-        ).fetch_all(&mut **conn).await?,
-        ("priority", "DESC") => sqlx::query_as!(
-            __MODULE_STRUCT__,
-            r#"
-            SELECT id, name, description, status as "status: __MODULE_STRUCT__Status", priority, metadata, created_at, updated_at 
-            FROM __MODULE_TABLE__ 
-            WHERE ($1::TEXT IS NULL OR (name ILIKE $1 OR description ILIKE $1))
-              AND ($2::__MODULE_STRUCT__STATUS[] IS NULL OR status = ANY($2))
-              AND ($3::INTEGER IS NULL OR priority >= $3)
-              AND ($4::INTEGER IS NULL OR priority <= $4)
-              AND ($5::TIMESTAMPTZ IS NULL OR created_at >= $5)
-              AND ($6::TIMESTAMPTZ IS NULL OR created_at <= $6)
-            ORDER BY priority DESC 
-            LIMIT $7 OFFSET $8
-            "#,
-            search_param.as_deref(),
-            status_filter.map(|s| s.as_slice()) as Option<&[__MODULE_STRUCT__Status]>,
-            min_priority,
-            max_priority,
-            created_after,
-            created_before,
-            limit + 1,
-            offset
-        ).fetch_all(&mut **conn).await?,
-        _ => sqlx::query_as!(
-            __MODULE_STRUCT__,
-            r#"
-            SELECT id, name, description, status as "status: __MODULE_STRUCT__Status", priority, metadata, created_at, updated_at 
-            FROM __MODULE_TABLE__ 
-            WHERE ($1::TEXT IS NULL OR (name ILIKE $1 OR description ILIKE $1))
-              AND ($2::__MODULE_STRUCT__STATUS[] IS NULL OR status = ANY($2))
-              AND ($3::INTEGER IS NULL OR priority >= $3)
-              AND ($4::INTEGER IS NULL OR priority <= $4)
-              AND ($5::TIMESTAMPTZ IS NULL OR created_at >= $5)
-              AND ($6::TIMESTAMPTZ IS NULL OR created_at <= $6)
-            ORDER BY created_at DESC 
-            LIMIT $7 OFFSET $8
-            "#,
-            search_param.as_deref(),
-            status_filter.map(|s| s.as_slice()) as Option<&[__MODULE_STRUCT__Status]>,
-            min_priority,
-            max_priority,
-            created_after,
-            created_before,
-            limit + 1,
-            offset
-        ).fetch_all(&mut **conn).await?,
-    };
-
-    // Get filtered count using the same WHERE conditions
-    let total_count = sqlx::query_scalar!(
-        r#"
-        SELECT COUNT(*) 
-        FROM __MODULE_TABLE__ 
-        WHERE ($1::TEXT IS NULL OR (name ILIKE $1 OR description ILIKE $1))
-          AND ($2::__MODULE_STRUCT__STATUS[] IS NULL OR status = ANY($2))
-          AND ($3::INTEGER IS NULL OR priority >= $3)
-          AND ($4::INTEGER IS NULL OR priority <= $4)
-          AND ($5::TIMESTAMPTZ IS NULL OR created_at >= $5)
-          AND ($6::TIMESTAMPTZ IS NULL OR created_at <= $6)
-        "#,
-        search_param.as_deref(),
-        status_filter.map(|s| s.as_slice()) as Option<&[__MODULE_STRUCT__Status]>,
-        min_priority,
-        max_priority,
-        created_after,
-        created_before,
-    )
-    .fetch_one(&mut **conn)
-    .await?
-    .unwrap_or(0);
-
-    Ok((items, total_count))
+    Ok(__MODULE_STRUCT__ListResponse {
+        items: __MODULE_NAME_PLURAL__,
+        pagination,
+    })
 }
 
 /// Get a specific __MODULE_NAME__ by ID
@@ -355,14 +75,15 @@ pub async fn get___MODULE_NAME___service(
 ) -> Result<__MODULE_STRUCT__> {
     let __MODULE_NAME__ = sqlx::query_as!(
         __MODULE_STRUCT__,
-        "SELECT id, name, description, status as \"status: __MODULE_STRUCT__Status\", priority, metadata, created_at, updated_at 
-         FROM __MODULE_TABLE__ 
-         WHERE id = $1",
+        r#"SELECT id, name, description, status as "status: __MODULE_STRUCT__Status", priority, metadata, created_at, updated_at 
+           FROM __MODULE_TABLE_NAME__ 
+           WHERE id = $1"#,
         id
     )
     .fetch_optional(&mut **conn)
-    .await?
-    .ok_or_else(|| crate::error::Error::NotFound(format!("__MODULE_STRUCT__ with id {}", id)))?;
+    .await
+    .map_err(Error::from_sqlx)?
+    .ok_or_else(|| Error::NotFound(format!("__MODULE_STRUCT__ with id {}", id)))?;
 
     Ok(__MODULE_NAME__)
 }
@@ -374,22 +95,22 @@ pub async fn create___MODULE_NAME___service(
 ) -> Result<__MODULE_STRUCT__> {
     // Validate request
     if request.name.trim().is_empty() {
-        return Err(crate::error::Error::validation("name", "Name cannot be empty"));
+        return Err(Error::validation("name", "Name cannot be empty"));
     }
 
     let __MODULE_NAME__ = __MODULE_STRUCT__::new(
-        request.name, 
-        request.description, 
+        request.name,
+        request.description,
         request.status,
         request.priority,
-        request.metadata
+        request.metadata,
     );
 
     let created___MODULE_NAME__ = sqlx::query_as!(
         __MODULE_STRUCT__,
-        "INSERT INTO __MODULE_TABLE__ (id, name, description, status, priority, metadata, created_at, updated_at)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-         RETURNING id, name, description, status as \"status: __MODULE_STRUCT__Status\", priority, metadata, created_at, updated_at",
+        r#"INSERT INTO __MODULE_TABLE_NAME__ (id, name, description, status, priority, metadata, created_at, updated_at)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+           RETURNING id, name, description, status as "status: __MODULE_STRUCT__Status", priority, metadata, created_at, updated_at"#,
         __MODULE_NAME__.id,
         __MODULE_NAME__.name,
         __MODULE_NAME__.description,
@@ -400,7 +121,8 @@ pub async fn create___MODULE_NAME___service(
         __MODULE_NAME__.updated_at
     )
     .fetch_one(&mut **conn)
-    .await?;
+    .await
+    .map_err(Error::from_sqlx)?;
 
     Ok(created___MODULE_NAME__)
 }
@@ -417,7 +139,7 @@ pub async fn update___MODULE_NAME___service(
     // Validate request
     if let Some(ref name) = request.name {
         if name.trim().is_empty() {
-            return Err(crate::error::Error::validation("name", "Name cannot be empty"));
+            return Err(Error::validation("name", "Name cannot be empty"));
         }
     }
 
@@ -426,10 +148,10 @@ pub async fn update___MODULE_NAME___service(
 
     let updated___MODULE_NAME__ = sqlx::query_as!(
         __MODULE_STRUCT__,
-        "UPDATE __MODULE_TABLE__ 
-         SET name = $2, description = $3, status = $4, priority = $5, metadata = $6, updated_at = $7
-         WHERE id = $1
-         RETURNING id, name, description, status as \"status: __MODULE_STRUCT__Status\", priority, metadata, created_at, updated_at",
+        r#"UPDATE __MODULE_TABLE_NAME__ 
+           SET name = $2, description = $3, status = $4, priority = $5, metadata = $6, updated_at = $7
+           WHERE id = $1
+           RETURNING id, name, description, status as "status: __MODULE_STRUCT__Status", priority, metadata, created_at, updated_at"#,
         __MODULE_NAME__.id,
         __MODULE_NAME__.name,
         __MODULE_NAME__.description,
@@ -439,7 +161,8 @@ pub async fn update___MODULE_NAME___service(
         __MODULE_NAME__.updated_at
     )
     .fetch_one(&mut **conn)
-    .await?;
+    .await
+    .map_err(Error::from_sqlx)?;
 
     Ok(updated___MODULE_NAME__)
 }
@@ -450,15 +173,16 @@ pub async fn delete___MODULE_NAME___service(
     id: Uuid,
 ) -> Result<()> {
     let rows_affected = sqlx::query!(
-        "DELETE FROM __MODULE_TABLE__ WHERE id = $1",
+        "DELETE FROM __MODULE_TABLE_NAME__ WHERE id = $1",
         id
     )
     .execute(&mut **conn)
-    .await?
+    .await
+    .map_err(Error::from_sqlx)?
     .rows_affected();
 
     if rows_affected == 0 {
-        return Err(crate::error::Error::NotFound(format!("__MODULE_STRUCT__ with id {}", id)));
+        return Err(Error::NotFound(format!("__MODULE_STRUCT__ with id {}", id)));
     }
 
     Ok(())
@@ -473,14 +197,14 @@ pub async fn bulk_create___MODULE_NAME_PLURAL___service(
     let mut errors = Vec::new();
     let skip_errors = request.skip_errors.unwrap_or(false);
 
-    for (index, item_request) in request.items.into_iter().enumerate() {
-        match create___MODULE_NAME___service(conn, item_request).await {
+    for (index, item) in request.items.into_iter().enumerate() {
+        match create___MODULE_NAME___service(conn, item).await {
             Ok(__MODULE_NAME__) => results.push(__MODULE_NAME__),
-            Err(e) => {
+            Err(error) => {
                 errors.push(BulkOperationError {
                     index,
                     id: None,
-                    error: e.to_string(),
+                    error: error.to_string(),
                 });
                 if !skip_errors {
                     break;
@@ -509,11 +233,11 @@ pub async fn bulk_update___MODULE_NAME_PLURAL___service(
     for (index, item) in request.items.into_iter().enumerate() {
         match update___MODULE_NAME___service(conn, item.id, item.data).await {
             Ok(__MODULE_NAME__) => results.push(__MODULE_NAME__),
-            Err(e) => {
+            Err(error) => {
                 errors.push(BulkOperationError {
                     index,
                     id: Some(item.id),
-                    error: e.to_string(),
+                    error: error.to_string(),
                 });
                 if !skip_errors {
                     break;
@@ -542,11 +266,11 @@ pub async fn bulk_delete___MODULE_NAME_PLURAL___service(
     for (index, id) in request.ids.into_iter().enumerate() {
         match delete___MODULE_NAME___service(conn, id).await {
             Ok(()) => results.push(id),
-            Err(e) => {
+            Err(error) => {
                 errors.push(BulkOperationError {
                     index,
                     id: Some(id),
-                    error: e.to_string(),
+                    error: error.to_string(),
                 });
                 if !skip_errors {
                     break;
@@ -562,21 +286,3 @@ pub async fn bulk_delete___MODULE_NAME_PLURAL___service(
         results,
     })
 }
-
-/// Generate a cursor for pagination
-fn generate_cursor(offset: i64) -> String {
-    BASE64.encode(offset.to_string().as_bytes())
-}
-
-/// Parse a cursor for pagination
-pub fn parse_cursor(cursor: &str) -> Result<i64> {
-    let decoded = BASE64.decode(cursor)
-        .map_err(|_| crate::error::Error::validation("cursor", "Invalid cursor format"))?;
-    
-    let offset_str = String::from_utf8(decoded)
-        .map_err(|_| crate::error::Error::validation("cursor", "Invalid cursor encoding"))?;
-    
-    offset_str.parse::<i64>()
-        .map_err(|_| crate::error::Error::validation("cursor", "Invalid cursor value"))
-}
-

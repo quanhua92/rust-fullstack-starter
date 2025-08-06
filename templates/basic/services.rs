@@ -1,6 +1,6 @@
 //! __MODULE_STRUCT__ business logic and database operations
 
-use crate::types::{DbConn, Result};
+use crate::{types::{DbConn, Result}, error::Error};
 use super::models::*;
 use uuid::Uuid;
 
@@ -25,7 +25,8 @@ pub async fn list___MODULE_NAME_PLURAL___service(
             request.offset as i64
         )
         .fetch_all(&mut **conn)
-        .await?
+        .await
+        .map_err(Error::from_sqlx)?
     } else {
         sqlx::query_as!(
             __MODULE_STRUCT__,
@@ -37,7 +38,8 @@ pub async fn list___MODULE_NAME_PLURAL___service(
             request.offset as i64
         )
         .fetch_all(&mut **conn)
-        .await?
+        .await
+        .map_err(Error::from_sqlx)?
     };
 
     Ok(__MODULE_NAME_PLURAL__)
@@ -56,8 +58,9 @@ pub async fn get___MODULE_NAME___service(
         id
     )
     .fetch_optional(&mut **conn)
-    .await?
-    .ok_or_else(|| crate::error::Error::NotFound(format!("__MODULE_STRUCT__ with id {}", id)))?;
+    .await
+    .map_err(Error::from_sqlx)?
+    .ok_or_else(|| Error::NotFound(format!("__MODULE_STRUCT__ with id {}", id)))?;
 
     Ok(__MODULE_NAME__)
 }
@@ -69,7 +72,7 @@ pub async fn create___MODULE_NAME___service(
 ) -> Result<__MODULE_STRUCT__> {
     // Validate request
     if request.name.trim().is_empty() {
-        return Err(crate::error::Error::validation("name", "Name cannot be empty"));
+        return Err(Error::validation("name", "Name cannot be empty"));
     }
 
     let __MODULE_NAME__ = __MODULE_STRUCT__::new(request.name, request.description);
@@ -86,7 +89,8 @@ pub async fn create___MODULE_NAME___service(
         __MODULE_NAME__.updated_at
     )
     .fetch_one(&mut **conn)
-    .await?;
+    .await
+    .map_err(Error::from_sqlx)?;
 
     Ok(created___MODULE_NAME__)
 }
@@ -103,7 +107,7 @@ pub async fn update___MODULE_NAME___service(
     // Validate request
     if let Some(ref name) = request.name {
         if name.trim().is_empty() {
-            return Err(crate::error::Error::validation("name", "Name cannot be empty"));
+            return Err(Error::validation("name", "Name cannot be empty"));
         }
     }
 
@@ -122,7 +126,8 @@ pub async fn update___MODULE_NAME___service(
         __MODULE_NAME__.updated_at
     )
     .fetch_one(&mut **conn)
-    .await?;
+    .await
+    .map_err(Error::from_sqlx)?;
 
     Ok(updated___MODULE_NAME__)
 }
@@ -137,11 +142,12 @@ pub async fn delete___MODULE_NAME___service(
         id
     )
     .execute(&mut **conn)
-    .await?
+    .await
+    .map_err(Error::from_sqlx)?
     .rows_affected();
 
     if rows_affected == 0 {
-        return Err(crate::error::Error::NotFound(format!("__MODULE_STRUCT__ with id {}", id)));
+        return Err(Error::NotFound(format!("__MODULE_STRUCT__ with id {}", id)));
     }
 
     Ok(())
