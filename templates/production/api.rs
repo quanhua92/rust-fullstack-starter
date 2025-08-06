@@ -83,22 +83,18 @@ pub async fn list___MODULE_NAME_PLURAL__(
     // Authenticated access required - user must be logged in
     let _ = &auth_user; // Explicitly acknowledge the auth requirement
     // Parse status filter
-    let status = if let Some(status_str) = params.status {
-        Some(
-            status_str
-                .split(',')
-                .filter_map(|s| match s.trim().to_lowercase().as_str() {
-                    "active" => Some(__MODULE_STRUCT__Status::Active),
-                    "inactive" => Some(__MODULE_STRUCT__Status::Inactive),
-                    "pending" => Some(__MODULE_STRUCT__Status::Pending),
-                    "archived" => Some(__MODULE_STRUCT__Status::Archived),
-                    _ => None,
-                })
-                .collect(),
-        )
-    } else {
-        None
-    };
+    let status = params.status.map(|status_str| {
+        status_str
+            .split(',')
+            .filter_map(|s| match s.trim().to_lowercase().as_str() {
+                "active" => Some(__MODULE_STRUCT__Status::Active),
+                "inactive" => Some(__MODULE_STRUCT__Status::Inactive),
+                "pending" => Some(__MODULE_STRUCT__Status::Pending),
+                "archived" => Some(__MODULE_STRUCT__Status::Archived),
+                _ => None,
+            })
+            .collect()
+    });
 
     // Parse date filters
     let created_after = if let Some(date_str) = params.created_after {

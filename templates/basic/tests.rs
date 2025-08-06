@@ -19,7 +19,7 @@ async fn test___MODULE_NAME___crud_workflow() {
     });
 
     let response = app
-        .post_auth("/api/v1/__MODULE_NAME_PLURAL__", &token.token, &create_data)
+        .post_json_auth("/api/v1/__MODULE_NAME_PLURAL__", &create_data, &token.token)
         .await;
 
     assert_status(&response, StatusCode::OK);
@@ -50,10 +50,10 @@ async fn test___MODULE_NAME___crud_workflow() {
     });
 
     let response = app
-        .put_auth(
+        .put_json_auth(
             &format!("/api/v1/__MODULE_NAME_PLURAL__/{}", __MODULE_NAME___id),
-            &token.token,
             &update_data,
+            &token.token,
         )
         .await;
 
@@ -91,7 +91,7 @@ async fn test___MODULE_NAME___list_with_search() {
         });
 
         let response = app
-            .post_auth("/api/v1/__MODULE_NAME_PLURAL__", &token.token, &create_data)
+            .post_json_auth("/api/v1/__MODULE_NAME_PLURAL__", &create_data, &token.token)
             .await;
 
         assert_status(&response, StatusCode::OK);
@@ -139,7 +139,7 @@ async fn test___MODULE_NAME___validation() {
     });
 
     let response = app
-        .post_auth("/api/v1/__MODULE_NAME_PLURAL__", &token.token, &create_data)
+        .post_json_auth("/api/v1/__MODULE_NAME_PLURAL__", &create_data, &token.token)
         .await;
 
     assert_status(&response, StatusCode::BAD_REQUEST);

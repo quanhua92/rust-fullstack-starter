@@ -1,7 +1,10 @@
 //! __MODULE_STRUCT__ business logic and database operations
 
-use crate::{types::{DbConn, Result}, error::Error};
 use super::models::*;
+use crate::{
+    error::Error,
+    types::{DbConn, Result},
+};
 use uuid::Uuid;
 
 /// List __MODULE_NAME_PLURAL__ with optional filtering
@@ -9,11 +12,11 @@ pub async fn list___MODULE_NAME_PLURAL___service(
     conn: &mut DbConn,
     request: List__MODULE_STRUCT__Request,
 ) -> Result<__MODULE_STRUCT__ListResponse> {
-    let limit = request.limit.unwrap_or(20).min(100).max(1) as i64;
+    let limit = request.limit.unwrap_or(20).clamp(1, 100) as i64;
     let offset = request.offset.unwrap_or(0) as i64;
 
     let __MODULE_NAME_PLURAL__ = if let Some(search) = &request.search {
-        let search_param = format!("%{}%", search);
+        let search_param = format!("%{search}%");
         sqlx::query_as!(
             __MODULE_STRUCT__,
             r#"SELECT id, name, description, status as "status: __MODULE_STRUCT__Status", priority, metadata, created_by, created_at, updated_at 
@@ -83,7 +86,7 @@ pub async fn get___MODULE_NAME___service(
     .fetch_optional(&mut *conn)
     .await
     .map_err(Error::from_sqlx)?
-    .ok_or_else(|| Error::NotFound(format!("__MODULE_STRUCT__ with id {}", id)))?;
+    .ok_or_else(|| Error::NotFound(format!("__MODULE_STRUCT__ with id {id}")))?;
 
     Ok(__MODULE_NAME__)
 }
@@ -185,7 +188,7 @@ pub async fn delete___MODULE_NAME___service(
     .rows_affected();
 
     if rows_affected == 0 {
-        return Err(Error::NotFound(format!("__MODULE_STRUCT__ with id {}", id)));
+        return Err(Error::NotFound(format!("__MODULE_STRUCT__ with id {id}")));
     }
 
     Ok(())
