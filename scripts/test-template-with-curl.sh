@@ -53,6 +53,17 @@ if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then
     exit 0
 fi
 
+# Check for required dependencies
+if ! command -v jq >/dev/null 2>&1; then
+    print_error "jq is required but not installed"
+    echo "Install jq with:"
+    echo "  macOS: brew install jq"
+    echo "  Ubuntu/Debian: sudo apt-get install jq"
+    echo "  CentOS/RHEL: sudo yum install jq"
+    echo "  Or download from: https://stedolan.github.io/jq/"
+    exit 1
+fi
+
 # Configuration
 MODULE_NAME="${1:-${MODULE_NAME:-basics}}"
 PORT="${2:-3000}"
@@ -123,7 +134,7 @@ get_auth_token() {
         -H "Content-Type: application/json" \
         -d "{\"email\": \"$TEST_USER_EMAIL\", \"password\": \"$TEST_USER_PASSWORD\"}")
     
-    TOKEN=$(echo "$LOGIN_RESPONSE" | python3 -c "import json,sys; print(json.load(sys.stdin)['data']['session_token'])" 2>/dev/null || echo "")
+    TOKEN=$(echo "$LOGIN_RESPONSE" | jq -r '.data.session_token // ""' 2>/dev/null || echo "")
     
     if [ -z "$TOKEN" ]; then
         print_error "Failed to get authentication token: $LOGIN_RESPONSE"
@@ -155,7 +166,7 @@ test_list_initial() {
         -H "Authorization: Bearer $TOKEN")
     
     if echo "$LIST_RESPONSE" | grep -q '"success":true'; then
-        ITEM_COUNT=$(echo "$LIST_RESPONSE" | python3 -c "import json,sys; print(len(json.load(sys.stdin)['data']))" 2>/dev/null || echo "0")
+        ITEM_COUNT=$(echo "$LIST_RESPONSE" | jq -r '.data | length // 0' 2>/dev/null || echo "0")
         print_success "List retrieved successfully (found $ITEM_COUNT existing items)"
     else
         print_error "Failed to get list: $LIST_RESPONSE"
@@ -174,7 +185,7 @@ test_create() {
     
     if echo "$CREATE_RESPONSE" | grep -q '"success":true' && echo "$CREATE_RESPONSE" | grep -q '"Test Item"'; then
         # Extract the ID for later tests
-        ITEM_ID=$(echo "$CREATE_RESPONSE" | python3 -c "import json,sys; print(json.load(sys.stdin)['data']['id'])" 2>/dev/null || echo "")
+        ITEM_ID=$(echo "$CREATE_RESPONSE" | jq -r '.data.id // ""' 2>/dev/null || echo "")
         if [ -n "$ITEM_ID" ]; then
             print_success "Item created successfully (ID: $ITEM_ID)"
         else
@@ -355,7 +366,7 @@ show_help() {
     echo ""
     echo "Prerequisites:"
     echo "  - Server must be running on the specified port"
-    echo "  - python3 must be available for JSON parsing"
+    echo "  - jq must be available for JSON parsing"
     echo ""
 }
 

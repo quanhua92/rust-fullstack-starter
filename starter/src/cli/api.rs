@@ -477,12 +477,30 @@ impl CliApp {
         println!("\n🚀 Starting revert process...");
 
         // Step 1: Revert migration if exists
-        if migration_number.is_some() {
+        if let Some(migration_to_revert) = migration_number {
+            println!("📦 Checking migration safety...");
+
+            // Safety check: only allow reverting the latest migration
+            let latest_migration = get_latest_migration_number(migrations_dir)?;
+            if migration_to_revert != latest_migration {
+                return Err(format!(
+                    "Cannot revert module '{name}' because its migration #{migration_to_revert} is not the latest one (latest is #{latest_migration}).\n\
+                    This could cause database schema corruption.\n\
+                    \n\
+                    To proceed safely:\n\
+                    1. Revert newer migrations manually with 'cd starter && sqlx migrate revert'\n\
+                    2. Then use this command to revert module '{name}'\n\
+                    \n\
+                    Or handle the migration manually and use --dry-run to see what files would be cleaned up."
+                ).into());
+            }
+
+            println!("✅ Migration #{migration_to_revert} is the latest - safe to revert");
             println!("📦 Reverting database migration...");
 
             let output = std::process::Command::new("sqlx")
                 .args(["migrate", "revert"])
-                .current_dir(".")
+                .current_dir("starter") // Fixed: use starter directory instead of project root
                 .output();
 
             match output {
@@ -571,10 +589,15 @@ fn process_template(
 
 /// Get the next migration number
 fn get_next_migration_number(migrations_dir: &str) -> Result<u32, Box<dyn std::error::Error>> {
+    let latest = get_latest_migration_number(migrations_dir)?;
+    Ok(latest + 1)
+}
+
+fn get_latest_migration_number(migrations_dir: &str) -> Result<u32, Box<dyn std::error::Error>> {
     use std::fs;
 
     if !std::path::Path::new(migrations_dir).exists() {
-        return Ok(1);
+        return Ok(0);
     }
 
     let mut max_number = 0;
@@ -592,7 +615,7 @@ fn get_next_migration_number(migrations_dir: &str) -> Result<u32, Box<dyn std::e
         }
     }
 
-    Ok(max_number + 1)
+    Ok(max_number)
 }
 
 #[cfg(test)]
