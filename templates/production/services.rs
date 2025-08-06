@@ -18,10 +18,10 @@ pub async fn list___MODULE_NAME_PLURAL___service(
                                  request.min_priority.is_some() || request.max_priority.is_some() ||
                                  request.created_after.is_some() || request.created_before.is_some() {
         // Filtered query
-        list_with_filters(database, &request, limit, offset).await?
+        list_with_filters(conn, &request, limit, offset).await?
     } else {
         // Simple query without filters
-        list_without_filters(database, &request, limit, offset).await?
+        list_without_filters(conn, &request, limit, offset).await?
     };
     
     // Check if there are more items (for has_next)
@@ -355,7 +355,7 @@ pub async fn bulk_create___MODULE_NAME_PLURAL___service(
     let skip_errors = request.skip_errors.unwrap_or(false);
 
     for (index, item_request) in request.items.into_iter().enumerate() {
-        match create___MODULE_NAME___service(database, item_request).await {
+        match create___MODULE_NAME___service(conn, item_request).await {
             Ok(__MODULE_NAME__) => results.push(__MODULE_NAME__),
             Err(e) => {
                 errors.push(BulkOperationError {
@@ -388,7 +388,7 @@ pub async fn bulk_update___MODULE_NAME_PLURAL___service(
     let skip_errors = request.skip_errors.unwrap_or(false);
 
     for (index, item) in request.items.into_iter().enumerate() {
-        match update___MODULE_NAME___service(database, item.id, item.data).await {
+        match update___MODULE_NAME___service(conn, item.id, item.data).await {
             Ok(__MODULE_NAME__) => results.push(__MODULE_NAME__),
             Err(e) => {
                 errors.push(BulkOperationError {
@@ -421,7 +421,7 @@ pub async fn bulk_delete___MODULE_NAME_PLURAL___service(
     let skip_errors = request.skip_errors.unwrap_or(false);
 
     for (index, id) in request.ids.into_iter().enumerate() {
-        match delete___MODULE_NAME___service(database, id).await {
+        match delete___MODULE_NAME___service(conn, id).await {
             Ok(()) => results.push(id),
             Err(e) => {
                 errors.push(BulkOperationError {

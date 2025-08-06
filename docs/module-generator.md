@@ -251,6 +251,27 @@ let books = sqlx::query_as!(
 
 ## Testing
 
+### Automated Template Testing
+
+Use the dedicated template testing script for comprehensive API validation:
+
+```bash
+# Test generated module with real HTTP requests
+./scripts/test-template-with-curl.sh products        # Test on default port 3000
+./scripts/test-template-with-curl.sh books 8080      # Test on custom port
+./scripts/test-template-with-curl.sh --help          # Show comprehensive help
+```
+
+**Template Testing Features:**
+- ✅ **Automatic Authentication** - Handles user registration and login flow
+- ✅ **Complete CRUD Testing** - Tests all endpoints with real data
+- ✅ **Search Validation** - Tests search parameters and response formatting
+- ✅ **Error Handling** - Validates 404s and unauthorized access responses
+- ✅ **RBAC Integration** - Tests role-based access controls properly
+- ✅ **Colorized Output** - Clear success/failure indicators with detailed feedback
+
+### Integration Tests
+
 Generated modules include comprehensive integration tests:
 
 ```bash
@@ -267,6 +288,18 @@ cargo nextest run
 - ✅ **Access control** - Authentication and authorization tests
 - ✅ **Validation** - Input validation and error handling
 - ✅ **Bulk operations** - (Production template only)
+
+### Generator System Testing
+
+Test the entire generator system end-to-end:
+
+```bash
+# Complete automated testing (both templates)
+./scripts/test-generate.sh              # ~2-3 minutes, comprehensive
+
+# Quick validation testing (basic template only)
+./scripts/test-generate-simple.sh      # ~30-60 seconds, fast validation
+```
 
 ## Best Practices
 
@@ -315,11 +348,47 @@ error: relation "table_name" does not exist
 ```
 **Solution:** Run `sqlx migrate run`, then use `./scripts/prepare-sqlx.sh` and `./scripts/check.sh`
 
+**SQLx Cache Issues:**
+```bash
+error: query does not match cached data
+```
+**Solution:** Use `./scripts/prepare-sqlx.sh` to reliably update the query cache
+
+**Template Testing Failures:**
+```bash
+./scripts/test-template-with-curl.sh fails with connection errors
+```
+**Solution:** Ensure server is running first: `./scripts/server.sh`, then run template tests
+
+**Route Integration Issues:**
+```bash
+Templates generate but API endpoints return 404
+```
+**Solution:** Manually add routes to `src/server.rs`:
+```rust
+use crate::books::api::books_routes;
+// In router: .nest("/books", books_routes())
+```
+
 **Test Failures:**
 ```bash
 error: cannot find function `create_test_app`
 ```
 **Solution:** Generated tests use existing test infrastructure - ensure all dependencies are available
+
+### Testing Workflow Issues
+
+**Server Not Starting:**
+```bash
+./scripts/test-template-with-curl.sh: Server is not running on port 3000
+```
+**Solution:** Start server first: `./scripts/server.sh` (runs in background on port 3000)
+
+**Authentication Failures:**
+```bash
+Template tests fail with 401 Unauthorized
+```
+**Solution:** Template test script handles authentication automatically - check server logs for database issues
 
 ### Getting Help
 
@@ -327,3 +396,4 @@ error: cannot find function `create_test_app`
 - Review [testing documentation](guides/08-testing.md)
 - Examine existing modules for patterns
 - Use `--dry-run` to preview changes
+- Run `./scripts/test-template-with-curl.sh --help` for testing options

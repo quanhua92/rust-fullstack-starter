@@ -43,6 +43,21 @@ This will test:
 
 **Expected Duration**: ~2-3 minutes
 
+### Run Quick Test Suite
+
+```bash
+# From project root
+./scripts/test-generate-simple.sh
+```
+
+This provides faster validation with:
+- ✅ Basic template generation
+- ✅ Core functionality verification
+- ✅ Compilation validation
+- ✅ Quick cleanup
+
+**Expected Duration**: ~30-60 seconds
+
 ### Quick Manual Test
 
 ```bash
@@ -241,9 +256,47 @@ cargo run -- generate module testitem --template my-template
 
 ## Integration Testing
 
-Integration tests require manual route registration since the generator doesn't automatically update `server.rs`.
+### Template-Specific API Testing
 
-### Manual Route Registration for Testing
+Use the dedicated template testing script for comprehensive API validation:
+
+```bash
+# Test generated module with real HTTP requests
+./scripts/test-template-with-curl.sh products        # Test on default port 3000
+./scripts/test-template-with-curl.sh books 8080      # Test on custom port
+./scripts/test-template-with-curl.sh --help          # Show help and options
+```
+
+**Features of Template Testing Script:**
+- ✅ **Automatic Authentication** - Handles user registration and login
+- ✅ **Complete CRUD Testing** - Tests all endpoints with real data
+- ✅ **Search Validation** - Tests search parameters and filters
+- ✅ **Error Handling** - Validates 404s and unauthorized access
+- ✅ **RBAC Integration** - Tests role-based access controls
+- ✅ **Colorized Output** - Clear success/failure indicators
+
+**Integration Workflow:**
+```bash
+# 1. Generate and setup module
+cargo run -- generate module products --template production
+cd starter && sqlx migrate run
+cd .. && ./scripts/prepare-sqlx.sh
+
+# 2. Add routes to server.rs (required manual step)
+# Add: use crate::products::api::products_routes;
+# Add: .nest("/products", products_routes())
+
+# 3. Start server and test
+./scripts/server.sh                                  # Start server on port 3000
+./scripts/test-template-with-curl.sh products        # Test the API endpoints
+
+# 4. Clean up
+cargo run -- revert module products --yes
+```
+
+### Manual Integration Testing
+
+For deeper integration testing, you can manually register routes:
 
 1. **Add to `src/server.rs`**:
    ```rust
@@ -266,10 +319,10 @@ Integration tests require manual route registration since the generator doesn't 
 4. **Test API Endpoints**:
    ```bash
    # Start server
-   cargo run -- server --port 3001
+   cargo run -- server --port 3000
    
    # In another terminal, test endpoints
-   curl http://localhost:3001/api/v1/books
+   curl http://localhost:3000/api/v1/books
    ```
 
 ## Troubleshooting

@@ -29,6 +29,8 @@ cd web && ./scripts/check-web.sh    # Frontend quality checks
 - `server.sh` / `worker.sh` - Individual services
 - `test-with-curl.sh` - API testing (83 endpoints)
 - `test-chaos.sh` - Resilience testing
+- `test-template-with-curl.sh` - Generated module API testing
+- `test-generate.sh` - Module generator system validation
 
 ## Code Patterns
 
@@ -69,6 +71,21 @@ services::create_event(&mut conn, CreateEventRequest {
 }).await?;
 ```
 
+### Module Generator Usage
+```bash
+# Generate modules with templates
+cargo run -- generate module books --template basic      # Simple CRUD
+cargo run -- generate module products --template production  # Advanced features
+
+# Post-generation workflow
+cd starter && sqlx migrate run
+cd .. && ./scripts/prepare-sqlx.sh
+./scripts/test-template-with-curl.sh products            # Test generated API
+
+# Clean up
+cargo run -- revert module products --yes
+```
+
 ## Architecture Overview
 
 ### Core Systems
@@ -76,6 +93,7 @@ services::create_event(&mut conn, CreateEventRequest {
 - **Background Tasks**: Async processing with retry strategies and circuit breakers
 - **User Management**: 12 endpoints for profile/admin operations
 - **Monitoring**: 14 endpoints for events/metrics/alerts/incidents
+- **Module Generator**: Template-based code generation with testing validation
 - **Testing**: 136 integration tests with database isolation
 
 ### Module Structure
@@ -94,6 +112,7 @@ starter/src/
 - **Health Endpoints**: `/api/v1/health/*` for monitoring
 - **OpenAPI Docs**: `/api-docs` with Swagger UI
 - **Admin CLI**: Direct DB access for debugging (`cargo run -- admin task-stats`)
+- **Code Generation**: Templates with compile-time SQLx validation and route patterns
 
 ## Development Notes
 
@@ -108,6 +127,8 @@ starter/src/
 - **Use `recorded_at: None` for monitoring structs** (not `timestamp`)
 - **Admin account**: Set `STARTER__INITIAL_ADMIN_PASSWORD` in `.env`
 - **Chaos testing**: Docker-based with 6 difficulty levels
+- **Template testing**: Use `./scripts/test-template-with-curl.sh products` for API validation
+- **Route registration**: Manually add `use crate::products::api::products_routes;` to `server.rs`
 
 ### Script Utilities
 ```bash
@@ -135,4 +156,4 @@ validate_project_root
 - `GET /api/v1/health` - Basic health check
 - `GET /api/v1/admin/users/stats` - User analytics (Admin)
 
-This starter provides a solid foundation for learning Rust web development with modern patterns for authentication, task processing, monitoring, and testing.
+This starter provides a solid foundation for learning Rust web development with modern patterns for authentication, task processing, monitoring, testing, and rapid module scaffolding.

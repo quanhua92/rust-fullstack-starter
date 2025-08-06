@@ -420,15 +420,32 @@ rbac_services::require_moderator_or_higher(&auth_user)?;
 
 ## Testing Philosophy
 
-### Integration Over Unit
+### Multi-Layered Testing Approach
 
+Generated modules support multiple testing strategies:
+
+**1. Template Testing (Primary)**
+Use `./scripts/test-template-with-curl.sh` for real HTTP API validation:
+- ✅ **Real HTTP Requests** - Tests actual server endpoints with curl
+- ✅ **Authentication Flow** - Automatic user registration and token management
+- ✅ **CRUD Validation** - Complete create, read, update, delete cycle
+- ✅ **Error Handling** - 404s, validation errors, unauthorized access
+- ✅ **RBAC Integration** - Role-based access control testing
+- ✅ **Search Functionality** - Parameter validation and response formatting
+
+**2. Integration Testing**
 Generated tests focus on integration testing:
-
-**Why Integration Tests:**
 - ✅ **End-to-End Validation** - Tests entire request/response cycle
 - ✅ **Database Integration** - Validates actual database operations
 - ✅ **Authentication Flow** - Tests security integration
 - ✅ **Real-World Scenarios** - Mimics actual API usage
+
+**3. System Testing**
+Use `./scripts/test-generate.sh` for complete generator validation:
+- ✅ **Template Generation** - Both basic and production templates
+- ✅ **Compilation Validation** - SQLx query checking and Rust compilation
+- ✅ **Migration Testing** - Database schema changes and rollbacks
+- ✅ **Cleanup Verification** - Ensures system returns to clean state
 
 **Test Structure:**
 ```rust
@@ -570,16 +587,23 @@ async fn test_book_search_functionality() {
 
 **Query Patterns:**
 ```rust
-// ✅ Efficient - Uses indexes
+// ✅ Efficient - Uses indexes with proper connection pattern
 sqlx::query_as!(
     Book,
     "SELECT * FROM books WHERE name ILIKE $1 ORDER BY created_at DESC LIMIT $2",
     search_pattern, limit
 )
+.fetch_all(&mut **conn)
+.await?
 
 // ❌ Inefficient - Dynamic ORDER BY
 let query = format!("SELECT * FROM books ORDER BY {} {}", field, order);
 sqlx::query(&query)  // Can't use indexes effectively
+
+// ❌ Wrong connection pattern (template bug)
+sqlx::query_as!(Book, "SELECT * FROM books")
+    .fetch_all(&database.pool)  // Should use &mut **conn
+    .await?
 ```
 
 ### Memory Management
@@ -673,7 +697,13 @@ Error: Template 'custom' not found in templates directory
 ```
 error: migration 8 was previously applied but has been modified
 ```
-**Solution:** Use revert command first, then regenerate
+**Solution:** Use revert command first: `cargo run -- revert module <name> --yes`, then regenerate
+
+**Database Connection Errors in Templates:**
+```
+error: cannot find value `database` in this scope
+```
+**Solution:** Templates should use `conn: &mut DbConn` with `&mut **conn` pattern, not `&Database`
 
 ### Compilation Issues
 
@@ -687,7 +717,13 @@ error: relation "books" does not exist
 ```
 error: query does not match cached data
 ```
-**Solution:** Use `./scripts/prepare-sqlx.sh` to update cache reliably
+**Solution:** Use `./scripts/prepare-sqlx.sh` to reliably update the query cache
+
+**Route Syntax Errors:**
+```
+error: Path segments must not start with `:`
+```
+**Solution:** Templates use `{id}` format for Axum v0.7+, not `:id` format
 
 ### Runtime Issues
 
@@ -697,11 +733,41 @@ error: query does not match cached data
 ```
 **Solution:** Ensure valid JWT token in Authorization header
 
+**Template Testing Connection Issues:**
+```
+./scripts/test-template-with-curl.sh: Server is not running on port 3000
+```
+**Solution:** Start server first: `./scripts/server.sh`, then run template tests
+
+**Route Registration Missing:**
+```
+Templates generate successfully but API endpoints return 404
+```
+**Solution:** Manually add routes to `src/server.rs`:
+```rust
+use crate::books::api::books_routes;
+// In protected_routes: .nest("/books", books_routes())
+```
+
 **Validation Errors:**
 ```
 400 Bad Request: "Name cannot be empty"
 ```
 **Solution:** Check request payload matches expected format
+
+### Testing Issues
+
+**Template Test Script Failures:**
+```
+Template tests fail with authentication errors
+```
+**Solution:** Template test script (`test-template-with-curl.sh`) handles authentication automatically - check server and database are running
+
+**Generator System Tests Failures:**
+```
+./scripts/test-generate.sh fails during migration step
+```
+**Solution:** Ensure database is running (`docker compose up -d`) and migrations directory is clean
 
 ## Future Extensibility
 
@@ -737,6 +803,47 @@ replacements.insert("__MODULE_SNAKE__", &snake_case);
 - Integration with external schemas
 - Code generation from OpenAPI specs
 
+## Testing Infrastructure
+
+### Template Testing Script Architecture
+
+The `test-template-with-curl.sh` script provides comprehensive API testing:
+
+```bash
+# Test workflow
+./scripts/test-template-with-curl.sh products --help
+```
+
+**Features:**
+1. **Port Flexibility** - Default port 3000, configurable via CLI argument
+2. **Authentication Automation** - Handles user registration, login, token management
+3. **CRUD Validation** - Tests all endpoints with real data and proper cleanup
+4. **Error Scenario Testing** - 404s, unauthorized access, validation errors
+5. **Search Parameter Testing** - Query string validation and response formatting
+6. **Colorized Output** - Clear visual feedback with success/failure indicators
+
+**Integration Points:**
+- Works with both basic and production templates
+- Requires server to be running (checks connectivity automatically)
+- Handles RBAC validation for different user roles
+- Validates response formats and error handling
+
+### Generator System Testing
+
+**Complete System Validation:**
+```bash
+./scripts/test-generate.sh          # Full validation (~2-3 minutes)
+./scripts/test-generate-simple.sh   # Quick validation (~30-60 seconds)
+```
+
+**Test Coverage:**
+- Template generation and placeholder replacement
+- Database migration forward and backward compatibility
+- SQLx query cache generation and validation
+- Code compilation with all features enabled
+- Integration test execution
+- System cleanup and state restoration
+
 ## Conclusion
 
 The module generator embodies several key principles:
@@ -746,11 +853,14 @@ The module generator embodies several key principles:
 3. **Template Flexibility** - Easy to customize while maintaining structure
 4. **Production Ready** - Includes performance, security, and testing patterns
 5. **Developer Experience** - Clear commands, helpful output, safety mechanisms
+6. **Multi-Layered Testing** - Template testing, integration tests, and system validation
+7. **Real-World Validation** - HTTP API testing with authentication and RBAC
 
 Understanding these principles will help you:
 - Choose the right template for your needs
 - Safely customize generated code
 - Troubleshoot issues when they arise
 - Extend the system for your specific requirements
+- Validate templates work correctly in real scenarios
 
-The generator is designed to grow with your project - start with basic templates for rapid prototyping, then migrate to production templates as requirements mature.
+The generator is designed to grow with your project - start with basic templates for rapid prototyping, then migrate to production templates as requirements mature. The comprehensive testing infrastructure ensures reliability at every step.
