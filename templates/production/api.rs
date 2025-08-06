@@ -21,6 +21,7 @@ use utoipa::IntoParams;
 
 use crate::{
     auth::AuthUser,
+    rbac::services as rbac_services,
     __MODULE_NAME_PLURAL__::{models::*, services::*},
     types::{ApiResponse, AppState, Result},
 };
@@ -306,6 +307,7 @@ pub async fn delete___MODULE_NAME__(
         (status = 200, description = "Bulk create results", body = BulkOperationResponse<__MODULE_STRUCT__>),
         (status = 400, description = "Invalid request data"),
         (status = 401, description = "Unauthorized"),
+        (status = 403, description = "Forbidden - requires moderator or higher permissions"),
     ),
     tag = "__MODULE_NAME_PLURAL__"
 )]
@@ -314,8 +316,8 @@ pub async fn bulk_create___MODULE_NAME_PLURAL__(
     Extension(auth_user): Extension<AuthUser>,
     Json(request): Json<Bulk__MODULE_STRUCT__CreateRequest>,
 ) -> Result<Json<ApiResponse<BulkOperationResponse<__MODULE_STRUCT__>>>> {
-    // Authenticated access required - user must be logged in
-    let _ = &auth_user; // Explicitly acknowledge the auth requirement
+    // Require moderator or higher permissions for bulk operations
+    rbac_services::require_moderator_or_higher(&auth_user)?;
     let mut conn = app_state
         .database
         .pool
@@ -336,6 +338,7 @@ pub async fn bulk_create___MODULE_NAME_PLURAL__(
         (status = 200, description = "Bulk update results", body = BulkOperationResponse<__MODULE_STRUCT__>),
         (status = 400, description = "Invalid request data"),
         (status = 401, description = "Unauthorized"),
+        (status = 403, description = "Forbidden - requires moderator or higher permissions"),
     ),
     tag = "__MODULE_NAME_PLURAL__"
 )]
@@ -344,8 +347,8 @@ pub async fn bulk_update___MODULE_NAME_PLURAL__(
     Extension(auth_user): Extension<AuthUser>,
     Json(request): Json<Bulk__MODULE_STRUCT__UpdateRequest>,
 ) -> Result<Json<ApiResponse<BulkOperationResponse<__MODULE_STRUCT__>>>> {
-    // Authenticated access required - user must be logged in
-    let _ = &auth_user; // Explicitly acknowledge the auth requirement
+    // Require moderator or higher permissions for bulk operations
+    rbac_services::require_moderator_or_higher(&auth_user)?;
     let mut conn = app_state
         .database
         .pool
@@ -366,6 +369,7 @@ pub async fn bulk_update___MODULE_NAME_PLURAL__(
         (status = 200, description = "Bulk delete results", body = BulkOperationResponse<Uuid>),
         (status = 400, description = "Invalid request data"),
         (status = 401, description = "Unauthorized"),
+        (status = 403, description = "Forbidden - requires moderator or higher permissions"),
     ),
     tag = "__MODULE_NAME_PLURAL__"
 )]
@@ -374,8 +378,8 @@ pub async fn bulk_delete___MODULE_NAME_PLURAL__(
     Extension(auth_user): Extension<AuthUser>,
     Json(request): Json<Bulk__MODULE_STRUCT__DeleteRequest>,
 ) -> Result<Json<ApiResponse<BulkOperationResponse<Uuid>>>> {
-    // Authenticated access required - user must be logged in
-    let _ = &auth_user; // Explicitly acknowledge the auth requirement
+    // Require moderator or higher permissions for bulk operations
+    rbac_services::require_moderator_or_higher(&auth_user)?;
     let mut conn = app_state
         .database
         .pool
