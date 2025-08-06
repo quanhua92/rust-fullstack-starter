@@ -1,4 +1,12 @@
 //! __MODULE_STRUCT__ REST API endpoints with advanced features
+//!
+//! ## Pattern Note
+//! Each handler function acquires a database connection using the same pattern:
+//! ```rust,ignore
+//! let mut conn = app_state.database.pool.acquire().await?;
+//! ```
+//! In a larger application, you might want to extract this into a helper function
+//! or middleware to reduce boilerplate code.
 
 #[allow(unused_imports)] // These are used in the routes function but compiler can't detect it
 use axum::{
@@ -156,7 +164,10 @@ pub async fn list___MODULE_NAME_PLURAL__(
         .await
         .map_err(crate::error::Error::from_sqlx)?;
 
-    let response = list___MODULE_NAME_PLURAL___service(&mut conn, request).await?;
+    // Begin transaction to ensure consistent read for list and count queries
+    let mut tx = conn.begin().await.map_err(crate::error::Error::from_sqlx)?;
+    let response = list___MODULE_NAME_PLURAL___service(&mut tx, request).await?;
+    tx.commit().await.map_err(crate::error::Error::from_sqlx)?;
     Ok(Json(ApiResponse::success(response)))
 }
 

@@ -1,6 +1,14 @@
 //! __MODULE_STRUCT__ API endpoints
 //!
 //! Provides CRUD operations for __MODULE_NAME__ management.
+//!
+//! ## Pattern Note
+//! Each handler function acquires a database connection using the same pattern:
+//! ```rust,ignore
+//! let mut conn = app_state.database.pool.acquire().await?;
+//! ```
+//! In a larger application, you might want to extract this into a helper function
+//! or middleware to reduce boilerplate code.
 
 use crate::{
     auth::AuthUser,

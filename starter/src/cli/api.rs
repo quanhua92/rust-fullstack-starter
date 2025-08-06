@@ -180,7 +180,7 @@ impl CliApp {
         name: String,
         template: String,
         dry_run: bool,
-        _force: bool,
+        force: bool,
     ) -> Result<(), Box<dyn std::error::Error>> {
         use std::collections::HashMap;
         use std::fs;
@@ -223,10 +223,57 @@ impl CliApp {
             return Err(format!("Template '{template}' not found in templates directory").into());
         }
 
-        let mut files_created = Vec::new();
+        // Determine working directory and paths
+        let (module_dir, test_dir, migrations_dir, _lib_rs_path, _sqlx_working_dir) = 
+            determine_project_paths(&plural)?;
 
-        // Create module directory
-        let module_dir = format!("starter/src/{plural}");
+        // Check for existing files and prompt if necessary
+        let module_exists = Path::new(&module_dir).exists();
+        let test_exists = Path::new(&test_dir).exists();
+        
+        if !dry_run && (module_exists || test_exists) {
+            if !force {
+                use std::io::{self, Write};
+                
+                // Print big warning in red
+                println!("\n🚨 \x1b[31m\x1b[1mWARNING: FILES ALREADY EXIST!\x1b[0m 🚨");
+                println!("\x1b[31mThe following files/directories will be OVERWRITTEN:\x1b[0m");
+                
+                if module_exists {
+                    println!("   \x1b[91m📁 Module directory: {module_dir}\x1b[0m");
+                }
+                if test_exists {
+                    println!("   \x1b[91m📁 Test directory: {test_dir}\x1b[0m");
+                }
+                
+                println!("\n\x1b[33m⚠️  This will permanently replace existing files!\x1b[0m");
+                print!("\n❓ \x1b[1mAre you sure you want to continue? [y/N]: \x1b[0m");
+                io::stdout().flush()?;
+                let mut input = String::new();
+                io::stdin().read_line(&mut input)?;
+                
+                if !input.trim().to_lowercase().starts_with('y') {
+                    println!("\n\x1b[32m✅ Operation cancelled - no files were modified\x1b[0m");
+                    println!("\x1b[36m💡 To skip this prompt, use: --force\x1b[0m");
+                    println!("\x1b[36m💡 To preview changes without writing files, use: --dry-run\x1b[0m");
+                    return Ok(());
+                }
+                
+                println!("\n\x1b[33m⚠️  Proceeding with file overwrite...\x1b[0m");
+            } else {
+                // Force mode - show what we're overwriting but proceed
+                println!("\n\x1b[33m🔥 FORCE MODE: Overwriting existing files without prompting\x1b[0m");
+                if module_exists {
+                    println!("   \x1b[93m📁 Overwriting: {module_dir}\x1b[0m");
+                }
+                if test_exists {
+                    println!("   \x1b[93m📁 Overwriting: {test_dir}\x1b[0m");
+                }
+                println!();
+            }
+        }
+
+        let mut files_created = Vec::new();
         if !dry_run {
             fs::create_dir_all(&module_dir)?;
         }
@@ -257,7 +304,6 @@ impl CliApp {
         }
 
         // Create test directory and file
-        let test_dir = format!("starter/tests/{plural}");
         if !dry_run {
             fs::create_dir_all(&test_dir)?;
         }
@@ -276,8 +322,7 @@ impl CliApp {
         }
 
         // Create migrations
-        let migrations_dir = "starter/migrations";
-        let migration_number = get_next_migration_number(migrations_dir)?;
+        let migration_number = get_next_migration_number(&migrations_dir)?;
 
         let migration_files = [
             ("up.sql", format!("{migration_number:03}_{plural}.up.sql")),
@@ -367,21 +412,19 @@ impl CliApp {
 
         println!("🔍 Analyzing module '{name}' for revert...");
 
-        // Check what exists
-        let module_dir = format!("starter/src/{plural}");
-        let test_dir = format!("starter/tests/{plural}");
-        let lib_rs_path = "starter/src/lib.rs";
+        // Determine working directory and paths
+        let (module_dir, test_dir, migrations_dir, lib_rs_path, sqlx_working_dir) = 
+            determine_project_paths(&plural)?;
 
         let module_exists = Path::new(&module_dir).exists();
         let test_exists = Path::new(&test_dir).exists();
-
+        
         // Find migration files
-        let migrations_dir = "starter/migrations";
         let mut migration_files = Vec::new();
         let mut migration_number = None;
 
-        if Path::new(migrations_dir).exists() {
-            let entries = fs::read_dir(migrations_dir)?;
+        if Path::new(&migrations_dir).exists() {
+            let entries = fs::read_dir(&migrations_dir)?;
             for entry in entries {
                 let entry = entry?;
                 let filename = entry.file_name();
@@ -400,8 +443,8 @@ impl CliApp {
         }
 
         // Check lib.rs
-        let lib_rs_has_module = if Path::new(lib_rs_path).exists() {
-            let lib_content = fs::read_to_string(lib_rs_path)?;
+        let lib_rs_has_module = if Path::new(&lib_rs_path).exists() {
+            let lib_content = fs::read_to_string(&lib_rs_path)?;
             lib_content.contains(&format!("pub mod {plural};"))
         } else {
             false
@@ -481,7 +524,7 @@ impl CliApp {
             println!("📦 Checking migration safety...");
 
             // Safety check: only allow reverting the latest migration
-            let latest_migration = get_latest_migration_number(migrations_dir)?;
+            let latest_migration = get_latest_migration_number(&migrations_dir)?;
             if migration_to_revert != latest_migration {
                 return Err(format!(
                     "Cannot revert module '{name}' because its migration #{migration_to_revert} is not the latest one (latest is #{latest_migration}).\n\
@@ -500,7 +543,7 @@ impl CliApp {
 
             let output = std::process::Command::new("sqlx")
                 .args(["migrate", "revert"])
-                .current_dir("starter") // Fixed: use starter directory instead of project root
+                .current_dir(&sqlx_working_dir)
                 .output();
 
             match output {
@@ -616,6 +659,34 @@ fn get_latest_migration_number(migrations_dir: &str) -> Result<u32, Box<dyn std:
     }
 
     Ok(max_number)
+}
+
+/// Determine project paths based on current working directory
+/// Returns (module_dir, test_dir, migrations_dir, lib_rs_path, sqlx_working_dir)
+fn determine_project_paths(plural: &str) -> Result<(String, String, String, String, String), Box<dyn std::error::Error>> {
+    use std::path::Path;
+
+    if Path::new("starter").exists() && Path::new("starter/Cargo.toml").exists() {
+        // Running from project root
+        Ok((
+            format!("starter/src/{plural}"),
+            format!("starter/tests/{plural}"),
+            "starter/migrations".to_string(),
+            "starter/src/lib.rs".to_string(),
+            "starter".to_string(),
+        ))
+    } else if Path::new("src").exists() && Path::new("Cargo.toml").exists() {
+        // Running from starter directory
+        Ok((
+            format!("src/{plural}"),
+            format!("tests/{plural}"),
+            "migrations".to_string(),
+            "src/lib.rs".to_string(),
+            ".".to_string(),
+        ))
+    } else {
+        Err("Must run from project root (with starter/ directory) or from starter directory (with src/ and Cargo.toml)".into())
+    }
 }
 
 #[cfg(test)]
