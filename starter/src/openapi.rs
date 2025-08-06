@@ -156,7 +156,6 @@ use crate::users::models::{
             TimelineEntry,
             MonitoringStats,
 
-
             // Common response types
             ErrorResponse,
 
