@@ -46,13 +46,26 @@ pub async fn list___MODULE_NAME_PLURAL___service(
         .map_err(Error::from_sqlx)?
     };
 
-    let total_count = sqlx::query_scalar!(
-        "SELECT COUNT(*) FROM __MODULE_TABLE__"
-    )
-    .fetch_one(&mut *conn)
-    .await
-    .map_err(Error::from_sqlx)?
-    .unwrap_or(0);
+    // Apply the same filters to count query as main query
+    let total_count = if let Some(search) = &request.search {
+        let search_param = format!("%{search}%");
+        sqlx::query_scalar!(
+            "SELECT COUNT(*) FROM __MODULE_TABLE__ WHERE name ILIKE $1 OR description ILIKE $1",
+            search_param
+        )
+        .fetch_one(&mut *conn)
+        .await
+        .map_err(Error::from_sqlx)?
+        .unwrap_or(0)
+    } else {
+        sqlx::query_scalar!(
+            "SELECT COUNT(*) FROM __MODULE_TABLE__"
+        )
+        .fetch_one(&mut *conn)
+        .await
+        .map_err(Error::from_sqlx)?
+        .unwrap_or(0)
+    };
 
     let pagination = PaginationInfo {
         total_count,
