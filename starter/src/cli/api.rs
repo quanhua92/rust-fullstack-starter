@@ -675,8 +675,8 @@ fn get_latest_migration_number(migrations_dir: &str) -> Result<u32, Box<dyn std:
 fn determine_project_paths(plural: &str) -> Result<(String, String, String, String, String), Box<dyn std::error::Error>> {
     use std::path::Path;
 
-    if Path::new("starter").exists() && Path::new("starter/Cargo.toml").exists() {
-        // Running from project root
+    if Path::new("templates").exists() && Path::new("starter").exists() && Path::new("starter/Cargo.toml").exists() {
+        // Running from project root: has templates/ + starter/ + starter/Cargo.toml
         Ok((
             format!("starter/src/{plural}"),
             format!("starter/tests/{plural}"),
@@ -684,8 +684,8 @@ fn determine_project_paths(plural: &str) -> Result<(String, String, String, Stri
             "starter/src/lib.rs".to_string(),
             "starter".to_string(),
         ))
-    } else if Path::new("src").exists() && Path::new("Cargo.toml").exists() {
-        // Running from starter directory
+    } else if Path::new("src").exists() && Path::new("Cargo.toml").exists() && Path::new("../templates").exists() {
+        // Running from starter directory: has src/ + Cargo.toml + ../templates
         Ok((
             format!("src/{plural}"),
             format!("tests/{plural}"),
@@ -694,7 +694,7 @@ fn determine_project_paths(plural: &str) -> Result<(String, String, String, Stri
             ".".to_string(),
         ))
     } else {
-        Err("Must run from project root (with starter/ directory) or from starter directory (with src/ and Cargo.toml)".into())
+        Err("Cannot determine project structure. Must run from project root (with templates/ and starter/ directories) or from starter directory (with src/ and Cargo.toml)".into())
     }
 }
 
