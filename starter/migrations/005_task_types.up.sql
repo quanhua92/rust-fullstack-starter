@@ -1,6 +1,6 @@
 -- Create task_types table to store supported task types
 CREATE TABLE task_types (
-    task_type VARCHAR(255) PRIMARY KEY,
+    task_type TEXT PRIMARY KEY,
     description TEXT,
     is_active BOOLEAN NOT NULL DEFAULT true,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),

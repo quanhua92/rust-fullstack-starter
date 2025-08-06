@@ -5394,10 +5394,10 @@
             "type": "object",
             "description": "Exponential backoff: delay = base_delay * multiplier^attempt",
             "required": [
-              "Exponential"
+              "exponential"
             ],
             "properties": {
-              "Exponential": {
+              "exponential": {
                 "type": "object",
                 "description": "Exponential backoff: delay = base_delay * multiplier^attempt",
                 "required": [
@@ -5430,10 +5430,10 @@
             "type": "object",
             "description": "Linear backoff: delay = base_delay + (increment * attempt)",
             "required": [
-              "Linear"
+              "linear"
             ],
             "properties": {
-              "Linear": {
+              "linear": {
                 "type": "object",
                 "description": "Linear backoff: delay = base_delay + (increment * attempt)",
                 "required": [
@@ -5465,10 +5465,10 @@
             "type": "object",
             "description": "Fixed interval: delay = interval for each retry",
             "required": [
-              "Fixed"
+              "fixed"
             ],
             "properties": {
-              "Fixed": {
+              "fixed": {
                 "type": "object",
                 "description": "Fixed interval: delay = interval for each retry",
                 "required": [
@@ -5492,7 +5492,7 @@
             "type": "string",
             "description": "No retry",
             "enum": [
-              "None"
+              "none"
             ]
           }
         ]
@@ -5500,10 +5500,10 @@
       "TaskPriority": {
         "type": "string",
         "enum": [
-          "Low",
-          "Normal",
-          "High",
-          "Critical"
+          "low",
+          "normal",
+          "high",
+          "critical"
         ]
       },
       "TaskQueryParams": {
@@ -5667,12 +5667,12 @@
       "TaskStatus": {
         "type": "string",
         "enum": [
-          "Pending",
-          "Running",
-          "Completed",
-          "Failed",
-          "Cancelled",
-          "Retrying"
+          "pending",
+          "running",
+          "completed",
+          "failed",
+          "cancelled",
+          "retrying"
         ]
       },
       "TaskTypeResponse": {

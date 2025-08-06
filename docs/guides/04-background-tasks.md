@@ -242,7 +242,7 @@ stateDiagram-v2
 ```sql
 CREATE TABLE tasks (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    task_type VARCHAR(255) NOT NULL,      -- 'email', 'webhook', etc.
+    task_type TEXT NOT NULL,      -- 'email', 'webhook', etc.
     payload JSONB NOT NULL DEFAULT '{}',  -- Task-specific data
     status task_status NOT NULL DEFAULT 'pending',
     priority task_priority NOT NULL DEFAULT 'normal',
@@ -1193,7 +1193,7 @@ async fn test_my_custom_task() {
     
     // Verify task was created correctly
     assert_eq!(task_response["data"]["task_type"], "my_task_type");
-    assert_eq!(task_response["data"]["status"], "Pending");
+    assert_eq!(task_response["data"]["status"], "pending");
 }
 ```
 

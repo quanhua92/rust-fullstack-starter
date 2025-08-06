@@ -36,7 +36,7 @@ pub async fn create_event(conn: &mut DbConn, request: CreateEventRequest) -> Res
         payload,
         recorded_at
     )
-    .fetch_one(&mut **conn)
+    .fetch_one(&mut *conn)
     .await
     .map_err(Error::from_sqlx)?;
 
@@ -114,7 +114,7 @@ pub async fn find_events_with_filter(conn: &mut DbConn, filter: EventFilter) -> 
 
     let events = query_builder
         .build_query_as::<Event>()
-        .fetch_all(&mut **conn)
+        .fetch_all(&mut *conn)
         .await
         .map_err(Error::from_sqlx)?;
 
@@ -131,7 +131,7 @@ pub async fn find_event_by_id(conn: &mut DbConn, id: Uuid) -> Result<Option<Even
         "#,
         id
     )
-    .fetch_optional(&mut **conn)
+    .fetch_optional(&mut *conn)
     .await
     .map_err(Error::from_sqlx)?;
 
@@ -158,7 +158,7 @@ pub async fn create_metric(conn: &mut DbConn, request: CreateMetricRequest) -> R
         labels,
         recorded_at
     )
-    .fetch_one(&mut **conn)
+    .fetch_one(&mut *conn)
     .await
     .map_err(Error::from_sqlx)?;
 
@@ -222,7 +222,7 @@ pub async fn find_metrics_with_filter(
 
     let metrics = query_builder
         .build_query_as::<Metric>()
-        .fetch_all(&mut **conn)
+        .fetch_all(&mut *conn)
         .await
         .map_err(Error::from_sqlx)?;
 
@@ -253,7 +253,7 @@ pub async fn create_alert(
         request.threshold_value,
         created_by
     )
-    .fetch_one(&mut **conn)
+    .fetch_one(&mut *conn)
     .await
     .map_err(Error::from_sqlx)?;
 
@@ -290,7 +290,7 @@ pub async fn find_all_alerts(conn: &mut DbConn) -> Result<Vec<Alert>> {
         ORDER BY created_at DESC
         "#
     )
-    .fetch_all(&mut **conn)
+    .fetch_all(&mut *conn)
     .await
     .map_err(Error::from_sqlx)?;
 
@@ -322,7 +322,7 @@ pub async fn create_incident(
         created_by,
         request.assigned_to
     )
-    .fetch_one(&mut **conn)
+    .fetch_one(&mut *conn)
     .await
     .map_err(Error::from_sqlx)?;
 
@@ -376,7 +376,7 @@ pub async fn find_incidents_with_pagination(
         limit,
         offset
     )
-    .fetch_all(&mut **conn)
+    .fetch_all(&mut *conn)
     .await
     .map_err(Error::from_sqlx)?;
 
@@ -396,7 +396,7 @@ pub async fn find_incident_by_id(conn: &mut DbConn, id: Uuid) -> Result<Option<I
         "#,
         id
     )
-    .fetch_optional(&mut **conn)
+    .fetch_optional(&mut *conn)
     .await
     .map_err(Error::from_sqlx)?;
 
@@ -437,7 +437,7 @@ pub async fn update_incident(
         request.root_cause,
         request.assigned_to
     )
-    .fetch_one(&mut **conn)
+    .fetch_one(&mut *conn)
     .await
     .map_err(Error::from_sqlx)?;
 
@@ -503,7 +503,7 @@ pub async fn get_incident_timeline(
         limit,
         offset
     )
-    .fetch_all(&mut **conn)
+    .fetch_all(&mut *conn)
     .await
     .map_err(Error::from_sqlx)?;
 
@@ -512,7 +512,7 @@ pub async fn get_incident_timeline(
         start_time,
         end_time
     )
-    .fetch_one(&mut **conn)
+    .fetch_one(&mut *conn)
     .await
     .map_err(Error::from_sqlx)?
     .unwrap_or(0);
@@ -556,19 +556,19 @@ pub async fn get_monitoring_stats(conn: &mut DbConn) -> Result<MonitoringStats> 
     let one_hour_ago = Utc::now() - chrono::Duration::hours(1);
 
     let total_events = sqlx::query_scalar!("SELECT COUNT(*) FROM events")
-        .fetch_one(&mut **conn)
+        .fetch_one(&mut *conn)
         .await
         .map_err(Error::from_sqlx)?
         .unwrap_or(0);
 
     let total_metrics = sqlx::query_scalar!("SELECT COUNT(*) FROM metrics")
-        .fetch_one(&mut **conn)
+        .fetch_one(&mut *conn)
         .await
         .map_err(Error::from_sqlx)?
         .unwrap_or(0);
 
     let active_alerts = sqlx::query_scalar!("SELECT COUNT(*) FROM alerts WHERE status = 'active'")
-        .fetch_one(&mut **conn)
+        .fetch_one(&mut *conn)
         .await
         .map_err(Error::from_sqlx)?
         .unwrap_or(0);
@@ -576,7 +576,7 @@ pub async fn get_monitoring_stats(conn: &mut DbConn) -> Result<MonitoringStats> 
     let open_incidents = sqlx::query_scalar!(
         "SELECT COUNT(*) FROM incidents WHERE status IN ('open', 'investigating')"
     )
-    .fetch_one(&mut **conn)
+    .fetch_one(&mut *conn)
     .await
     .map_err(Error::from_sqlx)?
     .unwrap_or(0);
@@ -585,7 +585,7 @@ pub async fn get_monitoring_stats(conn: &mut DbConn) -> Result<MonitoringStats> 
         "SELECT COUNT(*) FROM events WHERE created_at >= $1",
         one_hour_ago
     )
-    .fetch_one(&mut **conn)
+    .fetch_one(&mut *conn)
     .await
     .map_err(Error::from_sqlx)?
     .unwrap_or(0);
@@ -594,7 +594,7 @@ pub async fn get_monitoring_stats(conn: &mut DbConn) -> Result<MonitoringStats> 
         "SELECT COUNT(*) FROM metrics WHERE created_at >= $1",
         one_hour_ago
     )
-    .fetch_one(&mut **conn)
+    .fetch_one(&mut *conn)
     .await
     .map_err(Error::from_sqlx)?
     .unwrap_or(0);
@@ -622,7 +622,7 @@ pub async fn get_prometheus_metrics(conn: &mut DbConn) -> Result<String> {
         "#,
         last_24h
     )
-    .fetch_all(&mut **conn)
+    .fetch_all(&mut *conn)
     .await
     .map_err(Error::from_sqlx)?;
 

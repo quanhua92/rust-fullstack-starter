@@ -6,7 +6,7 @@ use std::time::Instant;
 
 pub type Result<T> = std::result::Result<T, Error>;
 pub type DbPool = sqlx::PgPool;
-pub type DbConn = sqlx::pool::PoolConnection<sqlx::Postgres>;
+pub type DbConn = sqlx::PgConnection;
 
 // Application state shared across handlers
 #[derive(Clone)]

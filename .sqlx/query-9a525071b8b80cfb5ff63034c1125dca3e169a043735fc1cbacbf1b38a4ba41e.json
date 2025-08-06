@@ -1,0 +1,31 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            UPDATE tasks \n            SET status = $1, updated_at = $2, completed_at = $3\n            WHERE id = $4 AND status IN ('pending', 'retrying')\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        {
+          "Custom": {
+            "name": "task_status",
+            "kind": {
+              "Enum": [
+                "pending",
+                "running",
+                "completed",
+                "failed",
+                "cancelled",
+                "retrying"
+              ]
+            }
+          }
+        },
+        "Timestamptz",
+        "Timestamptz",
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "9a525071b8b80cfb5ff63034c1125dca3e169a043735fc1cbacbf1b38a4ba41e"
+}

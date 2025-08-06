@@ -91,6 +91,23 @@ pub fn require_moderator_or_higher(user: &AuthUser) -> Result<(), Error> {
     }
 }
 
+/// Check if a user can access a resource based on ownership and role
+/// Admin/Moderator can access any resource, users can only access their own
+pub fn can_access_own_resource(user: &AuthUser, resource_owner: Uuid) -> Result<(), Error> {
+    match user.role {
+        // Admin and Moderator can access any resource
+        UserRole::Admin | UserRole::Moderator => Ok(()),
+        // Users can only access their own resources
+        UserRole::User => {
+            if resource_owner == user.id {
+                Ok(())
+            } else {
+                Err(Error::NotFound("Resource not found".to_string())) // Prevent enumeration
+            }
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -158,5 +175,21 @@ mod tests {
         assert!(require_moderator_or_higher(&admin).is_ok());
         assert!(require_moderator_or_higher(&moderator).is_ok());
         assert!(require_moderator_or_higher(&user).is_err());
+    }
+
+    #[test]
+    fn test_can_access_own_resource() {
+        let admin = create_test_user("admin");
+        let moderator = create_test_user("moderator");
+        let user = create_test_user("user");
+        let other_user_id = Uuid::new_v4();
+
+        // Admin and moderator can access any resource
+        assert!(can_access_own_resource(&admin, other_user_id).is_ok());
+        assert!(can_access_own_resource(&moderator, other_user_id).is_ok());
+
+        // User can only access their own resource
+        assert!(can_access_own_resource(&user, user.id).is_ok());
+        assert!(can_access_own_resource(&user, other_user_id).is_err());
     }
 }

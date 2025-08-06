@@ -22,7 +22,7 @@ pub async fn find_user_by_email(conn: &mut DbConn, email: &str) -> Result<Option
         "#,
         email
     )
-    .fetch_optional(&mut **conn)
+    .fetch_optional(&mut *conn)
     .await
     .map_err(Error::from_sqlx)?;
 
@@ -41,7 +41,7 @@ pub async fn find_user_by_username(conn: &mut DbConn, username: &str) -> Result<
         "#,
         username
     )
-    .fetch_optional(&mut **conn)
+    .fetch_optional(&mut *conn)
     .await
     .map_err(Error::from_sqlx)?;
 
@@ -60,7 +60,7 @@ pub async fn find_user_by_id(conn: &mut DbConn, user_id: Uuid) -> Result<Option<
         "#,
         user_id
     )
-    .fetch_optional(&mut **conn)
+    .fetch_optional(&mut *conn)
     .await
     .map_err(Error::from_sqlx)?;
 
@@ -90,7 +90,7 @@ pub async fn create_user(conn: &mut DbConn, req: CreateUserRequest) -> Result<Us
         password_hash,
         req.role.unwrap_or(UserRole::User).to_string()
     )
-    .fetch_one(&mut **conn)
+    .fetch_one(&mut *conn)
     .await
     .map_err(Error::from_sqlx)?;
 
@@ -102,7 +102,7 @@ pub async fn update_last_login(conn: &mut DbConn, user_id: Uuid) -> Result<()> {
         "UPDATE users SET last_login_at = NOW() WHERE id = $1",
         user_id
     )
-    .execute(&mut **conn)
+    .execute(&mut *conn)
     .await
     .map_err(Error::from_sqlx)?;
 
@@ -116,7 +116,7 @@ pub async fn get_user_profile(conn: &mut DbConn, user_id: Uuid) -> Result<Option
 
 pub async fn is_email_available(conn: &mut DbConn, email: &str) -> Result<bool> {
     let count = sqlx::query_scalar!("SELECT COUNT(*) FROM users WHERE email = $1", email)
-        .fetch_one(&mut **conn)
+        .fetch_one(&mut *conn)
         .await
         .map_err(Error::from_sqlx)?;
 
@@ -125,7 +125,7 @@ pub async fn is_email_available(conn: &mut DbConn, email: &str) -> Result<bool> 
 
 pub async fn is_username_available(conn: &mut DbConn, username: &str) -> Result<bool> {
     let count = sqlx::query_scalar!("SELECT COUNT(*) FROM users WHERE username = $1", username)
-        .fetch_one(&mut **conn)
+        .fetch_one(&mut *conn)
         .await
         .map_err(Error::from_sqlx)?;
 
@@ -163,7 +163,7 @@ pub async fn list_users(
         limit,
         offset
     )
-    .fetch_all(&mut **conn)
+    .fetch_all(&mut *conn)
     .await
     .map_err(Error::from_sqlx)?;
 
@@ -200,7 +200,7 @@ pub async fn update_user_profile(
         req.username,
         req.email
     )
-    .fetch_optional(&mut **conn)
+    .fetch_optional(&mut *conn)
     .await
     .map_err(Error::from_sqlx)?;
 
@@ -242,7 +242,7 @@ pub async fn change_user_password(
         new_password_hash,
         user_id
     )
-    .execute(&mut **conn)
+    .execute(&mut *conn)
     .await
     .map_err(Error::from_sqlx)?;
 
@@ -319,7 +319,7 @@ pub async fn update_user_profile_admin(
         req.email,
         req.email_verified
     )
-    .fetch_optional(&mut **conn)
+    .fetch_optional(&mut *conn)
     .await
     .map_err(Error::from_sqlx)?;
 
@@ -394,7 +394,7 @@ pub async fn update_user_role(
         user_id,
         req.role.to_string()
     )
-    .fetch_optional(&mut **conn)
+    .fetch_optional(&mut *conn)
     .await
     .map_err(Error::from_sqlx)?;
 
@@ -504,13 +504,13 @@ pub async fn delete_user_admin(
 pub async fn get_user_stats(conn: &mut DbConn) -> Result<crate::users::models::UserStats> {
     // Get basic user counts
     let total_users = sqlx::query_scalar!("SELECT COUNT(*) FROM users")
-        .fetch_one(&mut **conn)
+        .fetch_one(&mut *conn)
         .await
         .map_err(Error::from_sqlx)?
         .unwrap_or(0);
 
     let active_users = sqlx::query_scalar!("SELECT COUNT(*) FROM users WHERE is_active = true")
-        .fetch_one(&mut **conn)
+        .fetch_one(&mut *conn)
         .await
         .map_err(Error::from_sqlx)?
         .unwrap_or(0);
@@ -520,7 +520,7 @@ pub async fn get_user_stats(conn: &mut DbConn) -> Result<crate::users::models::U
     let email_verified = sqlx::query_scalar!(
         "SELECT COUNT(*) FROM users WHERE email_verified = true AND is_active = true"
     )
-    .fetch_one(&mut **conn)
+    .fetch_one(&mut *conn)
     .await
     .map_err(Error::from_sqlx)?
     .unwrap_or(0);
@@ -530,7 +530,7 @@ pub async fn get_user_stats(conn: &mut DbConn) -> Result<crate::users::models::U
     // Get user counts by role
     let user_count =
         sqlx::query_scalar!("SELECT COUNT(*) FROM users WHERE role = 'user' AND is_active = true")
-            .fetch_one(&mut **conn)
+            .fetch_one(&mut *conn)
             .await
             .map_err(Error::from_sqlx)?
             .unwrap_or(0);
@@ -538,14 +538,14 @@ pub async fn get_user_stats(conn: &mut DbConn) -> Result<crate::users::models::U
     let moderator_count = sqlx::query_scalar!(
         "SELECT COUNT(*) FROM users WHERE role = 'moderator' AND is_active = true"
     )
-    .fetch_one(&mut **conn)
+    .fetch_one(&mut *conn)
     .await
     .map_err(Error::from_sqlx)?
     .unwrap_or(0);
 
     let admin_count =
         sqlx::query_scalar!("SELECT COUNT(*) FROM users WHERE role = 'admin' AND is_active = true")
-            .fetch_one(&mut **conn)
+            .fetch_one(&mut *conn)
             .await
             .map_err(Error::from_sqlx)?
             .unwrap_or(0);
@@ -554,7 +554,7 @@ pub async fn get_user_stats(conn: &mut DbConn) -> Result<crate::users::models::U
     let last_24h = sqlx::query_scalar!(
         "SELECT COUNT(*) FROM users WHERE created_at > NOW() - INTERVAL '24 hours'"
     )
-    .fetch_one(&mut **conn)
+    .fetch_one(&mut *conn)
     .await
     .map_err(Error::from_sqlx)?
     .unwrap_or(0);
@@ -562,7 +562,7 @@ pub async fn get_user_stats(conn: &mut DbConn) -> Result<crate::users::models::U
     let last_7d = sqlx::query_scalar!(
         "SELECT COUNT(*) FROM users WHERE created_at > NOW() - INTERVAL '7 days'"
     )
-    .fetch_one(&mut **conn)
+    .fetch_one(&mut *conn)
     .await
     .map_err(Error::from_sqlx)?
     .unwrap_or(0);
@@ -570,7 +570,7 @@ pub async fn get_user_stats(conn: &mut DbConn) -> Result<crate::users::models::U
     let last_30d = sqlx::query_scalar!(
         "SELECT COUNT(*) FROM users WHERE created_at > NOW() - INTERVAL '30 days'"
     )
-    .fetch_one(&mut **conn)
+    .fetch_one(&mut *conn)
     .await
     .map_err(Error::from_sqlx)?
     .unwrap_or(0);

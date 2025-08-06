@@ -51,7 +51,7 @@ pub async fn auth_middleware(
     };
 
     // Validate session and get user
-    let user = match services::validate_session_with_user(&mut conn, &token).await {
+    let user = match services::validate_session_with_user(conn.as_mut(), &token).await {
         Ok(Some(user)) => user,
         Ok(None) => {
             tracing::debug!("Invalid or expired session token");
@@ -91,7 +91,9 @@ pub async fn optional_auth_middleware(
         // Try to get database connection
         if let Ok(mut conn) = app_state.database.pool.acquire().await {
             // Try to validate session
-            if let Ok(Some(user)) = services::validate_session_with_user(&mut conn, &token).await {
+            if let Ok(Some(user)) =
+                services::validate_session_with_user(conn.as_mut(), &token).await
+            {
                 if user.is_active {
                     // Add user info to request extensions
                     req.extensions_mut().insert(AuthUser {

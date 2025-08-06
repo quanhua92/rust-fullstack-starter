@@ -7,6 +7,13 @@ This file provides guidance to Claude Code when working with this Rust fullstack
 - **Starter Project**: Tone down language - never say "production" or "enterprise ready"
 - **Quality First**: Always run `./scripts/check.sh` before every commit
 
+## Architecture Notes
+
+### Database Connection Type
+- **DbConn**: `sqlx::PgConnection` (not `PoolConnection`) to support both pool connections and transactions
+- **Connection patterns**: Use `conn.as_mut()` for pool connections, `tx.as_mut()` for transactions
+- **SQLx queries**: Use `&mut *conn` for all `.fetch_*()` and `.execute()` calls
+
 ## Essential Commands
 
 ### Development Workflow
@@ -14,11 +21,11 @@ This file provides guidance to Claude Code when working with this Rust fullstack
 # Quick start (recommended)
 ./scripts/dev-server.sh              # Complete environment: DB + web + API + worker
 ./scripts/check.sh                   # Quality checks (MANDATORY before commit)
-./scripts/test-with-curl.sh          # 83 API endpoint tests
+./scripts/test-with-curl.sh          # 81 API endpoint tests
 ./scripts/reset-all.sh --reset-database  # Clean reset
 
 # Testing
-cargo nextest run                    # 136 integration tests (~17s)
+cargo nextest run                    # 137 integration tests (~17s)
 ./scripts/test-chaos.sh             # Docker-based resilience testing
 cd web && ./scripts/check-web.sh    # Frontend quality checks
 ```
@@ -27,10 +34,46 @@ cd web && ./scripts/check-web.sh    # Frontend quality checks
 - `check.sh` - **Comprehensive quality validation (9 steps, ~40s)**
 - `dev-server.sh` - Complete development environment
 - `server.sh` / `worker.sh` - Individual services
-- `test-with-curl.sh` - API testing (83 endpoints)
+- `test-with-curl.sh` - API testing (81 endpoints)
 - `test-chaos.sh` - Resilience testing
+- `test-template-with-curl.sh` - Generated module API testing
+- `test-generate.sh` - Module generator system validation
 
 ## Code Patterns
+
+### Enum Serialization
+- **All serializable enums MUST use lowercase JSON serialization**:
+```rust
+#[derive(Debug, Clone, Serialize, Deserialize, utoipa::ToSchema)]
+#[serde(rename_all = "lowercase")]
+pub enum TaskStatus {
+    Pending,
+    Running, 
+    Completed,
+    Failed,
+    Cancelled,
+    Retrying,
+}
+```
+- **Frontend code must use lowercase enum values**: `"pending"`, `"running"`, `"completed"`, `"failed"`, `"cancelled"`, `"retrying"`
+- **Always regenerate API types after enum changes**: `cargo run -- export-openapi && cd web && npm run generate-api`
+
+### Module Generation
+```bash
+# Generate modules
+cargo run -- generate module books --template basic
+cargo run -- generate module products --template production --force
+cargo run -- generate module orders --dry-run
+
+# Safety revert
+cargo run -- revert module books --dry-run  # Preview first
+cargo run -- revert module books --yes      # Skip prompts (DANGEROUS)
+
+# Manual integration (3 steps)
+# 1. Add to src/lib.rs: pub mod books;
+# 2. Add to src/server.rs: use crate::books::api::books_routes;
+# 3. Add to src/openapi.rs: use crate::books::models::*;
+```
 
 ### Task Handlers
 ```rust
@@ -50,9 +93,29 @@ TaskError::invalid_field_type("field", "string")
 ```rust
 use crate::rbac::services as rbac_services;
 
+// Ownership-based access control (for individual operations)
+rbac_services::can_access_own_resource(&auth_user, resource.created_by)?;
+
+// Task-specific access control (legacy - use ownership pattern for new code)
 rbac_services::can_access_task(&auth_user, task.created_by)?;
+
+// Role-based access control (for bulk operations and admin features)
 rbac_services::require_moderator_or_higher(&auth_user)?;
 rbac_services::check_permission(&auth_user, Resource::Tasks, Permission::Write)?;
+```
+
+### Ownership Pattern (Recommended)
+```rust
+// For individual CRUD operations - users can access their own, admins can access all
+let mut tx = pool.begin().await?;
+let existing_item = get_item_service(tx.as_mut(), id).await?;
+rbac_services::can_access_own_resource(&auth_user, existing_item.created_by)?;
+let updated_item = update_item_service(tx.as_mut(), id, request).await?;
+tx.commit().await?;
+
+// For bulk operations - require moderator permissions
+rbac_services::require_moderator_or_higher(&auth_user)?;
+bulk_create_items_service(conn.as_mut(), request, auth_user.id).await?;
 ```
 
 ### Monitoring Integration
@@ -69,6 +132,21 @@ services::create_event(&mut conn, CreateEventRequest {
 }).await?;
 ```
 
+### Module Generator Usage
+```bash
+# Generate modules with templates
+cargo run -- generate module books --template basic      # Simple CRUD
+cargo run -- generate module products --template production  # Advanced features
+
+# Post-generation workflow
+cd starter && sqlx migrate run
+cd .. && ./scripts/prepare-sqlx.sh
+./scripts/test-template-with-curl.sh products            # Test generated API
+
+# Clean up
+cargo run -- revert module products --yes
+```
+
 ## Architecture Overview
 
 ### Core Systems
@@ -76,7 +154,8 @@ services::create_event(&mut conn, CreateEventRequest {
 - **Background Tasks**: Async processing with retry strategies and circuit breakers
 - **User Management**: 12 endpoints for profile/admin operations
 - **Monitoring**: 14 endpoints for events/metrics/alerts/incidents
-- **Testing**: 136 integration tests with database isolation
+- **Module Generator**: Template-based code generation with testing validation
+- **Testing**: 137 integration tests with database isolation
 
 ### Module Structure
 ```
@@ -94,12 +173,13 @@ starter/src/
 - **Health Endpoints**: `/api/v1/health/*` for monitoring
 - **OpenAPI Docs**: `/api-docs` with Swagger UI
 - **Admin CLI**: Direct DB access for debugging (`cargo run -- admin task-stats`)
+- **Code Generation**: Templates with compile-time SQLx validation and route patterns
 
 ## Development Notes
 
 ### Quality Requirements
 1. **Pre-commit**: Always run `./scripts/check.sh`
-2. **Testing**: 136 integration tests must pass
+2. **Testing**: 137 integration tests must pass
 3. **SQLx**: Use `./scripts/prepare-sqlx.sh` for query cache updates
 4. **Frontend**: Run `cd web && ./scripts/check-web.sh` for React validation
 
@@ -108,6 +188,8 @@ starter/src/
 - **Use `recorded_at: None` for monitoring structs** (not `timestamp`)
 - **Admin account**: Set `STARTER__INITIAL_ADMIN_PASSWORD` in `.env`
 - **Chaos testing**: Docker-based with 6 difficulty levels
+- **Template testing**: Use `./scripts/test-template-with-curl.sh products` for API validation
+- **Route registration**: Manually add `use crate::products::api::products_routes;` to `server.rs`
 
 ### Script Utilities
 ```bash
@@ -135,4 +217,4 @@ validate_project_root
 - `GET /api/v1/health` - Basic health check
 - `GET /api/v1/admin/users/stats` - User analytics (Admin)
 
-This starter provides a solid foundation for learning Rust web development with modern patterns for authentication, task processing, monitoring, and testing.
+This starter provides a solid foundation for learning Rust web development with modern patterns for authentication, task processing, monitoring, testing, and rapid module scaffolding.

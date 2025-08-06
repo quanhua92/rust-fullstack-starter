@@ -1,0 +1,2 @@
+-- Drop __MODULE_TABLE__ table
+DROP TABLE IF EXISTS __MODULE_TABLE__;

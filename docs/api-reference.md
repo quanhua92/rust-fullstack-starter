@@ -1095,10 +1095,10 @@ Create a background task for async processing.
     "id": "uuid-here",
     "task_type": "email",
     "payload": { "to": "recipient@example.com", "subject": "...", "body": "..." },
-    "status": "Pending",
-    "priority": "Normal",
+    "status": "pending",
+    "priority": "normal",
     "retry_strategy": {
-      "Exponential": {
+      "exponential": {
         "base_delay": { "nanos": 0, "secs": 1 },
         "max_attempts": 5,
         "max_delay": { "nanos": 0, "secs": 300 },
@@ -1145,8 +1145,8 @@ List your background tasks.
     {
       "id": "uuid-here",
       "task_type": "email",
-      "status": "Completed",
-      "priority": "Normal",
+      "status": "completed",
+      "priority": "normal",
       "current_attempt": 1,
       "created_at": "2024-01-01T00:00:00Z",
       "completed_at": "2024-01-01T00:01:00Z"
@@ -1174,9 +1174,9 @@ Get details about a specific task.
     "task_type": "email",
     "payload": { "to": "recipient@example.com", "subject": "...", "body": "..." },
     "status": "Completed",
-    "priority": "Normal",
+    "priority": "normal",
     "retry_strategy": {
-      "Exponential": {
+      "exponential": {
         "base_delay": { "nanos": 0, "secs": 1 },
         "max_attempts": 5,
         "max_delay": { "nanos": 0, "secs": 300 },
@@ -1242,8 +1242,8 @@ Get all failed tasks in the dead letter queue for debugging and manual recovery.
     {
       "id": "uuid-here",
       "task_type": "email",
-      "status": "Failed",
-      "priority": "Normal",
+      "status": "failed",
+      "priority": "normal",
       "current_attempt": 5,
       "max_attempts": 5,
       "last_error": "SMTP connection failed",

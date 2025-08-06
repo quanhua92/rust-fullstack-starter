@@ -215,8 +215,8 @@ The API returns standard task metadata immediately:
 {
   "id": "task-uuid-here",
   "task_type": "data_processing",
-  "status": "Pending",
-  "priority": "Normal",
+  "status": "pending",
+  "priority": "normal",
   "created_at": "2024-01-01T12:00:00Z",
   "scheduled_at": "2024-01-01T12:00:00Z"
 }
@@ -411,8 +411,8 @@ The API returns standard task metadata immediately:
 {
   "id": "task-uuid-here",
   "task_type": "file_cleanup",
-  "status": "Pending",
-  "priority": "Normal",
+  "status": "pending",
+  "priority": "normal",
   "created_at": "2024-01-01T12:00:00Z",
   "scheduled_at": "2024-01-01T12:00:00Z"
 }
@@ -560,8 +560,8 @@ The API returns standard task metadata immediately:
 {
   "id": "task-uuid-here",
   "task_type": "report_generation",
-  "status": "Pending",
-  "priority": "Normal",
+  "status": "pending",
+  "priority": "normal",
   "created_at": "2024-01-01T12:00:00Z",
   "scheduled_at": "2024-01-01T12:00:00Z"
 }
@@ -645,8 +645,8 @@ The API returns standard task metadata immediately:
 {
   "id": "task-uuid-here",
   "task_type": "delay_task",
-  "status": "Pending",
-  "priority": "Normal",
+  "status": "pending",
+  "priority": "normal",
   "created_at": "2024-01-01T12:00:00Z",
   "scheduled_at": "2024-01-01T12:00:00Z"
 }

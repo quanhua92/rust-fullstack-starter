@@ -161,10 +161,67 @@ Gracefully stop background worker(s).
 - When SQLx compilation fails with "no cached data" errors
 - After database schema changes or migrations
 
+## 🏗️ Module Generator Testing
+
+### `test-template-with-curl.sh <module_name> [port]`
+**Test generated module templates with comprehensive CRUD validation.**
+- **Purpose:** Validates generated modules work correctly with real API calls
+- **Default port:** 3000 (matches server.sh default)  
+- **Authentication:** Handles user registration and token management automatically
+- **Coverage:** Tests all CRUD operations, search, error handling, and RBAC
+```bash
+./scripts/test-template-with-curl.sh products        # Test products module on port 3000
+./scripts/test-template-with-curl.sh books 8080      # Test books module on port 8080
+./scripts/test-template-with-curl.sh --help          # Show comprehensive help
+```
+
+**Test Coverage:**
+- ✅ **Authentication Flow** - User registration and login
+- ✅ **CRUD Operations** - Create, read, update, delete with validation
+- ✅ **Search Functionality** - Parameter-based search testing
+- ✅ **Error Handling** - 404 responses and unauthorized access
+- ✅ **RBAC Integration** - Role-based access control validation
+
+**Integration with Generator Workflow (Manual Steps Required):**
+```bash
+# Complete template testing workflow with manual integration
+cargo run -- generate module products --template production
+cd starter && sqlx migrate run
+cd .. && ./scripts/prepare-sqlx.sh
+
+# Manual Integration (3 steps - prevents accidental commits):
+# Step 1: Add to src/lib.rs: pub mod products;
+# Step 2: Add to src/server.rs: use + routes
+# Step 3: Add to src/openapi.rs: model imports
+
+./scripts/server.sh                                  # Start server
+./scripts/test-template-with-curl.sh products        # Test generated module
+cargo run -- revert module products --yes           # Clean up files
+# Then manually remove from lib.rs, server.rs, openapi.rs
+```
+
+### `test-generate.sh`
+**Comprehensive automated testing of the module generator system.**
+- **Coverage:** Tests both basic and production templates end-to-end
+- **Duration:** ~2-3 minutes for complete validation
+- **Automation:** Handles generation, migration, testing, and cleanup automatically
+```bash
+./scripts/test-generate.sh              # Complete generator system test
+```
+
+### `test-generate-simple.sh`
+**Quick generator functionality test with basic template.**
+- **Coverage:** Basic template generation and core functionality
+- **Duration:** ~30-60 seconds for quick validation
+- **Use case:** Rapid development testing and CI validation
+```bash
+./scripts/test-generate-simple.sh      # Quick generator test
+```
+
 ## 🧪 Testing & Integration
 
 ### Rust Integration Tests (Recommended)
-Comprehensive test suite with 136 tests covering all functionality:
+Comprehensive test suite with 137 tests covering all functionality:
 ```bash
 # Install faster test runner (recommended)
 cargo install cargo-nextest
@@ -183,7 +240,7 @@ cargo nextest run api::      # API standards tests
 Benefits of the Rust test suite:
 - **Fast**: 10x speedup with database template pattern
 - **Isolated**: Each test gets its own database
-- **Comprehensive**: 136 tests covering all functionality including user management, monitoring, and metadata persistence
+- **Comprehensive**: 137 tests covering all functionality including user management, monitoring, and metadata persistence
 - **Reliable**: Uses proper HTTP client and test harness
 - **TDD**: Includes Test-Driven Development tests for critical system behaviors
 - **RBAC Testing**: Complete role-based access control validation
@@ -210,8 +267,15 @@ Docker-based resilience testing with 6 difficulty levels and container isolation
 
 **API Endpoint Testing:**
 ```bash
-./scripts/test-with-curl.sh             # 83 endpoint tests including monitoring APIs (~8 seconds)
+./scripts/test-with-curl.sh             # 81 endpoint tests including monitoring APIs (~8 seconds)
 ./scripts/test-with-curl.sh localhost 8080  # Custom host/port
+```
+
+**Template Testing:**
+```bash
+./scripts/test-template-with-curl.sh products     # Test 'products' module on port 3000
+./scripts/test-template-with-curl.sh books 8080   # Test 'books' module on port 8080
+./scripts/test-template-with-curl.sh --help       # Show usage and options
 ```
 
 **Comprehensive API Testing includes:**

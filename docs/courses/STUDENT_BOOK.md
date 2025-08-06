@@ -198,20 +198,20 @@ Master the 1,200+ line task processing system with TaskProcessor, retry strategi
 *"How the outside world talks to our system"*
 
 **🎯 Your Mission:**
-Master the comprehensive HTTP API with 60+ tested endpoints, 4-tier security, OpenAPI documentation, and comprehensive health checks.
+Master the comprehensive HTTP API with 81 tested endpoints, 4-tier security, OpenAPI documentation, and comprehensive health checks.
 
 **📂 Files to Explore:**
 1. **`starter/src/server.rs`** - Complete router (265 lines)
 2. **`starter/src/openapi.rs`** - OpenAPI docs (190 lines)
 3. **`starter/src/api/health.rs`** - 5 health endpoints (260 lines)
-4. **`scripts/test-with-curl.sh`** - 60+ endpoint tests including monitoring APIs
+4. **`scripts/test-with-curl.sh`** - 81 endpoint tests including monitoring APIs
 
 **🔍 Your Discoveries:**
 - [ ] **4-Tier Security**: Public (8) → Protected (17) → Moderator (3) → Admin (8) routes
 - [ ] **5 Health Endpoints**: basic, detailed, live, ready, startup for different monitoring needs
 - [ ] **OpenAPI Magic**: 34 documented endpoints with auto-generated schemas
 - [ ] **Unified Server**: Single binary serves both API and static React files
-- [ ] **Comprehensive Testing**: 60+ endpoints tested including authentication, user management, tasks, and monitoring APIs
+- [ ] **Comprehensive Testing**: 81 endpoints tested including authentication, user management, tasks, and monitoring APIs
 
 **🧪 Hands-On Experiments:**
 1. **Security Tiers**: Test endpoints with different authentication levels using curl patterns
@@ -225,7 +225,7 @@ Master the comprehensive HTTP API with 60+ tested endpoints, 4-tier security, Op
 - [ ] Understand the purpose of each health endpoint
 - [ ] Know how OpenAPI documentation stays in sync
 - [ ] Can design new API endpoints following existing patterns
-- [ ] Can run and understand the comprehensive 60+ endpoint test suite
+- [ ] Can run and understand the comprehensive 81 endpoint test suite
 
 ---
 
@@ -264,7 +264,7 @@ Master the 12-endpoint user management system with 3 authorization patterns, Arg
 *"How we know the system works"*
 
 **🎯 Your Mission:**
-Master the 136-test integration suite, 9-step quality pipeline, 10-scenario chaos testing framework, and comprehensive API validation with 60+ endpoint tests.
+Master the 137-test integration suite, 9-step quality pipeline, 10-scenario chaos testing framework, and comprehensive API validation with 81 endpoint tests.
 
 **📂 Files to Explore:**
 1. **`starter/tests/`** - 136 integration tests (14 files, 3,994 lines)
@@ -307,7 +307,7 @@ Master the comprehensive monitoring system with 14 API endpoints, 4 database tab
 3. **`starter/migrations/006_monitoring.up.sql`** - 4-table schema with PostgreSQL enums
 4. **`docs/guides/15-monitoring-and-observability.md`** - 891-line implementation guide
 5. **`starter/tests/monitoring/`** - Comprehensive test suite (15 tests)
-6. **`scripts/test-with-curl.sh`** - Monitoring API testing section (60+ total endpoints)
+6. **`scripts/test-with-curl.sh`** - Monitoring API testing section (81 total endpoints)
 
 **🔍 Your Discoveries:**
 - [ ] **The 4-Table Schema**: events, metrics, alerts, incidents with TEXT + CHECK constraints for data integrity
@@ -322,7 +322,7 @@ Master the comprehensive monitoring system with 14 API endpoints, 4 database tab
 - [ ] **Confirmation Dialogs**: Safety checks for destructive operations (alert deletion)
 - [ ] **Data Integrity Protection**: Robust error handling prevents database corruption and silent failures with proper validation
 - [ ] **Advanced Tag Filtering**: Query events with `?tags=key:value,key2:value2` syntax using PostgreSQL JSONB @> operators
-- [ ] **Comprehensive API Testing**: 60+ endpoints tested including all 14 monitoring endpoints with authentication and error scenarios
+- [ ] **Comprehensive API Testing**: 81 endpoints tested including all 14 monitoring endpoints with authentication and error scenarios
 
 **🧪 Hands-On Experiments:**
 1. **30-Second Setup**: Start monitoring and create your first event
@@ -455,7 +455,7 @@ let metric = services::create_metric(&mut conn, CreateMetricRequest {
 - [ ] Can correlate events into incident timelines for analysis
 - [ ] Master advanced tag filtering with key:value syntax and understand JSONB @> operators
 - [ ] Understand data integrity features and error detection mechanisms
-- [ ] Can run and understand the 60+ endpoint test suite including all monitoring scenarios
+- [ ] Can run and understand the 81 endpoint test suite including all monitoring scenarios
 - [ ] Know how to validate API responses and handle authentication across different user roles
 - [ ] **Can explain how confirmation dialogs and form validation enhance user experience**
 

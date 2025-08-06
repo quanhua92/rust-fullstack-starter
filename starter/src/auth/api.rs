@@ -35,7 +35,7 @@ pub async fn login(
         .acquire()
         .await
         .map_err(Error::from_sqlx)?;
-    let login_response = auth_services::login(&mut conn, payload).await?;
+    let login_response = auth_services::login(conn.as_mut(), payload).await?;
     Ok(Json(ApiResponse::success(login_response)))
 }
 
@@ -62,7 +62,7 @@ pub async fn register(
         .acquire()
         .await
         .map_err(Error::from_sqlx)?;
-    let user_profile = auth_services::register(&mut conn, payload).await?;
+    let user_profile = auth_services::register(conn.as_mut(), payload).await?;
     Ok(Json(ApiResponse::success(user_profile)))
 }
 
@@ -90,7 +90,7 @@ pub async fn logout(
         .acquire()
         .await
         .map_err(Error::from_sqlx)?;
-    let sessions_deleted = auth_services::logout_all(&mut conn, auth_user.id).await?;
+    let sessions_deleted = auth_services::logout_all(conn.as_mut(), auth_user.id).await?;
 
     Ok(Json(ApiResponse::success_with_message(
         "Logged out successfully".to_string(),
@@ -122,7 +122,7 @@ pub async fn logout_all(
         .acquire()
         .await
         .map_err(Error::from_sqlx)?;
-    let sessions_deleted = auth_services::logout_all(&mut conn, auth_user.id).await?;
+    let sessions_deleted = auth_services::logout_all(conn.as_mut(), auth_user.id).await?;
 
     Ok(Json(ApiResponse::success_with_message(
         "Logged out from all devices".to_string(),
@@ -184,7 +184,7 @@ pub async fn refresh(
         .map_err(Error::from_sqlx)?;
 
     let refreshed_session = auth_services::refresh_session_token(
-        &mut conn,
+        conn.as_mut(),
         token,
         Some(app_state.config.refresh_extend_hours()),
         Some(app_state.config.refresh_min_interval_minutes()),

@@ -33,6 +33,16 @@ pub enum Commands {
         #[command(subcommand)]
         admin_command: AdminCommands,
     },
+    /// Generate code from templates
+    Generate {
+        #[command(subcommand)]
+        generator: GenerateCommands,
+    },
+    /// Revert generated code (removes files and reverts migrations)
+    Revert {
+        #[command(subcommand)]
+        revert: RevertCommands,
+    },
 }
 
 #[derive(Subcommand)]
@@ -65,6 +75,39 @@ pub enum AdminCommands {
     ClearCompleted {
         #[arg(long, default_value = "7")]
         older_than_days: i32,
+        #[arg(long)]
+        dry_run: bool,
+    },
+}
+
+#[derive(Subcommand)]
+pub enum GenerateCommands {
+    /// Generate a complete module with API, models, services, tests, and migrations
+    Module {
+        /// Module name (e.g., "books", "users")
+        name: String,
+        /// Template to use (basic, production)
+        #[arg(long, default_value = "basic")]
+        template: String,
+        /// Dry run - show what would be created
+        #[arg(long)]
+        dry_run: bool,
+        /// Force overwrite existing files
+        #[arg(long)]
+        force: bool,
+    },
+}
+
+#[derive(Subcommand)]
+pub enum RevertCommands {
+    /// Revert a generated module (removes files and reverts migrations)
+    Module {
+        /// Module name to revert (e.g., "books", "users")
+        name: String,
+        /// Skip all confirmation prompts (DANGEROUS)
+        #[arg(long)]
+        yes: bool,
+        /// Only show what would be reverted without doing it
         #[arg(long)]
         dry_run: bool,
     },
