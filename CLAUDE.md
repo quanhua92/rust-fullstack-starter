@@ -21,11 +21,11 @@ This file provides guidance to Claude Code when working with this Rust fullstack
 # Quick start (recommended)
 ./scripts/dev-server.sh              # Complete environment: DB + web + API + worker
 ./scripts/check.sh                   # Quality checks (MANDATORY before commit)
-./scripts/test-with-curl.sh          # 83 API endpoint tests
+./scripts/test-with-curl.sh          # 81 API endpoint tests
 ./scripts/reset-all.sh --reset-database  # Clean reset
 
 # Testing
-cargo nextest run                    # 136 integration tests (~17s)
+cargo nextest run                    # 137 integration tests (~17s)
 ./scripts/test-chaos.sh             # Docker-based resilience testing
 cd web && ./scripts/check-web.sh    # Frontend quality checks
 ```
@@ -34,7 +34,7 @@ cd web && ./scripts/check-web.sh    # Frontend quality checks
 - `check.sh` - **Comprehensive quality validation (9 steps, ~40s)**
 - `dev-server.sh` - Complete development environment
 - `server.sh` / `worker.sh` - Individual services
-- `test-with-curl.sh` - API testing (83 endpoints)
+- `test-with-curl.sh` - API testing (81 endpoints)
 - `test-chaos.sh` - Resilience testing
 - `test-template-with-curl.sh` - Generated module API testing
 - `test-generate.sh` - Module generator system validation
@@ -155,7 +155,7 @@ cargo run -- revert module products --yes
 - **User Management**: 12 endpoints for profile/admin operations
 - **Monitoring**: 14 endpoints for events/metrics/alerts/incidents
 - **Module Generator**: Template-based code generation with testing validation
-- **Testing**: 136 integration tests with database isolation
+- **Testing**: 137 integration tests with database isolation
 
 ### Module Structure
 ```
@@ -179,7 +179,7 @@ starter/src/
 
 ### Quality Requirements
 1. **Pre-commit**: Always run `./scripts/check.sh`
-2. **Testing**: 136 integration tests must pass
+2. **Testing**: 137 integration tests must pass
 3. **SQLx**: Use `./scripts/prepare-sqlx.sh` for query cache updates
 4. **Frontend**: Run `cd web && ./scripts/check-web.sh` for React validation
 

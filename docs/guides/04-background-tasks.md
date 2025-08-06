@@ -1193,7 +1193,7 @@ async fn test_my_custom_task() {
     
     // Verify task was created correctly
     assert_eq!(task_response["data"]["task_type"], "my_task_type");
-    assert_eq!(task_response["data"]["status"], "Pending");
+    assert_eq!(task_response["data"]["status"], "pending");
 }
 ```
 

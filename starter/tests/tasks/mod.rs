@@ -112,7 +112,7 @@ async fn test_get_task_status() {
     let json: serde_json::Value = response.json().await.unwrap();
     // Check if task was found and has the expected status
     if !json["data"].is_null() {
-        assert_eq!(json["data"]["status"], "Pending");
+        assert_eq!(json["data"]["status"], "pending");
     }
 }
 
@@ -300,7 +300,7 @@ async fn test_filter_tasks_by_status() {
     // All returned tasks should be pending (if any exist)
     for task in tasks {
         if let Some(status) = task["status"].as_str() {
-            assert_eq!(status, "Pending");
+            assert_eq!(status, "pending");
         }
     }
 }
@@ -372,7 +372,7 @@ async fn test_dead_letter_queue() {
         .find(|task| task["id"].as_str() == Some(task_id))
         .expect("Failed task should be in dead letter queue");
 
-    assert_eq!(failed_task["status"], "Failed");
+    assert_eq!(failed_task["status"], "failed");
     assert!(failed_task["last_error"].as_str().is_some());
 }
 
@@ -429,7 +429,7 @@ async fn test_retry_failed_task() {
     let task_json: serde_json::Value = task_response.json().await.unwrap();
 
     if !task_json["data"].is_null() {
-        assert_eq!(task_json["data"]["status"], "Pending");
+        assert_eq!(task_json["data"]["status"], "pending");
         assert_eq!(task_json["data"]["current_attempt"], 0);
         assert!(task_json["data"]["last_error"].is_null());
     }
@@ -662,7 +662,7 @@ async fn test_filter_tasks_by_failed_status() {
     // All returned tasks should be failed
     for task in tasks {
         if let Some(status) = task["status"].as_str() {
-            assert_eq!(status, "Failed");
+            assert_eq!(status, "failed");
         }
     }
 }
@@ -710,7 +710,7 @@ async fn test_dead_letter_queue_pagination() {
 
     // All should be failed tasks
     for task in tasks {
-        assert_eq!(task["status"], "Failed");
+        assert_eq!(task["status"], "failed");
     }
 }
 
@@ -805,8 +805,8 @@ async fn test_metadata_persistence_through_all_state_transitions() {
 
     let initial_status = initial_task["data"]["status"].as_str().unwrap();
     assert!(
-        initial_status == "Pending" || initial_status == "Running",
-        "Expected Pending or Running, got: {initial_status}"
+        initial_status == "pending" || initial_status == "running",
+        "Expected pending or running, got: {initial_status}"
     );
     assert_metadata_preserved(&initial_task["data"]["metadata"], &test_metadata);
 
@@ -836,11 +836,11 @@ async fn test_metadata_persistence_through_all_state_transitions() {
             );
 
             match status {
-                "Completed" => {
+                "completed" => {
                     final_task = Some(task_data);
                     break;
                 }
-                "Failed" => {
+                "failed" => {
                     panic!(
                         "Task failed during processing: {}",
                         task_data["data"]["last_error"]
@@ -848,11 +848,11 @@ async fn test_metadata_persistence_through_all_state_transitions() {
                             .unwrap_or("Unknown error")
                     );
                 }
-                "Running" => {
+                "running" => {
                     // Verify metadata is preserved during RUNNING state
                     assert_metadata_preserved(&task_data["data"]["metadata"], &test_metadata);
                 }
-                "Pending" => {
+                "pending" => {
                     // Still waiting
                 }
                 _ => {
@@ -867,7 +867,7 @@ async fn test_metadata_persistence_through_all_state_transitions() {
     // 3. Verify the task completed and check metadata preservation
     let completed_task = final_task.unwrap_or_else(|| panic!("Task {task_id} did not complete within {max_attempts} seconds. This might indicate the worker is not running or the task is stuck."));
 
-    assert_eq!(completed_task["data"]["status"], "Completed");
+    assert_eq!(completed_task["data"]["status"], "completed");
 
     // THIS IS THE CRITICAL TEST - metadata should be preserved after worker processing
     // This assertion should FAIL initially, exposing the bug
@@ -922,7 +922,7 @@ async fn test_metadata_persistence_through_all_state_transitions() {
 
         if chaos_check.status() == 200 {
             let chaos_data: serde_json::Value = chaos_check.json().await.unwrap();
-            if chaos_data["data"]["status"] == "Completed" {
+            if chaos_data["data"]["status"] == "completed" {
                 // Verify the chaos task still has its tag after completion
                 let metadata = &chaos_data["data"]["metadata"];
                 assert_eq!(

@@ -145,7 +145,7 @@ cd web && pnpm dev
 - **⚙️ Background Tasks** - Async job processing with retry logic and dead letter queue
 - **🏗️ Module Generator** - Secure template-based code generation with ownership patterns, transaction safety, and comprehensive testing
 - **📊 API Documentation** - Interactive OpenAPI/Swagger docs
-- **🧪 Testing Framework** - 136 integration tests + comprehensive API endpoint testing (60+ endpoints)
+- **🧪 Testing Framework** - 137 integration tests + comprehensive API endpoint testing (81 endpoints)
 - **📊 Monitoring & Observability** - Complete monitoring system with 14 API endpoints, comprehensive web UI dashboard, advanced tag filtering, RBAC-integrated interface, enhanced error handling
 - **🔥 Chaos Testing** - Docker-based resilience testing with 10 scenarios
 - **⚙️ Admin CLI** - Direct database access for monitoring and maintenance
@@ -164,8 +164,8 @@ cargo run -- revert module books --dry-run               # Preview revert
 ./scripts/test-template-with-curl.sh books               # Test generated API
 
 # Run tests
-cargo nextest run                    # Integration tests (136 tests)
-./scripts/test-with-curl.sh         # API endpoint tests (60+ tests including monitoring)
+cargo nextest run                    # Integration tests (137 tests)
+./scripts/test-with-curl.sh         # API endpoint tests (81 tests including monitoring)
 ./scripts/test-generate.sh          # Module generator system tests
 ./scripts/test-chaos.sh             # Chaos testing (10 scenarios)
 
