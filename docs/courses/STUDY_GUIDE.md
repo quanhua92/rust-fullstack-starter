@@ -1,6 +1,6 @@
-# 📝 Handwritten Study Path: Rust Full-Stack Mastery
+# 📚 Structured Study Guide: Rust Full-Stack Mastery
 
-Since you're thinking about handwritten notes - that's brilliant! Handwriting forces deeper processing and creates better mental models. Here's your structured path with detailed explanations and diagrams:
+This guide provides a structured learning path with detailed explanations and diagrams. For interactive learning, see [STUDENT_BOOK.md](./STUDENT_BOOK.md) and [TEACHER_BOOK.md](./TEACHER_BOOK.md). For technical deep-dive, reference [TECHNICAL_REFERENCE.md](./TECHNICAL_REFERENCE.md).
 
 ## 🎯 **Phase 1: Foundation (Week 1-2)**
 *Goal: Build core mental models*
@@ -8,8 +8,9 @@ Since you're thinking about handwritten notes - that's brilliant! Handwriting fo
 ### Day 1-3: System Overview
 
 #### 📖 **Reading Priority:**
-1. `docs/architecture/learning-philosophy.md` - Understand the "why before how" approach
-2. `docs/guides/01-architecture.md` - System design and component overview
+1. [STUDENT_BOOK.md: Lesson 1](./STUDENT_BOOK.md#lesson-1-system-overview---the-architecture-map) - Interactive system exploration
+2. [TEACHER_BOOK.md: Lesson 1](./TEACHER_BOOK.md#lesson-1-the-starter-system-overview) - Deep architectural insights
+3. `docs/guides/01-architecture.md` - System design and component overview
 
 #### 🧠 **Key Insights to Capture:**
 
@@ -90,9 +91,10 @@ graph TB
 ### Day 4-7: Authentication Deep Dive
 
 #### 📖 **Reading Priority:**
-1. `docs/guides/02-authentication-and-authorization.md` - Complete auth system
-2. Explore `starter/src/auth/` module - See the implementation
-3. Look at database migrations - Understand the data model
+1. [STUDENT_BOOK.md: Lesson 3](./STUDENT_BOOK.md#lesson-3-authentication-system---session-security) - Interactive auth exploration
+2. [TEACHER_BOOK.md: Lesson 3](./TEACHER_BOOK.md#lesson-3-authentication-system-startersrcauth) - Deep auth insights
+3. `docs/guides/02-authentication-and-authorization.md` - Complete auth system
+4. Explore `starter/src/auth/` module - See the implementation
 
 #### 🔐 **Authentication Flow Diagram:**
 ```mermaid
@@ -212,9 +214,10 @@ erDiagram
 ### Week 3: Background Tasks Deep Dive
 
 #### 📖 **Reading Priority:**
-1. `docs/guides/04-background-tasks.md` - Complete system overview
-2. `docs/guides/05-task-handlers-reference.md` - Built-in examples
-3. Explore `starter/src/tasks/` - Implementation details
+1. [STUDENT_BOOK.md: Lesson 5](./STUDENT_BOOK.md#lesson-5-task-system---background-processing-engine) - Interactive task system exploration  
+2. [TEACHER_BOOK.md: Lesson 5](./TEACHER_BOOK.md#lesson-5-task-system-startersrctasks) - Deep task system insights
+3. `docs/guides/04-background-tasks.md` - Complete system overview
+4. Explore `starter/src/tasks/` - Implementation details
 
 #### ⚙️ **Task System Architecture:**
 ```mermaid
@@ -330,9 +333,10 @@ sequenceDiagram
 ### Week 4: Frontend Integration Mastery
 
 #### 📖 **Reading Priority:**
-1. `docs/guides/10-web-frontend-integration.md` - Full-stack patterns
-2. Explore `web/src/` directory structure
-3. Look at `web/src/lib/api/` - Generated types
+1. [STUDENT_BOOK.md: Lesson 11](./STUDENT_BOOK.md#lesson-11-react-frontend-overview---modern-architecture) - Interactive frontend exploration
+2. [TEACHER_BOOK.md: Lesson 11](./TEACHER_BOOK.md#lesson-11-react-frontend-overview-websrc) - Deep frontend insights
+3. `docs/guides/10-web-frontend-integration.md` - Full-stack patterns
+4. Explore `web/src/` directory structure
 
 #### 🌐 **Type-Safe Integration Flow:**
 ```mermaid
@@ -926,10 +930,10 @@ async fn test_user_can_only_see_own_notes() {
 Master template-driven development with the module generator system - generate complete CRUD modules in seconds instead of hours.
 
 #### 📖 **Required Reading:**
-1. **`docs/module-generator.md`** - Complete generator documentation (700+ lines)
-2. **`docs/guides/16-module-generator-first-principles.md`** - Design philosophy and patterns
-3. **`templates/basic/`** - Study the basic CRUD template structure
-4. **`templates/production/`** - Advanced template with bulk operations
+1. [STUDENT_BOOK.md: Lesson 9](./STUDENT_BOOK.md#lesson-9-module-generator-system---rapid-development) - Interactive generator exploration
+2. [TEACHER_BOOK.md: Lesson 9](./TEACHER_BOOK.md#lesson-9-module-generator-system-cargo-run----generate) - Deep generator insights  
+3. **`docs/module-generator.md`** - Complete generator documentation (700+ lines)
+4. **`templates/basic/`** and **`templates/production/`** - Study both template structures
 
 #### 🏗️ **Module Generator Architecture:**
 ```mermaid
@@ -1059,9 +1063,10 @@ diff -r src/books/ src/products/
 ### Week 7: Reliability & Monitoring Deep Dive
 
 #### 📖 **Reading Priority:**
-1. `docs/quality/reliability.md` - Reliability patterns and circuit breakers
-2. `docs/guides/15-monitoring-and-observability.md` - Complete monitoring system
-3. `docs/guides/09-chaos-testing.md` - Failure testing strategies
+1. [STUDENT_BOOK.md: Lesson 10](./STUDENT_BOOK.md#lesson-10-monitoring--observability---production-visibility) - Interactive monitoring exploration
+2. [TEACHER_BOOK.md: Lesson 10](./TEACHER_BOOK.md#lesson-10-monitoring--observability-startersrcmonitoring) - Deep monitoring insights
+3. `docs/guides/15-monitoring-and-observability.md` - Complete monitoring system  
+4. `docs/guides/09-chaos-testing.md` - Failure testing strategies
 
 #### 🔄 **Circuit Breaker State Machine:**
 ```mermaid
@@ -1223,9 +1228,10 @@ graph TB
 ### Week 8: Production Deployment Mastery
 
 #### 📖 **Reading Priority:**
-1. `docs/deployment/production-deployment.md` - Complete deployment guide
-2. `docs/deployment/cicd.md` - CI/CD pipeline setup
-3. Study `docker-compose.prod.yaml` - Production configuration
+1. [STUDENT_BOOK.md: Lessons 12-15](./STUDENT_BOOK.md#lesson-12-authentication-frontend---secure-ux) - Interactive frontend learning
+2. [TEACHER_BOOK.md: Lessons 12-15](./TEACHER_BOOK.md#lesson-12-authentication-frontend-websrccomponentsauth) - Deep frontend insights
+3. `docs/deployment/production-deployment.md` - Complete deployment guide
+4. Study `docker-compose.prod.yaml` - Production configuration
 
 #### 🐳 **Docker Multi-Stage Build Process:**
 ```mermaid
