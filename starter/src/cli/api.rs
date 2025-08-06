@@ -400,11 +400,27 @@ impl CliApp {
             );
             println!();
             println!("   6. Add to openapi.rs (manual step):");
-            println!("      - Import: use crate::{plural}::models::*;");
-            println!("      - Add endpoints to paths() section");
-            println!(
-                "      - Add models to schemas() section (BulkOperationResponse needs <T> generic)"
-            );
+            match template.as_str() {
+                "basic" => {
+                    println!(
+                        "      - Import: use crate::{plural}::{{models::*, api::List{struct_name}Query}};"
+                    );
+                    println!("      - Add endpoints to paths() section");
+                    println!("      - Add models to schemas() section");
+                }
+                "production" => {
+                    println!("      - Import: use crate::{plural}::models::*;");
+                    println!("      - Add endpoints to paths() section");
+                    println!(
+                        "      - Add models to schemas() section (BulkOperationResponse needs <T> generic)"
+                    );
+                }
+                _ => {
+                    println!("      - Import: use crate::{plural}::models::*;");
+                    println!("      - Add endpoints to paths() section");
+                    println!("      - Add models to schemas() section");
+                }
+            }
         }
 
         Ok(())
