@@ -201,17 +201,61 @@ Each role grants specific permissions on resources:
 | **Other Profiles** | ❌ | Read | Read/Write |
 | **Admin Endpoints** | ❌ | ❌ | Full Access |
 
-#### RBAC in Action: Task Access Scenarios
+#### RBAC Implementation Patterns
 
 **Security Philosophy**: "Fail closed" - when in doubt, deny access. Users get 404 (not 403) to avoid information leakage about resource existence.
 
+**Pattern 1: Ownership-Based Access Control (Recommended)**
 ```rust
-// SCENARIO 1: Admin accessing any task
-GET /api/v1/tasks/123 (created by user_456) ✅ 200 OK
-// Logic: Admin role >= required access level, shows full task details
+use crate::rbac::services as rbac_services;
 
-// SCENARIO 2: Moderator accessing cross-user task  
-GET /api/v1/tasks/123 (created by user_456) ✅ 200 OK
+pub async fn update_resource(
+    State(app_state): State<AppState>,
+    Extension(auth_user): Extension<AuthUser>,
+    Path(id): Path<Uuid>,
+    Json(request): Json<UpdateResourceRequest>,
+) -> Result<Json<ApiResponse<Resource>>> {
+    // Begin transaction for atomic check-then-update
+    let mut tx = app_state.database.pool.begin().await?;
+    
+    // Get existing resource to check ownership
+    let existing = get_resource_service(tx.as_mut(), id).await?;
+    
+    // Ownership check: Users can access their own, Admin/Moderator can access all
+    rbac_services::can_access_own_resource(&auth_user, existing.created_by)?;
+    
+    // Update resource
+    let updated = update_resource_service(tx.as_mut(), id, request).await?;
+    
+    tx.commit().await?;
+    Ok(Json(ApiResponse::success(updated)))
+}
+```
+
+**Pattern 2: Role-Based Bulk Operations**
+```rust
+pub async fn bulk_create_resources(
+    Extension(auth_user): Extension<AuthUser>,
+    Json(request): Json<BulkCreateRequest>,
+) -> Result<Json<ApiResponse<BulkOperationResponse<Resource>>>> {
+    // Bulk operations require moderator or higher
+    rbac_services::require_moderator_or_higher(&auth_user)?;
+    
+    let mut conn = app_state.database.pool.acquire().await?;
+    let response = bulk_create_service(conn.as_mut(), request).await?;
+    Ok(Json(ApiResponse::success(response)))
+}
+```
+
+#### RBAC in Action: Access Scenarios
+
+```rust
+// SCENARIO 1: Admin accessing any resource
+GET /api/v1/resources/123 (created by user_456) ✅ 200 OK
+// Logic: Admin role can access all resources regardless of ownership
+
+// SCENARIO 2: Moderator accessing cross-user resource  
+GET /api/v1/resources/123 (created by user_456) ✅ 200 OK
 // Logic: Moderator can manage all user content
 
 // SCENARIO 3: User accessing their own task

@@ -25,7 +25,7 @@ pub async fn list___MODULE_NAME_PLURAL___service(
             limit,
             offset
         )
-        .fetch_all(&mut **conn)
+        .fetch_all(&mut *conn)
         .await
         .map_err(Error::from_sqlx)?
     } else {
@@ -38,7 +38,7 @@ pub async fn list___MODULE_NAME_PLURAL___service(
             limit,
             offset
         )
-        .fetch_all(&mut **conn)
+        .fetch_all(&mut *conn)
         .await
         .map_err(Error::from_sqlx)?
     };
@@ -46,7 +46,7 @@ pub async fn list___MODULE_NAME_PLURAL___service(
     let total_count = sqlx::query_scalar!(
         "SELECT COUNT(*) FROM __MODULE_TABLE__"
     )
-    .fetch_one(&mut **conn)
+    .fetch_one(&mut *conn)
     .await
     .map_err(Error::from_sqlx)?
     .unwrap_or(0);
@@ -80,7 +80,7 @@ pub async fn get___MODULE_NAME___service(
            WHERE id = $1"#,
         id
     )
-    .fetch_optional(&mut **conn)
+    .fetch_optional(&mut *conn)
     .await
     .map_err(Error::from_sqlx)?
     .ok_or_else(|| Error::NotFound(format!("__MODULE_STRUCT__ with id {}", id)))?;
@@ -123,7 +123,7 @@ pub async fn create___MODULE_NAME___service(
         __MODULE_NAME__.created_at,
         __MODULE_NAME__.updated_at
     )
-    .fetch_one(&mut **conn)
+    .fetch_one(&mut *conn)
     .await
     .map_err(Error::from_sqlx)?;
 
@@ -163,7 +163,7 @@ pub async fn update___MODULE_NAME___service(
         __MODULE_NAME__.metadata,
         __MODULE_NAME__.updated_at
     )
-    .fetch_one(&mut **conn)
+    .fetch_one(&mut *conn)
     .await
     .map_err(Error::from_sqlx)?;
 
@@ -179,7 +179,7 @@ pub async fn delete___MODULE_NAME___service(
         "DELETE FROM __MODULE_TABLE__ WHERE id = $1",
         id
     )
-    .execute(&mut **conn)
+    .execute(&mut *conn)
     .await
     .map_err(Error::from_sqlx)?
     .rows_affected();

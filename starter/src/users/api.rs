@@ -45,7 +45,7 @@ pub async fn get_profile(
         .acquire()
         .await
         .map_err(Error::from_sqlx)?;
-    let profile = user_services::get_user_profile(&mut conn, auth_user.id).await?;
+    let profile = user_services::get_user_profile(conn.as_mut(), auth_user.id).await?;
 
     match profile {
         Some(profile) => Ok(Json(ApiResponse::success(profile))),
@@ -84,7 +84,7 @@ pub async fn get_user_by_id(
         .map_err(Error::from_sqlx)?;
 
     // Get target user to access their role for authorization
-    let target_user = user_services::find_user_by_id(&mut conn, id).await?;
+    let target_user = user_services::find_user_by_id(conn.as_mut(), id).await?;
     let target_user = match target_user {
         Some(user) => user,
         None => return Err(Error::NotFound("User not found".to_string())),
@@ -138,7 +138,7 @@ pub async fn list_users(
         .await
         .map_err(Error::from_sqlx)?;
 
-    let users = user_services::list_users(&mut conn, params.limit, params.offset).await?;
+    let users = user_services::list_users(conn.as_mut(), params.limit, params.offset).await?;
 
     Ok(Json(ApiResponse::success(users)))
 }
@@ -177,7 +177,7 @@ pub async fn create_user(
         .await
         .map_err(Error::from_sqlx)?;
 
-    let user = user_services::create_user(&mut conn, request).await?;
+    let user = user_services::create_user(conn.as_mut(), request).await?;
 
     Ok(Json(ApiResponse::success(user)))
 }
@@ -212,7 +212,7 @@ pub async fn update_own_profile(
         .await
         .map_err(Error::from_sqlx)?;
 
-    let user = user_services::update_user_profile(&mut conn, auth_user.id, request).await?;
+    let user = user_services::update_user_profile(conn.as_mut(), auth_user.id, request).await?;
 
     Ok(Json(ApiResponse::success(user)))
 }
@@ -247,7 +247,7 @@ pub async fn change_own_password(
         .await
         .map_err(Error::from_sqlx)?;
 
-    user_services::change_user_password(&mut conn, auth_user.id, request).await?;
+    user_services::change_user_password(conn.as_mut(), auth_user.id, request).await?;
 
     Ok(Json(ApiResponse::success_with_message(
         "Password updated successfully".to_string(),
@@ -284,7 +284,7 @@ pub async fn delete_own_account(
         .await
         .map_err(Error::from_sqlx)?;
 
-    user_services::delete_user_account(&mut conn, auth_user.id, request).await?;
+    user_services::delete_user_account(conn.as_mut(), auth_user.id, request).await?;
 
     Ok(Json(ApiResponse::success_with_message(
         "Account deleted successfully".to_string(),
@@ -331,7 +331,7 @@ pub async fn update_user_profile(
         .await
         .map_err(Error::from_sqlx)?;
 
-    let user = user_services::update_user_profile_admin(&mut conn, id, request).await?;
+    let user = user_services::update_user_profile_admin(conn.as_mut(), id, request).await?;
 
     Ok(Json(ApiResponse::success(user)))
 }
@@ -374,7 +374,7 @@ pub async fn update_user_status(
         .await
         .map_err(Error::from_sqlx)?;
 
-    let user = user_services::update_user_status(&mut conn, id, request).await?;
+    let user = user_services::update_user_status(conn.as_mut(), id, request).await?;
 
     Ok(Json(ApiResponse::success_with_message(
         user,
@@ -420,7 +420,7 @@ pub async fn update_user_role(
         .await
         .map_err(Error::from_sqlx)?;
 
-    let user = user_services::update_user_role(&mut conn, id, request).await?;
+    let user = user_services::update_user_role(conn.as_mut(), id, request).await?;
 
     Ok(Json(ApiResponse::success_with_message(
         user,
@@ -466,7 +466,7 @@ pub async fn reset_user_password(
         .await
         .map_err(Error::from_sqlx)?;
 
-    user_services::reset_user_password(&mut conn, id, request).await?;
+    user_services::reset_user_password(conn.as_mut(), id, request).await?;
 
     Ok(Json(ApiResponse::success_with_message(
         "Password reset successfully".to_string(),
@@ -521,7 +521,7 @@ pub async fn delete_user(
         .await
         .map_err(Error::from_sqlx)?;
 
-    user_services::delete_user_admin(&mut conn, id, request).await?;
+    user_services::delete_user_admin(conn.as_mut(), id, request).await?;
 
     Ok(Json(ApiResponse::success_with_message(
         "User account deleted successfully".to_string(),
@@ -559,7 +559,7 @@ pub async fn get_user_stats(
         .await
         .map_err(Error::from_sqlx)?;
 
-    let stats = user_services::get_user_stats(&mut conn).await?;
+    let stats = user_services::get_user_stats(conn.as_mut()).await?;
 
     Ok(Json(ApiResponse::success(stats)))
 }

@@ -63,13 +63,21 @@ cargo run -- revert module <NAME> [OPTIONS]
 
 ### Basic Template
 
-The basic template provides:
-- ✅ **CRUD Operations** - Create, Read, Update, Delete
+The basic template provides secure CRUD operations with ownership-based access control:
+- ✅ **CRUD Operations** - Create, Read, Update, Delete with ownership security
+- ✅ **Ownership Security** - Users access own resources, Admin/Moderator access all
+- ✅ **Transaction Safety** - Update/delete operations use database transactions
 - ✅ **Pagination** - Offset-based with configurable limits
 - ✅ **Search** - Text search across name and description fields
 - ✅ **Validation** - Input validation with meaningful error messages
 - ✅ **Tests** - Complete integration test suite
 - ✅ **Authentication** - All endpoints require valid authentication
+
+**Security Model:**
+- Create operations automatically set `created_by` to current user
+- Update/delete operations check ownership before allowing access
+- Users can only modify their own resources
+- Admin and Moderator roles can access all resources
 
 **Generated Structure:**
 ```
@@ -96,10 +104,11 @@ migrations/
 
 ### Production Template
 
-The production template includes everything from basic plus:
+The production template includes everything from basic plus advanced features with enhanced security:
 - ✅ **Advanced Filtering** - Status, priority ranges, date filters
 - ✅ **Dual Pagination** - Both offset-based and cursor-based
-- ✅ **Bulk Operations** - Create, update, delete multiple items
+- ✅ **Bulk Operations** - Create, update, delete multiple items (Moderator+ required)
+- ✅ **Enhanced RBAC** - Individual operations use ownership, bulk operations require Moderator+
 - ✅ **Status Management** - Enum-based status with database constraints
 - ✅ **Metadata Support** - JSON fields with GIN indexing
 - ✅ **Performance** - Multiple database indexes and triggers

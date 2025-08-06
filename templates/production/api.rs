@@ -165,7 +165,7 @@ pub async fn list___MODULE_NAME_PLURAL__(
         .await
         .map_err(crate::error::Error::from_sqlx)?;
 
-    let response = list___MODULE_NAME_PLURAL___service(&mut conn, request).await?;
+    let response = list___MODULE_NAME_PLURAL___service(conn.as_mut(), request).await?;
     Ok(Json(ApiResponse::success(response)))
 }
 
@@ -197,7 +197,7 @@ pub async fn get___MODULE_NAME__(
         .await
         .map_err(crate::error::Error::from_sqlx)?;
 
-    let __MODULE_NAME__ = get___MODULE_NAME___service(&mut conn, id).await?;
+    let __MODULE_NAME__ = get___MODULE_NAME___service(conn.as_mut(), id).await?;
     Ok(Json(ApiResponse::success(__MODULE_NAME__)))
 }
 
@@ -225,7 +225,7 @@ pub async fn create___MODULE_NAME__(
         .await
         .map_err(crate::error::Error::from_sqlx)?;
 
-    let __MODULE_NAME__ = create___MODULE_NAME___service(&mut conn, request, auth_user.id).await?;
+    let __MODULE_NAME__ = create___MODULE_NAME___service(conn.as_mut(), request, auth_user.id).await?;
     Ok(Json(ApiResponse::success(__MODULE_NAME__)))
 }
 
@@ -341,7 +341,7 @@ pub async fn bulk_create___MODULE_NAME_PLURAL__(
         .await
         .map_err(crate::error::Error::from_sqlx)?;
 
-    let response = bulk_create___MODULE_NAME_PLURAL___service(&mut conn, request).await?;
+    let response = bulk_create___MODULE_NAME_PLURAL___service(conn.as_mut(), request).await?;
     Ok(Json(ApiResponse::success(response)))
 }
 
@@ -372,7 +372,7 @@ pub async fn bulk_update___MODULE_NAME_PLURAL__(
         .await
         .map_err(crate::error::Error::from_sqlx)?;
 
-    let response = bulk_update___MODULE_NAME_PLURAL___service(&mut conn, request).await?;
+    let response = bulk_update___MODULE_NAME_PLURAL___service(conn.as_mut(), request).await?;
     Ok(Json(ApiResponse::success(response)))
 }
 
@@ -403,7 +403,7 @@ pub async fn bulk_delete___MODULE_NAME_PLURAL__(
         .await
         .map_err(crate::error::Error::from_sqlx)?;
 
-    let response = bulk_delete___MODULE_NAME_PLURAL___service(&mut conn, request).await?;
+    let response = bulk_delete___MODULE_NAME_PLURAL___service(conn.as_mut(), request).await?;
     Ok(Json(ApiResponse::success(response)))
 }
 

@@ -139,11 +139,11 @@ cd web && pnpm dev
 ## Key Features
 
 - **🌐 Full-Stack Integration** - React frontend served directly by Rust server with unified deployment
-- **🔐 Authentication & Authorization** - Session-based auth with Role-Based Access Control (RBAC)
+- **🔐 Authentication & Authorization** - Session-based auth with ownership-based RBAC and transaction safety
 - **👥 User Management System** - Complete user lifecycle with 12 endpoints (profile, admin, analytics)
-- **🔑 Role-Based Access Control** - Three-tier system (User/Moderator/Admin) with hierarchical permissions
+- **🔑 Role-Based Access Control** - Advanced ownership-based security: users own their data, Admin/Moderator access all
 - **⚙️ Background Tasks** - Async job processing with retry logic and dead letter queue
-- **🏗️ Module Generator** - Template-based code generation for CRUD modules with safety features and testing validation
+- **🏗️ Module Generator** - Secure template-based code generation with ownership patterns, transaction safety, and comprehensive testing
 - **📊 API Documentation** - Interactive OpenAPI/Swagger docs
 - **🧪 Testing Framework** - 136 integration tests + comprehensive API endpoint testing (60+ endpoints)
 - **📊 Monitoring & Observability** - Complete monitoring system with 14 API endpoints, comprehensive web UI dashboard, advanced tag filtering, RBAC-integrated interface, enhanced error handling

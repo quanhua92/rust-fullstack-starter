@@ -7,6 +7,13 @@ This file provides guidance to Claude Code when working with this Rust fullstack
 - **Starter Project**: Tone down language - never say "production" or "enterprise ready"
 - **Quality First**: Always run `./scripts/check.sh` before every commit
 
+## Architecture Notes
+
+### Database Connection Type
+- **DbConn**: `sqlx::PgConnection` (not `PoolConnection`) to support both pool connections and transactions
+- **Connection patterns**: Use `conn.as_mut()` for pool connections, `tx.as_mut()` for transactions
+- **SQLx queries**: Use `&mut *conn` for all `.fetch_*()` and `.execute()` calls
+
 ## Essential Commands
 
 ### Development Workflow
@@ -69,9 +76,29 @@ TaskError::invalid_field_type("field", "string")
 ```rust
 use crate::rbac::services as rbac_services;
 
+// Ownership-based access control (for individual operations)
+rbac_services::can_access_own_resource(&auth_user, resource.created_by)?;
+
+// Task-specific access control (legacy - use ownership pattern for new code)
 rbac_services::can_access_task(&auth_user, task.created_by)?;
+
+// Role-based access control (for bulk operations and admin features)
 rbac_services::require_moderator_or_higher(&auth_user)?;
 rbac_services::check_permission(&auth_user, Resource::Tasks, Permission::Write)?;
+```
+
+### Ownership Pattern (Recommended)
+```rust
+// For individual CRUD operations - users can access their own, admins can access all
+let mut tx = pool.begin().await?;
+let existing_item = get_item_service(tx.as_mut(), id).await?;
+rbac_services::can_access_own_resource(&auth_user, existing_item.created_by)?;
+let updated_item = update_item_service(tx.as_mut(), id, request).await?;
+tx.commit().await?;
+
+// For bulk operations - require moderator permissions
+rbac_services::require_moderator_or_higher(&auth_user)?;
+bulk_create_items_service(conn.as_mut(), request).await?;
 ```
 
 ### Monitoring Integration

@@ -133,7 +133,7 @@ pub async fn create_event(
         // In production, you might want to restrict based on service ownership
     }
 
-    let event = services::create_event(&mut conn, request).await?;
+    let event = services::create_event(conn.as_mut(), request).await?;
     Ok(Json(ApiResponse::success(event)))
 }
 
@@ -183,7 +183,7 @@ pub async fn get_events(
         offset: params.offset,
     };
 
-    let events = services::find_events_with_filter(&mut conn, filter).await?;
+    let events = services::find_events_with_filter(conn.as_mut(), filter).await?;
     Ok(Json(ApiResponse::success(events)))
 }
 
@@ -216,7 +216,7 @@ pub async fn get_event_by_id(
         .await
         .map_err(Error::from_sqlx)?;
 
-    let event = services::find_event_by_id(&mut conn, id).await?;
+    let event = services::find_event_by_id(conn.as_mut(), id).await?;
     let event = event.ok_or_else(|| Error::NotFound(format!("Event with id {id}")))?;
     Ok(Json(ApiResponse::success(event)))
 }
@@ -248,7 +248,7 @@ pub async fn create_metric(
         .await
         .map_err(Error::from_sqlx)?;
 
-    let metric = services::create_metric(&mut conn, request).await?;
+    let metric = services::create_metric(conn.as_mut(), request).await?;
     Ok(Json(ApiResponse::success(metric)))
 }
 
@@ -289,7 +289,7 @@ pub async fn get_metrics(
         offset: params.offset,
     };
 
-    let metrics = services::find_metrics_with_filter(&mut conn, filter).await?;
+    let metrics = services::find_metrics_with_filter(conn.as_mut(), filter).await?;
     Ok(Json(ApiResponse::success(metrics)))
 }
 
@@ -323,7 +323,7 @@ pub async fn create_alert(
 
     rbac_services::require_moderator_or_higher(&auth_user)?;
 
-    let alert = services::create_alert(&mut conn, request, Some(auth_user.id)).await?;
+    let alert = services::create_alert(conn.as_mut(), request, Some(auth_user.id)).await?;
     Ok(Json(ApiResponse::success(alert)))
 }
 
@@ -351,7 +351,7 @@ pub async fn get_alerts(
         .await
         .map_err(Error::from_sqlx)?;
 
-    let alerts = services::find_all_alerts(&mut conn).await?;
+    let alerts = services::find_all_alerts(conn.as_mut()).await?;
     Ok(Json(ApiResponse::success(alerts)))
 }
 
@@ -387,7 +387,7 @@ pub async fn create_incident(
         rbac_services::require_moderator_or_higher(&auth_user)?;
     }
 
-    let incident = services::create_incident(&mut conn, request, Some(auth_user.id)).await?;
+    let incident = services::create_incident(conn.as_mut(), request, Some(auth_user.id)).await?;
     Ok(Json(ApiResponse::success(incident)))
 }
 
@@ -419,7 +419,7 @@ pub async fn get_incidents(
         .map_err(Error::from_sqlx)?;
 
     let incidents =
-        services::find_incidents_with_pagination(&mut conn, params.limit, params.offset).await?;
+        services::find_incidents_with_pagination(conn.as_mut(), params.limit, params.offset).await?;
     Ok(Json(ApiResponse::success(incidents)))
 }
 
@@ -452,7 +452,7 @@ pub async fn get_incident_by_id(
         .await
         .map_err(Error::from_sqlx)?;
 
-    let incident = services::find_incident_by_id(&mut conn, id).await?;
+    let incident = services::find_incident_by_id(conn.as_mut(), id).await?;
     let incident = incident.ok_or_else(|| Error::NotFound(format!("Incident with id {id}")))?;
     Ok(Json(ApiResponse::success(incident)))
 }
@@ -491,7 +491,7 @@ pub async fn update_incident(
         .map_err(Error::from_sqlx)?;
 
     // Get the incident first to check ownership
-    let current_incident = services::find_incident_by_id(&mut conn, id).await?;
+    let current_incident = services::find_incident_by_id(conn.as_mut(), id).await?;
     let current_incident =
         current_incident.ok_or_else(|| Error::NotFound(format!("Incident with id {id}")))?;
 
@@ -505,7 +505,7 @@ pub async fn update_incident(
         return Err(Error::Forbidden("Cannot update this incident".to_string()));
     }
 
-    let incident = services::update_incident(&mut conn, id, request).await?;
+    let incident = services::update_incident(conn.as_mut(), id, request).await?;
 
     Ok(Json(ApiResponse::success(incident)))
 }
@@ -543,7 +543,7 @@ pub async fn get_incident_timeline(
         .map_err(Error::from_sqlx)?;
 
     let timeline = services::get_incident_timeline(
-        &mut conn,
+        conn.as_mut(),
         id,
         params.limit,
         params.offset,
@@ -581,7 +581,7 @@ pub async fn get_monitoring_stats(
 
     rbac_services::require_moderator_or_higher(&auth_user)?;
 
-    let stats = services::get_monitoring_stats(&mut conn).await?;
+    let stats = services::get_monitoring_stats(conn.as_mut()).await?;
     Ok(Json(ApiResponse::success(stats)))
 }
 
@@ -603,10 +603,10 @@ pub async fn get_prometheus_metrics(State(app_state): State<AppState>) -> Result
         .map_err(Error::from_sqlx)?;
 
     // Get system statistics
-    let stats = services::get_monitoring_stats(&mut conn).await?;
+    let stats = services::get_monitoring_stats(conn.as_mut()).await?;
 
     // Get recent metrics from the database (last 24 hours)
-    let recent_metrics = services::get_prometheus_metrics(&mut conn).await?;
+    let recent_metrics = services::get_prometheus_metrics(conn.as_mut()).await?;
 
     let mut prometheus_output = String::new();
 

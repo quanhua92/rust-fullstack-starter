@@ -40,7 +40,7 @@ pub async fn create_session(
         expires_at,
         user_agent
     )
-    .fetch_one(&mut **conn)
+    .fetch_one(&mut *conn)
     .await
     .map_err(Error::from_sqlx)?;
 
@@ -70,7 +70,7 @@ pub async fn find_session_by_token(conn: &mut DbConn, token: &str) -> Result<Opt
         "#,
         token
     )
-    .fetch_optional(&mut **conn)
+    .fetch_optional(&mut *conn)
     .await
     .map_err(Error::from_sqlx)?;
 
@@ -95,7 +95,7 @@ pub async fn update_session_activity(conn: &mut DbConn, session_id: Uuid) -> Res
         "UPDATE sessions SET last_activity_at = NOW() WHERE id = $1",
         session_id
     )
-    .execute(&mut **conn)
+    .execute(&mut *conn)
     .await
     .map_err(Error::from_sqlx)?;
 
@@ -107,7 +107,7 @@ pub async fn delete_session(conn: &mut DbConn, token: &str) -> Result<()> {
         "UPDATE sessions SET is_active = false WHERE token = $1",
         token
     )
-    .execute(&mut **conn)
+    .execute(&mut *conn)
     .await
     .map_err(Error::from_sqlx)?;
 
@@ -119,7 +119,7 @@ pub async fn delete_all_user_sessions(conn: &mut DbConn, user_id: Uuid) -> Resul
         "UPDATE sessions SET is_active = false WHERE user_id = $1 AND is_active = true",
         user_id
     )
-    .execute(&mut **conn)
+    .execute(&mut *conn)
     .await
     .map_err(Error::from_sqlx)?;
 
@@ -130,7 +130,7 @@ pub async fn cleanup_expired_sessions(conn: &mut DbConn) -> Result<u64> {
     let result = sqlx::query!(
         "UPDATE sessions SET is_active = false WHERE expires_at < NOW() AND is_active = true"
     )
-    .execute(&mut **conn)
+    .execute(&mut *conn)
     .await
     .map_err(Error::from_sqlx)?;
 
@@ -277,7 +277,7 @@ pub async fn refresh_session_token(
             now,
             token
         )
-        .fetch_optional(&mut **conn)
+        .fetch_optional(&mut *conn)
         .await
         .map_err(Error::from_sqlx)?;
 

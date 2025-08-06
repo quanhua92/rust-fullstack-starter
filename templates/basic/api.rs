@@ -62,7 +62,7 @@ pub async fn list___MODULE_NAME_PLURAL__(
         .map_err(crate::error::Error::from_sqlx)?;
 
     let __MODULE_NAME_PLURAL__ = list___MODULE_NAME_PLURAL___service(
-        &mut conn,
+        conn.as_mut(),
         List__MODULE_STRUCT__Request {
             limit,
             offset,
@@ -91,7 +91,7 @@ pub async fn get___MODULE_NAME__(
         .await
         .map_err(crate::error::Error::from_sqlx)?;
 
-    let __MODULE_NAME__ = get___MODULE_NAME___service(&mut conn, id).await?;
+    let __MODULE_NAME__ = get___MODULE_NAME___service(conn.as_mut(), id).await?;
     Ok(Json(ApiResponse::success(__MODULE_NAME__)))
 }
 
@@ -112,7 +112,7 @@ pub async fn create___MODULE_NAME__(
         .await
         .map_err(crate::error::Error::from_sqlx)?;
 
-    let __MODULE_NAME__ = create___MODULE_NAME___service(&mut conn, request, auth_user.id).await?;
+    let __MODULE_NAME__ = create___MODULE_NAME___service(conn.as_mut(), request, auth_user.id).await?;
     Ok(Json(ApiResponse::success(__MODULE_NAME__)))
 }
 

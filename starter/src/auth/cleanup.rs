@@ -31,5 +31,5 @@ async fn cleanup_expired_sessions(pool: &DbPool) -> Result<u64> {
         .acquire()
         .await
         .map_err(crate::error::Error::from_sqlx)?;
-    services::cleanup_expired_sessions(&mut conn).await
+    services::cleanup_expired_sessions(conn.as_mut()).await
 }

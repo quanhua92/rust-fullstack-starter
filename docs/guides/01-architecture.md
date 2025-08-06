@@ -199,23 +199,28 @@ The service layer is where business logic lives, separate from HTTP concerns. Se
 
 **Database Connection Management:**
 ```rust
+// DbConn is sqlx::PgConnection to support both pools and transactions
+pub type DbConn = sqlx::PgConnection;
+
 // Services receive database connections from HTTP handlers
 pub async fn create_user(
     conn: &mut DbConn,        // Database connection
     request: CreateUserRequest,
+    created_by: Uuid,         // For ownership tracking
 ) -> Result<User> {
     // Business logic here
     let password_hash = hash_password(&request.password)?;
     
     let user = sqlx::query_as!(
         User,
-        "INSERT INTO users (username, email, password_hash) 
-         VALUES ($1, $2, $3) RETURNING *",
+        "INSERT INTO users (username, email, password_hash, created_by) 
+         VALUES ($1, $2, $3, $4) RETURNING *",
         request.username,
         request.email,
-        password_hash
+        password_hash,
+        created_by
     )
-    .fetch_one(conn)
+    .fetch_one(&mut *conn)  // Use &mut *conn for reborrow
     .await?;
     
     Ok(user)
@@ -227,33 +232,41 @@ pub async fn create_user(
 // API handlers acquire connections and pass to services
 pub async fn register_handler(
     State(app_state): State<AppState>,
+    Extension(auth_user): Extension<AuthUser>,
     Json(payload): Json<RegisterRequest>,
 ) -> Result<Json<ApiResponse<User>>> {
     // Acquire connection from pool
     let mut conn = app_state.database.pool.acquire().await?;
     
-    // Pass to service layer
-    let user = auth_services::create_user(&mut conn, payload).await?;
+    // Pass to service layer with ownership
+    let user = auth_services::create_user(conn.as_mut(), payload, auth_user.id).await?;
     
     Ok(Json(ApiResponse::success(user)))
 }
 
-// For transactions, use begin/commit
-pub async fn complex_operation(
+// For ownership checks, use transactions for atomicity
+pub async fn update_resource_handler(
     State(app_state): State<AppState>,
-    Json(payload): Json<ComplexRequest>,
-) -> Result<Json<ApiResponse<ComplexResponse>>> {
-    // Begin transaction
+    Extension(auth_user): Extension<AuthUser>,
+    Path(id): Path<Uuid>,
+    Json(payload): Json<UpdateRequest>,
+) -> Result<Json<ApiResponse<Resource>>> {
+    // Begin transaction for atomic get-check-update
     let mut tx = app_state.database.pool.begin().await?;
     
-    // Multiple service calls in transaction
-    let result1 = service1::operation(&mut *tx, &payload).await?;
-    let result2 = service2::operation(&mut *tx, result1).await?;
+    // Get resource to check ownership
+    let existing = get_resource_service(tx.as_mut(), id).await?;
+    
+    // Check ownership: users own their resources, admins access all
+    rbac_services::can_access_own_resource(&auth_user, existing.created_by)?;
+    
+    // Update resource
+    let updated = update_resource_service(tx.as_mut(), id, payload).await?;
     
     // Commit transaction
     tx.commit().await?;
     
-    Ok(Json(ApiResponse::success(result2)))
+    Ok(Json(ApiResponse::success(updated)))
 }
 ```
 
