@@ -40,9 +40,11 @@ cp docs/courses/STUDENT_BOOK.md docs/courses/STUDENT_BOOK.your-name.md
 The AI can directly explore files mentioned in lessons and provide real-time guidance based on the actual code.
 
 **For web-based AI:**
-Upload these two files to start your interactive learning session:
-1. `docs/courses/TEACHER_BOOK.md` - Complete teaching guide
+Upload these files to start your interactive learning session:
+1. `docs/courses/TEACHER_BOOK.md` - Complete teaching guide (15 lessons)
 2. `docs/courses/STUDENT_BOOK.your-name.md` - Your personal learning journal
+3. `docs/courses/TECHNICAL_REFERENCE.md` - 115 pages of technical deep-dive (optional for advanced study)
+4. `docs/courses/STUDY_GUIDE.md` - Structured weekly study path (optional for self-paced learning)
 
 ### Step 3: Start Your First Learning Session
 
@@ -98,22 +100,50 @@ Let's begin! What should I do first to understand the system overview?
 ### Your AI Teaching Assistant Will:
 
 ✅ **Guide you through the 15-lesson curriculum systematically**
+
 ✅ **Reference specific files in the actual codebase**
+
 ✅ **Suggest real experiments and code modifications**
+
 ✅ **Help you update your learning journal with insights**
+
 ✅ **Answer questions specific to this starter system**
+
 ✅ **Challenge you with hands-on exercises**
 
 **Additional benefits with codebase-integrated AI:**
+
 ✅ **Read and analyze actual code in real-time**
+
 ✅ **Provide exact line numbers and code examples**
+
 ✅ **Verify your experiments and modifications**
+
 ✅ **Navigate the complete project structure**
+
 ✅ **Keep up with any codebase changes**
 
 ❌ **Won't teach general web development concepts**
+
 ❌ **Won't skip the systematic progression**
+
 ❌ **Won't let you treat any code as a "magic box"**
+
+---
+
+## 📚 Course Materials Overview
+
+### Core Interactive Learning System
+| File | Purpose | Content | Use Case |
+|------|---------|---------|---------|
+| **[TEACHER_BOOK.md](./TEACHER_BOOK.md)** | AI teaching guide | 15 lessons with experiments and deep-dive questions | Interactive learning with AI assistant |
+| **[STUDENT_BOOK.md](./STUDENT_BOOK.md)** | Personal learning journal | Hands-on exercises and progress tracking | Your personalized learning path |
+
+### Additional References (Optional)
+| File | Purpose | Content | Use Case |
+|------|---------|---------|---------|
+| **[TECHNICAL_REFERENCE.md](./TECHNICAL_REFERENCE.md)** | Deep technical documentation | 115 pages of detailed analysis, Mermaid diagrams, code references | Advanced study, architecture deep-dive |
+| **[STUDY_GUIDE.md](./STUDY_GUIDE.md)** | Structured study path | Week-by-week progression with technical exercises | Self-paced learning, review sessions |
 
 ---
 

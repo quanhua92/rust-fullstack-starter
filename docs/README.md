@@ -13,21 +13,21 @@ open http://localhost:3000
 
 **Perfect for**: POCs, learning, urgent projects, interview demos, full-stack development education
 
-**[📖 Full Quick Start Guide →](quick-start.md)**
+**[📖 Full Quick Start Guide →](getting-started/quick-start.md)**
 
 ---
 
 ## 📚 Choose Your Learning Path
 
 ### ⚡ **Just Show Me Code** *(5-15 minutes)*
-- **[Quick Start Guide](quick-start.md)** - Working app in 2 minutes
+- **[Quick Start Guide](getting-started/quick-start.md)** - Working app in 2 minutes
 - **[API Examples](#api-examples)** - Copy-paste ready endpoints
 - **[Common Recipes](#common-recipes)** - Add auth, tasks, deploy
 
 ### 🏗️ **Understand the Architecture** *(1-2 hours)*
 - **[System Overview](#system-overview)** - How the pieces fit together
 - **[Key Patterns](guides/03-patterns.md)** - Reliability and error handling
-- **[Why This Approach?](learning-philosophy.md)** - Design decisions explained
+- **[Why This Approach?](architecture/learning-philosophy.md)** - Design decisions explained
 
 ### 🎓 **Master Full-Stack Development** *(Self-paced)*
 - **[Complete Learning Paths](#learning-paths)** - Beginner → Intermediate → Advanced
@@ -254,7 +254,7 @@ rust-fullstack-starter/
 
 ## Getting Started
 
-For complete setup instructions, see **[Getting Started Guide](./getting-started.md)**.
+For complete setup instructions, see **[Getting Started Guide](./getting-started/getting-started.md)**.
 
 ### Quick Setup
 
@@ -477,17 +477,17 @@ The starter includes comprehensive testing patterns:
 ## Documentation
 
 ### Getting Started & Operations
-- **[Getting Started](getting-started.md)** - Setup and first steps
-- **[Development Guide](development.md)** - Daily development workflow
-- **[Configuration](configuration.md)** - Environment variables and settings
-- **[Production Deployment](production-deployment.md)** - Docker and deployment strategies
-- **[CI/CD Pipeline](cicd.md)** - GitHub Actions and automated testing
+- **[Getting Started](getting-started/getting-started.md)** - Setup and first steps
+- **[Development Guide](development/development.md)** - Daily development workflow
+- **[Configuration](reference/configuration.md)** - Environment variables and settings
+- **[Production Deployment](deployment/production-deployment.md)** - Docker and deployment strategies
+- **[CI/CD Pipeline](deployment/cicd.md)** - GitHub Actions and automated testing
 
 ### API & Reference
-- **[API Reference](api-reference.md)** - Complete endpoint documentation
-- **[Security](security.md)** - Authentication and security patterns
-- **[Reliability](reliability.md)** - Circuit breakers, retries, and resilience patterns
-- **[Troubleshooting](troubleshooting.md)** - Common issues and solutions
+- **[API Reference](reference/api-reference.md)** - Complete endpoint documentation
+- **[Security](quality/security.md)** - Authentication and security patterns
+- **[Reliability](quality/reliability.md)** - Circuit breakers, retries, and resilience patterns
+- **[Troubleshooting](development/troubleshooting.md)** - Common issues and solutions
 
 ### Architecture Guides
 Comprehensive guides in **[`guides/`](guides/)**:
@@ -508,19 +508,19 @@ Comprehensive guides in **[`guides/`](guides/)**:
 
 ### Reference Documentation
 - **[Task Handlers](reference/task-handlers.md)** - Built-in task type reference
-- **[Project Customization](project-customization.md)** - Adapting the starter for your needs
-- **[Docker Hub Setup](docker-hub-setup.md)** - Container registry configuration
+- **[Project Customization](customization/project-customization.md)** - Adapting the starter for your needs
+- **[Docker Hub Setup](deployment/docker-hub-setup.md)** - Container registry configuration
 
 ## Learning Paths
 
 ### ⚡ **Just Getting Started?**
-- **[🚀 Quick Start Guide](quick-start.md)** - Working app in 2 minutes
+- **[🚀 Quick Start Guide](getting-started/quick-start.md)** - Working app in 2 minutes
 - **[🔧 Common Recipes](#common-recipes)** - Add features, customize, deploy  
 - **[📖 API Examples](#api-examples)** - Copy-paste ready code
 
 ### 🏗️ **Want to Understand How It Works?**
 - **[System Overview](#system-overview)** - Architecture and component relationships
-- **[Authentication Guide](guides/02-authentication.md)** - Secure user management patterns
+- **[Authentication Guide](guides/02-authentication-and-authorization.md)** - Secure user management patterns
 - **[Background Tasks](guides/04-background-tasks.md)** - Async job processing system
 - **[Web Integration](guides/10-web-frontend-integration.md)** - React ↔ Rust patterns, OpenAPI workflow
 
@@ -528,11 +528,11 @@ Comprehensive guides in **[`guides/`](guides/)**:
 - **[Production Deployment](production-deployment.md)** - Docker, Kubernetes, security
 - **[Testing Strategy](guides/08-testing.md)** - 137 integration tests + comprehensive API testing (81 endpoints) + chaos testing
 - **[Debugging Guide](guides/11-debugging-and-troubleshooting.md)** - Systematic problem solving
-- **[Performance & Monitoring](reliability.md)** - Optimization and observability
+- **[Performance & Monitoring](quality/reliability.md)** - Optimization and observability
 
 ### 🎓 **Master Full-Stack Development** *(Advanced)*
 
-> **[📖 Learning Philosophy](learning-philosophy.md)** - First principles approach to understanding systems
+> **[📖 Learning Philosophy](architecture/learning-philosophy.md)** - First principles approach to understanding systems
 
 This starter includes comprehensive educational content for deep learning:
 
@@ -554,7 +554,7 @@ This starter includes comprehensive educational content for deep learning:
 **Difficulty**: ⭐⭐☆☆☆ (Beginner)  
 **Goal**: Build fundamental mental models for full-stack development
 
-1. **[📖 Learning Philosophy](learning-philosophy.md)** *(⚡ Quick Read)*
+1. **[📖 Learning Philosophy](architecture/learning-philosophy.md)** *(⚡ Quick Read)*
    - First principles thinking for developers
    - Mental model building strategies
    - Why before how methodology
@@ -564,7 +564,7 @@ This starter includes comprehensive educational content for deep learning:
    - **Mental Model**: Layer-based system thinking
    - **Practice**: Trace a request through all layers
 
-3. **[🔐 Authentication System](guides/02-authentication.md)** *(🔐 Core Concept)*
+3. **[🔐 Authentication System](guides/02-authentication-and-authorization.md)** *(🔐 Core Concept)*
    - **Why**: Sessions vs JWT tradeoffs for this use case
    - **Mental Model**: Identity verification and state management
    - **Practice**: Implement user registration flow
@@ -608,7 +608,7 @@ This starter includes comprehensive educational content for deep learning:
 **Difficulty**: ⭐⭐⭐⭐☆ (Advanced)  
 **Goal**: Production deployment and reliability engineering
 
-9. **[🚢 Production Deployment](production-deployment.md)** *(🚢 Infrastructure)*
+9. **[🚢 Production Deployment](deployment/production-deployment.md)** *(🚢 Infrastructure)*
    - **Why**: Container orchestration and security considerations
    - **Mental Model**: Infrastructure as code and deployment pipelines
    - **Practice**: Deploy to staging environment
@@ -618,12 +618,12 @@ This starter includes comprehensive educational content for deep learning:
     - **Mental Model**: Controlled failure experimentation
     - **Practice**: Design and run chaos experiments
 
-11. **[⚡ Performance & Monitoring](reliability.md)** *(⚡ Optimization)*
+11. **[⚡ Performance & Monitoring](quality/reliability.md)** *(⚡ Optimization)*
     - **Why**: Observability and optimization strategies
     - **Mental Model**: Performance bottleneck identification
     - **Practice**: Implement monitoring and alerting
 
-12. **[🎓 Graduation: Beyond the Starter](project-customization.md)** *(🎓 Mastery)*
+12. **[🎓 Graduation: Beyond the Starter](customization/project-customization.md)** *(🎓 Mastery)*
     - **Why**: When and how to evolve beyond the starter patterns
     - **Mental Model**: Technology selection and scaling decisions
     - **Practice**: Plan your next architectural evolution

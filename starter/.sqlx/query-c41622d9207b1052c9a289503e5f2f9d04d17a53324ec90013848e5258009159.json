@@ -5,21 +5,7 @@
     "columns": [],
     "parameters": {
       "Left": [
-        {
-          "Custom": {
-            "name": "task_status",
-            "kind": {
-              "Enum": [
-                "pending",
-                "running",
-                "completed",
-                "failed",
-                "cancelled",
-                "retrying"
-              ]
-            }
-          }
-        },
+        "Text",
         "Timestamptz",
         "Int4",
         "Text",

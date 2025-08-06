@@ -65,7 +65,7 @@ This course is NOT about general web development. It's about achieving complete 
 - `starter/src/` - Complete module structure (8 core domains + 5 infrastructure)
 - `starter/Cargo.toml` - The exact dependencies and features (24 production deps)
 - `scripts/dev-server.sh` - Complete system bootstrap (172 lines of orchestration)
-- `docs/getting-started.md` - This system's setup guide
+- `docs/getting-started/getting-started.md` - This system's setup guide
 - `docs/guides/01-architecture.md` - This system's design philosophy
 
 **🎯 Key Insights for Teaching:**
@@ -135,7 +135,7 @@ The 172-line bootstrap script demonstrates production-ready development practice
 - `starter/migrations/004_tasks.up.sql` - Background tasks with enums (42 lines)
 - `starter/migrations/005_task_types.up.sql` - Task type registration (33 lines)
 - `.env.example` - Database configuration template
-- `docs/configuration.md` - Database configuration for this system
+- `docs/reference/configuration.md` - Database configuration for this system
 
 **🎯 Key Insights for Teaching:**
 
@@ -155,7 +155,7 @@ The 172-line bootstrap script demonstrates production-ready development practice
 - Automatic `updated_at` triggers using PostgreSQL functions
 
 **Task System Excellence:**
-- Custom PostgreSQL enums: `task_status` (6 states) and `task_priority` (4 levels)
+- TEXT columns with CHECK constraints: `status` (pending, running, completed, failed, cancelled, retrying) and `priority` (low, normal, high, critical)
 - JSONB payload for flexible task data with GIN indexing potential
 - Composite index: `idx_tasks_ready_to_run` optimized for queue processing
 - Soft foreign key to users (`ON DELETE SET NULL`) preserving task history
@@ -183,7 +183,7 @@ The `ensure_initial_admin()` method (lines 56-115) showcases sophisticated initi
 
 **Deep Dive Questions:**
 1. **Schema Question**: What are the 5 tables and their 11 total indexes? How do the composite indexes optimize specific query patterns?
-2. **Enum Question**: Why does this starter use PostgreSQL enums for `task_status` and `task_priority` instead of string constants?
+2. **Text Constraints Question**: Why does this starter use TEXT columns with CHECK constraints for `task_status` and `task_priority` instead of PostgreSQL enums?
 3. **Pool Question**: How do the connection pool parameters (min: 5, max: 20, timeouts) prevent database overload under high concurrency?
 4. **Migration Question**: What would happen if you ran migration 002 before 001? How does the foreign key cascade behavior protect data integrity?
 5. **Bootstrap Question**: How does the admin user creation pattern balance security (Argon2 hashing) with development convenience?
@@ -192,11 +192,11 @@ The `ensure_initial_admin()` method (lines 56-115) showcases sophisticated initi
 1. **Index Performance**: Query `EXPLAIN ANALYZE` on tasks table with and without the composite index
 2. **Pool Behavior**: Set max_connections to 2 and see how the system handles 10 concurrent requests
 3. **Migration Rollback**: Run a down migration and observe the cascade effects
-4. **Enum Validation**: Try inserting invalid task_status values and see PostgreSQL constraints in action
+4. **Text Validation**: Try inserting invalid task_status values and see PostgreSQL CHECK constraints in action
 5. **Admin Creation**: Test the bootstrap process with various environment variable configurations
 
 **💡 Database Insights:**
-- **PostgreSQL-First**: Uses PG-specific features (enums, JSONB, generated UUIDs, triggers)
+- **PostgreSQL-First**: Uses PG-specific features (TEXT with CHECK constraints, JSONB, generated UUIDs, triggers)
 - **Performance-Conscious**: Strategic indexing for common query patterns
 - **Security-Focused**: Foreign key constraints, role validation, secure password storage
 - **Operations-Friendly**: Health checks, structured logging, graceful failure handling
@@ -439,6 +439,87 @@ Access Decision Flow:
 - **Unit tests**: 30+ test cases covering role hierarchy, permissions, and edge cases
 - **Integration tests**: Middleware testing with real HTTP requests
 - **Property testing**: Role comparison and permission matrix validation
+
+### 🔧 Ownership-Based RBAC Pattern Implementation
+
+**Advanced Pattern Integration** (based on `docs/guides/17-ownership-based-rbac.md`):
+
+**Database Schema Pattern:**
+Every resource that uses ownership-based access control includes a `created_by` field:
+```sql
+CREATE TABLE example_table (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name TEXT NOT NULL,
+    description TEXT,
+    created_by UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- Critical for performance: Index for ownership queries
+CREATE INDEX idx_example_table_created_by ON example_table(created_by);
+```
+
+**Two-Pattern Implementation Strategy:**
+
+### **Pattern 1: Individual CRUD Operations (Ownership-Based)**
+```rust
+use crate::rbac::services as rbac_services;
+
+pub async fn update_resource(
+    State(app_state): State<AppState>,
+    Extension(auth_user): Extension<AuthUser>,
+    Path(id): Path<Uuid>,
+    Json(request): Json<UpdateResourceRequest>,
+) -> Result<Json<ApiResponse<Resource>>> {
+    // Begin transaction for atomic get-check-update
+    let mut tx = app_state.database.pool.begin().await?;
+    
+    // Get existing resource to check ownership
+    let existing = get_resource_service(tx.as_mut(), id).await?;
+    
+    // Ownership check: Users can access their own, Admin/Moderator can access all
+    rbac_services::can_access_own_resource(&auth_user, existing.created_by)?;
+    
+    // Update resource
+    let updated = update_resource_service(tx.as_mut(), id, request).await?;
+    
+    // Commit transaction
+    tx.commit().await?;
+    Ok(Json(ApiResponse::success(updated)))
+}
+```
+
+### **Pattern 2: Bulk Operations (Role-Based)**
+```rust
+pub async fn bulk_create_resources(
+    State(app_state): State<AppState>,
+    Extension(auth_user): Extension<AuthUser>,
+    Json(request): Json<BulkCreateRequest>,
+) -> Result<Json<ApiResponse<BulkOperationResponse<Resource>>>> {
+    // Bulk operations require moderator or higher permissions
+    rbac_services::require_moderator_or_higher(&auth_user)?;
+    
+    let mut conn = app_state.database.pool.acquire().await?;
+    let response = bulk_create_service(conn.as_mut(), request, auth_user.id).await?;
+    Ok(Json(ApiResponse::success(response)))
+}
+```
+
+**Key Design Principles:**
+- **Individual Operations**: Use ownership-based access (`can_access_own_resource`)
+- **Bulk Operations**: Require elevated permissions (`require_moderator_or_higher`)
+- **Transaction Safety**: Use `begin().await?` for atomic get-check-update patterns
+- **Performance**: Always index `created_by` fields for efficient ownership queries
+
+**Migration Strategy:**
+When transitioning from role-based to ownership-based access:
+1. Add `created_by UUID NOT NULL REFERENCES users(id)` to existing tables
+2. Create performance indexes: `CREATE INDEX idx_table_created_by ON table(created_by)`
+3. Update service functions to use `can_access_own_resource()` instead of `require_role()`
+4. Keep `require_moderator_or_higher()` for bulk operations and administrative functions
+
+This ownership-based pattern provides intuitive access control where users own their data while maintaining administrative oversight capabilities.
 
 ---
 
@@ -1019,7 +1100,7 @@ Docker Compose → System Spawn → Failure Injection → Recovery Validation
 
 ---
 
-### 📊 **Lesson 9: Monitoring & Observability (`starter/src/monitoring/`)**
+### 📊 **Lesson 10: Monitoring & Observability (`starter/src/monitoring/`)**
 > *"If you can't measure it, you can't manage it"*
 
 **Learning Objectives:**
@@ -1034,7 +1115,7 @@ Docker Compose → System Spawn → Failure Injection → Recovery Validation
 - `starter/migrations/006_monitoring.up.sql` - 4-table schema with PostgreSQL enums
 - `docs/guides/15-monitoring-and-observability.md` - 891-line implementation guide
 - `starter/tests/monitoring/` - Comprehensive test suite
-- `docs/monitoring.md` - API reference and integration patterns
+- `docs/architecture/monitoring.md` - API reference and integration patterns
 
 **🎯 Teaching Goals:**
 Guide students through implementing a comprehensive monitoring system that demonstrates industry-standard observability patterns.
@@ -1223,7 +1304,7 @@ let metric = services::create_metric(&mut conn, CreateMetricRequest {
 
 **📖 Required Reading:**
 - `docs/guides/15-monitoring-and-observability.md` - Complete implementation guide
-- `docs/monitoring.md` - API reference and integration patterns
+- `docs/architecture/monitoring.md` - API reference and integration patterns
 - Study existing monitoring tests for usage patterns
 
 **🔗 Connects To:**
@@ -1232,9 +1313,175 @@ let metric = services::create_metric(&mut conn, CreateMetricRequest {
 
 ---
 
+### **Lesson 9: Module Generator System (`cargo run -- generate`)**
+*"Now you can create new modules using the patterns you've mastered"*
+
+**Learning Objectives:**
+- Master the complete module generator CLI: 2 templates, generate/revert workflows
+- Understand template-driven development with basic vs production patterns
+- See automated code generation with compile-time SQLx validation
+- Grasp the manual integration philosophy and testing validation system
+
+**Module Generator Materials:**
+- `cargo run -- generate module books --template basic` - Generate simple CRUD module
+- `cargo run -- generate module products --template production` - Advanced features module  
+- `cargo run -- revert module books` - Safe module removal with confirmation
+- `templates/basic/` - Simple CRUD template (7 files: api.rs, models.rs, services.rs, etc.)
+- `templates/production/` - Advanced template with bulk operations, status management
+- `./scripts/test-template-with-curl.sh products` - Generated module API testing
+- `./scripts/test-generate.sh` - Complete generator system validation
+- `docs/module-generator.md` - Comprehensive generator documentation (700+ lines)
+- `docs/guides/16-module-generator-first-principles.md` - Design philosophy
+
+**🎯 Key Insights for Teaching:**
+
+**Template-Driven Architecture:**
+The generator uses file-based templates with placeholder replacement:
+```rust
+// Template: templates/basic/models.rs
+pub struct __MODULE_STRUCT__ {
+    pub id: Uuid,
+    pub name: String,
+    pub description: Option<String>,
+    pub created_at: OffsetDateTime,
+    pub updated_at: OffsetDateTime,
+}
+
+// Generated: src/books/models.rs  
+pub struct Book {
+    pub id: Uuid,
+    pub name: String,
+    pub description: Option<String>,
+    pub created_at: OffsetDateTime,
+    pub updated_at: OffsetDateTime,
+}
+```
+
+**Two Template Philosophy:**
+- **Basic Template**: Essential CRUD operations, simple pagination, standard validation
+- **Production Template**: Everything from Basic + bulk operations, status management, advanced filtering, performance optimizations
+
+**Placeholder System:**
+
+| Placeholder | Example Input | Replacement | Usage |
+|-------------|---------------|-------------|-------|
+| `__MODULE_NAME__` | "book" | "book" | Variable names, function names |
+| `__MODULE_NAME_PLURAL__` | "book" | "books" | URLs, directory names |
+| `__MODULE_STRUCT__` | "book" | "Book" | Struct names, type names |
+| `__MODULE_TABLE__` | "book" | "books" | Database table names |
+
+**Manual Integration Philosophy (Safety First):**
+The generator intentionally requires manual integration steps:
+```bash
+# After generation, you must manually integrate:
+# 1. Add to src/lib.rs: pub mod books;
+# 2. Add to src/server.rs: use crate::books::api::books_routes;
+# 3. Add to src/openapi.rs: use crate::books::models::*;
+```
+
+This prevents accidental module generation in commits and encourages understanding of the architecture.
+
+**Generation Workflow:**
+1. **Template Validation** - Ensures template exists and is valid
+2. **Name Processing** - Converts "book" → "books", "Book", etc.  
+3. **File Generation** - Creates all module files with replacements
+4. **Migration Creation** - Generates timestamped SQL migrations
+5. **Manual Integration Guide** - Shows required integration steps
+6. **Testing Instructions** - How to validate the generated module
+
+**Revert Safety System:**
+```bash
+# Always preview first
+cargo run -- revert module books --dry-run
+
+# Interactive confirmations for safety
+cargo run -- revert module books
+# Shows: Files to delete, migrations to revert, manual cleanup needed
+
+# Dangerous: Skip confirmations (use carefully)
+cargo run -- revert module books --yes
+```
+
+**Testing Integration:**
+```bash
+# Test the generated module's API endpoints
+./scripts/test-template-with-curl.sh books
+
+# Complete system test (generates, tests, reverts)
+./scripts/test-generate.sh
+```
+
+**Production Template Features:**
+- **Status Management**: Enum fields with constraints (active, inactive, archived)
+- **Bulk Operations**: Create/update/delete multiple items
+- **Advanced Filtering**: Complex query parameters 
+- **JSON Metadata**: JSONB fields with GIN indexing
+- **Performance**: Optimized indexes and query patterns
+
+**Basic Template Features:**
+- **Essential CRUD**: Create, read, update, delete operations
+- **Simple Pagination**: Offset/limit with has_next detection
+- **Basic Search**: Text search across name/description fields
+- **Standard Validation**: Required fields and format validation
+
+**Deep Dive Questions:**
+1. **Template Question**: How do the 4 placeholder types enable generating modules for any domain (books, products, orders)?
+2. **Safety Question**: Why does the generator require manual integration instead of automatically updating lib.rs and server.rs?
+3. **Testing Question**: How does `test-template-with-curl.sh` validate that generated modules follow the same patterns as hand-written modules?
+4. **Architecture Question**: How do the generated modules integrate with the existing auth, RBAC, and monitoring systems?
+5. **Production Question**: What are the key differences between basic and production templates, and when would you choose each?
+
+**🔍 Teaching Experiments:**
+1. **Basic Generation**: Generate a "books" module and trace every generated file
+2. **API Testing**: Use curl to test all CRUD operations on generated module
+3. **Template Comparison**: Generate same module with both templates and compare features
+4. **Integration Practice**: Manually integrate a generated module and verify it works
+5. **Revert Safety**: Use --dry-run to see what revert would do without making changes
+
+**💡 Generator Insights:**
+- **Template System**: File-based templates are easier to understand and modify than programmatic generation
+- **Compile-Time Safety**: All generated code includes SQLx macros for database query validation
+- **Pattern Consistency**: Generated modules follow exact same patterns as existing hand-written modules
+- **Development Speed**: Generate complete CRUD module in ~5 seconds vs hours of manual coding
+- **Learning Tool**: Templates demonstrate best practices for module architecture
+- **Production Ready**: Generated code includes proper error handling, logging, and testing
+
+**Module Architecture Generated:**
+```text
+src/books/
+├── mod.rs              # Module exports and structure
+├── api.rs              # HTTP endpoints with OpenAPI docs
+├── models.rs           # Data structures and validation
+├── services.rs         # Business logic and database operations
+└── tests.rs           # Integration tests with authentication
+
+migrations/
+├── XXX_books_up.sql    # Create table with indexes and triggers
+└── XXX_books_down.sql  # Clean rollback migration
+```
+
+**Generated Features Integration:**
+- **Authentication**: All endpoints require valid session tokens
+- **RBAC**: Ownership-based access (users see own, admins see all)
+- **OpenAPI**: Full schema documentation with examples
+- **Error Handling**: Consistent error types and HTTP status codes
+- **Logging**: Structured logging with tracing integration
+- **Testing**: Complete test suite with authentication and edge cases
+
+**Performance Characteristics:**
+- **Generation Time**: ~5 seconds for complete module with migrations
+- **Template Processing**: 7-12 files processed depending on template
+- **Migration Creation**: Auto-numbered to avoid conflicts
+- **Validation**: Instant compile-time checking with SQLx macros
+
+**Previous Context**: Students now understand all existing modules and testing patterns
+**Next Context**: Students will build React frontend components that consume these generated APIs
+
+---
+
 ## 🌐 PHASE 2: FRONTEND INTEGRATION (Lessons 10-14)
 
-### **Lesson 10: React Frontend Overview (`web/src/`)**
+### **Lesson 11: React Frontend Overview (`web/src/`)**
 *"Now that we know the server, let's meet the client"*
 
 **Learning Objectives:**
@@ -1423,7 +1670,7 @@ API Calls → Proxy → Backend (Dev Mode)
 
 ---
 
-### **Lesson 11: Authentication Frontend (`web/src/components/auth/`)**
+### **Lesson 12: Authentication Frontend (`web/src/components/auth/`)**
 *"How users log in through the browser"*
 
 **Learning Objectives:**
@@ -1698,7 +1945,7 @@ Protected Component Access
 
 ---
 
-### **Lesson 12: Admin Dashboard (`web/src/components/admin/`)**
+### **Lesson 13: Admin Dashboard (`web/src/components/admin/`)**
 *"Building production monitoring dashboards"*
 
 **Learning Objectives:**
@@ -1788,12 +2035,12 @@ export function TaskAnalytics() {
   const statusChartData = useMemo(() => {
     if (!stats) return [];
     return [
-      { name: "Completed", value: stats.completed, color: "#10B981" },
-      { name: "Pending", value: stats.pending, color: "#F59E0B" },
-      { name: "Running", value: stats.running, color: "#3B82F6" },
-      { name: "Failed", value: stats.failed, color: "#EF4444" },
-      { name: "Cancelled", value: stats.cancelled, color: "#6B7280" },
-      { name: "Retrying", value: stats.retrying, color: "#8B5CF6" },
+      { name: "completed", value: stats.completed, color: "#10B981" },
+      { name: "pending", value: stats.pending, color: "#F59E0B" },
+      { name: "running", value: stats.running, color: "#3B82F6" },
+      { name: "failed", value: stats.failed, color: "#EF4444" },
+      { name: "cancelled", value: stats.cancelled, color: "#6B7280" },
+      { name: "retrying", value: stats.retrying, color: "#8B5CF6" },
     ].filter((item) => item.value > 0);
   }, [stats]);
 }
@@ -2000,7 +2247,7 @@ Admin Components (3,267 lines):
 
 ---
 
-### **Lesson 13: API Integration (`web/src/lib/api/`)**
+### **Lesson 14: API Integration (`web/src/lib/api/`)**
 *"How frontend and backend stay in sync"*
 
 **Learning Objectives:**
@@ -2191,7 +2438,7 @@ export const QUERY_KEYS = {
 
 ---
 
-### **Lesson 14: Testing Frontend (`web/e2e/` & `web/src/test/`)**
+### **Lesson 15: Testing Frontend (`web/e2e/` & `web/src/test/`)**
 *"Ensuring the UI works end-to-end"*
 
 **Learning Objectives:**
@@ -2324,7 +2571,7 @@ Step 9/9: Bundle analysis and optimization
 
 ## 🔧 PHASE 3: CUSTOMIZATION & MASTERY (Lessons 15-16)
 
-### **Lesson 15: The Rename Script - Making It Yours**
+### **Lesson 16: The Rename Script - Making It Yours**
 *"Transform the starter into your own system"*
 
 **Learning Objectives:**
@@ -2509,7 +2756,7 @@ docker-compose down --remove-orphans 2>/dev/null || true
 
 ---
 
-### **Lesson 16: Mastery Demonstration**
+### **Lesson 17: Mastery Demonstration**
 *"Prove you own this system completely - build something real using established patterns"*
 
 **Learning Objectives:**

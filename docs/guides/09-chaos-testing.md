@@ -1099,10 +1099,10 @@ The chaos testing framework provides a foundation for building confidence in you
 
 ## Further Reading
 
-- **Circuit Breaker Pattern**: [Reliability Patterns Guide](../reliability.md)
+- **Circuit Breaker Pattern**: [Reliability Patterns Guide](../quality/reliability.md)
 - **Background Tasks**: [Background Tasks Guide](04-background-tasks.md)
 - **API Testing**: [Testing Guide](08-testing.md)
-- **Health Monitoring**: [API Reference - Health Endpoints](../api-reference.md)
+- **Health Monitoring**: [API Reference - Health Endpoints](../reference/api-reference.md)
 - **System Architecture**: [Architecture Guide](01-architecture.md)
 
 ---

@@ -17,6 +17,17 @@ As you add more task types, you need a systematic way to:
 
 As of recent updates, the system now requires **explicit task type registration** before tasks can be created. This prevents API/worker mismatches that were previously only caught at runtime.
 
+**Database Enforcement:** A foreign-key constraint now guarantees referential integrity:
+
+```sql
+ALTER TABLE tasks
+  ADD CONSTRAINT fk_tasks_task_type
+  FOREIGN KEY (task_type)
+  REFERENCES task_types(task_type);
+```
+
+Attempting to create a task with an unregistered task type will raise `23503: foreign_key_violation`
+
 ## Two-Step Registration Process
 
 ```mermaid

@@ -18,7 +18,7 @@
 
 ## 📝 My Progress Tracker
 
-### 🦀 Phase 1: Backend Mastery (Lessons 1-9)
+### 🦀 Phase 1: Backend Mastery (Lessons 1-10)
 *Master 10,000+ lines of Rust code across 45 files*
 
 - [ ] **Lesson 1:** System Overview - Map 13 modules (8 domains + 5 infrastructure), 6-line main.rs miracle
@@ -29,7 +29,8 @@
 - [ ] **Lesson 6:** API Layer - 36 routes, 4-tier security, OpenAPI docs, health endpoints
 - [ ] **Lesson 7:** User Management - 12 endpoints, Argon2 hashing, CLI admin tools
 - [ ] **Lesson 8:** Testing & Quality - 91 integration tests, 9-step quality pipeline, 10 chaos scenarios
-- [ ] **Lesson 9:** Monitoring & Observability - 14 API endpoints, 4-table schema, enhanced Prometheus export with detailed metrics, incident timelines, robust error handling
+- [ ] **Lesson 9:** Module Generator System - Template-driven code generation, basic vs production templates, generate/revert workflows, automated testing validation
+- [ ] **Lesson 10:** Monitoring & Observability - 14 API endpoints, 4-table schema, enhanced Prometheus export with detailed metrics, incident timelines, robust error handling
 
 **Phase 1 Reflection:**
 *After completing Phase 1, I can confidently say I understand...*
@@ -92,7 +93,7 @@ Master the 5-table PostgreSQL schema, understand the 126 lines of migrations, an
 1. **Migration Order**: What happens if you run migration 002 before 001?
 2. **Index Performance**: Use `EXPLAIN ANALYZE` to see query performance with/without indexes
 3. **Pool Limits**: Set max_connections to 2 and create 10 concurrent requests
-4. **Enum Constraints**: Try inserting invalid task_status values
+4. **Text Constraints**: Try inserting invalid task status values
 
 **✅ Success Criteria:**
 - [ ] Can draw the complete database schema from memory
@@ -160,6 +161,40 @@ Master the 622-line RBAC system with 3-tier hierarchy, permission matrix, and an
 - [ ] Understand why anti-enumeration prevents information leakage
 - [ ] Know the complete permission matrix by heart
 - [ ] Can implement new RBAC-protected endpoints
+
+## 🔧 **Advanced: Ownership-Based RBAC Patterns**
+
+**🎯 Advanced Mission:**
+Master the ownership-based access control pattern from `docs/guides/17-ownership-based-rbac.md` - where users own their data and admins have oversight.
+
+**📂 Key Resources:**
+- **`docs/guides/17-ownership-based-rbac.md`** - Complete ownership pattern guide
+- **Database pattern**: `created_by UUID NOT NULL REFERENCES users(id)` fields
+- **Service examples**: Throughout tasks, users, monitoring modules
+
+**🔍 Advanced Discoveries:**
+- [ ] **Two-Pattern Strategy**: Individual operations (ownership-based) vs bulk operations (role-based)
+- [ ] **Database Schema**: Every ownable resource has `created_by` field with performance indexes
+- [ ] **Transaction Safety**: Atomic get-check-update patterns using `begin().await?`
+- [ ] **Service Functions**: `can_access_own_resource()` vs `require_moderator_or_higher()`
+
+**🧪 Advanced Experiments:**
+1. **Ownership Verification**: Create tasks as different users, try to access each other's tasks
+2. **Bulk Operations**: Test that only moderators can perform bulk create/update/delete
+3. **Transaction Patterns**: Trace the get-check-update pattern in existing endpoints
+4. **Migration Practice**: Add ownership to a new table following the established pattern
+
+**🎭 Real-World Scenarios:**
+- **Individual Operations**: Users manage their own tasks, profiles, data
+- **Administrative Operations**: Moderators can manage all users' data
+- **Bulk Operations**: Only moderators can perform system-wide operations
+- **Performance Optimization**: Index `created_by` fields for efficient ownership queries
+
+**✅ Advanced Success Criteria:**
+- [ ] Can implement ownership-based access for new resources
+- [ ] Understand when to use ownership vs role-based patterns
+- [ ] Know the complete database schema pattern with indexes
+- [ ] Can migrate existing resources to ownership-based access
 
 ---
 
@@ -295,7 +330,52 @@ Master the 137-test integration suite, 9-step quality pipeline, 10-scenario chao
 
 ---
 
-### 📊 LESSON 9: Monitoring & Observability - Production Visibility
+### 🏗️ LESSON 9: Module Generator System - Rapid Development
+*"Now you can create new modules using the patterns you've mastered"*
+
+**🎯 Your Mission:**
+Master the complete module generator CLI with 2 templates, generate/revert workflows, automated testing validation, and template-driven development patterns.
+
+**📂 Files to Explore:**
+1. **`cargo run -- generate module books --template basic`** - Generate simple CRUD module
+2. **`cargo run -- generate module products --template production`** - Advanced features module  
+3. **`templates/basic/`** - Simple CRUD template (7 files)
+4. **`templates/production/`** - Advanced template with bulk operations, status management
+5. **`./scripts/test-template-with-curl.sh products`** - Generated module API testing
+6. **`docs/module-generator.md`** - Comprehensive generator documentation (700+ lines)
+
+**🔍 Your Discoveries:**
+- [ ] **Template-Driven Architecture**: File-based templates with placeholder replacement system
+- [ ] **Two-Template Philosophy**: Basic (essential CRUD) vs Production (advanced features) 
+- [ ] **4 Placeholder Types**: `__MODULE_NAME__`, `__MODULE_NAME_PLURAL__`, `__MODULE_STRUCT__`, `__MODULE_TABLE__`
+- [ ] **Manual Integration Safety**: Requires manual integration to prevent accidental generation
+- [ ] **Complete Workflow**: Generate → Test → Integrate → Validate → Revert if needed
+
+**🧪 Hands-On Experiments:**
+1. **Basic Generation**: Generate a "books" module and trace every generated file
+2. **Template Comparison**: Generate same module with both templates and compare features  
+3. **API Testing**: Use curl to test all CRUD operations on generated module
+4. **Integration Practice**: Manually integrate a generated module following the 3-step process
+5. **Revert Safety**: Use `--dry-run` to preview what revert would do without making changes
+6. **Testing Validation**: Run `test-template-with-curl.sh` to validate generated APIs work
+
+**🎭 Real-World Module Creation:**
+- **Basic Template**: Essential CRUD operations, simple pagination, standard validation
+- **Production Template**: Status management, bulk operations, advanced filtering, JSON metadata
+- **Testing Integration**: Generated modules include complete test suites with authentication
+- **Performance Patterns**: Auto-generated indexes and optimized query patterns
+
+**✅ Success Criteria:**
+- [ ] Can generate modules with both basic and production templates
+- [ ] Understand the 4 placeholder types and how they enable domain flexibility
+- [ ] Know the manual integration workflow and why it's safer than automatic
+- [ ] Can test generated modules using the provided test scripts
+- [ ] Understand the differences between basic and production templates
+- [ ] Can safely revert generated modules using the confirmation system
+
+---
+
+### 📊 LESSON 10: Monitoring & Observability - Production Visibility
 *"If you can't measure it, you can't manage it"*
 
 **🎯 Your Mission:**
@@ -467,7 +547,7 @@ let metric = services::create_metric(&mut conn, CreateMetricRequest {
 
 **📖 Essential Reading:**
 - `docs/guides/15-monitoring-and-observability.md` - Complete implementation guide with enhanced Prometheus integration  
-- `docs/monitoring.md` - API reference and integration patterns with data integrity features
+- `docs/architecture/monitoring.md` - API reference and integration patterns with data integrity features
 - `tasks/MONITORING.md` - Technical architecture documentation with database schema details
 - `scripts/test-with-curl.sh` - Comprehensive API testing patterns including all 14 monitoring endpoints
 - Study monitoring tests to understand usage patterns and error handling
@@ -478,7 +558,10 @@ let metric = services::create_metric(&mut conn, CreateMetricRequest {
 
 ---
 
-### 🌐 LESSON 10: React Frontend Overview - Modern Architecture
+## 🌐 Phase 2: Frontend Integration (Lessons 11-15)
+*Connect the React frontend to your Rust backend*
+
+### 🌐 LESSON 11: React Frontend Overview - Modern Architecture
 *"Now that we know the server, let's meet the client"*
 
 **🎯 Your Mission:**
@@ -511,7 +594,7 @@ Master the complete React 18 frontend with 17,548 lines of TypeScript across 89 
 
 ---
 
-### 🔐 LESSON 11: Authentication Frontend - Secure UX
+### 🔐 LESSON 12: Authentication Frontend - Secure UX
 *"How users log in through the browser"*
 
 **🎯 Your Mission:**
@@ -544,7 +627,7 @@ Master authentication components with sophisticated RBAC, Zod validation, and sm
 
 ---
 
-### 📊 LESSON 12: Admin Dashboard - Production Monitoring
+### 📊 LESSON 13: Admin Dashboard - Production Monitoring
 *"Building production monitoring dashboards"*
 
 **🎯 Your Mission:**
@@ -592,7 +675,7 @@ Master the comprehensive admin dashboard with 10 components, 3,267 lines of moni
 
 ---
 
-### 🔌 LESSON 13: API Integration - Frontend-Backend Harmony
+### 🔌 LESSON 14: API Integration - Frontend-Backend Harmony
 *"How frontend and backend stay in sync"*
 
 **🎯 Your Mission:**
@@ -624,7 +707,7 @@ Master the comprehensive API client with 50+ typed methods, auto-generated types
 
 ---
 
-### 🎭 LESSON 14: Testing Frontend - E2E Reliability
+### 🎭 LESSON 15: Testing Frontend - E2E Reliability
 *"Ensuring the UI works end-to-end"*
 
 **🎯 Your Mission:**
@@ -657,7 +740,7 @@ Master Playwright E2E testing with 3-tier strategy, multi-browser support, and c
 
 ---
 
-### 🔧 LESSON 15: The Rename Script - System Transformation
+### 🔧 LESSON 16: The Rename Script - System Transformation
 *"Making it my own system"*
 
 **🎯 Your Mission:**
@@ -689,7 +772,7 @@ Execute the 314-line rename script and validate with the 497-line test suite to 
 
 ---
 
-### 🎓 LESSON 16: Mastery Demonstration - Production Deployment
+### 🎓 LESSON 17: Mastery Demonstration - Production Deployment
 *"Prove you own this system completely"*
 
 **🎯 Your Mission:**
@@ -781,11 +864,11 @@ You have successfully transformed the Rust Fullstack Starter into YOUR own produ
 *After completing Phase 2, I can confidently connect frontend to backend by...*
 [Write your reflection here]
 
-### 🔧 Phase 3: Customization & Mastery (Lessons 15-16)
+### 🔧 Phase 3: Customization & Mastery (Lessons 16-17)
 *Transform the starter into YOUR custom system*
 
-- [ ] **Lesson 15:** The Rename Script - Execute 314-line script, validate with 497-line test suite
-- [ ] **Lesson 16:** Mastery Demonstration - Build custom task handler, extend E2E tests, deploy to production
+- [ ] **Lesson 16:** The Rename Script - Execute 314-line script, validate with 497-line test suite
+- [ ] **Lesson 17:** Mastery Demonstration - Build custom task handler, extend E2E tests, deploy to production
 
 **Phase 3 Reflection:**
 *After completing Phase 3, I have created my own system called...*

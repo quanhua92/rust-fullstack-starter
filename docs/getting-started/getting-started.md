@@ -153,7 +153,7 @@ docker compose down
 
 ## Common Issues
 
-For detailed troubleshooting, see **[Troubleshooting Guide](./troubleshooting.md)**.
+For detailed troubleshooting, see **[Troubleshooting Guide](../development/troubleshooting.md)**.
 
 ### Quick Fixes
 
@@ -192,24 +192,24 @@ cd starter && sqlx migrate run
 Now that you have the system running, follow these guides to understand and extend the starter:
 
 ### 📚 Learning Path (Read in Order)
-1. **[Architecture Overview](./guides/01-architecture.md)** - System design and why it's built this way
-2. **[Authentication & Authorization](./guides/02-authentication-and-authorization.md)** - How secure user sessions and RBAC work  
-3. **[Foundation Patterns](./guides/03-patterns.md)** - Circuit breakers, retry strategies, dead letter queues
-4. **[Background Tasks](./guides/04-background-tasks.md)** - Async task processing system
-5. **[Task Handlers Reference](./guides/05-task-handlers-reference.md)** - Built-in task examples  
-6. **[Custom Task Types](./guides/06-task-types.md)** - Creating your own background tasks
-7. **[Task Registry](./guides/07-task-registry.md)** - Organizing and managing task handlers
+1. **[Architecture Overview](../guides/01-architecture.md)** - System design and why it's built this way
+2. **[Authentication & Authorization](../guides/02-authentication-and-authorization.md)** - How secure user sessions and RBAC work  
+3. **[Foundation Patterns](../guides/03-patterns.md)** - Circuit breakers, retry strategies, dead letter queues
+4. **[Background Tasks](../guides/04-background-tasks.md)** - Async task processing system
+5. **[Task Handlers Reference](../guides/05-task-handlers-reference.md)** - Built-in task examples  
+6. **[Custom Task Types](../guides/06-task-types.md)** - Creating your own background tasks
+7. **[Task Registry](../guides/07-task-registry.md)** - Organizing and managing task handlers
 
 ### 🔧 Development Resources
-- **[Development Workflow](./development.md)** - Daily development process
-- **[Configuration Reference](./configuration.md)** - All environment variables
-- **[API Reference](./api-reference.md)** - Complete endpoint documentation
-- **[Production Deployment](./production-deployment.md)** - Docker production setup
-- **[CI/CD Guide](./cicd.md)** - GitHub Actions workflows and automation
+- **[Development Workflow](../development/development.md)** - Daily development process
+- **[Configuration Reference](../reference/configuration.md)** - All environment variables
+- **[API Reference](../reference/api-reference.md)** - Complete endpoint documentation
+- **[Production Deployment](../deployment/production-deployment.md)** - Docker production setup
+- **[CI/CD Guide](../deployment/cicd.md)** - GitHub Actions workflows and automation
 
 ### 🆘 When You Need Help
-- **[Troubleshooting](./troubleshooting.md)** - Common issues and solutions
-- **[Built-in Handlers](./reference/task-handlers.md)** - Reference for included task types
+- **[Troubleshooting](../development/troubleshooting.md)** - Common issues and solutions
+- **[Built-in Handlers](../reference/task-handlers.md)** - Reference for included task types
 
 ## Quick Commands Reference
 
@@ -374,22 +374,22 @@ async fn test_user_registration() {
 }
 ```
 
-See the **[Testing Guide](./guides/08-testing.md)** for detailed documentation on testing patterns and best practices.
+See the **[Testing Guide](../guides/08-testing.md)** for detailed documentation on testing patterns and best practices.
 
 ## Next Steps
 
 Start exploring the guides based on your interests:
 
-- **[Architecture Overview](./guides/01-architecture.md)** - Understand the overall system design
-- **[Authentication & Authorization](./guides/02-authentication-and-authorization.md)** - Learn the auth and RBAC patterns
-- **[Reliability Patterns](./guides/03-patterns.md)** - Circuit breakers and retry strategies  
-- **[Background Tasks](./guides/04-background-tasks.md)** - Async job processing
-- **[Testing Guide](./guides/08-testing.md)** - Comprehensive testing strategies
-- **[Development Workflow](./development.md)** - Daily development practices
+- **[Architecture Overview](../guides/01-architecture.md)** - Understand the overall system design
+- **[Authentication & Authorization](../guides/02-authentication-and-authorization.md)** - Learn the auth and RBAC patterns
+- **[Reliability Patterns](../guides/03-patterns.md)** - Circuit breakers and retry strategies  
+- **[Background Tasks](../guides/04-background-tasks.md)** - Async job processing
+- **[Testing Guide](../guides/08-testing.md)** - Comprehensive testing strategies
+- **[Development Workflow](../development/development.md)** - Daily development practices
 
 ## Project Customization
 
-If you want to customize the project name and branding, see the **[Project Customization Guide](./project-customization.md)** for automated renaming tools and customization options.
+If you want to customize the project name and branding, see the **[Project Customization Guide](../customization/project-customization.md)** for automated renaming tools and customization options.
 
 ---
 

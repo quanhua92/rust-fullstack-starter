@@ -1,9 +1,39 @@
-use crate::types::{
-    ApiResponse, AppState, ComponentHealth, DetailedHealthResponse, ErrorResponse, HealthResponse,
-};
+use crate::api::types::{ApiResponse, ErrorResponse};
+use crate::types::AppState;
 use axum::{Json, extract::State, http::StatusCode, response::IntoResponse};
-use chrono::Utc;
+use chrono::{DateTime, Utc};
 use std::collections::HashMap;
+
+// Health check types
+#[derive(Debug, serde::Serialize, utoipa::ToSchema)]
+pub struct HealthStatus {
+    pub status: String,
+    pub timestamp: DateTime<Utc>,
+    pub checks: HashMap<String, ComponentHealth>,
+}
+
+#[derive(Debug, serde::Serialize, utoipa::ToSchema)]
+pub struct ComponentHealth {
+    pub status: String,
+    pub message: Option<String>,
+    pub details: Option<serde_json::Value>,
+}
+
+// Basic health response
+#[derive(Debug, serde::Serialize, utoipa::ToSchema)]
+pub struct HealthResponse {
+    pub status: String,
+    pub version: String,
+    pub uptime: f64,
+}
+
+// Detailed health response
+#[derive(Debug, serde::Serialize, utoipa::ToSchema)]
+pub struct DetailedHealthResponse {
+    pub status: String,
+    pub timestamp: DateTime<Utc>,
+    pub checks: HashMap<String, ComponentHealth>,
+}
 
 /// Basic health check endpoint
 #[utoipa::path(

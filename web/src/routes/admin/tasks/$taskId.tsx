@@ -299,7 +299,7 @@ function TaskDetailPage() {
 						</CardHeader>
 						<CardContent>
 							<div className="text-2xl font-bold">
-								{task.priority || "Normal"}
+								{task.priority || "normal"}
 							</div>
 							<p className="text-xs text-muted-foreground">
 								Execution priority

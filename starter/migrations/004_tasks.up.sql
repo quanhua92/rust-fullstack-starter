@@ -1,16 +1,12 @@
--- Create task status enum
-CREATE TYPE task_status AS ENUM ('pending', 'running', 'completed', 'failed', 'cancelled', 'retrying');
-
--- Create task priority enum  
-CREATE TYPE task_priority AS ENUM ('low', 'normal', 'high', 'critical');
-
 -- Tasks table for background job queue
 CREATE TABLE tasks (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     task_type TEXT NOT NULL,
     payload JSONB NOT NULL DEFAULT '{}',
-    status task_status NOT NULL DEFAULT 'pending',
-    priority task_priority NOT NULL DEFAULT 'normal',
+    status TEXT NOT NULL DEFAULT 'pending'
+        CONSTRAINT valid_task_status CHECK (status IN ('pending', 'running', 'completed', 'failed', 'cancelled', 'retrying')),
+    priority TEXT NOT NULL DEFAULT 'normal'
+        CONSTRAINT valid_task_priority CHECK (priority IN ('low', 'normal', 'high', 'critical')),
     retry_strategy JSONB NOT NULL DEFAULT '{}',
     max_attempts INTEGER NOT NULL DEFAULT 3,
     current_attempt INTEGER NOT NULL DEFAULT 0,

@@ -599,13 +599,21 @@ fi
 echo ""
 echo -e "${YELLOW}📊 Monitoring & Observability API${NC}"
 
+# Create a new user for monitoring tests since previous token was invalidated by logout
+MONITORING_USER_DATA="{\"username\": \"monitoring_$TIMESTAMP\", \"email\": \"monitoring_$TIMESTAMP@example.com\", \"password\": \"SecurePass123\"}"
+curl -s -X POST "$BASE_URL/api/v1/auth/register" -H "Content-Type: application/json" -d "$MONITORING_USER_DATA" > /dev/null
+
+MONITORING_LOGIN_DATA="{\"email\": \"monitoring_$TIMESTAMP@example.com\", \"password\": \"SecurePass123\"}"
+MONITORING_LOGIN_RESPONSE=$(curl -s -X POST "$BASE_URL/api/v1/auth/login" -H "Content-Type: application/json" -d "$MONITORING_LOGIN_DATA")
+MONITORING_TOKEN=$(echo "$MONITORING_LOGIN_RESPONSE" | python3 -c "import json,sys; print(json.load(sys.stdin)['data']['session_token'])" 2>/dev/null || echo "")
+
 # Test monitoring endpoints with authenticated user
-if [ -n "$USER_TOKEN" ]; then
+if [ -n "$MONITORING_TOKEN" ]; then
     # Test event creation and retrieval
     EVENT_DATA='{"event_type": "log", "source": "test-script", "message": "API test event", "level": "info", "tags": {"test_id": "'$TIMESTAMP'", "component": "api-test"}, "payload": {"test": true}}'
-    test_api "POST /api/v1/monitoring/events" "POST" "/api/v1/monitoring/events" "200" "$USER_TOKEN" "$EVENT_DATA"
+    test_api "POST /api/v1/monitoring/events" "POST" "/api/v1/monitoring/events" "200" "$MONITORING_TOKEN" "$EVENT_DATA"
     
-    test_api "GET /api/v1/monitoring/events" "GET" "/api/v1/monitoring/events?limit=10" "200" "$USER_TOKEN"
+    test_api "GET /api/v1/monitoring/events" "GET" "/api/v1/monitoring/events?limit=10" "200" "$MONITORING_TOKEN"
     
     # Test tag filtering functionality
     echo "🏷️  Testing tag filtering..."
@@ -616,80 +624,80 @@ if [ -n "$USER_TOKEN" ]; then
     TAGGED_EVENT_3="{\"event_type\": \"log\", \"source\": \"payment-service\", \"message\": \"Payment failed\", \"level\": \"error\", \"tags\": {\"user_id\": \"123\", \"environment\": \"staging\", \"service\": \"payment\"}}"
     
     # Create tagged events
-    curl -s -X POST "$BASE_URL/api/v1/monitoring/events" -H "Authorization: Bearer $USER_TOKEN" -H "Content-Type: application/json" -d "$TAGGED_EVENT_1" > /dev/null
-    curl -s -X POST "$BASE_URL/api/v1/monitoring/events" -H "Authorization: Bearer $USER_TOKEN" -H "Content-Type: application/json" -d "$TAGGED_EVENT_2" > /dev/null  
-    curl -s -X POST "$BASE_URL/api/v1/monitoring/events" -H "Authorization: Bearer $USER_TOKEN" -H "Content-Type: application/json" -d "$TAGGED_EVENT_3" > /dev/null
+    curl -s -X POST "$BASE_URL/api/v1/monitoring/events" -H "Authorization: Bearer $MONITORING_TOKEN" -H "Content-Type: application/json" -d "$TAGGED_EVENT_1" > /dev/null
+    curl -s -X POST "$BASE_URL/api/v1/monitoring/events" -H "Authorization: Bearer $MONITORING_TOKEN" -H "Content-Type: application/json" -d "$TAGGED_EVENT_2" > /dev/null  
+    curl -s -X POST "$BASE_URL/api/v1/monitoring/events" -H "Authorization: Bearer $MONITORING_TOKEN" -H "Content-Type: application/json" -d "$TAGGED_EVENT_3" > /dev/null
     
     # Test single tag filtering
-    test_api "GET /api/v1/monitoring/events (single tag)" "GET" "/api/v1/monitoring/events?tags=user_id:123" "200" "$USER_TOKEN"
+    test_api "GET /api/v1/monitoring/events (single tag)" "GET" "/api/v1/monitoring/events?tags=user_id:123" "200" "$MONITORING_TOKEN"
     
     # Test multiple tag filtering (AND logic)
-    test_api "GET /api/v1/monitoring/events (multiple tags)" "GET" "/api/v1/monitoring/events?tags=user_id:123,environment:production" "200" "$USER_TOKEN"
+    test_api "GET /api/v1/monitoring/events (multiple tags)" "GET" "/api/v1/monitoring/events?tags=user_id:123,environment:production" "200" "$MONITORING_TOKEN"
     
     # Test combined filtering (tags + other filters)
-    test_api "GET /api/v1/monitoring/events (tags + level)" "GET" "/api/v1/monitoring/events?tags=service:payment&level=error" "200" "$USER_TOKEN"
+    test_api "GET /api/v1/monitoring/events (tags + level)" "GET" "/api/v1/monitoring/events?tags=service:payment&level=error" "200" "$MONITORING_TOKEN"
     
     # Test non-matching tag filtering
-    test_api "GET /api/v1/monitoring/events (non-matching tags)" "GET" "/api/v1/monitoring/events?tags=nonexistent:value" "200" "$USER_TOKEN"
+    test_api "GET /api/v1/monitoring/events (non-matching tags)" "GET" "/api/v1/monitoring/events?tags=nonexistent:value" "200" "$MONITORING_TOKEN"
     
     # Test invalid tag format (should return 400)
-    test_api "GET /api/v1/monitoring/events (invalid tag format)" "GET" "/api/v1/monitoring/events?tags=invalid_format" "400" "$USER_TOKEN"
+    test_api "GET /api/v1/monitoring/events (invalid tag format)" "GET" "/api/v1/monitoring/events?tags=invalid_format" "400" "$MONITORING_TOKEN"
     
     # Create an event to get an ID for testing individual event retrieval
-    EVENT_RESPONSE=$(curl -s -X POST "$BASE_URL/api/v1/monitoring/events" -H "Authorization: Bearer $USER_TOKEN" -H "Content-Type: application/json" -d "$EVENT_DATA")
+    EVENT_RESPONSE=$(curl -s -X POST "$BASE_URL/api/v1/monitoring/events" -H "Authorization: Bearer $MONITORING_TOKEN" -H "Content-Type: application/json" -d "$EVENT_DATA")
     EVENT_ID=$(echo "$EVENT_RESPONSE" | python3 -c "import json,sys; print(json.load(sys.stdin)['data']['id'])" 2>/dev/null || echo "")
     
     if [ -n "$EVENT_ID" ]; then
-        test_api "GET /api/v1/monitoring/events/{id}" "GET" "/api/v1/monitoring/events/$EVENT_ID" "200" "$USER_TOKEN"
+        test_api "GET /api/v1/monitoring/events/{id}" "GET" "/api/v1/monitoring/events/$EVENT_ID" "200" "$MONITORING_TOKEN"
     fi
     
     # Test metric creation and retrieval
     METRIC_DATA='{"name": "test_api_response_time", "metric_type": "histogram", "value": 123.45, "labels": {"endpoint": "/api/v1/test", "status": "200", "test_id": "'$TIMESTAMP'"}}'
-    test_api "POST /api/v1/monitoring/metrics" "POST" "/api/v1/monitoring/metrics" "200" "$USER_TOKEN" "$METRIC_DATA"
+    test_api "POST /api/v1/monitoring/metrics" "POST" "/api/v1/monitoring/metrics" "200" "$MONITORING_TOKEN" "$METRIC_DATA"
     
-    test_api "GET /api/v1/monitoring/metrics" "GET" "/api/v1/monitoring/metrics?limit=10" "200" "$USER_TOKEN"
+    test_api "GET /api/v1/monitoring/metrics" "GET" "/api/v1/monitoring/metrics?limit=10" "200" "$MONITORING_TOKEN"
     
     # Test Prometheus metrics endpoint (public endpoint, no auth required)
     test_api "GET /api/v1/monitoring/metrics/prometheus" "GET" "/api/v1/monitoring/metrics/prometheus" "200"
     
     # Test incident creation and retrieval
     INCIDENT_DATA='{"title": "Test API Incident", "description": "Testing incident management via API", "severity": "low"}'
-    test_api "POST /api/v1/monitoring/incidents" "POST" "/api/v1/monitoring/incidents" "200" "$USER_TOKEN" "$INCIDENT_DATA"
+    test_api "POST /api/v1/monitoring/incidents" "POST" "/api/v1/monitoring/incidents" "200" "$MONITORING_TOKEN" "$INCIDENT_DATA"
     
-    test_api "GET /api/v1/monitoring/incidents" "GET" "/api/v1/monitoring/incidents?limit=10" "200" "$USER_TOKEN"
+    test_api "GET /api/v1/monitoring/incidents" "GET" "/api/v1/monitoring/incidents?limit=10" "200" "$MONITORING_TOKEN"
     
     # Create an incident to test individual retrieval and timeline
-    INCIDENT_RESPONSE=$(curl -s -X POST "$BASE_URL/api/v1/monitoring/incidents" -H "Authorization: Bearer $USER_TOKEN" -H "Content-Type: application/json" -d "$INCIDENT_DATA")
+    INCIDENT_RESPONSE=$(curl -s -X POST "$BASE_URL/api/v1/monitoring/incidents" -H "Authorization: Bearer $MONITORING_TOKEN" -H "Content-Type: application/json" -d "$INCIDENT_DATA")
     INCIDENT_ID=$(echo "$INCIDENT_RESPONSE" | python3 -c "import json,sys; print(json.load(sys.stdin)['data']['id'])" 2>/dev/null || echo "")
     
     if [ -n "$INCIDENT_ID" ]; then
-        test_api "GET /api/v1/monitoring/incidents/{id}" "GET" "/api/v1/monitoring/incidents/$INCIDENT_ID" "200" "$USER_TOKEN"
+        test_api "GET /api/v1/monitoring/incidents/{id}" "GET" "/api/v1/monitoring/incidents/$INCIDENT_ID" "200" "$MONITORING_TOKEN"
         
         # Test incident update
         UPDATE_DATA='{"status": "investigating", "description": "Updated description via API test"}'
-        test_api "PUT /api/v1/monitoring/incidents/{id}" "PUT" "/api/v1/monitoring/incidents/$INCIDENT_ID" "200" "$USER_TOKEN" "$UPDATE_DATA"
+        test_api "PUT /api/v1/monitoring/incidents/{id}" "PUT" "/api/v1/monitoring/incidents/$INCIDENT_ID" "200" "$MONITORING_TOKEN" "$UPDATE_DATA"
         
         # Test incident timeline
-        test_api "GET /api/v1/monitoring/incidents/{id}/timeline" "GET" "/api/v1/monitoring/incidents/$INCIDENT_ID/timeline" "200" "$USER_TOKEN"
+        test_api "GET /api/v1/monitoring/incidents/{id}/timeline" "GET" "/api/v1/monitoring/incidents/$INCIDENT_ID/timeline" "200" "$MONITORING_TOKEN"
     fi
     
     # Test alert endpoints (list alerts - available to all users)
-    test_api "GET /api/v1/monitoring/alerts" "GET" "/api/v1/monitoring/alerts" "200" "$USER_TOKEN"
+    test_api "GET /api/v1/monitoring/alerts" "GET" "/api/v1/monitoring/alerts" "200" "$MONITORING_TOKEN"
     
     # Test alert creation (should require moderator+ role - expect 403 for regular user)
     ALERT_DATA='{"name": "High Error Rate", "description": "Alert when error rate exceeds threshold", "query": "error_rate > 0.05", "threshold_value": 0.05}'
-    test_api "POST /api/v1/monitoring/alerts (regular user)" "POST" "/api/v1/monitoring/alerts" "403" "$USER_TOKEN" "$ALERT_DATA"
+    test_api "POST /api/v1/monitoring/alerts (regular user)" "POST" "/api/v1/monitoring/alerts" "403" "$MONITORING_TOKEN" "$ALERT_DATA"
     
     # Test monitoring stats (should require moderator+ role - expect 403 for regular user)
-    test_api "GET /api/v1/monitoring/stats (regular user)" "GET" "/api/v1/monitoring/stats" "403" "$USER_TOKEN"
+    test_api "GET /api/v1/monitoring/stats (regular user)" "GET" "/api/v1/monitoring/stats" "403" "$MONITORING_TOKEN"
     
     # Test invalid event type validation
     INVALID_EVENT='{"event_type": "invalid_type", "source": "test", "message": "Invalid event type test"}'
-    test_api "POST /api/v1/monitoring/events (invalid type)" "POST" "/api/v1/monitoring/events" "400" "$USER_TOKEN" "$INVALID_EVENT"
+    test_api "POST /api/v1/monitoring/events (invalid type)" "POST" "/api/v1/monitoring/events" "400" "$MONITORING_TOKEN" "$INVALID_EVENT"
     
     # Test invalid metric type validation
     INVALID_METRIC='{"name": "test_metric", "metric_type": "invalid_type", "value": 100}'
-    test_api "POST /api/v1/monitoring/metrics (invalid type)" "POST" "/api/v1/monitoring/metrics" "400" "$USER_TOKEN" "$INVALID_METRIC"
+    test_api "POST /api/v1/monitoring/metrics (invalid type)" "POST" "/api/v1/monitoring/metrics" "400" "$MONITORING_TOKEN" "$INVALID_METRIC"
 else
     echo -e "${YELLOW}⚠️  No user token available - monitoring API tests skipped${NC}"
 fi

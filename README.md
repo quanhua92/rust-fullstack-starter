@@ -209,11 +209,11 @@ rust-fullstack-starter/
 **📚 Complete documentation available in [`docs/`](docs/)**
 
 ### Quick Links
-- **[Getting Started](docs/getting-started.md)** - Detailed setup guide
-- **[Development Guide](docs/development.md)** - Daily workflow
+- **[Getting Started](docs/getting-started/getting-started.md)** - Detailed setup guide
+- **[Development Guide](docs/development/development.md)** - Daily workflow
 - **[Architecture Guides](docs/guides/)** - System design and patterns
-- **[API Reference](docs/api-reference.md)** - Complete endpoint docs
-- **[Production Deployment](docs/production-deployment.md)** - Docker deployment
+- **[API Reference](docs/reference/api-reference.md)** - Complete endpoint docs
+- **[Production Deployment](docs/deployment/production-deployment.md)** - Docker deployment
 
 ### Learning Guides
 - [Authentication & Authorization](docs/guides/02-authentication-and-authorization.md) - **Session-based auth with RBAC**
@@ -323,4 +323,4 @@ MIT License - see LICENSE file for details.
 
 ---
 
-*Ready to build? Start with the [Getting Started Guide](docs/getting-started.md) for detailed setup instructions.*
+*Ready to build? Start with the [Getting Started Guide](docs/getting-started/getting-started.md) for detailed setup instructions.*

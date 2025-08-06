@@ -182,6 +182,7 @@ impl TestDataFactory {
                 "delay_task",
                 "Delay/sleep tasks for testing and chaos scenarios",
             ),
+            ("system_maintenance", "System maintenance tasks"),
         ];
 
         for (task_type, description) in task_types.iter() {

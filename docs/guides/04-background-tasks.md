@@ -244,8 +244,10 @@ CREATE TABLE tasks (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     task_type TEXT NOT NULL,      -- 'email', 'webhook', etc.
     payload JSONB NOT NULL DEFAULT '{}',  -- Task-specific data
-    status task_status NOT NULL DEFAULT 'pending',
-    priority task_priority NOT NULL DEFAULT 'normal',
+    status TEXT NOT NULL DEFAULT 'pending'
+        CONSTRAINT valid_task_status CHECK (status IN ('pending', 'running', 'completed', 'failed', 'cancelled', 'retrying')),
+    priority TEXT NOT NULL DEFAULT 'normal'
+        CONSTRAINT valid_task_priority CHECK (priority IN ('low', 'normal', 'high', 'critical')),
     
     -- Retry configuration
     retry_strategy JSONB NOT NULL DEFAULT '{}', -- How to retry failures
@@ -1159,7 +1161,7 @@ Now that you understand the background task system, explore related concepts:
 - **[Task Registry →](./07-task-registry.md)** - Organize and manage task handlers
 - **[Testing Guide →](./08-testing.md)** - Learn how to test your task handlers with the comprehensive testing framework
 - **[Chaos Testing →](./09-chaos-testing.md)** - Test task system resilience under failure conditions
-- **[Reliability Patterns →](../reliability.md)** - Understand the circuit breakers and retry strategies used by the task system
+- **[Reliability Patterns →](../quality/reliability.md)** - Understand the circuit breakers and retry strategies used by the task system
 
 ## Testing Your Tasks
 
