@@ -336,8 +336,18 @@ pub async fn bulk_create___MODULE_NAME_PLURAL__(
         .acquire()
         .await
         .map_err(crate::error::Error::from_sqlx)?;
-
-    let response = bulk_create___MODULE_NAME_PLURAL___service(conn.as_mut(), request, auth_user.id).await?;
+    
+    let mut tx = conn
+        .begin()
+        .await
+        .map_err(crate::error::Error::from_sqlx)?;
+    
+    let response = bulk_create___MODULE_NAME_PLURAL___service(&mut tx, request, auth_user.id).await?;
+    
+    tx.commit()
+        .await
+        .map_err(crate::error::Error::from_sqlx)?;
+    
     Ok(Json(ApiResponse::success(response)))
 }
 
@@ -367,8 +377,18 @@ pub async fn bulk_update___MODULE_NAME_PLURAL__(
         .acquire()
         .await
         .map_err(crate::error::Error::from_sqlx)?;
-
-    let response = bulk_update___MODULE_NAME_PLURAL___service(conn.as_mut(), request).await?;
+    
+    let mut tx = conn
+        .begin()
+        .await
+        .map_err(crate::error::Error::from_sqlx)?;
+    
+    let response = bulk_update___MODULE_NAME_PLURAL___service(&mut tx, request).await?;
+    
+    tx.commit()
+        .await
+        .map_err(crate::error::Error::from_sqlx)?;
+    
     Ok(Json(ApiResponse::success(response)))
 }
 
@@ -392,14 +412,25 @@ pub async fn bulk_delete___MODULE_NAME_PLURAL__(
 ) -> Result<Json<ApiResponse<BulkOperationResponse<Uuid>>>> {
     // Require moderator or higher permissions for bulk operations
     rbac_services::require_moderator_or_higher(&auth_user)?;
+    
     let mut conn = app_state
         .database
         .pool
         .acquire()
         .await
         .map_err(crate::error::Error::from_sqlx)?;
-
-    let response = bulk_delete___MODULE_NAME_PLURAL___service(conn.as_mut(), request).await?;
+    
+    let mut tx = conn
+        .begin()
+        .await
+        .map_err(crate::error::Error::from_sqlx)?;
+    
+    let response = bulk_delete___MODULE_NAME_PLURAL___service(&mut tx, request).await?;
+    
+    tx.commit()
+        .await
+        .map_err(crate::error::Error::from_sqlx)?;
+    
     Ok(Json(ApiResponse::success(response)))
 }
 

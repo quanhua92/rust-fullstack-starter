@@ -209,7 +209,7 @@ pub async fn delete___MODULE_NAME___service(
 
 /// Bulk create __MODULE_NAME_PLURAL__
 pub async fn bulk_create___MODULE_NAME_PLURAL___service(
-    conn: &mut DbConn,
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
     request: Bulk__MODULE_STRUCT__CreateRequest,
     created_by: Uuid,
 ) -> Result<BulkOperationResponse<__MODULE_STRUCT__>> {
@@ -218,7 +218,7 @@ pub async fn bulk_create___MODULE_NAME_PLURAL___service(
     let skip_errors = request.skip_errors.unwrap_or(false);
 
     for (index, item) in request.items.into_iter().enumerate() {
-        match create___MODULE_NAME___service(conn, item, created_by).await {
+        match create___MODULE_NAME___service(tx.as_mut(), item, created_by).await {
             Ok(__MODULE_NAME__) => results.push(__MODULE_NAME__),
             Err(error) => {
                 errors.push(BulkOperationError {
@@ -243,7 +243,7 @@ pub async fn bulk_create___MODULE_NAME_PLURAL___service(
 
 /// Bulk update __MODULE_NAME_PLURAL__
 pub async fn bulk_update___MODULE_NAME_PLURAL___service(
-    conn: &mut DbConn,
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
     request: Bulk__MODULE_STRUCT__UpdateRequest,
 ) -> Result<BulkOperationResponse<__MODULE_STRUCT__>> {
     let mut results = Vec::new();
@@ -251,7 +251,7 @@ pub async fn bulk_update___MODULE_NAME_PLURAL___service(
     let skip_errors = request.skip_errors.unwrap_or(false);
 
     for (index, item) in request.items.into_iter().enumerate() {
-        match update___MODULE_NAME___service(conn, item.id, item.data).await {
+        match update___MODULE_NAME___service(tx.as_mut(), item.id, item.data).await {
             Ok(__MODULE_NAME__) => results.push(__MODULE_NAME__),
             Err(error) => {
                 errors.push(BulkOperationError {
@@ -276,7 +276,7 @@ pub async fn bulk_update___MODULE_NAME_PLURAL___service(
 
 /// Bulk delete __MODULE_NAME_PLURAL__
 pub async fn bulk_delete___MODULE_NAME_PLURAL___service(
-    conn: &mut DbConn,
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
     request: Bulk__MODULE_STRUCT__DeleteRequest,
 ) -> Result<BulkOperationResponse<Uuid>> {
     let mut results = Vec::new();
@@ -284,7 +284,7 @@ pub async fn bulk_delete___MODULE_NAME_PLURAL___service(
     let skip_errors = request.skip_errors.unwrap_or(false);
 
     for (index, id) in request.ids.into_iter().enumerate() {
-        match delete___MODULE_NAME___service(conn, id).await {
+        match delete___MODULE_NAME___service(tx.as_mut(), id).await {
             Ok(()) => results.push(id),
             Err(error) => {
                 errors.push(BulkOperationError {
