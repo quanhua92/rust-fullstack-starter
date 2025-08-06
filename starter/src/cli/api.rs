@@ -392,13 +392,19 @@ impl CliApp {
             println!();
             println!("   5. Add routes to server.rs (manual step):");
             println!("      - Import: use crate::{plural}::api::{plural}_routes;");
-            println!("      - Add route: .nest(\"/{plural}\", {plural}_routes()) INSIDE protected_routes");
-            println!("      - NOTE: Add nest() BEFORE .layer(auth_middleware) for proper authentication");
+            println!(
+                "      - Add route: .nest(\"/{plural}\", {plural}_routes()) INSIDE protected_routes"
+            );
+            println!(
+                "      - NOTE: Add nest() BEFORE .layer(auth_middleware) for proper authentication"
+            );
             println!();
             println!("   6. Add to openapi.rs (manual step):");
             println!("      - Import: use crate::{plural}::models::*;");
             println!("      - Add endpoints to paths() section");
-            println!("      - Add models to schemas() section (BulkOperationResponse needs <T> generic)");
+            println!(
+                "      - Add models to schemas() section (BulkOperationResponse needs <T> generic)"
+            );
         }
 
         Ok(())
