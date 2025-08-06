@@ -34,6 +34,23 @@ cd web && ./scripts/check-web.sh    # Frontend quality checks
 
 ## Code Patterns
 
+### Module Generation
+```bash
+# Generate modules
+cargo run -- generate module books --template basic
+cargo run -- generate module products --template production --force
+cargo run -- generate module orders --dry-run
+
+# Safety revert
+cargo run -- revert module books --dry-run  # Preview first
+cargo run -- revert module books --yes      # Skip prompts (DANGEROUS)
+
+# Manual integration (3 steps)
+# 1. Add to src/lib.rs: pub mod books;
+# 2. Add to src/server.rs: use crate::books::api::books_routes;
+# 3. Add to src/openapi.rs: use crate::books::models::*;
+```
+
 ### Task Handlers
 ```rust
 use crate::{extract_fields, require_field, require_typed_field};

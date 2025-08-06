@@ -143,8 +143,9 @@ cd web && pnpm dev
 - **👥 User Management System** - Complete user lifecycle with 12 endpoints (profile, admin, analytics)
 - **🔑 Role-Based Access Control** - Three-tier system (User/Moderator/Admin) with hierarchical permissions
 - **⚙️ Background Tasks** - Async job processing with retry logic and dead letter queue
+- **🏗️ Module Generator** - Template-based code generation for CRUD modules with safety features and testing validation
 - **📊 API Documentation** - Interactive OpenAPI/Swagger docs
-- **🧪 Testing Framework** - 135 integration tests + comprehensive API endpoint testing (60+ endpoints)
+- **🧪 Testing Framework** - 136 integration tests + comprehensive API endpoint testing (60+ endpoints)
 - **📊 Monitoring & Observability** - Complete monitoring system with 14 API endpoints, comprehensive web UI dashboard, advanced tag filtering, RBAC-integrated interface, enhanced error handling
 - **🔥 Chaos Testing** - Docker-based resilience testing with 10 scenarios
 - **⚙️ Admin CLI** - Direct database access for monitoring and maintenance
@@ -157,9 +158,15 @@ cd web && pnpm dev
 ./scripts/dev-server.sh             # Complete environment: database + web + API
 ./scripts/build-web.sh              # Build React frontend only
 
+# Module generation
+cargo run -- generate module books --template basic      # Generate CRUD module  
+cargo run -- revert module books --dry-run               # Preview revert
+./scripts/test-template-with-curl.sh books               # Test generated API
+
 # Run tests
-cargo nextest run                    # Integration tests (135 tests)
+cargo nextest run                    # Integration tests (136 tests)
 ./scripts/test-with-curl.sh         # API endpoint tests (60+ tests including monitoring)
+./scripts/test-generate.sh          # Module generator system tests
 ./scripts/test-chaos.sh             # Chaos testing (10 scenarios)
 
 # Quality checks
@@ -212,6 +219,8 @@ rust-fullstack-starter/
 - [Authentication & Authorization](docs/guides/02-authentication-and-authorization.md) - **Session-based auth with RBAC**
 - [User Management System](docs/guides/12-user-management.md) - **Complete user lifecycle with 12 endpoints**
 - [Background Tasks](docs/guides/04-background-tasks.md)
+- [Module Generator](docs/module-generator.md) - **Template-based CRUD generation with safety features**
+- [Module Generator: First Principles](docs/guides/16-module-generator-first-principles.md) - **Deep dive into architecture and patterns**
 - [Testing Framework](docs/guides/08-testing.md)
 - [Chaos Testing](docs/guides/09-chaos-testing.md) - **Enhanced with 10 scenarios**
 - [Monitoring & Observability](docs/guides/15-monitoring-and-observability.md) - **Complete monitoring system with 14 endpoints**
