@@ -218,7 +218,7 @@ impl CliApp {
         replacements.insert("__MODULE_STRUCT__", &struct_name);
         replacements.insert("__MODULE_TABLE__", table_name);
 
-        let template_dir = format!("../templates/{template}");
+        let template_dir = format!("./templates/{template}");
         if !Path::new(&template_dir).exists() {
             return Err(format!("Template '{template}' not found in templates directory").into());
         }
@@ -226,7 +226,7 @@ impl CliApp {
         let mut files_created = Vec::new();
 
         // Create module directory
-        let module_dir = format!("src/{plural}");
+        let module_dir = format!("starter/src/{plural}");
         if !dry_run {
             fs::create_dir_all(&module_dir)?;
         }
@@ -257,7 +257,7 @@ impl CliApp {
         }
 
         // Create test directory and file
-        let test_dir = format!("tests/{plural}");
+        let test_dir = format!("starter/tests/{plural}");
         if !dry_run {
             fs::create_dir_all(&test_dir)?;
         }
@@ -276,7 +276,7 @@ impl CliApp {
         }
 
         // Create migrations
-        let migrations_dir = "migrations";
+        let migrations_dir = "starter/migrations";
         let migration_number = get_next_migration_number(migrations_dir)?;
 
         let migration_files = [
@@ -304,7 +304,7 @@ impl CliApp {
         }
 
         // Update lib.rs
-        let lib_rs_path = "src/lib.rs";
+        let lib_rs_path = "starter/src/lib.rs";
         if Path::new(lib_rs_path).exists() && !dry_run {
             let lib_content = fs::read_to_string(lib_rs_path)?;
             let module_declaration = format!("pub mod {plural};");
@@ -376,15 +376,15 @@ impl CliApp {
         println!("🔍 Analyzing module '{name}' for revert...");
 
         // Check what exists
-        let module_dir = format!("src/{plural}");
-        let test_dir = format!("tests/{plural}");
-        let lib_rs_path = "src/lib.rs";
+        let module_dir = format!("starter/src/{plural}");
+        let test_dir = format!("starter/tests/{plural}");
+        let lib_rs_path = "starter/src/lib.rs";
 
         let module_exists = Path::new(&module_dir).exists();
         let test_exists = Path::new(&test_dir).exists();
 
         // Find migration files
-        let migrations_dir = "migrations";
+        let migrations_dir = "starter/migrations";
         let mut migration_files = Vec::new();
         let mut migration_number = None;
 
