@@ -341,7 +341,7 @@ pub async fn bulk_create___MODULE_NAME_PLURAL__(
         .await
         .map_err(crate::error::Error::from_sqlx)?;
 
-    let response = bulk_create___MODULE_NAME_PLURAL___service(conn.as_mut(), request).await?;
+    let response = bulk_create___MODULE_NAME_PLURAL___service(conn.as_mut(), request, auth_user.id).await?;
     Ok(Json(ApiResponse::success(response)))
 }
 

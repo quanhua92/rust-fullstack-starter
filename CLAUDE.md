@@ -98,7 +98,7 @@ tx.commit().await?;
 
 // For bulk operations - require moderator permissions
 rbac_services::require_moderator_or_higher(&auth_user)?;
-bulk_create_items_service(conn.as_mut(), request).await?;
+bulk_create_items_service(conn.as_mut(), request, auth_user.id).await?;
 ```
 
 ### Monitoring Integration

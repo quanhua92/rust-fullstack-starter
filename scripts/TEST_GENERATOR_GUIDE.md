@@ -19,7 +19,7 @@ The module generator system has several testing layers:
 - **Automated Script**: `./scripts/test-generate.sh` - Comprehensive automated testing
 - **Manual Workflow**: Step-by-step testing of individual features
 - **Unit Tests**: Generated code includes unit tests that validate basic functionality
-- **Integration Tests**: Full API endpoint testing (requires manual 3-step integration: lib.rs → server.rs → openapi.rs)
+- **Integration Tests**: Full API endpoint testing (requires manual 4-step integration: lib.rs → server.rs → openapi.rs → tests/lib.rs)
 
 ## Quick Testing
 
@@ -68,10 +68,11 @@ cargo run -- generate module quicktest --template basic --force
 cd starter && sqlx migrate run
 cd .. && ./scripts/prepare-sqlx.sh  
 
-# Manual Integration (3 steps - required for testing):
+# Manual Integration (4 steps - required for testing):
 # Step 1: Add to src/lib.rs: pub mod quicktest;
 # Step 2: Add to src/server.rs: use + routes (for full testing)
 # Step 3: Add to src/openapi.rs: model imports (for API docs)
+# Step 4: Add to tests/lib.rs: pub mod quicktest; (for integration tests)
 
 ./scripts/check.sh
 
@@ -80,7 +81,7 @@ cd starter && cargo nextest run quicktest
 
 # Clean up (from project root)
 cargo run -- revert module quicktest --yes
-# Then manually remove from lib.rs, server.rs, openapi.rs
+# Then manually remove from lib.rs, server.rs, openapi.rs, tests/lib.rs
 ```
 
 ## Manual Testing Workflow
@@ -220,6 +221,7 @@ cargo run -- revert module nonexistent --dry-run
    # Step 1: Add to src/lib.rs: pub mod testmodule;
    # Step 2: Add to src/server.rs: use + routes 
    # Step 3: Add to src/openapi.rs: model imports
+   # Step 4: Add to tests/lib.rs: pub mod testmodule;
 
    # Test compilation
    sqlx migrate run
@@ -229,7 +231,7 @@ cargo run -- revert module nonexistent --dry-run
    # Fix any compilation errors in templates
    # Revert and try again
    cargo run -- revert module testmodule --yes
-   # Then manually remove from lib.rs, server.rs, openapi.rs
+   # Then manually remove from lib.rs, server.rs, openapi.rs, tests/lib.rs
    
    # Repeat until working
    ```
@@ -295,11 +297,12 @@ cargo run -- generate module products --template production
 cd starter && sqlx migrate run
 cd .. && ./scripts/prepare-sqlx.sh
 
-# 2. Manual Integration (3 steps - prevents accidental commits):
+# 2. Manual Integration (4 steps - prevents accidental commits):
 # Step 1: Add to src/lib.rs: pub mod products;
 # Step 2: Add to src/server.rs: use crate::products::api::products_routes;
 #         and .nest("/products", products_routes())
 # Step 3: Add to src/openapi.rs: use crate::products::models::*;
+# Step 4: Add to tests/lib.rs: pub mod products;
 
 # 3. Start server and test
 ./scripts/server.sh                                  # Start server on port 3000
@@ -307,12 +310,12 @@ cd .. && ./scripts/prepare-sqlx.sh
 
 # 4. Clean up
 cargo run -- revert module products --yes
-# Then manually remove from lib.rs, server.rs, openapi.rs
+# Then manually remove from lib.rs, server.rs, openapi.rs, tests/lib.rs
 ```
 
 ### Manual Integration Testing
 
-For deeper integration testing, follow the 3-step manual integration process:
+For deeper integration testing, follow the 4-step manual integration process:
 
 1. **Add to `src/lib.rs`**:
    ```rust
@@ -332,7 +335,14 @@ For deeper integration testing, follow the 3-step manual integration process:
    use crate::books::models::*;
    ```
 
+4. **Add to `tests/lib.rs`**:
+   ```rust
+   pub mod books;
+   ```
+
 **Important**: This manual integration prevents generated modules from accidentally being committed to your repository. Always remember to remove these integrations when testing is complete.
+
+**Critical**: Step 4 (tests/lib.rs) is essential for `check.sh` to compile and test the generated integration tests. Without this step, template compilation issues may go undetected!
 
 3. **Run Integration Tests**:
    ```bash
@@ -349,6 +359,25 @@ For deeper integration testing, follow the 3-step manual integration process:
    ```
 
 ## Troubleshooting
+
+### Template Testing Architecture
+
+**Critical Architecture Insight**: 
+
+The `check.sh` script only tests existing code in the starter project. It does NOT automatically compile or test template files themselves. This means:
+
+- ✅ **Template files**: Stored in `templates/` directory - never tested by `check.sh`
+- ❌ **Generated modules**: Only tested if manually integrated into starter project
+- 🚨 **Hidden bugs**: Template compilation errors only surface during full 4-step integration
+
+**Why 4-Step Integration is Essential**:
+
+1. `src/lib.rs` - Makes module available for compilation
+2. `src/server.rs` - Enables API endpoint registration  
+3. `src/openapi.rs` - Includes models in API documentation
+4. `tests/lib.rs` - **CRITICAL**: Enables integration test compilation
+
+**Without step 4**: Template integration tests are never compiled by `check.sh`, so template bugs go undetected until runtime.
 
 ### Common Issues
 
@@ -369,6 +398,37 @@ error: query does not match cached data
 Error: Template 'custom' not found in templates directory
 ```
 **Solution**: Ensure template directory exists in `templates/custom/`
+
+**Bulk Operation Compilation Errors** (Production Template):
+```bash
+error[E0609]: no field `created_by` on type `BulkCreateRequest`
+```
+**Root Cause**: Template trying to access `request.created_by` which doesn't exist on bulk request types.
+
+**Solution**: Bulk service functions need separate `created_by: Uuid` parameter:
+```rust
+// ❌ Wrong - request doesn't have created_by field
+pub async fn bulk_create_service(
+    conn: &mut DbConn,
+    request: BulkCreateRequest,
+) -> Result<BulkOperationResponse<Item>> {
+    // This fails: request.created_by
+}
+
+// ✅ Correct - pass created_by separately
+pub async fn bulk_create_service(
+    conn: &mut DbConn,
+    request: BulkCreateRequest,
+    created_by: Uuid,  // <- Add this parameter
+) -> Result<BulkOperationResponse<Item>> {
+    // Use: created_by (not request.created_by)
+}
+
+// API handler must pass auth_user.id:
+let response = bulk_create_service(conn.as_mut(), request, auth_user.id).await?;
+```
+
+**Prevention**: This type of template bug only surfaces with complete 4-step integration testing.
 
 **Migration Conflicts**:
 ```bash

@@ -195,13 +195,14 @@ pub async fn delete___MODULE_NAME___service(
 pub async fn bulk_create___MODULE_NAME_PLURAL___service(
     conn: &mut DbConn,
     request: Bulk__MODULE_STRUCT__CreateRequest,
+    created_by: Uuid,
 ) -> Result<BulkOperationResponse<__MODULE_STRUCT__>> {
     let mut results = Vec::new();
     let mut errors = Vec::new();
     let skip_errors = request.skip_errors.unwrap_or(false);
 
     for (index, item) in request.items.into_iter().enumerate() {
-        match create___MODULE_NAME___service(conn, item, request.created_by).await {
+        match create___MODULE_NAME___service(conn, item, created_by).await {
             Ok(__MODULE_NAME__) => results.push(__MODULE_NAME__),
             Err(error) => {
                 errors.push(BulkOperationError {

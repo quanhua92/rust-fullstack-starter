@@ -242,7 +242,7 @@ pub async fn bulk_create_resources(
     rbac_services::require_moderator_or_higher(&auth_user)?;
     
     let mut conn = app_state.database.pool.acquire().await?;
-    let response = bulk_create_service(conn.as_mut(), request).await?;
+    let response = bulk_create_service(conn.as_mut(), request, auth_user.id).await?;
     Ok(Json(ApiResponse::success(response)))
 }
 ```

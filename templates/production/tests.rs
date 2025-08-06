@@ -254,7 +254,7 @@ async fn test_bulk_create() {
         skip_errors: Some(true),
     };
 
-    let response = bulk_create___MODULE_NAME_PLURAL___service(&database, request).await.unwrap();
+    let response = bulk_create___MODULE_NAME_PLURAL___service(&database, request, created_by).await.unwrap();
     
     assert_eq!(response.success_count, 2);
     assert_eq!(response.error_count, 1);
