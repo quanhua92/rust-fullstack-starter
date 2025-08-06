@@ -414,16 +414,17 @@ pub type TaskResult2<T> = std::result::Result<T, TaskError>;
 // compilation will fail with "the trait bound `TaskStatus: From<String>`" errors.
 //
 // DESIGN CHOICE: We use safe fallbacks with error logging instead of panicking
-// to prevent server crashes from corrupted database data. The sqlx::Decode
+// to prevent server crashes from corrupted database data. TaskStatus falls back
+// to 'failed' to prevent re-execution of corrupted tasks. The sqlx::Decode
 // implementation (below) provides proper error handling when used directly.
 impl From<String> for TaskStatus {
     fn from(s: String) -> Self {
         TaskStatus::from_str(&s).unwrap_or_else(|_| {
             tracing::error!(
-                "Invalid task_status in database: '{}', falling back to 'pending'",
+                "Invalid task_status in database: '{}', falling back to 'failed'",
                 s
             );
-            TaskStatus::Pending
+            TaskStatus::Failed
         })
     }
 }
