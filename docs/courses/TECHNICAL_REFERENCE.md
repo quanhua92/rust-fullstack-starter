@@ -278,8 +278,8 @@ erDiagram
     
     USERS {
         uuid id PK "Primary Key"
-        varchar username UK "Unique constraint"
-        varchar email UK "Unique constraint"
+        text username UK "Unique constraint"
+        text email UK "Unique constraint"
         text password_hash "Argon2 hashed"
         text role "user|moderator|admin"
         boolean is_active "Default true"
@@ -304,10 +304,10 @@ erDiagram
     
     API_KEYS {
         uuid id PK
-        varchar name "Human readable"
+        text name "Human readable"
         text description "Optional notes"
         text key_hash UK "Hashed API key"
-        varchar key_prefix "First 8 chars"
+        text key_prefix "First 8 chars"
         uuid created_by FK "References users.id"
         timestamptz expires_at "Optional expiry"
         boolean is_active "Default true"
@@ -320,7 +320,7 @@ erDiagram
     
     TASKS {
         uuid id PK
-        varchar task_type FK "References task_types"
+        text task_type FK "References task_types"
         jsonb payload "Flexible data"
         text status "pending|running|completed|failed|cancelled|retrying"
         text priority "low|normal|high|critical"
@@ -338,7 +338,7 @@ erDiagram
     }
     
     TASK_TYPES {
-        varchar task_type PK "Handler identifier"
+        text task_type PK "Handler identifier"
         text description "Human readable"
         boolean is_active "Default true"
         timestamptz created_at
@@ -815,8 +815,8 @@ pub fn require_moderator_or_higher(user: &AuthUser) -> Result<(), Error> {
 erDiagram
     USERS {
         uuid id PK "gen_random_uuid()"
-        varchar username UK "Unique constraint"
-        varchar email UK "Unique constraint"
+        text username UK "Unique constraint"
+        text email UK "Unique constraint"
         text password_hash "Argon2 with salt"
         text role "CHECK: user|moderator|admin"
         boolean is_active "Default true"
@@ -841,10 +841,10 @@ erDiagram
     
     API_KEYS {
         uuid id PK "gen_random_uuid()"
-        varchar name "Human readable"
+        text name "Human readable"
         text description "Optional purpose"
         text key_hash UK "Hashed API key"
-        varchar key_prefix "First 8 chars visible"
+        text key_prefix "First 8 chars visible"
         uuid created_by FK "References users.id"
         timestamptz expires_at "Optional expiry"
         boolean is_active "Default true"
@@ -2341,8 +2341,8 @@ We'll implement a complete CRUD system for user notes to demonstrate full-stack 
 erDiagram
     USERS {
         uuid id PK "gen_random_uuid()"
-        varchar username UK "Unique constraint"
-        varchar email UK "Unique constraint"
+        text username UK "Unique constraint"
+        text email UK "Unique constraint"
         text password_hash "Argon2 with salt"
         text role "CHECK: user|moderator|admin"
         boolean is_active "Default true"
@@ -2353,7 +2353,7 @@ erDiagram
     NOTES {
         uuid id PK "gen_random_uuid()"
         uuid user_id FK "References users.id CASCADE"
-        varchar title "NOT NULL, max 200 chars"
+        text title "NOT NULL, max 200 chars"
         text content "Full note content"
         boolean is_public "Default false"
         jsonb tags "Flexible tagging system"
@@ -2400,7 +2400,7 @@ BEGIN;
 CREATE TABLE notes (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    title VARCHAR(200) NOT NULL,
+    title TEXT(200) NOT NULL,
     content TEXT NOT NULL DEFAULT '',
     is_public BOOLEAN NOT NULL DEFAULT false,
     tags JSONB NOT NULL DEFAULT '[]',

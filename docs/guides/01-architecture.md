@@ -350,8 +350,8 @@ task_types      -- Registered handlers
 erDiagram
     USERS {
         uuid id PK
-        varchar username UK "Unique"
-        varchar email UK "Unique"
+        text username UK "Unique"
+        text email UK "Unique"
         text password_hash "Argon2"
         text role "Default: user"
         boolean is_active
@@ -375,10 +375,10 @@ erDiagram
     
     API_KEYS {
         uuid id PK
-        varchar name
+        text name
         text description
         text key_hash UK "Unique"
-        varchar key_prefix
+        text key_prefix
         uuid created_by FK
         timestamptz expires_at
         boolean is_active
@@ -391,7 +391,7 @@ erDiagram
     
     TASKS {
         uuid id PK
-        varchar task_type FK "References task_types"
+        text task_type FK "References task_types"
         jsonb payload "Flexible data"
         text status "TEXT with constraints"
         text priority "TEXT with constraints"
@@ -409,7 +409,7 @@ erDiagram
     }
     
     TASK_TYPES {
-        varchar task_type PK
+        text task_type PK
         text description
         boolean is_active
         timestamptz created_at

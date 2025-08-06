@@ -155,7 +155,7 @@ The 172-line bootstrap script demonstrates production-ready development practice
 - Automatic `updated_at` triggers using PostgreSQL functions
 
 **Task System Excellence:**
-- TEXT columns with CHECK constraints: `status` (6 states) and `priority` (4 levels)
+- TEXT columns with CHECK constraints: `status` (pending, running, completed, failed, cancelled, retrying) and `priority` (low, normal, high, critical)
 - JSONB payload for flexible task data with GIN indexing potential
 - Composite index: `idx_tasks_ready_to_run` optimized for queue processing
 - Soft foreign key to users (`ON DELETE SET NULL`) preserving task history
@@ -440,7 +440,7 @@ Access Decision Flow:
 - **Integration tests**: Middleware testing with real HTTP requests
 - **Property testing**: Role comparison and permission matrix validation
 
-## 🔧 **Ownership-Based RBAC Pattern Implementation**
+### 🔧 Ownership-Based RBAC Pattern Implementation
 
 **Advanced Pattern Integration** (based on `docs/guides/17-ownership-based-rbac.md`):
 
@@ -1362,6 +1362,7 @@ pub struct Book {
 - **Production Template**: Everything from Basic + bulk operations, status management, advanced filtering, performance optimizations
 
 **Placeholder System:**
+
 | Placeholder | Example Input | Replacement | Usage |
 |-------------|---------------|-------------|-------|
 | `__MODULE_NAME__` | "book" | "book" | Variable names, function names |
@@ -1446,7 +1447,7 @@ cargo run -- revert module books --yes
 - **Production Ready**: Generated code includes proper error handling, logging, and testing
 
 **Module Architecture Generated:**
-```
+```text
 src/books/
 ├── mod.rs              # Module exports and structure
 ├── api.rs              # HTTP endpoints with OpenAPI docs

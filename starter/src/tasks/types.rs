@@ -77,12 +77,7 @@ impl TaskPriority {
 
 impl std::fmt::Display for TaskPriority {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            TaskPriority::Low => write!(f, "low"),
-            TaskPriority::Normal => write!(f, "normal"),
-            TaskPriority::High => write!(f, "high"),
-            TaskPriority::Critical => write!(f, "critical"),
-        }
+        write!(f, "{}", self.as_str())
     }
 }
 
