@@ -17,7 +17,7 @@ pub async fn list___MODULE_NAME_PLURAL___service(
         sqlx::query_as!(
             __MODULE_STRUCT__,
             r#"SELECT id, name, description, status as "status: __MODULE_STRUCT__Status", priority, metadata, created_at, updated_at 
-               FROM __MODULE_TABLE_NAME__ 
+               FROM __MODULE_TABLE__ 
                WHERE name ILIKE $1 OR description ILIKE $1
                ORDER BY created_at DESC 
                LIMIT $2 OFFSET $3"#,
@@ -32,7 +32,7 @@ pub async fn list___MODULE_NAME_PLURAL___service(
         sqlx::query_as!(
             __MODULE_STRUCT__,
             r#"SELECT id, name, description, status as "status: __MODULE_STRUCT__Status", priority, metadata, created_at, updated_at 
-               FROM __MODULE_TABLE_NAME__ 
+               FROM __MODULE_TABLE__ 
                ORDER BY created_at DESC 
                LIMIT $1 OFFSET $2"#,
             limit,
@@ -44,7 +44,7 @@ pub async fn list___MODULE_NAME_PLURAL___service(
     };
 
     let total_count = sqlx::query_scalar!(
-        "SELECT COUNT(*) FROM __MODULE_TABLE_NAME__"
+        "SELECT COUNT(*) FROM __MODULE_TABLE__"
     )
     .fetch_one(&mut **conn)
     .await
@@ -76,7 +76,7 @@ pub async fn get___MODULE_NAME___service(
     let __MODULE_NAME__ = sqlx::query_as!(
         __MODULE_STRUCT__,
         r#"SELECT id, name, description, status as "status: __MODULE_STRUCT__Status", priority, metadata, created_at, updated_at 
-           FROM __MODULE_TABLE_NAME__ 
+           FROM __MODULE_TABLE__ 
            WHERE id = $1"#,
         id
     )
@@ -108,7 +108,7 @@ pub async fn create___MODULE_NAME___service(
 
     let created___MODULE_NAME__ = sqlx::query_as!(
         __MODULE_STRUCT__,
-        r#"INSERT INTO __MODULE_TABLE_NAME__ (id, name, description, status, priority, metadata, created_at, updated_at)
+        r#"INSERT INTO __MODULE_TABLE__ (id, name, description, status, priority, metadata, created_at, updated_at)
            VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
            RETURNING id, name, description, status as "status: __MODULE_STRUCT__Status", priority, metadata, created_at, updated_at"#,
         __MODULE_NAME__.id,
@@ -148,7 +148,7 @@ pub async fn update___MODULE_NAME___service(
 
     let updated___MODULE_NAME__ = sqlx::query_as!(
         __MODULE_STRUCT__,
-        r#"UPDATE __MODULE_TABLE_NAME__ 
+        r#"UPDATE __MODULE_TABLE__ 
            SET name = $2, description = $3, status = $4, priority = $5, metadata = $6, updated_at = $7
            WHERE id = $1
            RETURNING id, name, description, status as "status: __MODULE_STRUCT__Status", priority, metadata, created_at, updated_at"#,
@@ -173,7 +173,7 @@ pub async fn delete___MODULE_NAME___service(
     id: Uuid,
 ) -> Result<()> {
     let rows_affected = sqlx::query!(
-        "DELETE FROM __MODULE_TABLE_NAME__ WHERE id = $1",
+        "DELETE FROM __MODULE_TABLE__ WHERE id = $1",
         id
     )
     .execute(&mut **conn)

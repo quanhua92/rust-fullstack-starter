@@ -24,7 +24,6 @@ use crate::{
     __MODULE_NAME_PLURAL__::{models::*, services::*},
     types::{ApiResponse, AppState, Result},
 };
-use sqlx::Acquire;
 
 /// Create __MODULE_NAME_PLURAL__ router with all endpoints
 pub fn __MODULE_NAME_PLURAL___routes() -> Router<AppState> {
@@ -165,10 +164,7 @@ pub async fn list___MODULE_NAME_PLURAL__(
         .await
         .map_err(crate::error::Error::from_sqlx)?;
 
-    // Begin transaction to ensure consistent read for list and count queries
-    let mut tx = conn.begin().await.map_err(crate::error::Error::from_sqlx)?;
-    let response = list___MODULE_NAME_PLURAL___service(&mut tx, request).await?;
-    tx.commit().await.map_err(crate::error::Error::from_sqlx)?;
+    let response = list___MODULE_NAME_PLURAL___service(&mut conn, request).await?;
     Ok(Json(ApiResponse::success(response)))
 }
 
