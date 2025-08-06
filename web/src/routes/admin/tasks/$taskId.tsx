@@ -120,31 +120,31 @@ function TaskDetailPage() {
 
 	const getStatusBadge = (status: TaskStatus) => {
 		const statusConfig = {
-			Pending: { variant: "secondary" as const, icon: Clock, label: "Pending" },
-			Running: { variant: "default" as const, icon: Play, label: "Running" },
-			Completed: {
+			pending: { variant: "secondary" as const, icon: Clock, label: "Pending" },
+			running: { variant: "default" as const, icon: Play, label: "Running" },
+			completed: {
 				variant: "default" as const,
 				icon: CheckCircle,
 				label: "Completed",
 			},
-			Failed: {
+			failed: {
 				variant: "destructive" as const,
 				icon: XCircle,
 				label: "Failed",
 			},
-			Cancelled: {
+			cancelled: {
 				variant: "secondary" as const,
 				icon: XCircle,
 				label: "Cancelled",
 			},
-			Retrying: {
+			retrying: {
 				variant: "outline" as const,
 				icon: RotateCcw,
 				label: "Retrying",
 			},
 		};
 
-		const config = statusConfig[status] || statusConfig.Pending;
+		const config = statusConfig[status] || statusConfig.pending;
 		const Icon = config.icon;
 
 		return (
@@ -215,7 +215,7 @@ function TaskDetailPage() {
 
 				{/* Action Buttons */}
 				<div className="flex items-center space-x-2">
-					{task.status === "Pending" && (
+					{task.status === "pending" && (
 						<Button
 							variant="outline"
 							onClick={() => handleTaskAction("cancel")}
@@ -226,7 +226,7 @@ function TaskDetailPage() {
 						</Button>
 					)}
 
-					{(task.status === "Failed" || task.status === "Cancelled") && (
+					{(task.status === "failed" || task.status === "cancelled") && (
 						<Button
 							variant="outline"
 							onClick={() => handleTaskAction("retry")}
@@ -282,12 +282,12 @@ function TaskDetailPage() {
 						</CardHeader>
 						<CardContent>
 							<div className="text-xl font-bold">
-								{task.created_at && task.status !== "Pending"
+								{task.created_at && task.status !== "pending"
 									? formatDuration(task.created_at, task.updated_at)
 									: "N/A"}
 							</div>
 							<p className="text-xs text-muted-foreground">
-								{task.status === "Running" ? "Running time" : "Total time"}
+								{task.status === "running" ? "Running time" : "Total time"}
 							</p>
 						</CardContent>
 					</Card>
@@ -448,9 +448,9 @@ function TaskDetailPage() {
 										</div>
 									) : (
 										<div className="text-center text-muted-foreground py-8">
-											{task.status === "Completed"
+											{task.status === "completed"
 												? "Task completed successfully with no errors."
-												: task.status === "Running"
+												: task.status === "running"
 													? "Task is currently running. Logs will appear here if errors occur."
 													: "No execution logs available."}
 										</div>

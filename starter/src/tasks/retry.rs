@@ -3,6 +3,7 @@ use std::time::{Duration, Instant};
 use tokio::time::sleep;
 
 #[derive(Debug, Clone, Serialize, Deserialize, utoipa::ToSchema)]
+#[serde(rename_all = "lowercase")]
 pub enum RetryStrategy {
     /// Exponential backoff: delay = base_delay * multiplier^attempt
     Exponential {
@@ -129,6 +130,7 @@ impl RetryStrategy {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
 pub enum CircuitState {
     Closed,   // Normal operation
     Open,     // Failing, reject requests

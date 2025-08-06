@@ -23,6 +23,7 @@ pub struct __MODULE_STRUCT__ {
 /// __MODULE_STRUCT__ status enumeration
 #[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type, ToSchema)]
 #[sqlx(type_name = "__MODULE_NAME___status", rename_all = "lowercase")]
+#[serde(rename_all = "lowercase")]
 pub enum __MODULE_STRUCT__Status {
     Active,
     Inactive,

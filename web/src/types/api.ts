@@ -1479,7 +1479,7 @@ export interface components {
 		};
 		RetryStrategy: {
 			/** @description Exponential backoff: delay = base_delay * multiplier^attempt */
-			Exponential: {
+			exponential: {
 				base_delay: string;
 				/** Format: int32 */
 				max_attempts: number;
@@ -1489,7 +1489,7 @@ export interface components {
 			};
 		} | {
 			/** @description Linear backoff: delay = base_delay + (increment * attempt) */
-			Linear: {
+			linear: {
 				base_delay: string;
 				increment: string;
 				/** Format: int32 */
@@ -1498,14 +1498,14 @@ export interface components {
 			};
 		} | {
 			/** @description Fixed interval: delay = interval for each retry */
-			Fixed: {
+			fixed: {
 				interval: string;
 				/** Format: int32 */
 				max_attempts: number;
 			};
-		} | "None";
+		} | "none";
 		/** @enum {string} */
-		TaskPriority: "Low" | "Normal" | "High" | "Critical";
+		TaskPriority: "low" | "normal" | "high" | "critical";
 		TaskQueryParams: {
 			/** Format: int64 */
 			limit?: number | null;
@@ -1558,7 +1558,7 @@ export interface components {
 			total: number;
 		};
 		/** @enum {string} */
-		TaskStatus: "Pending" | "Running" | "Completed" | "Failed" | "Cancelled" | "Retrying";
+		TaskStatus: "pending" | "running" | "completed" | "failed" | "cancelled" | "retrying";
 		TaskTypeResponse: {
 			/** Format: date-time */
 			created_at: string;

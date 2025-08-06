@@ -151,31 +151,31 @@ function TasksPage() {
 
 	const getStatusBadge = (status: TaskStatus) => {
 		const statusConfig = {
-			Pending: { variant: "secondary" as const, icon: Clock, label: "Pending" },
-			Running: { variant: "default" as const, icon: Play, label: "Running" },
-			Completed: {
+			pending: { variant: "secondary" as const, icon: Clock, label: "Pending" },
+			running: { variant: "default" as const, icon: Play, label: "Running" },
+			completed: {
 				variant: "default" as const,
 				icon: CheckCircle,
 				label: "Completed",
 			},
-			Failed: {
+			failed: {
 				variant: "destructive" as const,
 				icon: XCircle,
 				label: "Failed",
 			},
-			Cancelled: {
+			cancelled: {
 				variant: "secondary" as const,
 				icon: XCircle,
 				label: "Cancelled",
 			},
-			Retrying: {
+			retrying: {
 				variant: "outline" as const,
 				icon: RotateCcw,
 				label: "Retrying",
 			},
 		};
 
-		const config = statusConfig[status] || statusConfig.Pending;
+		const config = statusConfig[status] || statusConfig.pending;
 		const Icon = config.icon;
 
 		return (
@@ -315,12 +315,12 @@ function TasksPage() {
 						</SelectTrigger>
 						<SelectContent>
 							<SelectItem value="all">All Status</SelectItem>
-							<SelectItem value="Pending">Pending</SelectItem>
-							<SelectItem value="Running">Running</SelectItem>
-							<SelectItem value="Completed">Completed</SelectItem>
-							<SelectItem value="Failed">Failed</SelectItem>
-							<SelectItem value="Cancelled">Cancelled</SelectItem>
-							<SelectItem value="Retrying">Retrying</SelectItem>
+							<SelectItem value="pending">Pending</SelectItem>
+							<SelectItem value="running">Running</SelectItem>
+							<SelectItem value="completed">Completed</SelectItem>
+							<SelectItem value="failed">Failed</SelectItem>
+							<SelectItem value="cancelled">Cancelled</SelectItem>
+							<SelectItem value="retrying">Retrying</SelectItem>
 						</SelectContent>
 					</Select>
 
@@ -431,7 +431,7 @@ function TasksPage() {
 															</Link>
 														</DropdownMenuItem>
 
-														{task.status === "Pending" && (
+														{task.status === "pending" && (
 															<DropdownMenuItem
 																onClick={() =>
 																	handleTaskAction(task.id, "cancel")
@@ -442,8 +442,8 @@ function TasksPage() {
 															</DropdownMenuItem>
 														)}
 
-														{(task.status === "Failed" ||
-															task.status === "Cancelled") && (
+														{(task.status === "failed" ||
+															task.status === "cancelled") && (
 															<DropdownMenuItem
 																onClick={() =>
 																	handleTaskAction(task.id, "retry")

@@ -99,6 +99,7 @@ use crate::users::models::{
         crate::monitoring::api::get_incident_timeline,
         crate::monitoring::api::get_monitoring_stats,
         crate::monitoring::api::get_prometheus_metrics,
+
     ),
     components(
         schemas(
@@ -154,6 +155,7 @@ use crate::users::models::{
             IncidentTimeline,
             TimelineEntry,
             MonitoringStats,
+
 
             // Common response types
             ErrorResponse,

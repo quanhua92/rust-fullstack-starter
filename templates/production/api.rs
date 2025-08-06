@@ -343,7 +343,13 @@ pub async fn bulk_create___MODULE_NAME_PLURAL__(
         .await
         .map_err(crate::error::Error::from_sqlx)?;
     
+    let skip_errors = request.skip_errors.unwrap_or(false);
     let response = bulk_create___MODULE_NAME_PLURAL___service(&mut tx, request, auth_user.id).await?;
+    
+    // If there are errors and skip_errors is false, return a 400 error
+    if !skip_errors && !response.errors.is_empty() {
+        return Err(crate::error::Error::validation("bulk_create", &format!("Bulk operation failed with {} errors", response.errors.len())));
+    }
     
     tx.commit()
         .await
@@ -384,7 +390,13 @@ pub async fn bulk_update___MODULE_NAME_PLURAL__(
         .await
         .map_err(crate::error::Error::from_sqlx)?;
     
+    let skip_errors = request.skip_errors.unwrap_or(false);
     let response = bulk_update___MODULE_NAME_PLURAL___service(&mut tx, request).await?;
+    
+    // If there are errors and skip_errors is false, return a 400 error
+    if !skip_errors && !response.errors.is_empty() {
+        return Err(crate::error::Error::validation("bulk_update", &format!("Bulk operation failed with {} errors", response.errors.len())));
+    }
     
     tx.commit()
         .await
@@ -426,7 +438,13 @@ pub async fn bulk_delete___MODULE_NAME_PLURAL__(
         .await
         .map_err(crate::error::Error::from_sqlx)?;
     
+    let skip_errors = request.skip_errors.unwrap_or(false);
     let response = bulk_delete___MODULE_NAME_PLURAL___service(&mut tx, request).await?;
+    
+    // If there are errors and skip_errors is false, return a 400 error
+    if !skip_errors && !response.errors.is_empty() {
+        return Err(crate::error::Error::validation("bulk_delete", &format!("Bulk operation failed with {} errors", response.errors.len())));
+    }
     
     tx.commit()
         .await

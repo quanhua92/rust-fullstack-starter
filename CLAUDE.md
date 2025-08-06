@@ -41,6 +41,23 @@ cd web && ./scripts/check-web.sh    # Frontend quality checks
 
 ## Code Patterns
 
+### Enum Serialization
+- **All serializable enums MUST use lowercase JSON serialization**:
+```rust
+#[derive(Debug, Clone, Serialize, Deserialize, utoipa::ToSchema)]
+#[serde(rename_all = "lowercase")]
+pub enum TaskStatus {
+    Pending,
+    Running, 
+    Completed,
+    Failed,
+    Cancelled,
+    Retrying,
+}
+```
+- **Frontend code must use lowercase enum values**: `"pending"`, `"running"`, `"completed"`, `"failed"`, `"cancelled"`, `"retrying"`
+- **Always regenerate API types after enum changes**: `cargo run -- export-openapi && cd web && npm run generate-api`
+
 ### Module Generation
 ```bash
 # Generate modules

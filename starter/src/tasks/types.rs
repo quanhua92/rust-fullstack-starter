@@ -7,6 +7,7 @@ use uuid::Uuid;
 
 #[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type, utoipa::ToSchema)]
 #[sqlx(type_name = "task_status", rename_all = "lowercase")]
+#[serde(rename_all = "lowercase")]
 pub enum TaskStatus {
     Pending,
     Running,
@@ -18,6 +19,7 @@ pub enum TaskStatus {
 
 #[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type, utoipa::ToSchema)]
 #[sqlx(type_name = "task_priority", rename_all = "lowercase")]
+#[serde(rename_all = "lowercase")]
 pub enum TaskPriority {
     Low,
     Normal,

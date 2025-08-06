@@ -47,7 +47,7 @@ async fn test___MODULE_NAME___crud_workflow() {
 
     assert_status(&response, StatusCode::OK);
     let list: serde_json::Value = response.json().await.unwrap();
-    assert!(!list["data"].as_array().unwrap().is_empty());
+    assert!(!list["data"]["items"].as_array().unwrap().is_empty());
 
     // Test UPDATE
     let update_data = json!({
@@ -125,7 +125,7 @@ async fn test___MODULE_NAME___advanced_filtering() {
 
     assert_status(&response, StatusCode::OK);
     let list: serde_json::Value = response.json().await.unwrap();
-    let items = list["data"].as_array().unwrap();
+    let items = list["data"]["items"].as_array().unwrap();
     assert!(items.len() >= 2); // Alpha and Gamma
 
     // Test search functionality
@@ -135,7 +135,7 @@ async fn test___MODULE_NAME___advanced_filtering() {
 
     assert_status(&response, StatusCode::OK);
     let list: serde_json::Value = response.json().await.unwrap();
-    let items = list["data"].as_array().unwrap();
+    let items = list["data"]["items"].as_array().unwrap();
     assert!(!items.is_empty());
     assert!(items[0]["name"].as_str().unwrap().contains("Alpha"));
 }
@@ -165,7 +165,7 @@ async fn test___MODULE_NAME___bulk_operations() {
     let app = spawn_app().await;
     let factory = TestDataFactory::new(app.clone());
 
-    let (_user, token) = factory.create_authenticated_user("bulkuser").await;
+    let (_user, token) = factory.create_authenticated_moderator("bulkuser").await;
 
     // Test bulk create
     let bulk_data = json!({
@@ -270,7 +270,7 @@ async fn test___MODULE_NAME___bulk_operations_transaction_safety() {
     let app = spawn_app().await;
     let factory = TestDataFactory::new(app.clone());
 
-    let (_user, token) = factory.create_authenticated_user("bulktxuser").await;
+    let (_user, token) = factory.create_authenticated_moderator("bulktxuser").await;
 
     // Test bulk create with one invalid item (without skip_errors)
     let bulk_data = json!({
@@ -302,7 +302,7 @@ async fn test___MODULE_NAME___bulk_operations_transaction_safety() {
     let response = app.get_auth("/api/v1/__MODULE_NAME_PLURAL__?search=Valid Item", &token.token).await;
     assert_status(&response, StatusCode::OK);
     let list: serde_json::Value = response.json().await.unwrap();
-    let items = list["data"].as_array().unwrap();
+    let items = list["data"]["items"].as_array().unwrap();
     assert!(items.is_empty(), "Transaction should have rolled back all items");
 }
 
@@ -383,7 +383,7 @@ async fn test___MODULE_NAME___pagination_and_filtering() {
 
     assert_status(&response, StatusCode::OK);
     let list: serde_json::Value = response.json().await.unwrap();
-    let items = list["data"].as_array().unwrap();
+    let items = list["data"]["items"].as_array().unwrap();
     assert_eq!(items.len(), 10);
 
     // Test priority range filtering
@@ -393,7 +393,7 @@ async fn test___MODULE_NAME___pagination_and_filtering() {
 
     assert_status(&response, StatusCode::OK);
     let list: serde_json::Value = response.json().await.unwrap();
-    let items = list["data"].as_array().unwrap();
+    let items = list["data"]["items"].as_array().unwrap();
     assert!(items.len() >= 6); // Items 10-15
 
     // Test multiple status filtering
@@ -403,6 +403,6 @@ async fn test___MODULE_NAME___pagination_and_filtering() {
 
     assert_status(&response, StatusCode::OK);
     let list: serde_json::Value = response.json().await.unwrap();
-    let items = list["data"].as_array().unwrap();
+    let items = list["data"]["items"].as_array().unwrap();
     assert_eq!(items.len(), 5);
 }
