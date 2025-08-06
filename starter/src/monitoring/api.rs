@@ -419,7 +419,8 @@ pub async fn get_incidents(
         .map_err(Error::from_sqlx)?;
 
     let incidents =
-        services::find_incidents_with_pagination(conn.as_mut(), params.limit, params.offset).await?;
+        services::find_incidents_with_pagination(conn.as_mut(), params.limit, params.offset)
+            .await?;
     Ok(Json(ApiResponse::success(incidents)))
 }
 
