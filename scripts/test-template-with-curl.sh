@@ -2,15 +2,60 @@
 
 # Simple curl-based testing script for generated templates
 # Usage: ./scripts/test-template-with-curl.sh <module_name> [port]
+#        MODULE_NAME=<module_name> ./scripts/test-template-with-curl.sh [port]
 #
 # This script tests basic CRUD operations for a generated module using curl commands.
 # It handles authentication and provides simple validation of responses.
+# Default port is 3000 (matching server.sh default).
 
 set -e
 
+# Help function
+show_help() {
+    cat << EOF
+🧪 Template Testing Script for Generated Modules
+
+USAGE:
+    $0 [MODULE_NAME] [PORT]
+    $0 --help | -h
+
+ARGUMENTS:
+    MODULE_NAME    Name of the generated module to test (default: basics)
+    PORT           Server port to connect to (default: 3000)
+
+EXAMPLES:
+    $0                    # Test 'basics' module on port 3000
+    $0 products           # Test 'products' module on port 3000  
+    $0 users 8080         # Test 'users' module on port 8080
+
+DESCRIPTION:
+    This script performs comprehensive CRUD testing for generated template modules.
+    It tests authentication, basic CRUD operations, search functionality, and
+    error handling using curl commands.
+
+    The script expects a server to be running on the specified port with the
+    generated module routes available.
+
+PREREQUISITES:
+    - Server must be running: ./scripts/server.sh [PORT]
+    - Module must be generated and integrated
+    - Database migrations must be applied
+
+EXIT CODES:
+    0    All tests passed
+    1    Tests failed or server not available
+EOF
+}
+
+# Check for help flag
+if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then
+    show_help
+    exit 0
+fi
+
 # Configuration
-MODULE_NAME="${1:-basics}"
-PORT="${2:-8080}"
+MODULE_NAME="${1:-${MODULE_NAME:-basics}}"
+PORT="${2:-3000}"
 BASE_URL="http://localhost:${PORT}/api/v1"
 TEST_USER_EMAIL="template-test@example.com"
 TEST_USER_PASSWORD="SecurePass123"
