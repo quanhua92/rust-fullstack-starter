@@ -169,7 +169,14 @@ cd starter && sqlx migrate run
 ./scripts/check.sh
 ```
 
-### 5. Add Routes (Manual)
+### 5. Add Module Declaration (Manual)
+
+Add to `src/lib.rs`:
+```rust
+pub mod books;
+```
+
+### 6. Add Routes (Manual)
 
 Add to `src/server.rs`:
 ```rust
@@ -179,7 +186,7 @@ use crate::books::api::books_routes;
 .nest("/api/v1/books", books_routes())
 ```
 
-### 6. Update OpenAPI (Manual)
+### 7. Update OpenAPI (Manual)
 
 Add to `src/openapi.rs`:
 ```rust
@@ -201,12 +208,18 @@ cargo run -- revert module books
    🗑️  Delete 2 migration files
    🗑️  Delete module directory: src/books
    🗑️  Delete test directory: tests/books
-   📝 Remove module declaration from lib.rs
+   📝 Manual step: Remove module declaration from lib.rs
 
 ⚠️  WARNING: This operation will permanently delete files and revert database migrations!
 
 ❓ Revert database migration #8? [y/N]: 
 ❓ Delete all generated files? [y/N]: 
+
+📋 Manual cleanup required:
+   📝 Remove from lib.rs: pub mod books;
+   📝 Remove from server.rs: use crate::books::api::books_routes;
+   📝 Remove from server.rs: .nest("/api/v1/books", books_routes())
+   📝 Remove from openapi.rs: any imports from books::models
 ```
 
 ### Automated Revert
@@ -327,10 +340,11 @@ Test the entire generator system end-to-end:
 ### Development Workflow
 
 1. **Start with Basic** - Use basic template for initial development
-2. **Test Early** - Run integration tests immediately after generation
-3. **Customize Gradually** - Modify generated code to fit specific needs
-4. **Use Revert Safely** - Always use `--dry-run` first, then interactive mode
-5. **Version Control** - Commit generated code before customization
+2. **Manual Integration** - Follow the 3-step integration process (lib.rs → server.rs → openapi.rs)
+3. **Test Early** - Run integration tests immediately after generation and integration
+4. **Customize Gradually** - Modify generated code to fit specific needs
+5. **Use Revert Safely** - Always use `--dry-run` first, then interactive mode with manual cleanup
+6. **Version Control** - Commit generated code before customization
 
 ## Troubleshooting
 
@@ -364,10 +378,17 @@ error: query does not match cached data
 ```bash
 Templates generate but API endpoints return 404
 ```
-**Solution:** Manually add routes to `src/server.rs`:
+**Solution:** Manually integrate module in three steps:
 ```rust
+// 1. Add to src/lib.rs:
+pub mod books;
+
+// 2. Add to src/server.rs:
 use crate::books::api::books_routes;
 // In router: .nest("/books", books_routes())
+
+// 3. Add to src/openapi.rs:
+use crate::books::models::*;
 ```
 
 **Test Failures:**

@@ -19,7 +19,7 @@ The module generator system has several testing layers:
 - **Automated Script**: `./scripts/test-generate.sh` - Comprehensive automated testing
 - **Manual Workflow**: Step-by-step testing of individual features
 - **Unit Tests**: Generated code includes unit tests that validate basic functionality
-- **Integration Tests**: Full API endpoint testing (requires manual route registration)
+- **Integration Tests**: Full API endpoint testing (requires manual 3-step integration: lib.rs → server.rs → openapi.rs)
 
 ## Quick Testing
 
@@ -67,13 +67,20 @@ cargo run -- generate module quicktest --template basic --force
 # Follow the workflow
 cd starter && sqlx migrate run
 cd .. && ./scripts/prepare-sqlx.sh  
+
+# Manual Integration (3 steps - required for testing):
+# Step 1: Add to src/lib.rs: pub mod quicktest;
+# Step 2: Add to src/server.rs: use + routes (for full testing)
+# Step 3: Add to src/openapi.rs: model imports (for API docs)
+
 ./scripts/check.sh
 
-# Test it works
+# Test it works (after manual integration)
 cd starter && cargo nextest run quicktest
 
 # Clean up (from project root)
 cargo run -- revert module quicktest --yes
+# Then manually remove from lib.rs, server.rs, openapi.rs
 ```
 
 ## Manual Testing Workflow
@@ -209,6 +216,11 @@ cargo run -- revert module nonexistent --dry-run
    # Generate with your template
    cargo run -- generate module testmodule --template my-template
 
+   # Manual Integration (required for testing):
+   # Step 1: Add to src/lib.rs: pub mod testmodule;
+   # Step 2: Add to src/server.rs: use + routes 
+   # Step 3: Add to src/openapi.rs: model imports
+
    # Test compilation
    sqlx migrate run
    cd .. && ./scripts/prepare-sqlx.sh
@@ -217,6 +229,7 @@ cargo run -- revert module nonexistent --dry-run
    # Fix any compilation errors in templates
    # Revert and try again
    cargo run -- revert module testmodule --yes
+   # Then manually remove from lib.rs, server.rs, openapi.rs
    
    # Repeat until working
    ```
@@ -275,16 +288,18 @@ Use the dedicated template testing script for comprehensive API validation:
 - ✅ **RBAC Integration** - Tests role-based access controls
 - ✅ **Colorized Output** - Clear success/failure indicators
 
-**Integration Workflow:**
+**Integration Workflow (Manual Steps Required):**
 ```bash
 # 1. Generate and setup module
 cargo run -- generate module products --template production
 cd starter && sqlx migrate run
 cd .. && ./scripts/prepare-sqlx.sh
 
-# 2. Add routes to server.rs (required manual step)
-# Add: use crate::products::api::products_routes;
-# Add: .nest("/products", products_routes())
+# 2. Manual Integration (3 steps - prevents accidental commits):
+# Step 1: Add to src/lib.rs: pub mod products;
+# Step 2: Add to src/server.rs: use crate::products::api::products_routes;
+#         and .nest("/products", products_routes())
+# Step 3: Add to src/openapi.rs: use crate::products::models::*;
 
 # 3. Start server and test
 ./scripts/server.sh                                  # Start server on port 3000
@@ -292,13 +307,19 @@ cd .. && ./scripts/prepare-sqlx.sh
 
 # 4. Clean up
 cargo run -- revert module products --yes
+# Then manually remove from lib.rs, server.rs, openapi.rs
 ```
 
 ### Manual Integration Testing
 
-For deeper integration testing, you can manually register routes:
+For deeper integration testing, follow the 3-step manual integration process:
 
-1. **Add to `src/server.rs`**:
+1. **Add to `src/lib.rs`**:
+   ```rust
+   pub mod books;
+   ```
+
+2. **Add to `src/server.rs`**:
    ```rust
    use crate::books::api::books_routes;
    
@@ -306,10 +327,12 @@ For deeper integration testing, you can manually register routes:
    .nest("/api/v1/books", books_routes())
    ```
 
-2. **Add to `src/openapi.rs`**:
+3. **Add to `src/openapi.rs`**:
    ```rust
    use crate::books::models::*;
    ```
+
+**Important**: This manual integration prevents generated modules from accidentally being committed to your repository. Always remember to remove these integrations when testing is complete.
 
 3. **Run Integration Tests**:
    ```bash

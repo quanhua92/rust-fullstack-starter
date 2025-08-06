@@ -182,15 +182,22 @@ Gracefully stop background worker(s).
 - ✅ **Error Handling** - 404 responses and unauthorized access
 - ✅ **RBAC Integration** - Role-based access control validation
 
-**Integration with Generator Workflow:**
+**Integration with Generator Workflow (Manual Steps Required):**
 ```bash
-# Complete template testing workflow
+# Complete template testing workflow with manual integration
 cargo run -- generate module products --template production
 cd starter && sqlx migrate run
 cd .. && ./scripts/prepare-sqlx.sh
+
+# Manual Integration (3 steps - prevents accidental commits):
+# Step 1: Add to src/lib.rs: pub mod products;
+# Step 2: Add to src/server.rs: use + routes
+# Step 3: Add to src/openapi.rs: model imports
+
 ./scripts/server.sh                                  # Start server
 ./scripts/test-template-with-curl.sh products        # Test generated module
-cargo run -- revert module products --yes           # Clean up
+cargo run -- revert module products --yes           # Clean up files
+# Then manually remove from lib.rs, server.rs, openapi.rs
 ```
 
 ### `test-generate.sh`

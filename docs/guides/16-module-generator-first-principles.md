@@ -21,7 +21,7 @@ Input: "book"
 
 ### 2. **Safety First**
 
-Every dangerous operation requires explicit confirmation:
+Every dangerous operation requires explicit confirmation, and integration is always manual:
 
 ```bash
 # Safe by default - prompts for confirmation
@@ -29,9 +29,12 @@ cargo run -- revert module books
 
 # Explicit danger - requires --yes flag
 cargo run -- revert module books --yes
+
+# All integration is manual to prevent accidental PR inclusions
+# Manual steps: lib.rs → server.rs → openapi.rs
 ```
 
-**Why:** Prevents accidental data loss and encourages thoughtful development practices.
+**Why:** Prevents accidental data loss, avoids unintended commits, and encourages thoughtful development practices.
 
 ### 3. **Compile-Time Guarantees**
 
@@ -178,7 +181,7 @@ graph TD
     K -->|Yes| J
     J --> M[Revert Migration]
     M --> N[Delete Files]
-    N --> O[Update lib.rs]
+    N --> O[Show Manual Cleanup Guide]
     O --> P[Success Message]
 ```
 
@@ -188,6 +191,7 @@ graph TD
 2. **Preview Phase** - Shows exactly what will be changed
 3. **Confirmation Phase** - Interactive prompts for dangerous operations
 4. **Execution Phase** - Performs changes in logical order
+5. **Manual Cleanup Guide** - Shows required manual integration removal
 
 ## Template Design Principles
 
@@ -739,14 +743,21 @@ error: Path segments must not start with `:`
 ```
 **Solution:** Start server first: `./scripts/server.sh`, then run template tests
 
-**Route Registration Missing:**
+**Module Integration Missing:**
 ```
-Templates generate successfully but API endpoints return 404
+Templates generate successfully but module is not accessible
 ```
-**Solution:** Manually add routes to `src/server.rs`:
+**Solution:** Complete the 3-step manual integration process:
 ```rust
+// Step 1: Add to src/lib.rs
+pub mod books;
+
+// Step 2: Add to src/server.rs
 use crate::books::api::books_routes;
 // In protected_routes: .nest("/books", books_routes())
+
+// Step 3: Add to src/openapi.rs
+use crate::books::models::*;
 ```
 
 **Validation Errors:**
@@ -849,18 +860,20 @@ The `test-template-with-curl.sh` script provides comprehensive API testing:
 The module generator embodies several key principles:
 
 1. **Safety Through Convention** - Predictable patterns reduce errors
-2. **Compile-Time Validation** - Catch problems early in development cycle
-3. **Template Flexibility** - Easy to customize while maintaining structure
-4. **Production Ready** - Includes performance, security, and testing patterns
-5. **Developer Experience** - Clear commands, helpful output, safety mechanisms
-6. **Multi-Layered Testing** - Template testing, integration tests, and system validation
-7. **Real-World Validation** - HTTP API testing with authentication and RBAC
+2. **Manual Integration** - All integration steps are manual to prevent accidental commits
+3. **Compile-Time Validation** - Catch problems early in development cycle
+4. **Template Flexibility** - Easy to customize while maintaining structure
+5. **Production Ready** - Includes performance, security, and testing patterns
+6. **Developer Experience** - Clear commands, helpful output, safety mechanisms
+7. **Multi-Layered Testing** - Template testing, integration tests, and system validation
+8. **Real-World Validation** - HTTP API testing with authentication and RBAC
 
 Understanding these principles will help you:
 - Choose the right template for your needs
+- Follow the 3-step manual integration process (lib.rs → server.rs → openapi.rs)
 - Safely customize generated code
 - Troubleshoot issues when they arise
 - Extend the system for your specific requirements
 - Validate templates work correctly in real scenarios
 
-The generator is designed to grow with your project - start with basic templates for rapid prototyping, then migrate to production templates as requirements mature. The comprehensive testing infrastructure ensures reliability at every step.
+The generator is designed to grow with your project - start with basic templates for rapid prototyping, then migrate to production templates as requirements mature. Manual integration ensures you understand the codebase architecture while preventing generated modules from accidentally ending up in commits. The comprehensive testing infrastructure ensures reliability at every step.
