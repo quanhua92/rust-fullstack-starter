@@ -652,11 +652,82 @@ export function NotesList() {
 - How to build reactive UI components
 - How to handle optimistic updates in React
 
+#### 🔧 **Advanced: Ownership-Based RBAC Implementation**
+
+**Study Resource:** `docs/guides/17-ownership-based-rbac.md`
+
+**Database Schema Pattern:**
+Every ownable resource needs a `created_by` field:
+```sql
+CREATE TABLE notes (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    title TEXT NOT NULL,
+    content TEXT NOT NULL,
+    created_by UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- CRITICAL: Index for performance
+CREATE INDEX idx_notes_created_by ON notes(created_by);
+```
+
+**Two-Pattern Implementation Strategy:**
+
+**Pattern 1: Individual Operations (Ownership-Based)**
+```rust
+// For single resource operations - users own their data
+pub async fn update_note(
+    State(app_state): State<AppState>,
+    Extension(auth_user): Extension<AuthUser>,
+    Path(id): Path<Uuid>,
+    Json(request): Json<UpdateNoteRequest>,
+) -> Result<Json<ApiResponse<Note>>> {
+    // Transaction for atomic get-check-update
+    let mut tx = app_state.database.pool.begin().await?;
+    
+    // Get existing to check ownership
+    let existing = get_note_service(tx.as_mut(), id).await?;
+    
+    // Ownership check: users access own, admins access all
+    rbac_services::can_access_own_resource(&auth_user, existing.created_by)?;
+    
+    let updated = update_note_service(tx.as_mut(), id, request).await?;
+    tx.commit().await?;
+    Ok(Json(ApiResponse::success(updated)))
+}
+```
+
+**Pattern 2: Bulk Operations (Role-Based)**
+```rust
+// For bulk operations - require elevated permissions  
+pub async fn bulk_create_notes(
+    State(app_state): State<AppState>,
+    Extension(auth_user): Extension<AuthUser>,
+    Json(request): Json<BulkCreateNotesRequest>,
+) -> Result<Json<ApiResponse<BulkOperationResponse<Note>>>> {
+    // Bulk operations need moderator+
+    rbac_services::require_moderator_or_higher(&auth_user)?;
+    
+    let mut conn = app_state.database.pool.acquire().await?;
+    let response = bulk_create_notes_service(conn.as_mut(), request, auth_user.id).await?;
+    Ok(Json(ApiResponse::success(response)))
+}
+```
+
+**Key Design Decisions:**
+- **Individual CRUD**: `can_access_own_resource()` - users own their data
+- **Bulk Operations**: `require_moderator_or_higher()` - system-wide operations  
+- **Transaction Safety**: `begin().await?` for atomic get-check-update patterns
+- **Performance**: Always index `created_by` fields for efficient queries
+
 **✍️ Notes to capture:**
 - What patterns emerge when building CRUD operations?
 - How does error handling work across all layers?
-- What are the performance considerations?
+- What are the performance considerations for ownership queries?
 - How do you test each layer in isolation?
+- When do you use ownership-based vs role-based access patterns?
+- How do transactions ensure data consistency in ownership checks?
 
 ---
 
@@ -846,6 +917,139 @@ async fn test_user_can_only_see_own_notes() {
 - What's the difference between integration and unit tests here?
 - How do you test authentication and authorization?
 - What patterns make tests more maintainable?
+
+---
+
+### Week 6: Module Generator Mastery
+
+#### 🎯 **Goal:** 
+Master template-driven development with the module generator system - generate complete CRUD modules in seconds instead of hours.
+
+#### 📖 **Required Reading:**
+1. **`docs/module-generator.md`** - Complete generator documentation (700+ lines)
+2. **`docs/guides/16-module-generator-first-principles.md`** - Design philosophy and patterns
+3. **`templates/basic/`** - Study the basic CRUD template structure
+4. **`templates/production/`** - Advanced template with bulk operations
+
+#### 🏗️ **Module Generator Architecture:**
+```mermaid
+graph TB
+    CLI[cargo run -- generate module books --template basic]
+    
+    CLI --> VALIDATE[Template Validation]
+    VALIDATE --> PROCESS[Name Processing<br/>book → books, Book, books_table]
+    PROCESS --> GENERATE[File Generation<br/>7-12 files per template]
+    GENERATE --> MIGRATE[Migration Creation<br/>Timestamped SQL files]
+    MIGRATE --> GUIDE[Manual Integration Guide<br/>3 steps required]
+    
+    subgraph "Template System"
+        BASIC[Basic Template<br/>Essential CRUD<br/>Simple pagination<br/>Standard validation]
+        PRODUCTION[Production Template<br/>+ Bulk operations<br/>+ Status management<br/>+ Advanced filtering]
+    end
+    
+    CLI --> BASIC
+    CLI --> PRODUCTION
+    
+    subgraph "Placeholder System"
+        P1[__MODULE_NAME__<br/>→ book]
+        P2[__MODULE_NAME_PLURAL__<br/>→ books] 
+        P3[__MODULE_STRUCT__<br/>→ Book]
+        P4[__MODULE_TABLE__<br/>→ books]
+    end
+    
+    GENERATE --> P1
+    GENERATE --> P2
+    GENERATE --> P3
+    GENERATE --> P4
+```
+
+#### 🧪 **Hands-On Practice:**
+
+**1. Generate Basic Module:**
+```bash
+# Generate books module with basic template
+cargo run -- generate module books --template basic
+
+# Examine generated files
+ls src/books/
+# Should see: mod.rs, api.rs, models.rs, services.rs, tests.rs
+
+# Check migration files  
+ls migrations/ | grep books
+# Should see: XXX_books_up.sql, XXX_books_down.sql
+```
+
+**2. Manual Integration (3 Steps):**
+```rust
+// 1. Add to src/lib.rs
+pub mod books;
+
+// 2. Add to src/server.rs  
+use crate::books::api::books_routes;
+// Then add books_routes() to router
+
+// 3. Add to src/openapi.rs
+use crate::books::models::*;
+```
+
+**3. Test Generated Module:**
+```bash
+# Apply migrations
+cd starter && sqlx migrate run
+
+# Test the API endpoints
+../scripts/test-template-with-curl.sh books
+
+# Should test all CRUD operations
+```
+
+**4. Production Template Comparison:**
+```bash
+# Generate same module with production template
+cargo run -- generate module products --template production
+
+# Compare features:
+diff -r src/books/ src/products/
+# Notice: bulk operations, status management, advanced filtering
+```
+
+#### 🔧 **Advanced Features to Study:**
+
+**Production Template Additions:**
+- **Status Management**: Enum fields with database constraints
+- **Bulk Operations**: Create/update/delete multiple items
+- **Advanced Filtering**: Complex query parameters with JSON metadata
+- **Performance**: Optimized indexes and query patterns
+
+**Safety Features:**
+- **Dry-run Mode**: `cargo run -- generate module test --dry-run`
+- **Revert System**: `cargo run -- revert module books --dry-run`
+- **Manual Integration**: Prevents accidental generation in commits
+
+#### ✍️ **Key Insights to Capture:**
+
+**Template Philosophy:**
+- Why file-based templates vs programmatic generation?
+- How do 4 placeholder types enable any domain?
+- Why require manual integration instead of automatic?
+
+**Performance Patterns:**
+- What indexes are auto-generated?
+- How does bulk operations pattern work?
+- Why is `created_by` field critical for RBAC?
+
+**Testing Validation:**
+- How does `test-template-with-curl.sh` work?
+- What makes generated modules follow exact same patterns?
+- How does SQLx compile-time validation help?
+
+#### 🎯 **Practice Challenges:**
+
+1. **Generate and integrate** a "products" module with production template
+2. **Compare generated code** with existing hand-written modules (users, tasks)
+3. **Test all endpoints** using curl following established patterns
+4. **Study placeholder replacement** - how does `__MODULE_STRUCT__` become `Product`?
+5. **Practice safe revert** - generate test module, then revert it safely
 
 ---
 

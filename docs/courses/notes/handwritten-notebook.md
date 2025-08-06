@@ -726,42 +726,86 @@ graph TD
     class USER_OWN,USER_TASKS,USER_VIEW,USER_AUTH,MOD_USER_MGMT,MOD_CONTENT,MOD_MONITORING,MOD_REPORTS,ADMIN_ALL,ADMIN_USERS,ADMIN_SYSTEM,ADMIN_CLI permissions
 ```
 
-**RBAC Implementation Pattern**:
+**Ownership-Based RBAC Implementation**:
 
 ```mermaid
 graph TB
-    subgraph "🔍 Permission Checking Flow"
+    subgraph "🔐 Two-Pattern Access Control"
         REQUEST[HTTP Request + AuthUser]
-        CHECK_OWNER{Owner check needed?}
-        CHECK_ROLE{Role level check?}
-        RESOURCE_ACCESS[Access resource]
-        DENIED[❌ 403 Forbidden]
+        OPERATION_TYPE{Operation Type?}
+        
+        subgraph "🏠 Pattern 1: Individual Operations"
+            GET_RESOURCE[Get resource from DB]
+            OWNERSHIP_CHECK{User owns resource?}
+            ADMIN_CHECK{Admin/Moderator?}
+            INDIVIDUAL_ACCESS[✅ Access granted]
+            NOT_FOUND[❌ 404 Not Found]
+        end
+        
+        subgraph "📦 Pattern 2: Bulk Operations"
+            ROLE_CHECK{Moderator+ role?}
+            BULK_ACCESS[✅ Access granted]
+            FORBIDDEN[❌ 403 Forbidden]
+        end
     end
     
-    REQUEST --> CHECK_OWNER
-    CHECK_OWNER -->|Yes| OWNER_OK{User owns resource?}
-    CHECK_OWNER -->|No| CHECK_ROLE
+    REQUEST --> OPERATION_TYPE
+    OPERATION_TYPE -->|Individual CRUD| GET_RESOURCE
+    OPERATION_TYPE -->|Bulk operation| ROLE_CHECK
     
-    OWNER_OK -->|Yes| RESOURCE_ACCESS
-    OWNER_OK -->|No| DENIED
+    GET_RESOURCE --> OWNERSHIP_CHECK
+    OWNERSHIP_CHECK -->|Yes| INDIVIDUAL_ACCESS
+    OWNERSHIP_CHECK -->|No| ADMIN_CHECK
+    ADMIN_CHECK -->|Yes| INDIVIDUAL_ACCESS
+    ADMIN_CHECK -->|No| NOT_FOUND
     
-    CHECK_ROLE --> ROLE_OK{Role sufficient?}
-    ROLE_OK -->|Yes| RESOURCE_ACCESS
-    ROLE_OK -->|No| DENIED
+    ROLE_CHECK -->|Yes| BULK_ACCESS
+    ROLE_CHECK -->|No| FORBIDDEN
     
     classDef success fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
     classDef failure fill:#ffcdd2,stroke:#d32f2f,stroke-width:2px
-    classDef decision fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    classDef security fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    classDef pattern fill:#e3f2fd,stroke:#01579b,stroke-width:2px
     
-    class RESOURCE_ACCESS success
-    class DENIED failure
-    class CHECK_OWNER,CHECK_ROLE,OWNER_OK,ROLE_OK decision
+    class INDIVIDUAL_ACCESS,BULK_ACCESS success
+    class NOT_FOUND,FORBIDDEN failure
+    class OWNERSHIP_CHECK,ADMIN_CHECK,ROLE_CHECK security
+    class GET_RESOURCE,OPERATION_TYPE pattern
 ```
 
-**📁 RBAC Code References**:
-- Role enum: `starter/src/rbac/mod.rs`
-- Permission helpers: `starter/src/rbac/services.rs`
-- User role in database: `starter/migrations/001_users.up.sql:7,13`
+**Core RBAC Functions**:
+
+```rust
+// Pattern 1: Ownership-based access (individual operations)
+pub fn can_access_own_resource(user: &AuthUser, resource_owner: Uuid) -> Result<(), Error> {
+    match user.role {
+        UserRole::Admin | UserRole::Moderator => Ok(()),
+        UserRole::User => {
+            if resource_owner == user.id {
+                Ok(())
+            } else {
+                // Return 404 to prevent information leakage
+                Err(Error::NotFound("Resource not found".to_string()))
+            }
+        }
+    }
+}
+
+// Pattern 2: Role-based access (bulk operations)
+pub fn require_moderator_or_higher(user: &AuthUser) -> Result<(), Error> {
+    match user.role {
+        UserRole::Admin | UserRole::Moderator => Ok(()),
+        UserRole::User => Err(Error::Forbidden("Insufficient permissions".to_string())),
+    }
+}
+```
+
+**📁 Ownership-Based RBAC Code References**:
+- Core RBAC service: `starter/src/rbac/services.rs:176-191` (can_access_own_resource)
+- Role requirements: `starter/src/rbac/services.rs:197-203` (require_moderator_or_higher)  
+- Database schema: Every resource has `created_by UUID REFERENCES users(id)`
+- Security principle: Return 404 (not 403) for ownership violations to prevent info leakage
+- Transaction safety: All ownership checks use atomic get-check-update pattern with `tx.begin()...tx.commit()`
 
 #### **Page 20-21: Database Schema for Auth System**
 
@@ -6905,9 +6949,523 @@ fn calculate_capacity_exhaustion(
 
 ---
 
-## Phase 4: Production - Deployment & Operations (Pages 86-95)
+### **Section 9: Module Generator System Mastery (Pages 86-90)**
+*Template-driven development: Generate complete CRUD modules in seconds*
 
-### Page 86: Container Strategy & Multi-Stage Builds
+#### **Page 86-87: Module Generator Architecture Deep Dive**
+
+The module generator system demonstrates advanced code generation patterns with safety-first design philosophy and template-driven architecture.
+
+```mermaid
+graph TD
+    A[CLI Command] --> B[Template Validation]
+    B --> C[Name Processing Engine]
+    C --> D[File Generation System] 
+    D --> E[Migration Creation]
+    E --> F[Manual Integration Guide]
+    
+    subgraph "Input Processing"
+        G[cargo run -- generate module books --template basic]
+        H[Module Name: books]
+        I[Template: basic|production] 
+        J[Options: --dry-run, --force]
+    end
+    
+    subgraph "Template System"
+        K[Basic Template<br/>7 files generated<br/>Essential CRUD patterns]
+        L[Production Template<br/>12 files generated<br/>Advanced features]
+    end
+    
+    subgraph "Placeholder Engine" 
+        M[__MODULE_NAME__ → books]
+        N[__MODULE_NAME_PLURAL__ → books]
+        O[__MODULE_STRUCT__ → Book] 
+        P[__MODULE_TABLE__ → books]
+    end
+    
+    A --> G
+    G --> H
+    H --> I
+    I --> J
+    
+    B --> K
+    B --> L
+    
+    C --> M
+    C --> N
+    C --> O
+    C --> P
+    
+    classDef input fill:#e1f5fe
+    classDef template fill:#f3e5f5  
+    classDef placeholder fill:#e8f5e8
+    classDef process fill:#fff3e0
+    
+    class G,H,I,J input
+    class K,L template
+    class M,N,O,P placeholder
+    class A,B,C,D,E,F process
+```
+
+#### **Page 88: Template Structure Analysis**
+
+**Basic Template Architecture** (`templates/basic/`):
+```
+templates/basic/
+├── mod.rs.template           # Module exports and structure
+├── models.rs.template        # Data structures and validation  
+├── api.rs.template          # HTTP endpoints with OpenAPI
+├── services.rs.template     # Business logic and database operations
+├── tests.rs.template        # Integration tests with auth
+├── migration_up.sql.template   # CREATE TABLE with indexes
+└── migration_down.sql.template # DROP TABLE rollback
+```
+
+**Production Template Enhancements** (`templates/production/`):
+- **Bulk Operations**: Create/update/delete multiple records
+- **Status Management**: Enum fields with database constraints
+- **Advanced Filtering**: Complex query parameters with JSON metadata
+- **Performance**: Optimized indexes, GIN indexes for JSONB fields
+- **Metadata Support**: JSONB fields for flexible data storage
+
+#### **Page 89: Placeholder Replacement System**
+
+The 4-placeholder system enables domain flexibility:
+
+| Placeholder | Input: "book" | Output | Usage Context |
+|-------------|---------------|--------|---------------|
+| `__MODULE_NAME__` | book | book | Variable names, function parameters |
+| `__MODULE_NAME_PLURAL__` | book | books | URLs, database table names |
+| `__MODULE_STRUCT__` | book | Book | Rust struct names, TypeScript interfaces |
+| `__MODULE_TABLE__` | book | books | SQL table references, migrations |
+
+**Example Transformation**:
+```rust
+// Template file: api.rs.template
+pub async fn create___MODULE_STRUCT__(
+    Extension(auth_user): Extension<AuthUser>,
+    Json(request): Json<Create__MODULE_STRUCT__Request>,
+) -> Result<Json<ApiResponse<__MODULE_STRUCT__>>> {
+    rbac_services::can_access_own_resource(&auth_user, request.created_by)?;
+    // ...
+}
+
+// Generated file: src/books/api.rs  
+pub async fn create_book(
+    Extension(auth_user): Extension<AuthUser>,
+    Json(request): Json<CreateBookRequest>,
+) -> Result<Json<ApiResponse<Book>>> {
+    rbac_services::can_access_own_resource(&auth_user, request.created_by)?;
+    // ...
+}
+```
+
+#### **Page 90: Manual Integration Workflow (Safety-First Design)**
+
+The generator requires manual integration to prevent accidental commits and encourage architectural understanding:
+
+**Step 1: Add Module Export** (`src/lib.rs`)
+```rust
+// Manual addition required
+pub mod auth;
+pub mod users; 
+pub mod tasks;
+pub mod books;  // ← Add this line manually
+```
+
+**Step 2: Register Routes** (`src/server.rs`)
+```rust
+use crate::books::api::books_routes; // ← Add import
+
+pub fn create_router(app_state: AppState) -> Router {
+    Router::new()
+        .nest("/api/v1/users", users_routes(app_state.clone()))
+        .nest("/api/v1/tasks", tasks_routes(app_state.clone()))  
+        .nest("/api/v1/books", books_routes(app_state.clone())) // ← Add route
+        // ...
+}
+```
+
+**Step 3: Update OpenAPI Schema** (`src/openapi.rs`)
+```rust
+use crate::books::models::*; // ← Add model imports
+
+#[derive(OpenApi)]
+#[openapi(
+    paths(
+        crate::books::api::create_book,    // ← Add endpoints
+        crate::books::api::get_books,
+        crate::books::api::update_book,
+        crate::books::api::delete_book,
+    ),
+    components(
+        schemas(Book, CreateBookRequest, UpdateBookRequest) // ← Add schemas
+    )
+)]
+pub struct ApiDoc;
+```
+
+### **Section 10: Advanced Module Generator Features (Pages 91-95)**
+
+#### **Page 91: Generated Code Validation**
+
+**Database Integration Verification**:
+```bash
+# Apply generated migrations
+cd starter && sqlx migrate run
+
+# Verify table structure  
+psql $DATABASE_URL -c "\d books"
+# Should show: id (UUID PK), name (TEXT), created_by (UUID FK), indexes
+
+# Test API endpoints
+../scripts/test-template-with-curl.sh books
+# Tests all CRUD operations with authentication
+```
+
+**Compile-Time Validation**: 
+All generated code includes SQLx macros for compile-time database query validation:
+```rust
+// Generated service functions use query! macro
+sqlx::query_as!(Book, 
+    "SELECT id, name, description, created_by, created_at, updated_at 
+     FROM books WHERE created_by = $1",
+    user_id
+).fetch_all(conn).await?
+```
+
+#### **Page 92-93: Production Template Advanced Features**
+
+**Status Management Pattern**:
+```rust
+// Generated enum with database constraints
+#[derive(Debug, Serialize, Deserialize, sqlx::Type)]
+#[sqlx(type_name = "book_status", rename_all = "lowercase")]
+pub enum BookStatus {
+    Draft,
+    Published, 
+    Archived,
+}
+
+// Database constraint
+-- ALTER TABLE books ADD COLUMN status book_status DEFAULT 'draft';
+-- CREATE INDEX idx_books_status ON books(status);
+```
+
+**Bulk Operations**:
+```rust
+// Generated bulk endpoints
+#[utoipa::path(post, path = "/api/v1/books/bulk")]
+pub async fn bulk_create_books(
+    Extension(auth_user): Extension<AuthUser>,
+    Json(request): Json<BulkCreateBooksRequest>,
+) -> Result<Json<ApiResponse<BulkOperationResponse<Book>>>> {
+    rbac_services::require_moderator_or_higher(&auth_user)?;
+    // Process multiple records atomically
+}
+```
+
+**JSONB Metadata Support**:
+```sql
+-- Production template includes metadata
+ALTER TABLE books ADD COLUMN metadata JSONB DEFAULT '{}';
+CREATE INDEX idx_books_metadata ON books USING GIN (metadata);
+```
+
+#### **Page 94-95: Module Generator Testing & Revert System**
+
+**Testing Generated Modules**:
+```bash
+# Comprehensive API testing
+./scripts/test-template-with-curl.sh books 3000
+# Tests: CREATE, READ (list/single), UPDATE, DELETE, bulk operations
+
+# Integration with existing test suite
+cargo nextest run books::
+# Generated modules include complete test coverage
+```
+
+**Safe Revert System**:
+```bash  
+# Preview what would be removed
+cargo run -- revert module books --dry-run
+# Shows: files to delete, migrations to revert, manual cleanup needed
+
+# Interactive revert with confirmations
+cargo run -- revert module books
+# Prompts for each destructive operation
+
+# Force revert (dangerous - use carefully)
+cargo run -- revert module books --yes
+# Skips all confirmations
+```
+
+**Generator System Philosophy**:
+- **Template-Based**: Easier to understand and modify than programmatic generation
+- **Safety-First**: Manual integration prevents accidental generation in commits  
+- **Pattern Consistency**: Generated modules follow exact same patterns as hand-written
+- **Compile-Time Validated**: SQLx macros ensure database query correctness
+- **Production-Ready**: Includes error handling, logging, testing, and performance patterns
+
+---
+
+## Section 11: Ownership-Based RBAC Mastery (Pages 96-100)
+
+### Page 96: Database Schema Patterns for Ownership
+
+**Core Schema Design for Ownership-Based Access**:
+
+```sql
+-- Every resource table follows this ownership pattern
+CREATE TABLE example_resources (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name TEXT NOT NULL,
+    description TEXT,
+    created_by UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- CRITICAL: Index for ownership queries (performance requirement)
+CREATE INDEX idx_example_resources_created_by ON example_resources(created_by);
+```
+
+**Ownership Field Design Principles**:
+1. **created_by**: References user who owns the resource
+2. **NOT NULL**: Every resource must have an owner
+3. **CASCADE**: When user deleted, their resources are cleaned up
+4. **INDEX**: Essential for efficient ownership-based filtering
+
+### Page 97: Two-Pattern Implementation Architecture
+
+```mermaid
+graph TD
+    subgraph "🏠 Pattern 1: Individual Operations"
+        A[HTTP Request] --> B[Get Existing Resource]
+        B --> C[Check: user.id == resource.created_by?]
+        C -->|Yes| D[✅ User owns resource]
+        C -->|No| E[Check: Admin/Moderator?]
+        E -->|Yes| F[✅ Admin access granted]
+        E -->|No| G[❌ 404 Not Found]
+    end
+    
+    subgraph "📦 Pattern 2: Bulk Operations"  
+        H[HTTP Request] --> I[Check: Moderator+ role?]
+        I -->|Yes| J[✅ Bulk operation allowed]
+        I -->|No| K[❌ 403 Forbidden]
+    end
+    
+    subgraph "🔒 Security Principles"
+        L[Information Leakage Prevention]
+        M[Transaction Safety]
+        N[Performance via Indexing]
+    end
+    
+    D --> L
+    F --> L
+    G --> L
+    J --> M
+    K --> M
+    B --> N
+```
+
+### Page 98: Handler Implementation Patterns
+
+**Pattern 1 Implementation (Individual CRUD)**:
+```rust
+// GET /api/v1/resources/{id} - Individual resource access
+pub async fn get_resource(
+    State(app_state): State<AppState>,
+    Extension(auth_user): Extension<AuthUser>,
+    Path(id): Path<Uuid>,
+) -> Result<Json<ApiResponse<Resource>>> {
+    let mut conn = app_state.database.pool.acquire().await?;
+    let resource = get_resource_service(conn.as_mut(), id).await?;
+    
+    // Ownership check: users can access their own, admins can access all
+    rbac_services::can_access_own_resource(&auth_user, resource.created_by)?;
+    
+    Ok(Json(ApiResponse::success(resource)))
+}
+
+// PUT /api/v1/resources/{id} - Update with transaction safety
+pub async fn update_resource(
+    State(app_state): State<AppState>,
+    Extension(auth_user): Extension<AuthUser>,
+    Path(id): Path<Uuid>,
+    Json(request): Json<UpdateResourceRequest>,
+) -> Result<Json<ApiResponse<Resource>>> {
+    // CRITICAL: Use transaction for atomic get-check-update
+    let mut tx = app_state.database.pool.begin().await?;
+    
+    let existing = get_resource_service(tx.as_mut(), id).await?;
+    rbac_services::can_access_own_resource(&auth_user, existing.created_by)?;
+    
+    let updated = update_resource_service(tx.as_mut(), id, request).await?;
+    tx.commit().await?;
+    
+    Ok(Json(ApiResponse::success(updated)))
+}
+```
+
+**Pattern 2 Implementation (Bulk Operations)**:
+```rust
+// POST /api/v1/admin/resources/bulk - Role-based access
+pub async fn bulk_create_resources(
+    State(app_state): State<AppState>,
+    Extension(auth_user): Extension<AuthUser>,
+    Json(request): Json<BulkCreateResourceRequest>,
+) -> Result<Json<ApiResponse<BulkOperationResponse<Resource>>>> {
+    // Require elevated permissions for bulk operations
+    rbac_services::require_moderator_or_higher(&auth_user)?;
+    
+    let mut conn = app_state.database.pool.acquire().await?;
+    let response = bulk_create_resources_service(
+        conn.as_mut(), 
+        request, 
+        auth_user.id  // All created resources owned by requester
+    ).await?;
+    
+    Ok(Json(ApiResponse::success(response)))
+}
+```
+
+### Page 99: Service Layer with Ownership Integration
+
+**Service Function Patterns**:
+```rust
+// Create service - always requires created_by parameter
+pub async fn create_resource_service(
+    conn: &mut DbConn,
+    request: CreateResourceRequest,
+    created_by: Uuid,  // Ownership parameter
+) -> Result<Resource> {
+    let resource = Resource::new(
+        request.name,
+        request.description,
+        created_by  // Set ownership
+    );
+    
+    let created = sqlx::query_as!(
+        Resource,
+        "INSERT INTO resources (id, name, description, created_by, created_at, updated_at)
+         VALUES ($1, $2, $3, $4, $5, $6)
+         RETURNING id, name, description, created_by, created_at, updated_at",
+        resource.id,
+        resource.name,
+        resource.description,
+        resource.created_by,
+        resource.created_at,
+        resource.updated_at
+    )
+    .fetch_one(&mut *conn)
+    .await
+    .map_err(Error::from_sqlx)?;
+    
+    Ok(created)
+}
+
+// List service - filter by ownership for users
+pub async fn list_resources_service(
+    conn: &mut DbConn,
+    user: &AuthUser,
+    request: ListResourcesRequest,
+) -> Result<Vec<Resource>> {
+    let query = match user.role {
+        // Users see only their own resources
+        UserRole::User => {
+            sqlx::query_as!(
+                Resource,
+                "SELECT id, name, description, created_by, created_at, updated_at
+                 FROM resources WHERE created_by = $1
+                 ORDER BY created_at DESC LIMIT $2 OFFSET $3",
+                user.id,
+                request.limit.unwrap_or(50),
+                request.offset.unwrap_or(0)
+            )
+        },
+        // Admins/Moderators see all resources
+        UserRole::Admin | UserRole::Moderator => {
+            sqlx::query_as!(
+                Resource,
+                "SELECT id, name, description, created_by, created_at, updated_at
+                 FROM resources
+                 ORDER BY created_at DESC LIMIT $1 OFFSET $2",
+                request.limit.unwrap_or(50),
+                request.offset.unwrap_or(0)
+            )
+        }
+    };
+    
+    let resources = query
+        .fetch_all(&mut *conn)
+        .await
+        .map_err(Error::from_sqlx)?;
+    
+    Ok(resources)
+}
+```
+
+### Page 100: Security and Performance Considerations
+
+**Critical Security Requirements**:
+
+1. **Information Leakage Prevention**:
+```rust
+// ✅ Correct: Return 404 to prevent information disclosure
+if resource_owner != user.id && !user.is_admin_or_moderator() {
+    return Err(Error::NotFound("Resource not found".to_string()));
+}
+
+// ❌ Wrong: Reveals resource existence
+if resource_owner != user.id {
+    return Err(Error::Forbidden("Access denied".to_string()));
+}
+```
+
+2. **Transaction Safety Pattern**:
+```rust
+// ✅ Atomic get-check-update prevents race conditions
+let mut tx = pool.begin().await?;
+let existing = get_resource_service(tx.as_mut(), id).await?;
+can_access_own_resource(&auth_user, existing.created_by)?;
+let updated = update_resource_service(tx.as_mut(), id, request).await?;
+tx.commit().await?;
+
+// ❌ Race condition possible between check and update
+let mut conn = pool.acquire().await?;
+let existing = get_resource_service(conn.as_mut(), id).await?;
+can_access_own_resource(&auth_user, existing.created_by)?;
+// Resource could be modified here by another request
+let updated = update_resource_service(conn.as_mut(), id, request).await?;
+```
+
+3. **Index Performance Requirements**:
+```sql
+-- MANDATORY: Every created_by field must have index
+CREATE INDEX idx_table_name_created_by ON table_name(created_by);
+
+-- For common queries: Composite indexes
+CREATE INDEX idx_table_name_owner_status ON table_name(created_by, status);
+CREATE INDEX idx_table_name_owner_created_at ON table_name(created_by, created_at);
+```
+
+**Migration Strategy for Adding Ownership**:
+1. Add `created_by UUID` column (nullable initially)
+2. Set default value (admin user ID) for existing records  
+3. Make column NOT NULL
+4. Add foreign key constraint with CASCADE
+5. Create performance index
+6. Update all service functions to include created_by in queries
+7. Update handlers with ownership checks
+
+This ownership-based RBAC pattern provides intuitive, secure, and performant access control while maintaining code simplicity and user experience quality.
+
+---
+
+## Phase 4: Production - Deployment & Operations (Pages 101-110)
+
+### Page 101: Container Strategy & Multi-Stage Builds
 
 **Docker Architecture Overview**
 
@@ -6960,7 +7518,7 @@ The production Dockerfile uses sophisticated multi-stage build pattern:
 - musl static linking for portable binaries
 - Separate frontend/backend build stages
 
-### Page 87: Production Orchestration & Service Management
+### Page 102: Production Orchestration & Service Management
 
 **Docker Compose Production Architecture**
 
@@ -7021,7 +7579,7 @@ graph LR
 - **Nginx (Lines 171-201)**: Reverse proxy, SSL termination
 - **Network isolation**: Custom bridge network for security
 
-### Page 88: Infrastructure as Code & Environment Management
+### Page 103: Infrastructure as Code & Environment Management
 
 **Environment Configuration Strategy**
 
@@ -7085,7 +7643,7 @@ graph TD
 □ Disaster recovery plan
 ```
 
-### Page 89: CI/CD Pipeline & Automated Quality Gates
+### Page 104: CI/CD Pipeline & Automated Quality Gates
 
 **Continuous Integration Workflow**
 
@@ -7145,7 +7703,7 @@ graph TD
 - Multi-platform build cache optimization
 - Layer caching for faster subsequent builds
 
-### Page 90: Release Management & Version Control
+### Page 105: Release Management & Version Control
 
 **Release Automation Strategy**
 
@@ -7199,7 +7757,7 @@ graph LR
 - Support for both stable and prerelease versions
 - Integration points for Docker registry publishing
 
-### Page 91: Database Operations & Backup Management
+### Page 106: Database Operations & Backup Management
 
 **Production Database Architecture**
 
@@ -7260,7 +7818,7 @@ random_page_cost = 1.1           -- SSD optimization
 - Lock wait logging for deadlock detection
 - Slow query logging (>1000ms threshold)
 
-### Page 92: Service Discovery & Health Monitoring
+### Page 107: Service Discovery & Health Monitoring
 
 **Health Check Architecture**
 
@@ -7330,7 +7888,7 @@ healthcheck:
   retries: 3
 ```
 
-### Page 93: Scaling Strategies & Resource Management
+### Page 108: Scaling Strategies & Resource Management
 
 **Horizontal Scaling Architecture**
 
@@ -7403,7 +7961,7 @@ docker stats --format "table {{.Container}}\t{{.CPUPerc}}\t{{.MemUsage}}"
 - Database performance tracking
 - Worker queue monitoring
 
-### Page 94: Operational Monitoring & Alerting
+### Page 109: Operational Monitoring & Alerting
 
 **Observability Stack Integration**
 
@@ -7482,7 +8040,7 @@ graph LR
     severity: critical
 ```
 
-### Page 95: Security Hardening & Compliance
+### Page 110: Security Hardening & Compliance
 
 **Production Security Framework**
 
@@ -7561,9 +8119,9 @@ graph TD
 
 ---
 
-## Final Section - Lessons Learned & Future (Pages 96-100)
+## Final Section - Lessons Learned & Future (Pages 111-115)
 
-### Page 96: First Principles Learning Philosophy
+### Page 111: First Principles Learning Philosophy
 
 **Educational Foundation Philosophy**
 
@@ -7627,7 +8185,7 @@ graph TD
 
 **Data Flow Mental Model**: Every user interaction triggers a predictable cycle from user action through state changes, HTTP requests, validation, database operations, and back to UI updates.
 
-### Page 97: Architectural Lessons Learned
+### Page 112: Architectural Lessons Learned
 
 **System Architecture Evolution Insights**
 
@@ -7701,7 +8259,7 @@ graph LR
 - ❌ Difficult revocation
 - ❌ Token size considerations
 
-### Page 98: Technical Implementation Patterns
+### Page 113: Technical Implementation Patterns
 
 **Production-Ready Implementation Patterns**
 
@@ -7802,7 +8360,7 @@ let user = sqlx::query_as!(
 - Query performance monitoring and optimization
 - Database sharding strategies for horizontal scaling
 
-### Page 99: Frontend Integration & Full-Stack Patterns
+### Page 114: Frontend Integration & Full-Stack Patterns
 
 **Frontend Architecture Evolution**
 
@@ -7875,7 +8433,7 @@ const loginMutation = useMutation({
 - **Offline Support**: Background sync with conflict resolution
 - **Performance**: React.memo and useMemo optimization patterns
 
-### Page 100: Future Directions & Graduation Path
+### Page 115: Future Directions & Graduation Path
 
 **Evolution Roadmap & Graduation Criteria**
 
@@ -7991,11 +8549,12 @@ graph TD
 This journey covered:
 - **Phase 1 (Pages 1-25)**: Foundation with system overview and authentication deep dive
 - **Phase 2 (Pages 26-45)**: Core systems including background tasks and frontend integration  
-- **Phase 3 (Pages 46-75)**: Implementation practice with notes feature, testing mastery, and API patterns
-- **Phase 4 (Pages 76-95)**: Production deployment, monitoring, reliability, and operations
-- **Final Section (Pages 96-100)**: Lessons learned, architectural insights, and future directions
+- **Phase 3 (Pages 46-85)**: Implementation practice with notes feature, testing mastery, API patterns, and monitoring
+- **Phase 3.5 (Pages 86-100)**: Module Generator and Ownership-Based RBAC mastery
+- **Phase 4 (Pages 101-110)**: Production deployment, operations, and infrastructure
+- **Final Section (Pages 111-115)**: Lessons learned, architectural insights, and future directions
 
-**Total Coverage**: 100 pages of detailed technical analysis, architectural diagrams, code references, and practical insights derived from real codebase examination.
+**Total Coverage**: 115 pages of detailed technical analysis, architectural diagrams, code references, and practical insights derived from real codebase examination.
 
 **What You've Achieved**:
 ✅ **Deep System Understanding**: Complete comprehension of full-stack Rust architecture  
