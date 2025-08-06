@@ -12,7 +12,7 @@ pub async fn list___MODULE_NAME_PLURAL___service(
     // Use sqlx! macro for compile-time query validation
 
     let __MODULE_NAME_PLURAL__ = if let Some(search) = &request.search {
-        let search_param = format!("%{}%", search);
+        let search_param = format!("%{search}%");
         sqlx::query_as!(
             __MODULE_STRUCT__,
             "SELECT id, name, description, created_by, created_at, updated_at 
@@ -60,7 +60,7 @@ pub async fn get___MODULE_NAME___service(
     .fetch_optional(&mut *conn)
     .await
     .map_err(Error::from_sqlx)?
-    .ok_or_else(|| Error::NotFound(format!("__MODULE_STRUCT__ with id {}", id)))?;
+    .ok_or_else(|| Error::NotFound(format!("__MODULE_STRUCT__ with id {id}")))?;
 
     Ok(__MODULE_NAME__)
 }
@@ -149,7 +149,7 @@ pub async fn delete___MODULE_NAME___service(
     .rows_affected();
 
     if rows_affected == 0 {
-        return Err(Error::NotFound(format!("__MODULE_STRUCT__ with id {}", id)));
+        return Err(Error::NotFound(format!("__MODULE_STRUCT__ with id {id}")));
     }
 
     Ok(())

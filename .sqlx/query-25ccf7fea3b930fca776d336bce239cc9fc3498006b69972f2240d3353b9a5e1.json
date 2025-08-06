@@ -11,12 +11,12 @@
       {
         "ordinal": 1,
         "name": "username",
-        "type_info": "Varchar"
+        "type_info": "Text"
       },
       {
         "ordinal": 2,
         "name": "email",
-        "type_info": "Varchar"
+        "type_info": "Text"
       },
       {
         "ordinal": 3,
@@ -56,8 +56,8 @@
     ],
     "parameters": {
       "Left": [
-        "Varchar",
-        "Varchar",
+        "Text",
+        "Text",
         "Text",
         "Text"
       ]

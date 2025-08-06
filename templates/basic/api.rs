@@ -14,7 +14,7 @@ use crate::{
     auth::AuthUser,
     rbac::services as rbac_services,
     __MODULE_NAME_PLURAL__::{models::*, services::*},
-    types::{ApiResponse, AppState, Result},
+    types::{ApiResponse, AppState, Result, ErrorResponse},
 };
 #[allow(unused_imports)] // These are used in the routes function but compiler can't detect it
 use axum::{
@@ -24,10 +24,11 @@ use axum::{
     Router,
 };
 use serde::Deserialize;
+use utoipa::{IntoParams, ToSchema};
 use uuid::Uuid;
 
 /// Query parameters for listing __MODULE_NAME_PLURAL__
-#[derive(Deserialize)]
+#[derive(Deserialize, ToSchema, IntoParams)]
 pub struct List__MODULE_STRUCT__Query {
     pub limit: Option<i32>,
     pub offset: Option<i32>,
@@ -42,6 +43,20 @@ pub fn __MODULE_NAME_PLURAL___routes() -> Router<AppState> {
 }
 
 /// List all __MODULE_NAME_PLURAL__
+#[utoipa::path(
+    get,
+    path = "/api/v1/__MODULE_NAME_PLURAL__",
+    params(List__MODULE_STRUCT__Query),
+    responses(
+        (status = 200, description = "List __MODULE_NAME_PLURAL__ successfully", body = ApiResponse<Vec<__MODULE_STRUCT__>>),
+        (status = 401, description = "Unauthorized", body = ErrorResponse),
+        (status = 500, description = "Internal server error", body = ErrorResponse)
+    ),
+    security(
+        ("bearer_auth" = [])
+    ),
+    tag = "__MODULE_STRUCT_TITLE__"
+)]
 pub async fn list___MODULE_NAME_PLURAL__(
     State(app_state): State<AppState>,
     Extension(auth_user): Extension<AuthUser>,
@@ -75,6 +90,23 @@ pub async fn list___MODULE_NAME_PLURAL__(
 }
 
 /// Get a specific __MODULE_NAME__
+#[utoipa::path(
+    get,
+    path = "/api/v1/__MODULE_NAME_PLURAL__/{id}",
+    params(
+        ("id" = Uuid, Path, description = "__MODULE_STRUCT__ ID")
+    ),
+    responses(
+        (status = 200, description = "Get __MODULE_NAME__ successfully", body = ApiResponse<__MODULE_STRUCT__>),
+        (status = 401, description = "Unauthorized", body = ErrorResponse),
+        (status = 404, description = "__MODULE_STRUCT__ not found", body = ErrorResponse),
+        (status = 500, description = "Internal server error", body = ErrorResponse)
+    ),
+    security(
+        ("bearer_auth" = [])
+    ),
+    tag = "__MODULE_STRUCT_TITLE__"
+)]
 pub async fn get___MODULE_NAME__(
     State(app_state): State<AppState>,
     Extension(auth_user): Extension<AuthUser>,
@@ -96,6 +128,21 @@ pub async fn get___MODULE_NAME__(
 }
 
 /// Create a new __MODULE_NAME__
+#[utoipa::path(
+    post,
+    path = "/api/v1/__MODULE_NAME_PLURAL__",
+    request_body = Create__MODULE_STRUCT__Request,
+    responses(
+        (status = 201, description = "Create __MODULE_NAME__ successfully", body = ApiResponse<__MODULE_STRUCT__>),
+        (status = 400, description = "Bad request", body = ErrorResponse),
+        (status = 401, description = "Unauthorized", body = ErrorResponse),
+        (status = 500, description = "Internal server error", body = ErrorResponse)
+    ),
+    security(
+        ("bearer_auth" = [])
+    ),
+    tag = "__MODULE_STRUCT_TITLE__"
+)]
 pub async fn create___MODULE_NAME__(
     State(app_state): State<AppState>,
     Extension(auth_user): Extension<AuthUser>,
@@ -117,6 +164,26 @@ pub async fn create___MODULE_NAME__(
 }
 
 /// Update an existing __MODULE_NAME__
+#[utoipa::path(
+    put,
+    path = "/api/v1/__MODULE_NAME_PLURAL__/{id}",
+    params(
+        ("id" = Uuid, Path, description = "__MODULE_STRUCT__ ID")
+    ),
+    request_body = Update__MODULE_STRUCT__Request,
+    responses(
+        (status = 200, description = "Update __MODULE_NAME__ successfully", body = ApiResponse<__MODULE_STRUCT__>),
+        (status = 400, description = "Bad request", body = ErrorResponse),
+        (status = 401, description = "Unauthorized", body = ErrorResponse),
+        (status = 403, description = "Forbidden", body = ErrorResponse),
+        (status = 404, description = "__MODULE_STRUCT__ not found", body = ErrorResponse),
+        (status = 500, description = "Internal server error", body = ErrorResponse)
+    ),
+    security(
+        ("bearer_auth" = [])
+    ),
+    tag = "__MODULE_STRUCT_TITLE__"
+)]
 pub async fn update___MODULE_NAME__(
     State(app_state): State<AppState>,
     Extension(auth_user): Extension<AuthUser>,
@@ -145,6 +212,24 @@ pub async fn update___MODULE_NAME__(
 }
 
 /// Delete a __MODULE_NAME__
+#[utoipa::path(
+    delete,
+    path = "/api/v1/__MODULE_NAME_PLURAL__/{id}",
+    params(
+        ("id" = Uuid, Path, description = "__MODULE_STRUCT__ ID")
+    ),
+    responses(
+        (status = 200, description = "Delete __MODULE_NAME__ successfully"),
+        (status = 401, description = "Unauthorized", body = ErrorResponse),
+        (status = 403, description = "Forbidden", body = ErrorResponse),
+        (status = 404, description = "__MODULE_STRUCT__ not found", body = ErrorResponse),
+        (status = 500, description = "Internal server error", body = ErrorResponse)
+    ),
+    security(
+        ("bearer_auth" = [])
+    ),
+    tag = "__MODULE_STRUCT_TITLE__"
+)]
 pub async fn delete___MODULE_NAME__(
     State(app_state): State<AppState>,
     Extension(auth_user): Extension<AuthUser>,

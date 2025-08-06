@@ -18,13 +18,13 @@ use axum::{
 use serde::Deserialize;
 use sqlx::Acquire;
 use uuid::Uuid;
-use utoipa::IntoParams;
+use utoipa::{IntoParams, ToSchema};
 
 use crate::{
     auth::AuthUser,
     rbac::services as rbac_services,
     __MODULE_NAME_PLURAL__::{models::*, services::*},
-    types::{ApiResponse, AppState, Result},
+    types::{ApiResponse, AppState, Result, ErrorResponse},
 };
 
 /// Create __MODULE_NAME_PLURAL__ router with all endpoints
@@ -41,7 +41,7 @@ pub fn __MODULE_NAME_PLURAL___routes() -> Router<AppState> {
 }
 
 /// Query parameters for listing __MODULE_NAME_PLURAL__
-#[derive(Debug, Deserialize, IntoParams)]
+#[derive(Debug, Deserialize, IntoParams, ToSchema)]
 pub struct List__MODULE_STRUCT__QueryParams {
     /// Number of items per page (max 100)
     pub limit: Option<i32>,
