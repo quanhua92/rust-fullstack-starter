@@ -1570,17 +1570,28 @@ We're at a critical moment in software development where **AI capabilities will 
 This transformation leverages the **intersection of three competitive advantages**:
 
 ```mermaid
-venn
-    title Competitive Advantage Intersection
+graph TB
+    A["🚀 Rust Performance<br/>& Type Safety"]
+    B["🏗️ Production-Ready<br/>Infrastructure"]  
+    C["🤖 AI-First<br/>Architecture"]
     
-    "Rust Performance<br/>& Type Safety" as A
-    "Production-Ready<br/>Infrastructure" as B  
-    "AI-First<br/>Architecture" as C
+    A --> AB["High-Performance<br/>Backends"]
+    B --> AB
     
-    A and B: "High-Performance<br/>Backends"
-    A and C: "Reliable AI<br/>Operations" 
-    B and C: "Scalable AI<br/>Platforms"
-    A and B and C: "Ultimate AI<br/>Development<br/>Platform"
+    A --> AC["Reliable AI<br/>Operations"]
+    C --> AC
+    
+    B --> BC["Scalable AI<br/>Platforms"]
+    C --> BC
+    
+    AB --> ABC["🎯 Ultimate AI<br/>Development<br/>Platform"]
+    AC --> ABC
+    BC --> ABC
+    
+    style ABC fill:#e1f5fe,stroke:#0277bd,stroke-width:3px
+    style A fill:#f3e5f5,stroke:#7b1fa2
+    style B fill:#e8f5e8,stroke:#388e3c
+    style C fill:#fff3e0,stroke:#f57c00
 ```
 
 **The Sweet Spot**: We're the only platform combining Rust's performance with production-ready infrastructure AND AI-first architecture.
