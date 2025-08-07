@@ -1080,28 +1080,28 @@ CREATE INDEX ON document_chunks USING hnsw (embedding vector_cosine_ops);
 ```mermaid
 gantt
     title AI-First Transformation by Difficulty Level
-    dateFormat  X
-    axisFormat %s
+    dateFormat YYYY-MM-DD
+    axisFormat %m-%d
     
     section Beginner
-    AI Providers        :foundation1, 0, 2w
-    Cost Tracking      :foundation2, 0, 2w
-    Vector Database    :foundation3, 1w, 2w
+    AI Providers        :foundation1, 2026-01-01, 2026-01-14
+    Cost Tracking      :foundation2, 2026-01-01, 2026-01-14
+    Vector Database    :foundation3, 2026-01-08, 2026-01-21
     
     section Intermediate
-    Chat System        :chat1, 2w, 2w
-    Knowledge Base     :knowledge1, 3w, 2w
-    Content Generation :content1, 4w, 2w
+    Chat System        :chat1, 2026-01-15, 2026-01-28
+    Knowledge Base     :knowledge1, 2026-01-22, 2026-02-04
+    Content Generation :content1, 2026-01-29, 2026-02-11
     
     section Advanced
-    Optimization       :prod1, 6w, 2w
-    Monitoring         :prod2, 7w, 1w
-    Security          :prod3, 7w, 1w
+    Optimization       :prod1, 2026-02-12, 2026-02-25
+    Monitoring         :prod2, 2026-02-19, 2026-02-25
+    Security          :prod3, 2026-02-19, 2026-02-25
     
     section Expert
-    Documentation     :docs1, 8w, 2w
-    Templates         :templates1, 9w, 1w
-    Polish           :polish1, 9w, 1w
+    Documentation     :docs1, 2026-02-26, 2026-03-11
+    Templates         :templates1, 2026-03-04, 2026-03-10
+    Polish           :polish1, 2026-03-04, 2026-03-10
 ```
 
 **Why This Difficulty Progression?** Each phase builds on previous capabilities:
