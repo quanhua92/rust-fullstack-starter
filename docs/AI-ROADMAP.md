@@ -333,7 +333,7 @@ graph LR
 // Core abstraction that works with any provider
 pub trait AIProvider: Send + Sync {
     async fn chat(&self, request: ChatRequest) -> Result<ChatResponse>;
-    async fn stream_chat(&self, request: ChatRequest) -> impl Stream<Item = ChatChunk>;
+    async fn stream_chat(&self, request: ChatRequest) -> Result<impl Stream<Item = Result<ChatChunk, Error>>, Error>;
     async fn embed(&self, text: Vec<String>) -> Result<Vec<Embedding>>;
     async fn moderate(&self, content: String) -> Result<ModerationResult>;
 }
@@ -1027,7 +1027,7 @@ CREATE TABLE ai_usage_logs (
     input_tokens INTEGER NOT NULL DEFAULT 0,
     output_tokens INTEGER NOT NULL DEFAULT 0,
     total_tokens INTEGER NOT NULL DEFAULT 0,
-    cost_cents INTEGER NOT NULL DEFAULT 0,
+    cost_cents NUMERIC(15, 4) NOT NULL DEFAULT 0, -- Using NUMERIC for financial precision
     duration_ms INTEGER NOT NULL,
     success BOOLEAN NOT NULL DEFAULT true,
     error_message TEXT,
@@ -1062,8 +1062,9 @@ CREATE INDEX idx_document_chunks_doc_id ON document_chunks(document_id);
 CREATE INDEX idx_ai_usage_user_id_created ON ai_usage_logs(user_id, created_at DESC);
 CREATE INDEX idx_ai_usage_provider_model ON ai_usage_logs(provider, model);
 
--- Vector similarity search (if using pgvector)
-CREATE INDEX ON document_chunks USING ivfflat (embedding vector_cosine_ops);
+-- Vector similarity search (if using pgvector) 
+-- HNSW provides better speed-accuracy trade-off for production workloads
+CREATE INDEX ON document_chunks USING hnsw (embedding vector_cosine_ops);
 ```
 
 ---
