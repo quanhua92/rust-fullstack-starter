@@ -225,6 +225,9 @@ rust-fullstack-starter/
 - [Chaos Testing](docs/guides/09-chaos-testing.md) - **Enhanced with 10 scenarios**
 - [Monitoring & Observability](docs/guides/15-monitoring-and-observability.md) - **Complete monitoring system with 14 endpoints**
 
+### Inspiration & Ideas
+- [AI Development Ideas](docs/AI-IDEAS.md) - **💡 Conceptual exploration of AI-first patterns for inspiration** - *Ideas for building AI-powered applications using this starter as foundation*
+
 ## API Endpoints
 
 Key endpoints (see [full API docs](http://localhost:3000/api-docs)):
