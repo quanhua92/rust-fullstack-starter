@@ -967,6 +967,7 @@ CREATE TABLE knowledge_bases (
     name TEXT NOT NULL,
     description TEXT,
     embedding_model TEXT NOT NULL DEFAULT 'text-embedding-ada-002',
+    embedding_dimensions INTEGER NOT NULL DEFAULT 1536, -- Configurable per model
     chunk_size INTEGER DEFAULT 1000,
     chunk_overlap INTEGER DEFAULT 200,
     metadata JSONB DEFAULT '{}',
@@ -994,7 +995,7 @@ CREATE TABLE document_chunks (
     document_id UUID NOT NULL REFERENCES documents(id) ON DELETE CASCADE,
     chunk_index INTEGER NOT NULL,
     content TEXT NOT NULL,
-    embedding VECTOR(1536), -- OpenAI embedding dimension
+    embedding VECTOR, -- Dimension determined by knowledge base embedding model
     metadata JSONB DEFAULT '{}',
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -1027,7 +1028,7 @@ CREATE TABLE ai_usage_logs (
     input_tokens INTEGER NOT NULL DEFAULT 0,
     output_tokens INTEGER NOT NULL DEFAULT 0,
     total_tokens INTEGER NOT NULL DEFAULT 0,
-    cost_cents NUMERIC(15, 4) NOT NULL DEFAULT 0, -- Using NUMERIC for financial precision
+    cost_dollars NUMERIC(15, 4) NOT NULL DEFAULT 0, -- Cost in USD, using NUMERIC for financial precision
     duration_ms INTEGER NOT NULL,
     success BOOLEAN NOT NULL DEFAULT true,
     error_message TEXT,
