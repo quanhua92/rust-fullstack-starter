@@ -12,7 +12,7 @@ use crate::{
     rbac::services as rbac_services,
     tasks::{
         processor::TaskProcessor,
-        types::{CreateTaskRequest, TaskFilter, TaskResponse, TaskStats, TaskStatus},
+        types::{CreateTaskRequest, TaskFilter, TaskPriority, TaskResponse, TaskStats, TaskStatus},
     },
     types::{ApiResponse, AppState, ErrorResponse},
 };
@@ -32,6 +32,7 @@ pub struct CreateTaskApiRequest {
 pub struct TaskQueryParams {
     pub task_type: Option<String>,
     pub status: Option<String>,
+    pub priority: Option<String>,
     pub limit: Option<i64>,
     pub offset: Option<i64>,
 }
@@ -98,7 +99,11 @@ pub async fn create_task(
     .await
     .map_err(|e| Error::Internal(format!("Failed to validate task type: {e}")))?;
 
-    if !task_type_exists.unwrap_or(false) {
+    let is_valid = task_type_exists.ok_or_else(|| {
+        Error::Internal("Database query returned null for task type validation".to_string())
+    })?;
+
+    if !is_valid {
         return Err(Error::validation(
             "task_type",
             &format!(
@@ -117,6 +122,11 @@ pub async fn create_task(
     // Add user-provided metadata
     for (key, value) in payload.metadata {
         request = request.with_metadata(key, value);
+    }
+
+    // Validate the request for security and correctness
+    if let Err(e) = request.validate() {
+        return Err(Error::validation("request", &e));
     }
 
     // Create a temporary processor to create the task
@@ -209,6 +219,15 @@ pub async fn list_tasks(
         _ => None,
     };
 
+    // Safely parse priority parameter to prevent SQL injection
+    let priority = match params.priority.as_deref() {
+        Some("low") => Some(TaskPriority::Low),
+        Some("normal") => Some(TaskPriority::Normal),
+        Some("high") => Some(TaskPriority::High),
+        Some("critical") => Some(TaskPriority::Critical),
+        _ => None,
+    };
+
     // Determine task filtering based on user role
     let created_by_filter =
         match rbac_services::has_role_or_higher(&auth_user, crate::rbac::UserRole::Moderator) {
@@ -219,7 +238,7 @@ pub async fn list_tasks(
     let filter = TaskFilter {
         task_type: params.task_type,
         status,
-        priority: None, // TODO: Parse priority string if needed
+        priority, // Now safely parsed from input
         created_by: created_by_filter,
         created_after: None,
         created_before: None,
@@ -259,8 +278,11 @@ pub async fn list_tasks(
 )]
 pub async fn get_stats(
     State(app_state): State<AppState>,
-    Extension(_auth_user): Extension<AuthUser>,
+    Extension(auth_user): Extension<AuthUser>,
 ) -> Result<Json<ApiResponse<TaskStats>>, Error> {
+    // System-wide task statistics require elevated permissions
+    rbac_services::require_moderator_or_higher(&auth_user)?;
+
     let processor = TaskProcessor::new(
         app_state.database.clone(),
         crate::tasks::processor::ProcessorConfig::default(),

@@ -305,8 +305,12 @@ impl TaskProcessor {
 
     /// Process a single task
     async fn process_task(&self, mut task: Task) -> TaskResult2<()> {
-        // Acquire semaphore permit to limit concurrency
-        let _permit = self.semaphore.acquire().await.unwrap();
+        // Acquire semaphore permit to limit concurrency (with proper error handling)
+        let _permit = self.semaphore.acquire().await.map_err(|_| {
+            TaskError::Execution(
+                "Failed to acquire semaphore permit for task processing".to_string(),
+            )
+        })?;
 
         debug!("Processing task {} of type {}", task.id, task.task_type);
 
@@ -414,7 +418,7 @@ impl TaskProcessor {
         Ok(())
     }
 
-    /// Update task status
+    /// Update task status with optimistic concurrency control to prevent race conditions
     async fn update_task_status(&self, task_id: Uuid, status: TaskStatus) -> TaskResult2<()> {
         let mut conn = self.database.pool.acquire().await?;
 
@@ -433,20 +437,42 @@ impl TaskProcessor {
             None
         };
 
-        sqlx::query!(
+        // Use optimistic concurrency control - only update if task is in expected state
+        let valid_previous_states: Vec<String> = match status {
+            TaskStatus::Running => vec!["pending".to_string(), "retrying".to_string()],
+            TaskStatus::Failed | TaskStatus::Completed => vec!["running".to_string()],
+            TaskStatus::Cancelled => vec![
+                "pending".to_string(),
+                "retrying".to_string(),
+                "running".to_string(),
+            ],
+            TaskStatus::Retrying => vec!["failed".to_string()],
+            TaskStatus::Pending => vec!["failed".to_string(), "retrying".to_string()], // For retry operations
+        };
+
+        let status_clone = status.clone();
+        let result = sqlx::query!(
             r#"
             UPDATE tasks 
             SET status = $1, updated_at = $2, started_at = COALESCE($3, started_at), completed_at = COALESCE($4, completed_at)
-            WHERE id = $5
+            WHERE id = $5 AND status = ANY($6)
             "#,
             status as TaskStatus,
             Utc::now(),
             started_at,
             completed_at,
-            task_id
+            task_id,
+            &valid_previous_states
         )
         .execute(&mut *conn)
         .await?;
+
+        if result.rows_affected() == 0 {
+            return Err(TaskError::InvalidStatusTransition {
+                from: TaskStatus::Pending, // We don't know the actual current status
+                to: status_clone,
+            });
+        }
 
         Ok(())
     }

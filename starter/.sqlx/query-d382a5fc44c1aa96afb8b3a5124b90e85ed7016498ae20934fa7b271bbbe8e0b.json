@@ -1,0 +1,19 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            UPDATE tasks \n            SET status = $1, updated_at = $2, started_at = COALESCE($3, started_at), completed_at = COALESCE($4, completed_at)\n            WHERE id = $5 AND status = ANY($6)\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Timestamptz",
+        "Timestamptz",
+        "Timestamptz",
+        "Uuid",
+        "TextArray"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "d382a5fc44c1aa96afb8b3a5124b90e85ed7016498ae20934fa7b271bbbe8e0b"
+}

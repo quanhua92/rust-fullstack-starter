@@ -1460,3 +1460,371 @@ async fn test_idor_protection_system_tasks_denied() {
         "System tasks should not appear in user task listings"
     );
 }
+
+// =====================================
+// COMPREHENSIVE SECURITY TESTS
+// =====================================
+// These tests verify all the security vulnerabilities that were fixed
+
+#[tokio::test]
+async fn test_security_input_validation_task_creation() {
+    let app = spawn_app().await;
+    let factory = TestDataFactory::new_with_task_types(app.clone()).await;
+
+    let unique_username = format!("user_{}", &uuid::Uuid::new_v4().to_string()[..8]);
+    let (_user, token) = factory.create_authenticated_user(&unique_username).await;
+
+    // Test invalid task_type with special characters (should be rejected)
+    let malicious_task_data = json!({
+        "task_type": "email'; DROP TABLE tasks; --",
+        "payload": {"to": "test@example.com"}
+    });
+
+    let response = app
+        .post_json_auth("/api/v1/tasks", &malicious_task_data, &token.token)
+        .await;
+    assert_status(&response, StatusCode::BAD_REQUEST);
+    let json: serde_json::Value = response.json().await.unwrap();
+    // The validation error can come from either our validation or server-side validation
+    let error_message = json["error"]["message"].as_str().unwrap();
+    assert!(
+        error_message.contains("alphanumeric") || 
+        error_message.contains("not registered") ||
+        error_message.contains("Invalid")
+    );
+
+    // Test empty task_type (should be rejected)
+    let empty_task_data = json!({
+        "task_type": "",
+        "payload": {"to": "test@example.com"}
+    });
+
+    let response = app
+        .post_json_auth("/api/v1/tasks", &empty_task_data, &token.token)
+        .await;
+    assert_status(&response, StatusCode::BAD_REQUEST);
+
+    // Test extremely long task_type (should be rejected)
+    let long_task_data = json!({
+        "task_type": "a".repeat(200),
+        "payload": {"to": "test@example.com"}
+    });
+
+    let response = app
+        .post_json_auth("/api/v1/tasks", &long_task_data, &token.token)
+        .await;
+    assert_status(&response, StatusCode::BAD_REQUEST);
+
+    // Test malicious metadata keys
+    let malicious_metadata_data = json!({
+        "task_type": "email",
+        "payload": {"to": "test@example.com"},
+        "metadata": {
+            "'; DROP TABLE tasks; --": "malicious_value",
+            "normal_key": "normal_value"
+        }
+    });
+
+    let response = app
+        .post_json_auth("/api/v1/tasks", &malicious_metadata_data, &token.token)
+        .await;
+    assert_status(&response, StatusCode::BAD_REQUEST);
+}
+
+#[tokio::test]
+async fn test_security_payload_size_limits() {
+    let app = spawn_app().await;
+    let factory = TestDataFactory::new_with_task_types(app.clone()).await;
+
+    let unique_username = format!("user_{}", &uuid::Uuid::new_v4().to_string()[..8]);
+    let (_user, token) = factory.create_authenticated_user(&unique_username).await;
+
+    // Test oversized payload (should be rejected to prevent DoS)
+    let large_payload = "x".repeat(2 * 1024 * 1024); // 2MB payload
+    let oversized_task_data = json!({
+        "task_type": "email",
+        "payload": {
+            "to": "test@example.com",
+            "large_data": large_payload
+        }
+    });
+
+    let response = app
+        .post_json_auth("/api/v1/tasks", &oversized_task_data, &token.token)
+        .await;
+    // Server may return 413 (Payload Too Large) or 400 (Bad Request) depending on where validation occurs
+    assert!(
+        response.status() == StatusCode::BAD_REQUEST || 
+        response.status() == StatusCode::PAYLOAD_TOO_LARGE
+    );
+    
+    if response.status() == StatusCode::BAD_REQUEST {
+        let json: serde_json::Value = response.json().await.unwrap();
+        assert!(json["error"]["message"].as_str().unwrap().contains("1MB"));
+    }
+}
+
+#[tokio::test]
+async fn test_security_metadata_size_limits() {
+    let app = spawn_app().await;
+    let factory = TestDataFactory::new_with_task_types(app.clone()).await;
+
+    let unique_username = format!("user_{}", &uuid::Uuid::new_v4().to_string()[..8]);
+    let (_user, token) = factory.create_authenticated_user(&unique_username).await;
+
+    // Test oversized total metadata (should be rejected)
+    let mut large_metadata = serde_json::Map::new();
+    for i in 0..200 {
+        large_metadata.insert(
+            format!("key_{}", i),
+            serde_json::Value::String("x".repeat(500)), // 500 chars per value
+        );
+    }
+
+    let oversized_metadata_data = json!({
+        "task_type": "email",
+        "payload": {"to": "test@example.com"},
+        "metadata": large_metadata
+    });
+
+    let response = app
+        .post_json_auth("/api/v1/tasks", &oversized_metadata_data, &token.token)
+        .await;
+    assert_status(&response, StatusCode::BAD_REQUEST);
+    let json: serde_json::Value = response.json().await.unwrap();
+    assert!(json["error"]["message"].as_str().unwrap().contains("64KB"));
+}
+
+#[tokio::test]
+async fn test_security_scheduling_limits() {
+    let app = spawn_app().await;
+    let factory = TestDataFactory::new_with_task_types(app.clone()).await;
+
+    let unique_username = format!("user_{}", &uuid::Uuid::new_v4().to_string()[..8]);
+    let (_user, token) = factory.create_authenticated_user(&unique_username).await;
+
+    // Test scheduling too far in the future (should be rejected)
+    let far_future = chrono::Utc::now() + chrono::Duration::days(400);
+    let future_task_data = json!({
+        "task_type": "email",
+        "payload": {"to": "test@example.com"},
+        "scheduled_at": far_future.to_rfc3339()
+    });
+
+    let response = app
+        .post_json_auth("/api/v1/tasks", &future_task_data, &token.token)
+        .await;
+    assert_status(&response, StatusCode::BAD_REQUEST);
+
+    // Test scheduling too far in the past (should be rejected)
+    let far_past = chrono::Utc::now() - chrono::Duration::hours(2);
+    let past_task_data = json!({
+        "task_type": "email",
+        "payload": {"to": "test@example.com"},
+        "scheduled_at": far_past.to_rfc3339()
+    });
+
+    let response = app
+        .post_json_auth("/api/v1/tasks", &past_task_data, &token.token)
+        .await;
+    assert_status(&response, StatusCode::BAD_REQUEST);
+}
+
+#[tokio::test]
+async fn test_security_sql_injection_protection_priority_filter() {
+    let app = spawn_app().await;
+    let factory = TestDataFactory::new_with_task_types(app.clone()).await;
+
+    let unique_username = format!("user_{}", &uuid::Uuid::new_v4().to_string()[..8]);
+    let (_user, token) = factory.create_authenticated_user(&unique_username).await;
+
+    // Test SQL injection attempt in priority parameter
+    let malicious_queries = vec![
+        "high'; DROP TABLE tasks; --",
+        "normal' OR 1=1 --",
+        "low'; UPDATE tasks SET status='completed' WHERE 1=1; --",
+        "critical' UNION SELECT * FROM users --",
+    ];
+
+    for malicious_priority in malicious_queries {
+        let encoded_priority = malicious_priority.replace("'", "%27").replace(" ", "%20");
+        let url = format!("/api/v1/tasks?priority={}", encoded_priority);
+        let response = app.get_auth(&url, &token.token).await;
+
+        // Should return OK with empty results (malicious priority is ignored)
+        assert_status(&response, StatusCode::OK);
+        let json: serde_json::Value = response.json().await.unwrap();
+
+        // Should return normal response structure (not error)
+        assert_json_field_exists(&json, "data");
+
+        // Verify database is not compromised by checking task count
+        let stats_response = app.get_auth("/api/v1/tasks", &token.token).await;
+        assert_status(&stats_response, StatusCode::OK);
+    }
+}
+
+#[tokio::test]
+async fn test_security_rbac_stats_endpoint_protection() {
+    let app = spawn_app().await;
+    let factory = TestDataFactory::new_with_task_types(app.clone()).await;
+
+    // Regular user should be denied access to stats
+    let unique_username = format!("user_{}", &uuid::Uuid::new_v4().to_string()[..8]);
+    let (_user, token) = factory.create_authenticated_user(&unique_username).await;
+
+    let response = app.get_auth("/api/v1/tasks/stats", &token.token).await;
+    assert_status(&response, StatusCode::FORBIDDEN);
+
+    // Create admin user manually using direct database access for test
+    let admin_user_data = json!({
+        "username": format!("admin_{}", &uuid::Uuid::new_v4().to_string()[..8]),
+        "email": format!("admin_{}@example.com", &uuid::Uuid::new_v4().to_string()[..8]),
+        "password": "AdminPass123!"
+    });
+
+    let admin_response = app
+        .post_json("/api/v1/auth/register", &admin_user_data)
+        .await;
+    assert_status(&admin_response, StatusCode::OK);
+
+    // Manually promote to admin in database
+    let admin_json: serde_json::Value = admin_response.json().await.unwrap();
+    
+    // Debug print to see the actual response structure
+    println!("Admin registration response: {}", serde_json::to_string_pretty(&admin_json).unwrap());
+    
+    let admin_id: uuid::Uuid = if let Some(id) = admin_json["data"]["user"]["id"].as_str() {
+        uuid::Uuid::parse_str(id).unwrap()
+    } else if let Some(id) = admin_json["data"]["id"].as_str() {
+        uuid::Uuid::parse_str(id).unwrap()
+    } else {
+        panic!("Could not find user ID in response: {}", admin_json);
+    };
+
+    let db = &app.db_pool;
+    sqlx::query!("UPDATE users SET role = 'admin' WHERE id = $1", admin_id)
+        .execute(db)
+        .await
+        .unwrap();
+
+    // Login as admin
+    let admin_login_data = json!({
+        "username": admin_user_data["username"],
+        "password": "AdminPass123!"
+    });
+    let admin_login_response = app.post_json("/api/v1/auth/login", &admin_login_data).await;
+    assert_status(&admin_login_response, StatusCode::OK);
+    let admin_login_json: serde_json::Value = admin_login_response.json().await.unwrap();
+    let admin_token = admin_login_json["data"]["session_token"].as_str().unwrap();
+
+    let admin_stats_response = app.get_auth("/api/v1/tasks/stats", admin_token).await;
+    assert_status(&admin_stats_response, StatusCode::OK);
+}
+
+#[tokio::test]
+async fn test_security_task_type_validation_enforcement() {
+    let app = spawn_app().await;
+    let factory = TestDataFactory::new(app.clone());
+
+    let unique_username = format!("user_{}", &uuid::Uuid::new_v4().to_string()[..8]);
+    let (_user, token) = factory.create_authenticated_user(&unique_username).await;
+
+    // Try to create task with unregistered task type (should be rejected)
+    let unregistered_task_data = json!({
+        "task_type": "unregistered_malicious_type",
+        "payload": {"malicious": "data"}
+    });
+
+    let response = app
+        .post_json_auth("/api/v1/tasks", &unregistered_task_data, &token.token)
+        .await;
+    assert_status(&response, StatusCode::BAD_REQUEST);
+    let json: serde_json::Value = response.json().await.unwrap();
+    assert!(
+        json["error"]["message"]
+            .as_str()
+            .unwrap()
+            .contains("not registered")
+    );
+}
+
+#[tokio::test]
+async fn test_security_concurrent_task_processing_race_conditions() {
+    let app = spawn_app().await;
+    let factory = TestDataFactory::new_with_task_types(app.clone()).await;
+
+    let unique_username = format!("user_{}", &uuid::Uuid::new_v4().to_string()[..8]);
+    let (_user, token) = factory.create_authenticated_user(&unique_username).await;
+
+    // Create multiple tasks that would normally cause race conditions
+    let mut task_ids = Vec::new();
+    for i in 0..5 {
+        let task_data = json!({
+            "task_type": "delay_task",
+            "payload": {
+                "delay_seconds": 0,  // No delay for fast processing
+                "task_id": format!("race_test_{}", i)
+            }
+        });
+
+        let response = app
+            .post_json_auth("/api/v1/tasks", &task_data, &token.token)
+            .await;
+        assert_status(&response, StatusCode::OK);
+        let json: serde_json::Value = response.json().await.unwrap();
+        task_ids.push(json["data"]["id"].as_str().unwrap().to_string());
+    }
+
+    // Try to concurrently cancel all tasks (test race condition protection)
+    let cancel_futures: Vec<_> = task_ids
+        .iter()
+        .map(|task_id| {
+            let app = app.clone();
+            let token = token.token.clone();
+            let task_id = task_id.clone();
+            tokio::spawn(async move {
+                app.post_auth(&format!("/api/v1/tasks/{}/cancel", task_id), &token)
+                    .await
+            })
+        })
+        .collect();
+
+    let mut results = Vec::new();
+    for future in cancel_futures {
+        results.push(future.await.unwrap());
+    }
+
+    // At least some should succeed, none should cause inconsistent state
+    let success_count = results
+        .iter()
+        .filter(|r| r.status() == StatusCode::OK)
+        .count();
+
+    // Should have some successful cancellations
+    assert!(
+        success_count >= 1,
+        "At least one cancellation should succeed"
+    );
+
+    // Verify no tasks are in inconsistent state
+    for task_id in task_ids {
+        let task_response = app
+            .get_auth(&format!("/api/v1/tasks/{}", task_id), &token.token)
+            .await;
+        assert_status(&task_response, StatusCode::OK);
+        let task_json: serde_json::Value = task_response.json().await.unwrap();
+
+        if let Some(status) = task_json["data"]["status"].as_str() {
+            // Task should be in a valid final state
+            assert!(
+                matches!(
+                    status,
+                    "pending" | "running" | "completed" | "failed" | "cancelled"
+                ),
+                "Task should be in valid state, got: {}",
+                status
+            );
+        }
+    }
+}

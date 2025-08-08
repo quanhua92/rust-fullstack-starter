@@ -233,6 +233,86 @@ impl CreateTaskRequest {
         }
     }
 
+    /// Validates the CreateTaskRequest for security and correctness
+    pub fn validate(&self) -> std::result::Result<(), String> {
+        // Validate task_type is not empty and contains only safe characters
+        if self.task_type.is_empty() {
+            return Err("Task type cannot be empty".to_string());
+        }
+
+        if self.task_type.len() > 128 {
+            return Err("Task type cannot exceed 128 characters".to_string());
+        }
+
+        // Only allow alphanumeric characters, underscores, and hyphens in task_type
+        if !self
+            .task_type
+            .chars()
+            .all(|c| c.is_alphanumeric() || c == '_' || c == '-')
+        {
+            return Err(
+                "Task type can only contain alphanumeric characters, underscores, and hyphens"
+                    .to_string(),
+            );
+        }
+
+        // Validate payload is a reasonable size (prevent DoS attacks)
+        let payload_str = self.payload.to_string();
+        if payload_str.len() > 1024 * 1024 {
+            // 1MB limit
+            return Err("Task payload cannot exceed 1MB".to_string());
+        }
+
+        // Validate metadata keys and values
+        for (key, value) in &self.metadata {
+            if key.is_empty() || key.len() > 128 {
+                return Err("Metadata keys must be 1-128 characters long".to_string());
+            }
+
+            // Only allow alphanumeric characters, underscores, and hyphens in metadata keys
+            if !key
+                .chars()
+                .all(|c| c.is_alphanumeric() || c == '_' || c == '-')
+            {
+                return Err("Metadata keys can only contain alphanumeric characters, underscores, and hyphens".to_string());
+            }
+
+            let value_str = value.to_string();
+            if value_str.len() > 4096 {
+                // 4KB limit per metadata value
+                return Err("Metadata values cannot exceed 4KB".to_string());
+            }
+        }
+
+        // Validate total metadata size
+        let total_metadata_size: usize = self
+            .metadata
+            .iter()
+            .map(|(k, v)| k.len() + v.to_string().len())
+            .sum();
+        if total_metadata_size > 64 * 1024 {
+            // 64KB total metadata limit
+            return Err("Total metadata size cannot exceed 64KB".to_string());
+        }
+
+        // Validate scheduled_at is not too far in the future (1 year limit)
+        if let Some(scheduled_at) = self.scheduled_at {
+            let now = chrono::Utc::now();
+            let one_year_from_now = now + chrono::Duration::days(365);
+            if scheduled_at > one_year_from_now {
+                return Err("Tasks cannot be scheduled more than 1 year in the future".to_string());
+            }
+
+            // Don't allow scheduling tasks too far in the past (1 hour tolerance)
+            let one_hour_ago = now - chrono::Duration::hours(1);
+            if scheduled_at < one_hour_ago {
+                return Err("Tasks cannot be scheduled more than 1 hour in the past".to_string());
+            }
+        }
+
+        Ok(())
+    }
+
     pub fn with_priority(mut self, priority: TaskPriority) -> Self {
         self.priority = priority;
         self
