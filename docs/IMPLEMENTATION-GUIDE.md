@@ -90,19 +90,51 @@ POST /api/v1/tasks
 
 **Retry Strategy**:
 ```rust
-pub struct RetryStrategy {
-    max_attempts: u32,
-    base_delay: Duration,
-    max_delay: Duration,
-    backoff_multiplier: f64,
+pub enum RetryStrategy {
+    /// Exponential backoff: delay = base_delay * multiplier^attempt
+    Exponential {
+        base_delay: Duration,
+        multiplier: f64,
+        max_delay: Duration,
+        max_attempts: u32,
+    },
+    /// Linear backoff: delay = base_delay + (increment * attempt)  
+    Linear {
+        base_delay: Duration,
+        increment: Duration,
+        max_delay: Duration,
+        max_attempts: u32,
+    },
+    /// Fixed interval: delay = interval for each retry
+    Fixed {
+        interval: Duration,
+        max_attempts: u32,
+    },
+    /// No retry
+    None,
 }
 
-// Exponential backoff with jitter
+// Calculate next delay based on strategy
 impl RetryStrategy {
-    pub fn next_delay(&self, attempt: u32) -> Duration {
-        let delay = self.base_delay.mul_f64(self.backoff_multiplier.powi(attempt as i32));
-        let jittered = delay.mul_f64(0.5 + rand::random::<f64>() * 0.5);
-        std::cmp::min(jittered, self.max_delay)
+    pub fn next_delay(&self, attempt: u32) -> Option<Duration> {
+        match self {
+            Self::Exponential { base_delay, multiplier, max_delay, max_attempts } => {
+                if attempt >= *max_attempts { return None; }
+                let delay = Duration::from_millis(
+                    (base_delay.as_millis() as f64 * multiplier.powi(attempt as i32)) as u64
+                );
+                Some(delay.min(*max_delay))
+            }
+            Self::Linear { base_delay, increment, max_delay, max_attempts } => {
+                if attempt >= *max_attempts { return None; }
+                Some((*base_delay + (*increment * attempt)).min(*max_delay))
+            }
+            Self::Fixed { interval, max_attempts } => {
+                if attempt >= *max_attempts { return None; }
+                Some(*interval)
+            }
+            Self::None => None,
+        }
     }
 }
 ```
@@ -110,11 +142,13 @@ impl RetryStrategy {
 **Circuit Breaker**:
 ```rust
 pub struct CircuitBreaker {
-    failure_threshold: u32,
-    recovery_timeout: Duration,
     state: CircuitState,
     failure_count: u32,
+    success_count: u32,
     last_failure: Option<Instant>,
+    failure_threshold: u32,
+    success_threshold: u32,
+    timeout: Duration,
 }
 
 // Prevent cascading failures
@@ -163,7 +197,7 @@ pub async fn get_all_user_tasks(
 
 ### User Lifecycle Management
 
-**12 endpoints for complete user management**:
+**13 endpoints for complete user management**:
 
 ```rust
 // Self-service endpoints
@@ -185,25 +219,41 @@ GET /api/v1/admin/users/stats    // User statistics and analytics
 ### Password Security
 
 ```rust
-pub async fn validate_password_security(password: &str) -> Result<(), ValidationError> {
-    // Length requirement
+pub fn validate_password(password: &str) -> Result<()> {
+    // Length requirement (8-128 characters)
     if password.len() < 8 {
-        return Err(ValidationError::TooShort);
+        return Err(Error::validation(
+            "password",
+            "Password must be at least 8 characters long",
+        ));
     }
-    
-    // Complexity requirements
-    let has_lowercase = password.chars().any(|c| c.is_lowercase());
-    let has_uppercase = password.chars().any(|c| c.is_uppercase());
+    if password.len() > 128 {
+        return Err(Error::validation(
+            "password", 
+            "Password must be less than 128 characters",
+        ));
+    }
+
+    // Check password strength requirements (3 out of 4 character types)
+    let has_upper = password.chars().any(|c| c.is_uppercase());
+    let has_lower = password.chars().any(|c| c.is_lowercase());
     let has_digit = password.chars().any(|c| c.is_numeric());
-    let has_special = password.chars().any(|c| "!@#$%^&*()_+-=[]{}|;:,.<>?".contains(c));
-    
-    if !(has_lowercase && has_uppercase && has_digit && has_special) {
-        return Err(ValidationError::InsufficientComplexity);
+    let has_special = password.chars().any(|c| {
+        matches!(c, '!' | '@' | '#' | '$' | '%' | '^' | '&' | '*' | '(' | ')' | '_' | '+' | '-' | '=' | '[' | ']' | '{' | '}' | '|' | ';' | ':' | ',' | '.' | '<' | '>' | '?')
+    });
+
+    let strength_count = [has_upper, has_lower, has_digit, has_special]
+        .iter()
+        .filter(|&&x| x)
+        .count();
+
+    if strength_count < 3 {
+        return Err(Error::validation(
+            "password",
+            "Password must contain at least 3 of: uppercase letters, lowercase letters, numbers, special characters",
+        ));
     }
-    
-    // Check against common passwords (timing-attack safe)
-    check_common_passwords_constant_time(password).await?;
-    
+
     Ok(())
 }
 ```
@@ -249,28 +299,33 @@ async fn test_user_can_create_own_tasks() {
 
 ```rust
 pub struct TestApp {
-    pub server_url: String,
+    pub address: String,
+    pub client: reqwest::Client,
+    pub config: AppConfig,
     pub db_pool: PgPool,
-    pub db_name: String,    // Unique per test
 }
 
 impl TestApp {
     pub async fn spawn() -> Self {
-        let db_name = format!("test_{}", Uuid::new_v4().simple());
+        // Initialize tracing for tests
+        Lazy::force(&TRACING);
+
+        // Create isolated test database  
+        let database = Database::new_with_random_db("test_db").await;
+        let config = AppConfig::new_with_database(database.connection_string());
         
-        // Create isolated database
-        let db_pool = create_test_database(&db_name).await;
+        // Start server on random port
+        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let address = format!("http://{}", listener.local_addr().unwrap());
         
-        // Run migrations
-        sqlx::migrate!("../migrations").run(&db_pool).await.unwrap();
-        
-        // Start server with test database
-        let server = spawn_server_with_db(db_pool.clone()).await;
-        
+        let app = server::create_app(config.clone(), database.pool()).await;
+        tokio::spawn(axum::serve(listener, app));
+
         Self {
-            server_url: format!("http://127.0.0.1:{}", server.port),
-            db_pool,
-            db_name,
+            address,
+            client: reqwest::Client::builder().redirect(Policy::none()).build().unwrap(),
+            config,
+            db_pool: database.pool(),
         }
     }
 }
@@ -285,7 +340,7 @@ impl TestApp {
 ### Test Categories
 
 ```rust
-// Authentication tests - 15 tests
+// Authentication tests - 21 tests
 mod auth_tests {
     test_user_registration_success()
     test_login_with_valid_credentials()
@@ -293,7 +348,7 @@ mod auth_tests {
     test_password_validation_security_edge_cases()
 }
 
-// Business logic tests - 145 tests
+// Business logic tests - 99 tests
 mod business_logic_tests {
     test_task_creation_and_processing()
     test_rbac_ownership_patterns()
@@ -301,14 +356,14 @@ mod business_logic_tests {
     test_monitoring_event_creation()
 }
 
-// System behavior tests - 12 tests  
+// System behavior tests - 18 tests  
 mod system_tests {
     test_health_checks_all_variants()
     test_api_error_handling_consistency()
     test_cors_and_security_headers()
 }
 
-// API standards tests - 10 tests
+// API standards tests - 11 tests
 mod api_standards_tests {
     test_openapi_schema_generation()
     test_json_response_consistency()
@@ -322,10 +377,10 @@ mod api_standards_tests {
 
 **4-table schema for complete observability**:
 ```sql
-monitoring_events    -- Logs, traces, alerts
-monitoring_metrics   -- Time-series data  
-monitoring_incidents -- Outage tracking
-monitoring_alerts    -- Rule-based monitoring
+events     -- Logs, traces, alerts
+metrics    -- Time-series data  
+incidents  -- Outage tracking
+alerts     -- Rule-based monitoring
 ```
 
 ### Event-Driven Monitoring
@@ -349,7 +404,7 @@ pub async fn create_monitoring_event(
     let event = sqlx::query_as!(
         Event,
         r#"
-        INSERT INTO monitoring_events (event_type, source, message, level, tags, payload, recorded_at)
+        INSERT INTO events (event_type, source, message, level, tags, payload, recorded_at)
         VALUES ($1, $2, $3, $4, $5, $6, COALESCE($7, NOW()))
         RETURNING *
         "#,
@@ -393,7 +448,7 @@ task_processing_duration_ms{task_type="email",status="completed"} 245.5 17044548
 ```rust
 // Source ownership validation
 pub fn validate_source_ownership(user: &AuthUser, source: &str) -> Result<(), RbacError> {
-    if user.role >= Role::Moderator {
+    if user.role.has_role_or_higher(UserRole::Moderator) {
         return Ok(()); // Moderators+ can use any source
     }
     
@@ -431,7 +486,7 @@ pub async fn get_incident_timeline(
     let events = sqlx::query_as!(
         Event,
         r#"
-        SELECT * FROM monitoring_events 
+        SELECT * FROM events 
         WHERE recorded_at >= $1 
           AND recorded_at <= COALESCE($2, NOW())
         ORDER BY recorded_at ASC
@@ -453,38 +508,61 @@ pub async fn get_incident_timeline(
 ### Custom Error Types
 
 ```rust
-#[derive(Debug, thiserror::Error)]
-pub enum ApiError {
+#[derive(Error, Debug)]
+pub enum Error {
     #[error("Database error: {0}")]
     Database(#[from] sqlx::Error),
-    
-    #[error("Validation failed: {0}")]
-    Validation(String),
-    
-    #[error("Unauthorized: {message}")]
-    Unauthorized { message: String },
-    
-    #[error("Not found: {resource} with id {id}")]
-    NotFound { resource: String, id: String },
-    
-    #[error("Task processing failed: {0}")]
-    TaskProcessing(#[from] TaskError),
+
+    #[error("Unauthorized access")]
+    Unauthorized,
+
+    #[error("Forbidden: {0}")]
+    Forbidden(String),
+
+    #[error("Validation failed for {field}: {message}")]
+    ValidationError { field: String, message: String },
+
+    #[error("Not found: {0}")]
+    NotFound(String),
+
+    #[error("User not found")]
+    UserNotFound,
+
+    #[error("Conflict: {0}")]
+    Conflict(String),
+
+    #[error("Internal error: {0}")]
+    Internal(String),
+
+    #[error("Task execution failed: {0}")]
+    TaskExecutionFailed(String),
 }
 
 // Convert to HTTP responses
-impl IntoResponse for ApiError {
+impl IntoResponse for Error {
     fn into_response(self) -> Response {
-        let (status, message) = match self {
-            ApiError::Validation(msg) => (StatusCode::BAD_REQUEST, msg),
-            ApiError::Unauthorized { message } => (StatusCode::UNAUTHORIZED, message),
-            ApiError::NotFound { resource, id } => (
-                StatusCode::NOT_FOUND, 
-                format!("{} with id {} not found", resource, id)
+        let (status, error_message, error_code) = match &self {
+            Error::ValidationError { field, message } => (
+                StatusCode::BAD_REQUEST,
+                format!("Validation failed for {field}: {message}"),
+                "VALIDATION_FAILED",
             ),
-            _ => (StatusCode::INTERNAL_SERVER_ERROR, "Internal server error".to_string()),
+            Error::Unauthorized => (
+                StatusCode::UNAUTHORIZED,
+                "Unauthorized access".to_string(),
+                "UNAUTHORIZED",
+            ),
+            Error::NotFound(msg) => (StatusCode::NOT_FOUND, msg.clone(), "NOT_FOUND"),
+            _ => (StatusCode::INTERNAL_SERVER_ERROR, "Internal server error".to_string(), "INTERNAL_ERROR"),
         };
-        
-        let body = Json(ApiResponse::<()>::error(&message));
+
+        let body = Json(json!({
+            "error": {
+                "code": error_code,
+                "message": error_message,
+            }
+        }));
+
         (status, body).into_response()
     }
 }
@@ -493,12 +571,11 @@ impl IntoResponse for ApiError {
 ### Consistent API Response Format
 
 ```rust
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, serde::Serialize, utoipa::ToSchema)]
 pub struct ApiResponse<T> {
     pub success: bool,
     pub data: Option<T>,
-    pub error: Option<String>,
-    pub request_id: Option<String>,
+    pub message: Option<String>,
 }
 
 impl<T> ApiResponse<T> {
@@ -506,19 +583,29 @@ impl<T> ApiResponse<T> {
         Self {
             success: true,
             data: Some(data),
-            error: None,
-            request_id: None,
+            message: None,
         }
     }
-    
-    pub fn error(message: &str) -> ApiResponse<()> {
-        ApiResponse {
-            success: false,
-            data: None,
-            error: Some(message.to_string()),
-            request_id: None,
+
+    pub fn success_with_message(data: T, message: String) -> Self {
+        Self {
+            success: true,
+            data: Some(data),
+            message: Some(message),
         }
     }
+}
+
+// Error responses use separate ErrorResponse struct
+#[derive(Debug, serde::Serialize, utoipa::ToSchema)]
+pub struct ErrorResponse {
+    pub error: ErrorDetail,
+}
+
+#[derive(Debug, serde::Serialize, utoipa::ToSchema)]
+pub struct ErrorDetail {
+    pub code: String,
+    pub message: String,
 }
 ```
 

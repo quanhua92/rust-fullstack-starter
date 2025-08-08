@@ -72,35 +72,33 @@ graph TD
 ```rust
 // Circuit breaker prevents cascading failures
 pub struct CircuitBreaker {
-    failure_threshold: u32,
-    recovery_timeout: Duration,
     state: CircuitState,
+    failure_count: u32,
+    success_count: u32,
+    last_failure: Option<Instant>,
+    failure_threshold: u32,
+    success_threshold: u32,
+    timeout: Duration,
 }
 
 impl CircuitBreaker {
-    pub async fn call<F, T, E>(&mut self, operation: F) -> Result<T, CircuitBreakerError<E>>
+    pub async fn execute<F, Fut, T, E>(&mut self, operation: F) -> Result<T, CircuitBreakerError<E>>
     where
-        F: Future<Output = Result<T, E>>,
+        F: FnOnce() -> Fut,
+        Fut: std::future::Future<Output = Result<T, E>>,
     {
-        match self.state {
-            CircuitState::Open => {
-                if self.should_attempt_reset() {
-                    self.state = CircuitState::HalfOpen;
-                } else {
-                    return Err(CircuitBreakerError::Open);
-                }
-            }
-            CircuitState::HalfOpen | CircuitState::Closed => {}
+        if !self.should_allow_operation() {
+            return Err(CircuitBreakerError::Open);
         }
-        
-        match operation.await {
+
+        match operation().await {
             Ok(result) => {
-                self.on_success();
+                self.record_success();
                 Ok(result)
             }
             Err(error) => {
-                self.on_failure();
-                Err(CircuitBreakerError::CallFailed(error))
+                self.record_failure();
+                Err(CircuitBreakerError::Operation(error))
             }
         }
     }
@@ -372,10 +370,12 @@ pub async fn create_book_service(
 # Frontend E2E tests
 cd web && pnpm test:e2e
 
-# Specific browser
-pnpm test:e2e:chromium
-pnpm test:e2e:firefox  
-pnpm test:e2e:webkit
+# Additional E2E options
+pnpm test:e2e:smoke     # Smoke tests only
+pnpm test:e2e:ui        # Interactive UI mode
+pnpm test:e2e:debug     # Debug mode
+pnpm test:e2e:headed    # Run with browser UI
+pnpm test:e2e:report    # Show test report
 ```
 
 ### Test Architecture

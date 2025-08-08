@@ -148,7 +148,7 @@ sqlx migrate run
 ### Deploy to Production
 ```bash
 # Docker deployment (single artifact)
-cp .env.prod.example .env.prod
+cp .env.example .env.prod
 # Edit .env.prod with your production secrets
 docker-compose -f docker-compose.prod.yaml --env-file .env.prod up -d
 ```

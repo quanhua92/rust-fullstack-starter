@@ -180,10 +180,10 @@ tasks (id, task_type, payload, status, created_by, created_at)
 task_types (id, name, description, registered_at)
 
 -- Monitoring and observability
-monitoring_events (id, event_type, source, message, level, tags, payload)
-monitoring_metrics (id, name, metric_type, value, labels, recorded_at)
-monitoring_alerts (id, name, rule, threshold, status, created_by)
-monitoring_incidents (id, title, description, severity, status, assigned_to)
+events (id, event_type, source, message, level, tags, payload)
+metrics (id, name, metric_type, value, labels, recorded_at)
+alerts (id, name, query, threshold_value, status, created_by)
+incidents (id, title, description, severity, status, assigned_to)
 ```
 
 **Design Principles**:
@@ -341,10 +341,10 @@ async fn test_user_can_create_own_tasks() {
 ```
 
 **Test categories**:
-- **Authentication** - Registration, login, session management (15 tests)
-- **API standards** - CORS, security headers, error handling (10 tests) 
-- **Business logic** - Task processing, RBAC, user management (145 tests)
-- **System behavior** - Health checks, monitoring, edge cases (12 tests)
+- **Authentication** - Registration, login, session management (21 tests)
+- **API standards** - CORS, security headers, error handling (11 tests) 
+- **Business logic** - Task processing, RBAC, user management (99 tests)
+- **System behavior** - Health checks, CLI, middleware (18 tests)
 
 ## 🎯 Why This Architecture Works
 
