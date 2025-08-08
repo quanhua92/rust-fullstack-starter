@@ -576,6 +576,160 @@ async fn test_common_password_constant_time_validation() {
 }
 
 #[tokio::test]
+async fn test_session_fixation_prevention() {
+    let app = spawn_app().await;
+    let factory = TestDataFactory::new(app.clone());
+
+    // Create a user for testing
+    factory.create_user("testuser").await;
+
+    // Step 1: Login to create an active session
+    let login_data = json!({
+        "username": "testuser", 
+        "password": "SecurePass123!"
+    });
+
+    let login_response = app.post_json("/api/v1/auth/login", &login_data).await;
+    assert_status(&login_response, StatusCode::OK);
+    
+    let auth_token = app.extract_auth_token(login_response).await;
+
+    // Step 2: Use direct database access to simulate an old session (older than 30 days)
+    let mut conn = app.db().await;
+    
+    // Get user ID from the current session
+    let session_data = sqlx::query!(
+        "SELECT user_id FROM sessions WHERE token = $1",
+        auth_token.token
+    )
+    .fetch_one(&mut *conn)
+    .await
+    .expect("Failed to fetch session data");
+    
+    let user_id = session_data.user_id;
+
+    // Create an old session (simulate session older than 30 days)
+    let old_token = "old-session-token-12345";
+    let old_last_activity = chrono::Utc::now() - chrono::Duration::days(35); // 35 days ago
+    
+    sqlx::query!(
+        "INSERT INTO sessions (user_id, token, expires_at, last_activity_at, is_active) 
+         VALUES ($1, $2, $3, $4, true)",
+        user_id,
+        old_token,
+        chrono::Utc::now() + chrono::Duration::hours(24),
+        old_last_activity
+    )
+    .execute(&mut *conn)
+    .await
+    .expect("Failed to insert old session");
+
+    // Create a recent session (less than 30 days old)
+    let recent_token = "recent-session-token-67890";
+    let recent_last_activity = chrono::Utc::now() - chrono::Duration::days(10); // 10 days ago
+    
+    sqlx::query!(
+        "INSERT INTO sessions (user_id, token, expires_at, last_activity_at, is_active) 
+         VALUES ($1, $2, $3, $4, true)",
+        user_id,
+        recent_token,
+        chrono::Utc::now() + chrono::Duration::hours(24),
+        recent_last_activity
+    )
+    .execute(&mut *conn)
+    .await
+    .expect("Failed to insert recent session");
+
+    // Verify all sessions are initially active
+    let active_sessions_before = sqlx::query!(
+        "SELECT COUNT(*) as count FROM sessions WHERE user_id = $1 AND is_active = true",
+        user_id
+    )
+    .fetch_one(&mut *conn)
+    .await
+    .expect("Failed to count active sessions")
+    .count
+    .unwrap_or(0);
+
+    assert_eq!(active_sessions_before, 3, "Should have 3 active sessions initially");
+
+    // Step 3: Perform another login - this should trigger session fixation prevention
+    // The login should invalidate only sessions older than 30 days
+    let second_login_response = app.post_json("/api/v1/auth/login", &login_data).await;
+    assert_status(&second_login_response, StatusCode::OK);
+
+    // Step 4: Verify session fixation prevention worked correctly
+    let sessions_after = sqlx::query!(
+        "SELECT token, is_active, last_activity_at FROM sessions WHERE user_id = $1 ORDER BY created_at",
+        user_id
+    )
+    .fetch_all(&mut *conn)
+    .await
+    .expect("Failed to fetch sessions after login");
+
+    // Check each session's status
+    let mut old_session_found = false;
+    let mut recent_session_found = false;
+    let mut current_session_active = false;
+    let mut new_session_created = false;
+
+    for session in &sessions_after {
+        match session.token.as_str() {
+            token if token == auth_token.token => {
+                current_session_active = session.is_active;
+            }
+            token if token == old_token => {
+                old_session_found = true;
+                // Old session (35+ days) should be deactivated due to session fixation prevention
+                assert!(
+                    !session.is_active, 
+                    "Old session (35+ days) should be deactivated for session fixation prevention"
+                );
+            }
+            token if token == recent_token => {
+                recent_session_found = true;
+                // Recent session (10 days) should remain active
+                assert!(
+                    session.is_active,
+                    "Recent session (10 days) should remain active"
+                );
+            }
+            _ => {
+                // This should be the new session created by the second login
+                if session.is_active {
+                    new_session_created = true;
+                }
+            }
+        }
+    }
+
+    // Verify all expected sessions were found
+    assert!(old_session_found, "Old session should exist in database");
+    assert!(recent_session_found, "Recent session should exist in database"); 
+    assert!(current_session_active, "Current session should remain active");
+    assert!(new_session_created, "New session should be created");
+
+    // Step 5: Verify current session still works (not affected by fixation prevention)
+    let me_response = app.get_auth("/api/v1/auth/me", &auth_token.token).await;
+    assert_status(&me_response, StatusCode::OK);
+
+    // Step 6: Final verification - count active sessions
+    let active_sessions_after = sqlx::query!(
+        "SELECT COUNT(*) as count FROM sessions WHERE user_id = $1 AND is_active = true",
+        user_id
+    )
+    .fetch_one(&mut *conn)
+    .await
+    .expect("Failed to count active sessions after login")
+    .count
+    .unwrap_or(0);
+
+    // Should have one less active session (old session deactivated)
+    // Original session + recent session + new session = 3 active sessions
+    assert_eq!(active_sessions_after, 3, "Should have 3 active sessions after login (old session deactivated)");
+}
+
+#[tokio::test]
 async fn test_password_validation_security_edge_cases() {
     let app = spawn_app().await;
 

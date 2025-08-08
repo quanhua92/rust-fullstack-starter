@@ -1,0 +1,34 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT token, is_active, last_activity_at FROM sessions WHERE user_id = $1 ORDER BY created_at",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "token",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 1,
+        "name": "is_active",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 2,
+        "name": "last_activity_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "68acd6046d7ac7bb410cbb31b5afb194b27e5e74e79d8fd396f26af6a4825093"
+}

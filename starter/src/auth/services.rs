@@ -196,15 +196,16 @@ pub async fn login(conn: &mut DbConn, req: LoginRequest) -> Result<LoginResponse
     let mut tx = conn.begin().await.map_err(Error::from_sqlx)?;
 
     // Fix session fixation: Only invalidate sessions older than 30 days
-    // Note: Removing this for now to avoid SQLx query cache issues
-    // TODO: Add this back after updating SQLx query cache with `cargo sqlx prepare`
-    // sqlx::query!(
-    //     "UPDATE sessions SET is_active = false
-    //      WHERE user_id = $1
-    //      AND is_active = true
-    //      AND (last_activity_at IS NULL OR last_activity_at < NOW() - INTERVAL '30 days')",
-    //     user.id
-    // )
+    sqlx::query!(
+        "UPDATE sessions SET is_active = false
+         WHERE user_id = $1
+         AND is_active = true
+         AND last_activity_at < NOW() - INTERVAL '30 days'",
+        user.id
+    )
+    .execute(&mut *tx)
+    .await
+    .map_err(Error::from_sqlx)?;
 
     // Create session within transaction
     let token = generate_session_token();

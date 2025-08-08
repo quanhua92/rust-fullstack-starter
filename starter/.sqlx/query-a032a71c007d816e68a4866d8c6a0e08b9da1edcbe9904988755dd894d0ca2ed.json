@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE sessions SET is_active = false\n         WHERE user_id = $1\n         AND is_active = true\n         AND last_activity_at < NOW() - INTERVAL '30 days'",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "a032a71c007d816e68a4866d8c6a0e08b9da1edcbe9904988755dd894d0ca2ed"
+}
