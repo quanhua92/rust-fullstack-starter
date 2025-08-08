@@ -445,7 +445,7 @@ All monitoring endpoints require authentication unless otherwise noted. Moderato
 - **GET** `/api/v1/monitoring/stats` - Get monitoring system statistics
 
 For complete API documentation, see:
-- [Monitoring Guide](guides/15-monitoring-and-observability.md) - Comprehensive implementation guide
+- [Monitoring Guide]../guides/15-monitoring-and-observability.md - Comprehensive implementation guide
 - [OpenAPI Specification](openapi.json) - Complete API reference
 - [Integration Tests](../starter/tests/monitoring/) - Usage examples
 

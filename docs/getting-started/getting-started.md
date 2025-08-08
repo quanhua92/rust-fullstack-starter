@@ -153,7 +153,7 @@ docker compose down
 
 ## Common Issues
 
-For detailed troubleshooting, see **[Troubleshooting Guide](../development/troubleshooting.md)**.
+For detailed troubleshooting, see **[Troubleshooting Guide](../getting-started/troubleshooting.md)**.
 
 ### Quick Fixes
 
@@ -201,14 +201,14 @@ Now that you have the system running, follow these guides to understand and exte
 7. **[Task Registry](../guides/07-task-registry.md)** - Organizing and managing task handlers
 
 ### 🔧 Development Resources
-- **[Development Workflow](../development/development.md)** - Daily development process
+- **[Development Workflow](../getting-started/development.md)** - Daily development process
 - **[Configuration Reference](../reference/configuration.md)** - All environment variables
 - **[API Reference](../reference/api-reference.md)** - Complete endpoint documentation
 - **[Production Deployment](../deployment/production-deployment.md)** - Docker production setup
 - **[CI/CD Guide](../deployment/cicd.md)** - GitHub Actions workflows and automation
 
 ### 🆘 When You Need Help
-- **[Troubleshooting](../development/troubleshooting.md)** - Common issues and solutions
+- **[Troubleshooting](../getting-started/troubleshooting.md)** - Common issues and solutions
 - **[Built-in Handlers](../reference/task-handlers.md)** - Reference for included task types
 
 ## Quick Commands Reference
@@ -385,11 +385,11 @@ Start exploring the guides based on your interests:
 - **[Reliability Patterns](../guides/03-patterns.md)** - Circuit breakers and retry strategies  
 - **[Background Tasks](../guides/04-background-tasks.md)** - Async job processing
 - **[Testing Guide](../guides/08-testing.md)** - Comprehensive testing strategies
-- **[Development Workflow](../development/development.md)** - Daily development practices
+- **[Development Workflow](../getting-started/development.md)** - Daily development practices
 
 ## Project Customization
 
-If you want to customize the project name and branding, see the **[Project Customization Guide](../customization/project-customization.md)** for automated renaming tools and customization options.
+If you want to customize the project name and branding, see the **[Project Customization Guide](../reference/project-customization.md)** for automated renaming tools and customization options.
 
 ---
 

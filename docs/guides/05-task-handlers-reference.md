@@ -836,7 +836,7 @@ cargo run -- admin list-tasks --limit 1
 
 - **[Custom Task Types →](./06-task-types.md)** - Create your own task handlers
 - **[Task Registry →](./07-task-registry.md)** - Organize multiple handlers
-- **[Troubleshooting →](../development/troubleshooting.md)** - Debug handler issues
+- **[Troubleshooting →](../getting-started/troubleshooting.md)** - Debug handler issues
 
 ---
 *These built-in handlers provide working examples and starting points for your own background task implementations.*

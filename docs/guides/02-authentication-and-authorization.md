@@ -950,7 +950,7 @@ The system includes comprehensive security testing with **149 integration tests*
 - **RBAC security tests**: Complete role-based access control validation
 - **Database consistency tests**: Transaction handling and error propagation validation
 
-For complete details, see **[Security Documentation](../quality/security.md)**.
+For complete details, see **[Security Documentation](../reference/security.md)**.
 
 ## Common Questions
 

@@ -210,7 +210,7 @@ rust-fullstack-starter/
 
 ### Quick Links
 - **[Getting Started](docs/getting-started/getting-started.md)** - Detailed setup guide
-- **[Development Guide](docs/development/development.md)** - Daily workflow
+- **[Development Guide](docs/getting-started/development.md)** - Daily workflow
 - **[Architecture Guides](docs/guides/)** - System design and patterns
 - **[API Reference](docs/reference/api-reference.md)** - Complete endpoint docs
 - **[Production Deployment](docs/deployment/production-deployment.md)** - Docker deployment
@@ -219,14 +219,14 @@ rust-fullstack-starter/
 - [Authentication & Authorization](docs/guides/02-authentication-and-authorization.md) - **Session-based auth with RBAC**
 - [User Management System](docs/guides/12-user-management.md) - **Complete user lifecycle with 12 endpoints**
 - [Background Tasks](docs/guides/04-background-tasks.md)
-- [Module Generator](docs/module-generator.md) - **Template-based CRUD generation with safety features**
+- [Module Generator](docs/reference/module-generator.md) - **Template-based CRUD generation with safety features**
 - [Module Generator: First Principles](docs/guides/16-module-generator-first-principles.md) - **Deep dive into architecture and patterns**
 - [Testing Framework](docs/guides/08-testing.md)
 - [Chaos Testing](docs/guides/09-chaos-testing.md) - **Enhanced with 10 scenarios**
 - [Monitoring & Observability](docs/guides/15-monitoring-and-observability.md) - **Complete monitoring system with 14 endpoints**
 
 ### Inspiration & Ideas
-- [AI Development Ideas](docs/AI-IDEAS.md) - **💡 Conceptual exploration of AI-first patterns for inspiration** - *Ideas for building AI-powered applications using this starter as foundation*
+- [AI Development Ideas](docs/reference/AI-IDEAS.md) - **💡 Conceptual exploration of AI-first patterns for inspiration** - *Ideas for building AI-powered applications using this starter as foundation*
 
 ## API Endpoints
 

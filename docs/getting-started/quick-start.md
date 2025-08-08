@@ -173,22 +173,22 @@ pnpm run generate-api
 This quick start gets you running, but there's much more to explore:
 
 ### **📖 Understanding the Code**
-- **[Learning Philosophy](learning-philosophy.md)** - Why this architecture exists
-- **[Architecture Overview](guides/01-architecture.md)** - How the pieces fit together
-- **[Web Integration Guide](guides/10-web-frontend-integration.md)** - Frontend ↔ Backend patterns
+- **[Learning Philosophy](../guides/learning-philosophy.md)** - Why this architecture exists
+- **[Architecture Overview](../guides/01-architecture.md)** - How the pieces fit together
+- **[.*](../guides/10-web-frontend-integration.md)** - Frontend ↔ Backend patterns
 
 ### **🔧 Adding Features**
-- **[Authentication Patterns](guides/02-authentication.md)** - Secure user management
-- **[Background Tasks](guides/04-background-tasks.md)** - Async job processing
-- **[Testing Strategies](guides/08-testing.md)** - Comprehensive testing approaches
+- **[.*](../guides/02-authentication.md)** - Secure user management
+- **[.*](../guides/04-background-tasks.md)** - Async job processing
+- **[.*](../guides/08-testing.md)** - Comprehensive testing approaches
 
 ### **🚢 Going to Production**
 - **[Production Deployment](production-deployment.md)** - Docker, Kubernetes, monitoring
-- **[Chaos Testing](guides/09-chaos-testing.md)** - Building resilient systems
+- **[.*](../guides/09-chaos-testing.md)** - Building resilient systems
 - **[Performance](reliability.md)** - Optimization and monitoring
 
 ### **🐛 When Things Break**
-- **[Debugging Guide](guides/11-debugging-and-troubleshooting.md)** - Systematic problem solving
+- **[.*](../guides/11-debugging-and-troubleshooting.md)** - Systematic problem solving
 - **[Security](security.md)** - Security considerations and best practices
 
 ---

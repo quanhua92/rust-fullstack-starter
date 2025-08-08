@@ -547,7 +547,7 @@ let metric = services::create_metric(&mut conn, CreateMetricRequest {
 
 **📖 Essential Reading:**
 - `docs/guides/15-monitoring-and-observability.md` - Complete implementation guide with enhanced Prometheus integration  
-- `docs/architecture/monitoring.md` - API reference and integration patterns with data integrity features
+- `docs/reference/monitoring.md` - API reference and integration patterns with data integrity features
 - `tasks/MONITORING.md` - Technical architecture documentation with database schema details
 - `scripts/test-with-curl.sh` - Comprehensive API testing patterns including all 14 monitoring endpoints
 - Study monitoring tests to understand usage patterns and error handling

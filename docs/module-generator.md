@@ -422,8 +422,8 @@ Template tests fail with 401 Unauthorized
 
 ### Getting Help
 
-- Check [troubleshooting guide](troubleshooting.md)
-- Review [testing documentation](guides/08-testing.md)
+- Check [troubleshooting guide](../getting-started/troubleshooting.md)
+- Review [testing documentation]../guides/08-testing.md
 - Examine existing modules for patterns
 - Use `--dry-run` to preview changes
 - Run `./scripts/test-template-with-curl.sh --help` for testing options

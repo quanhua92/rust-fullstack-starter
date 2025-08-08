@@ -1115,7 +1115,7 @@ Docker Compose → System Spawn → Failure Injection → Recovery Validation
 - `starter/migrations/006_monitoring.up.sql` - 4-table schema with PostgreSQL enums
 - `docs/guides/15-monitoring-and-observability.md` - 891-line implementation guide
 - `starter/tests/monitoring/` - Comprehensive test suite
-- `docs/architecture/monitoring.md` - API reference and integration patterns
+- `docs/reference/monitoring.md` - API reference and integration patterns
 
 **🎯 Teaching Goals:**
 Guide students through implementing a comprehensive monitoring system that demonstrates industry-standard observability patterns.
@@ -1304,7 +1304,7 @@ let metric = services::create_metric(&mut conn, CreateMetricRequest {
 
 **📖 Required Reading:**
 - `docs/guides/15-monitoring-and-observability.md` - Complete implementation guide
-- `docs/architecture/monitoring.md` - API reference and integration patterns
+- `docs/reference/monitoring.md` - API reference and integration patterns
 - Study existing monitoring tests for usage patterns
 
 **🔗 Connects To:**

@@ -8156,7 +8156,7 @@ graph TD
     style R fill:#e8f5e8
 ```
 
-**Core Learning Philosophy: docs/architecture/learning-philosophy.md:1-348**
+**Core Learning Philosophy: docs/guides/learning-philosophy.md:1-348**
 
 **Why First Principles Matter for Full-Stack Development**:
 
