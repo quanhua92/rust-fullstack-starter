@@ -158,9 +158,9 @@ else
     echo -e "${GREEN}✅ Code formatting is correct${NC}"
 fi
 
-# 4. Clippy linting (offline mode)
+# 4. Clippy linting (offline mode) - matches CI exactly
 echo -e "\n${BLUE}📎 Step 4/9: Running Clippy lints...${NC}"
-if ! SQLX_OFFLINE=true cargo clippy --manifest-path starter/Cargo.toml --all --all-targets --all-features -- -D warnings; then
+if ! SQLX_OFFLINE=true cargo clippy --manifest-path starter/Cargo.toml --all-targets --all-features -- -D warnings; then
     echo -e "${RED}❌ Clippy found issues!${NC}"
     echo -e "${YELLOW}💡 Fix the linting issues above${NC}"
     exit 1

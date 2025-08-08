@@ -1816,7 +1816,7 @@ Use the provided test scripts to validate all endpoints:
 # Install faster test runner (recommended)
 cargo install cargo-nextest
 
-# Run all 123 tests (~17 seconds)
+# Run all 149 tests (~21 seconds)
 cargo nextest run
 
 # Run specific test categories
@@ -1952,7 +1952,7 @@ This starter includes comprehensive integration tests that demonstrate proper AP
 # Install faster test runner (recommended)
 cargo install cargo-nextest
 
-# Run all API tests (123 tests)
+# Run all API tests (149 tests)
 cargo nextest run
 
 # Run specific test categories

@@ -695,9 +695,9 @@ if [ -n "$MONITORING_TOKEN" ]; then
     INVALID_EVENT='{"event_type": "invalid_type", "source": "test", "message": "Invalid event type test"}'
     test_api "POST /api/v1/monitoring/events (invalid type)" "POST" "/api/v1/monitoring/events" "400" "$MONITORING_TOKEN" "$INVALID_EVENT"
     
-    # Test invalid metric type validation
+    # Test invalid metric type validation (422 because JSON is valid but enum variant is invalid)
     INVALID_METRIC='{"name": "test_metric", "metric_type": "invalid_type", "value": 100}'
-    test_api "POST /api/v1/monitoring/metrics (invalid type)" "POST" "/api/v1/monitoring/metrics" "400" "$MONITORING_TOKEN" "$INVALID_METRIC"
+    test_api "POST /api/v1/monitoring/metrics (invalid type)" "POST" "/api/v1/monitoring/metrics" "422" "$MONITORING_TOKEN" "$INVALID_METRIC"
 else
     echo -e "${YELLOW}⚠️  No user token available - monitoring API tests skipped${NC}"
 fi

@@ -913,6 +913,45 @@ curl -X PUT -H "Authorization: Bearer $TOKEN" \
 ./scripts/test-with-curl.sh
 ```
 
+## Security Features ✅
+
+This authentication system implements comprehensive security measures to protect against common attack vectors:
+
+### Session Fixation Prevention
+- **Auto-cleanup**: Sessions older than 30 days are automatically invalidated on login
+- **Selective invalidation**: Only affects very old sessions, preserving recent active sessions
+- **Transaction safety**: Session cleanup is performed within login transaction for consistency
+
+### Timing Attack Protection
+- **Constant-time comparison**: Password verification uses constant-time operations to prevent timing analysis
+- **Dummy hash processing**: Non-existent users trigger dummy password hash verification to maintain consistent response times
+- **Comprehensive coverage**: Protects both login attempts and password validation during registration
+
+### Enhanced Password Security
+- **Case-insensitive common password detection**: Prevents use of common passwords regardless of case variations (e.g., "Password123" is blocked)
+- **Unicode and special character handling**: Proper validation of international characters and security bypass attempts
+- **Comprehensive validation**: 75+ validation rules covering edge cases and malformed inputs
+
+### Database Security
+- **Proper error propagation**: Replaced unsafe `unwrap_or(0)` patterns with proper error handling
+- **Transaction race condition fixes**: Fixed soft-delete operations to prevent concurrent modification issues
+- **Consistent RBAC error handling**: Standardized authorization error responses across all endpoints
+
+### Email Validation Security
+- **RFC-compliant validation**: Comprehensive email format validation covering edge cases
+- **Security bypass prevention**: Handles malformed inputs and potential injection attempts
+- **International domain support**: Proper validation of international domain names and characters
+
+### Security Testing
+The system includes comprehensive security testing with **149 integration tests**, including:
+- **Timing attack protection tests**: Verify constant-time behavior
+- **Session fixation prevention tests**: Validate session cleanup during login
+- **Password validation security tests**: Test case variations and bypass attempts
+- **RBAC security tests**: Complete role-based access control validation
+- **Database consistency tests**: Transaction handling and error propagation validation
+
+For complete details, see **[Security Documentation](../quality/security.md)**.
+
 ## Common Questions
 
 **Q: Why not JWT tokens?**

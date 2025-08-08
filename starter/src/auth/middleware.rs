@@ -93,16 +93,15 @@ pub async fn optional_auth_middleware(
             // Try to validate session
             if let Ok(Some(user)) =
                 services::validate_session_with_user(conn.as_mut(), &token).await
+                && user.is_active
             {
-                if user.is_active {
-                    // Add user info to request extensions
-                    req.extensions_mut().insert(AuthUser {
-                        id: user.id,
-                        username: user.username,
-                        email: user.email,
-                        role: user.role,
-                    });
-                }
+                // Add user info to request extensions
+                req.extensions_mut().insert(AuthUser {
+                    id: user.id,
+                    username: user.username,
+                    email: user.email,
+                    role: user.role,
+                });
             }
         }
     }
@@ -125,4 +124,39 @@ pub async fn admin_middleware(req: Request, next: Next) -> Result<Response, Erro
     }
 
     Ok(next.run(req).await)
+}
+
+/// Development-safe security headers middleware
+pub async fn security_headers_middleware(req: Request, next: Next) -> Response {
+    let mut response = next.run(req).await;
+    let headers = response.headers_mut();
+
+    // Safe for development - prevents MIME sniffing attacks
+    headers.insert(
+        axum::http::header::X_CONTENT_TYPE_OPTIONS,
+        axum::http::HeaderValue::from_static("nosniff"),
+    );
+
+    // Allow same-origin iframes (less restrictive than DENY)
+    headers.insert(
+        axum::http::header::X_FRAME_OPTIONS,
+        axum::http::HeaderValue::from_static("SAMEORIGIN"),
+    );
+
+    // Basic Content Security Policy (relaxed for development)
+    headers.insert(
+        axum::http::header::CONTENT_SECURITY_POLICY,
+        axum::http::HeaderValue::from_static("default-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' ws: wss:")
+    );
+
+    // Control referrer information
+    headers.insert(
+        axum::http::header::REFERRER_POLICY,
+        axum::http::HeaderValue::from_static("strict-origin-when-cross-origin"),
+    );
+
+    // NO HSTS header - allows HTTP in development
+    // Production deployments should add: Strict-Transport-Security: max-age=31536000; includeSubDomains
+
+    response
 }

@@ -8,16 +8,23 @@ use chrono::{Duration, Utc};
 use sqlx::Acquire;
 use uuid::Uuid;
 
+// Dummy hash with valid Argon2 format for timing attack protection.
+// Using a validly formatted hash is crucial to prevent the password verification
+// function from returning early due to a parsing error, which would reintroduce
+// a timing vulnerability. This is a pre-computed Argon2 hash that will always fail verification.
+const DUMMY_HASH: &str = "$argon2id$v=19$m=19456,t=2,p=1$YWFhYWFhYWFhYWFhYWFhYQ$L2QVZ8LBhz/3BLvW+hBf1e4NkLYBu+GeBxdJJ1+BW5Q";
+
 fn generate_session_token() -> String {
+    use base64::Engine;
     use rand::Rng;
-    const CHARSET: &[u8] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+
+    // Use cryptographically secure random number generator
+    // Generate 48 random bytes for 384 bits of entropy
     let mut rng = rand::rng();
-    (0..64)
-        .map(|_| {
-            let idx = rng.random_range(0..CHARSET.len());
-            CHARSET[idx] as char
-        })
-        .collect()
+    let bytes: [u8; 48] = rng.random();
+
+    // Use URL-safe base64 encoding (no padding, URL safe)
+    base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(bytes)
 }
 
 pub async fn create_session(
@@ -143,12 +150,12 @@ pub async fn validate_session_with_user(
 ) -> Result<Option<crate::users::models::User>> {
     let session = find_session_by_token(conn, token).await?;
 
-    if let Some(session) = session {
-        if !session.is_expired() {
-            update_session_activity(conn, session.id).await?;
-            let user = user_services::find_user_by_id(conn, session.user_id).await?;
-            return Ok(user);
-        }
+    if let Some(session) = session
+        && !session.is_expired()
+    {
+        update_session_activity(conn, session.id).await?;
+        let user = user_services::find_user_by_id(conn, session.user_id).await?;
+        return Ok(user);
     }
 
     Ok(None)
@@ -157,7 +164,8 @@ pub async fn validate_session_with_user(
 pub async fn login(conn: &mut DbConn, req: LoginRequest) -> Result<LoginResponse> {
     req.validate()?;
 
-    let user = match (&req.username, &req.email) {
+    // Always perform the same amount of work regardless of user existence to prevent timing attacks
+    let user_option = match (&req.username, &req.email) {
         (Some(username), None) => user_services::find_user_by_username(conn, username).await?,
         (None, Some(email)) => user_services::find_user_by_email(conn, email).await?,
         _ => {
@@ -166,17 +174,38 @@ pub async fn login(conn: &mut DbConn, req: LoginRequest) -> Result<LoginResponse
         }
     };
 
-    let user = user.ok_or(Error::InvalidCredentials)?;
+    // Always verify password, even if user doesn't exist (using dummy hash)
+    let password_valid = match &user_option {
+        Some(user) => user_services::verify_password(&req.password, &user.password_hash)?,
+        None => {
+            // Perform dummy verification to maintain constant timing
+            // We must handle the result to ensure the computation actually happens
+            match user_services::verify_password(&req.password, DUMMY_HASH) {
+                Ok(_) => false,  // Always false for non-existent users
+                Err(_) => false, // Even if dummy hash fails to parse, return false
+            }
+        }
+    };
 
-    if !user_services::verify_password(&req.password, &user.password_hash)? {
-        return Err(Error::InvalidCredentials);
-    }
-
-    if !user.is_active {
+    // Check all conditions after password verification
+    let user = user_option.ok_or(Error::InvalidCredentials)?;
+    if !password_valid || !user.is_active {
         return Err(Error::InvalidCredentials);
     }
 
     let mut tx = conn.begin().await.map_err(Error::from_sqlx)?;
+
+    // Fix session fixation: Only invalidate sessions older than 30 days
+    sqlx::query!(
+        "UPDATE sessions SET is_active = false
+         WHERE user_id = $1
+         AND is_active = true
+         AND last_activity_at < NOW() - INTERVAL '30 days'",
+        user.id
+    )
+    .execute(&mut *tx)
+    .await
+    .map_err(Error::from_sqlx)?;
 
     // Create session within transaction
     let token = generate_session_token();

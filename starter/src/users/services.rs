@@ -120,7 +120,12 @@ pub async fn is_email_available(conn: &mut DbConn, email: &str) -> Result<bool> 
         .await
         .map_err(Error::from_sqlx)?;
 
-    Ok(count.unwrap_or(0) == 0)
+    match count {
+        Some(count) => Ok(count == 0),
+        None => Err(Error::Internal(
+            "Database count query returned null".to_string(),
+        )),
+    }
 }
 
 pub async fn is_username_available(conn: &mut DbConn, username: &str) -> Result<bool> {
@@ -129,7 +134,12 @@ pub async fn is_username_available(conn: &mut DbConn, username: &str) -> Result<
         .await
         .map_err(Error::from_sqlx)?;
 
-    Ok(count.unwrap_or(0) == 0)
+    match count {
+        Some(count) => Ok(count == 0),
+        None => Err(Error::Internal(
+            "Database count query returned null".to_string(),
+        )),
+    }
 }
 
 pub fn verify_password(password: &str, password_hash: &str) -> Result<bool> {
@@ -370,7 +380,9 @@ pub async fn update_user_status(
             Ok(user.to_profile())
         }
         None => {
-            tx.rollback().await.ok(); // Explicit rollback, ignore error
+            if let Err(rollback_error) = tx.rollback().await {
+                tracing::warn!("Failed to rollback transaction: {}", rollback_error);
+            }
             Err(Error::NotFound("User not found".to_string()))
         }
     }
@@ -420,8 +432,8 @@ pub async fn reset_user_password(
 
     let mut tx = conn.begin().await.map_err(Error::from_sqlx)?;
 
-    // Update password
-    sqlx::query!(
+    // Update password and check if user exists
+    let result = sqlx::query!(
         "UPDATE users SET password_hash = $1, updated_at = NOW() WHERE id = $2",
         new_password_hash,
         user_id
@@ -429,6 +441,13 @@ pub async fn reset_user_password(
     .execute(&mut *tx)
     .await
     .map_err(Error::from_sqlx)?;
+
+    if result.rows_affected() == 0 {
+        if let Err(rollback_error) = tx.rollback().await {
+            tracing::warn!("Failed to rollback transaction: {}", rollback_error);
+        }
+        return Err(Error::NotFound("User not found".to_string()));
+    }
 
     // Invalidate all user sessions (force re-login)
     sqlx::query!(
@@ -468,13 +487,15 @@ pub async fn delete_user_admin(
             .map_err(Error::from_sqlx)?;
 
         if result.rows_affected() == 0 {
-            tx.rollback().await.ok(); // Explicit rollback, ignore error
+            if let Err(rollback_error) = tx.rollback().await {
+                tracing::warn!("Failed to rollback transaction: {}", rollback_error);
+            }
             return Err(Error::NotFound("User not found".to_string()));
         }
     } else {
-        // Soft delete - deactivate user
+        // Soft delete - deactivate user (only if currently active)
         let result = sqlx::query!(
-            "UPDATE users SET is_active = false, updated_at = NOW() WHERE id = $1",
+            "UPDATE users SET is_active = false, updated_at = NOW() WHERE id = $1 AND is_active = true",
             user_id
         )
         .execute(&mut *tx)
@@ -482,7 +503,9 @@ pub async fn delete_user_admin(
         .map_err(Error::from_sqlx)?;
 
         if result.rows_affected() == 0 {
-            tx.rollback().await.ok(); // Explicit rollback, ignore error
+            if let Err(rollback_error) = tx.rollback().await {
+                tracing::warn!("Failed to rollback transaction: {}", rollback_error);
+            }
             return Err(Error::NotFound("User not found".to_string()));
         }
 
@@ -507,13 +530,13 @@ pub async fn get_user_stats(conn: &mut DbConn) -> Result<crate::users::models::U
         .fetch_one(&mut *conn)
         .await
         .map_err(Error::from_sqlx)?
-        .unwrap_or(0);
+        .ok_or_else(|| Error::Internal("Total users count query returned null".to_string()))?;
 
     let active_users = sqlx::query_scalar!("SELECT COUNT(*) FROM users WHERE is_active = true")
         .fetch_one(&mut *conn)
         .await
         .map_err(Error::from_sqlx)?
-        .unwrap_or(0);
+        .ok_or_else(|| Error::Internal("Active users count query returned null".to_string()))?;
 
     let inactive_users = total_users - active_users;
 
@@ -523,7 +546,7 @@ pub async fn get_user_stats(conn: &mut DbConn) -> Result<crate::users::models::U
     .fetch_one(&mut *conn)
     .await
     .map_err(Error::from_sqlx)?
-    .unwrap_or(0);
+    .ok_or_else(|| Error::Internal("Email verified count query returned null".to_string()))?;
 
     let email_unverified = active_users - email_verified;
 
@@ -533,7 +556,7 @@ pub async fn get_user_stats(conn: &mut DbConn) -> Result<crate::users::models::U
             .fetch_one(&mut *conn)
             .await
             .map_err(Error::from_sqlx)?
-            .unwrap_or(0);
+            .ok_or_else(|| Error::Internal("User role count query returned null".to_string()))?;
 
     let moderator_count = sqlx::query_scalar!(
         "SELECT COUNT(*) FROM users WHERE role = 'moderator' AND is_active = true"
@@ -541,14 +564,14 @@ pub async fn get_user_stats(conn: &mut DbConn) -> Result<crate::users::models::U
     .fetch_one(&mut *conn)
     .await
     .map_err(Error::from_sqlx)?
-    .unwrap_or(0);
+    .ok_or_else(|| Error::Internal("Moderator role count query returned null".to_string()))?;
 
     let admin_count =
         sqlx::query_scalar!("SELECT COUNT(*) FROM users WHERE role = 'admin' AND is_active = true")
             .fetch_one(&mut *conn)
             .await
             .map_err(Error::from_sqlx)?
-            .unwrap_or(0);
+            .ok_or_else(|| Error::Internal("Admin role count query returned null".to_string()))?;
 
     // Get recent registrations
     let last_24h = sqlx::query_scalar!(
@@ -557,7 +580,7 @@ pub async fn get_user_stats(conn: &mut DbConn) -> Result<crate::users::models::U
     .fetch_one(&mut *conn)
     .await
     .map_err(Error::from_sqlx)?
-    .unwrap_or(0);
+    .ok_or_else(|| Error::Internal("24-hour registration count query returned null".to_string()))?;
 
     let last_7d = sqlx::query_scalar!(
         "SELECT COUNT(*) FROM users WHERE created_at > NOW() - INTERVAL '7 days'"
@@ -565,7 +588,7 @@ pub async fn get_user_stats(conn: &mut DbConn) -> Result<crate::users::models::U
     .fetch_one(&mut *conn)
     .await
     .map_err(Error::from_sqlx)?
-    .unwrap_or(0);
+    .ok_or_else(|| Error::Internal("7-day registration count query returned null".to_string()))?;
 
     let last_30d = sqlx::query_scalar!(
         "SELECT COUNT(*) FROM users WHERE created_at > NOW() - INTERVAL '30 days'"
@@ -573,7 +596,7 @@ pub async fn get_user_stats(conn: &mut DbConn) -> Result<crate::users::models::U
     .fetch_one(&mut *conn)
     .await
     .map_err(Error::from_sqlx)?
-    .unwrap_or(0);
+    .ok_or_else(|| Error::Internal("30-day registration count query returned null".to_string()))?;
 
     Ok(crate::users::models::UserStats {
         total_users,
