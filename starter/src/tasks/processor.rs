@@ -468,10 +468,26 @@ impl TaskProcessor {
         .await?;
 
         if result.rows_affected() == 0 {
-            return Err(TaskError::InvalidStatusTransition {
-                from: TaskStatus::Pending, // We don't know the actual current status
-                to: status_clone,
-            });
+            // For performance in high-concurrency scenarios, only fetch actual status in non-production
+            // environments or when debugging is enabled. In production, the generic error is sufficient.
+            if cfg!(debug_assertions) {
+                // Fetch the task to get its actual current status for a more accurate error.
+                let current_task = self
+                    .get_task(task_id)
+                    .await?
+                    .ok_or(TaskError::NotFound(task_id))?;
+
+                return Err(TaskError::InvalidStatusTransition {
+                    from: current_task.status,
+                    to: status_clone,
+                });
+            } else {
+                // In production, use a generic error to avoid extra database queries under load
+                return Err(TaskError::InvalidStatusTransition {
+                    from: TaskStatus::Pending, // Unknown actual status
+                    to: status_clone,
+                });
+            }
         }
 
         Ok(())

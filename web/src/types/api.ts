@@ -1511,6 +1511,7 @@ export interface components {
 			limit?: number | null;
 			/** Format: int64 */
 			offset?: number | null;
+			priority?: string | null;
 			status?: string | null;
 			task_type?: string | null;
 		};
@@ -2650,6 +2651,7 @@ export interface operations {
 			query?: {
 				task_type?: string | null;
 				status?: string | null;
+				priority?: string | null;
 				limit?: number | null;
 				offset?: number | null;
 			};
