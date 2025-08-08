@@ -181,12 +181,12 @@ Gracefully stop background worker(s).
 ## 🧪 Testing & Integration
 
 ### Rust Integration Tests (Recommended)
-Comprehensive test suite with 137 tests covering all functionality:
+Comprehensive test suite with 148 tests covering all functionality:
 ```bash
 # Install faster test runner (recommended)
 cargo install cargo-nextest
 
-# Run all tests (~12 seconds)
+# Run all tests (~21 seconds)
 cargo nextest run
 
 # Run specific test categories
@@ -200,7 +200,7 @@ cargo nextest run api::      # API standards tests
 Benefits of the Rust test suite:
 - **Fast**: 10x speedup with database template pattern
 - **Isolated**: Each test gets its own database
-- **Comprehensive**: 137 tests covering all functionality including user management, monitoring, and metadata persistence
+- **Comprehensive**: 148 tests covering all functionality including user management, monitoring, and metadata persistence
 - **Reliable**: Uses proper HTTP client and test harness
 - **TDD**: Includes Test-Driven Development tests for critical system behaviors
 - **RBAC Testing**: Complete role-based access control validation

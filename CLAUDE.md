@@ -26,7 +26,7 @@ This file provides guidance to Claude Code when working with this Rust fullstack
 ./scripts/reset-all.sh --reset-database  # Clean reset
 
 # Testing
-cargo nextest run                    # 137 integration tests (~17s)
+cargo nextest run                    # 148 integration tests (~21s)
 ./scripts/test-chaos.sh             # Docker-based resilience testing
 cd web && ./scripts/check-web.sh    # Frontend quality checks
 ```
@@ -157,7 +157,7 @@ cargo run -- revert module products --yes
 - **User Management**: 12 endpoints for profile/admin operations
 - **Monitoring**: 14 endpoints for events/metrics/alerts/incidents
 - **Module Generator**: Template-based code generation with testing validation
-- **Testing**: 137 integration tests with database isolation
+- **Testing**: 148 integration tests with database isolation
 
 ### Module Structure
 ```
@@ -181,7 +181,7 @@ starter/src/
 
 ### Quality Requirements
 1. **Pre-commit**: Always run `./scripts/check.sh`
-2. **Testing**: 137 integration tests must pass
+2. **Testing**: 148 integration tests must pass
 3. **SQLx**: Use `./scripts/prepare-sqlx.sh` for query cache updates
 4. **OpenAPI**: Use `./scripts/prepare-openapi.sh` for API schema updates
 5. **Frontend**: Run `cd web && ./scripts/check-web.sh` for React validation

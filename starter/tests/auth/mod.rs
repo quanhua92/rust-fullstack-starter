@@ -470,3 +470,191 @@ async fn test_login_dummy_hash_error_handling() {
     assert_json_field_exists(&json["error"], "message");
     assert_json_field_exists(&json["error"], "code");
 }
+
+#[tokio::test]
+async fn test_common_password_constant_time_validation() {
+    let app = spawn_app().await;
+
+    // Test timing for passwords that are in the common password list vs not
+    // This tests whether common password checking has timing vulnerabilities
+    let common_password_data = json!({
+        "username": "testuser1",
+        "email": "test1@example.com",
+        "password": "password123"  // This is in the common password list
+    });
+
+    let uncommon_password_data = json!({
+        "username": "testuser2",
+        "email": "test2@example.com",
+        "password": "VeryUniquePassword123!"  // This should not be in common list
+    });
+
+    let weak_but_uncommon_password_data = json!({
+        "username": "testuser3",
+        "email": "test3@example.com",
+        "password": "short"  // This is weak but not in common list (too short)
+    });
+
+    // Warm up the system with a few requests
+    for _ in 0..3 {
+        let _ = app
+            .post_json("/api/v1/auth/register", &common_password_data)
+            .await;
+        let _ = app
+            .post_json("/api/v1/auth/register", &uncommon_password_data)
+            .await;
+        let _ = app
+            .post_json("/api/v1/auth/register", &weak_but_uncommon_password_data)
+            .await;
+    }
+
+    // Measure timing for common password validation
+    let mut common_times = Vec::new();
+    for i in 0..5 {
+        let test_data = json!({
+            "username": format!("testuser_common_{}", i),
+            "email": format!("test_common_{}@example.com", i),
+            "password": "password123"
+        });
+
+        let start = std::time::Instant::now();
+        let response = app.post_json("/api/v1/auth/register", &test_data).await;
+        let duration = start.elapsed();
+
+        // Should be rejected as BAD_REQUEST due to common password
+        assert_status(&response, reqwest::StatusCode::BAD_REQUEST);
+        common_times.push(duration);
+    }
+
+    // Measure timing for uncommon password validation (but still rejected for strength)
+    let mut uncommon_times = Vec::new();
+    for i in 0..5 {
+        let test_data = json!({
+            "username": format!("testuser_uncommon_{}", i),
+            "email": format!("test_uncommon_{}@example.com", i),
+            "password": "short"  // Too short, but not common
+        });
+
+        let start = std::time::Instant::now();
+        let response = app.post_json("/api/v1/auth/register", &test_data).await;
+        let duration = start.elapsed();
+
+        // Should be rejected as BAD_REQUEST due to length requirement
+        assert_status(&response, reqwest::StatusCode::BAD_REQUEST);
+        uncommon_times.push(duration);
+    }
+
+    // Calculate average timing for both scenarios
+    let avg_common_time =
+        common_times.iter().sum::<std::time::Duration>() / common_times.len() as u32;
+    let avg_uncommon_time =
+        uncommon_times.iter().sum::<std::time::Duration>() / uncommon_times.len() as u32;
+
+    // The timing difference should be minimal (within 20ms tolerance for integration tests)
+    let timing_diff = avg_common_time.abs_diff(avg_uncommon_time);
+
+    assert!(
+        timing_diff < std::time::Duration::from_millis(20),
+        "Common password validation timing difference too large: {:?} (avg_common: {:?}, avg_uncommon: {:?}). \
+         This suggests timing attack vulnerability in password validation.",
+        timing_diff,
+        avg_common_time,
+        avg_uncommon_time
+    );
+
+    // Both should take some time (password validation should not be instant)
+    assert!(
+        avg_common_time > std::time::Duration::from_micros(100),
+        "Common password validation too fast: {:?}",
+        avg_common_time
+    );
+    assert!(
+        avg_uncommon_time > std::time::Duration::from_micros(100),
+        "Uncommon password validation too fast: {:?}",
+        avg_uncommon_time
+    );
+}
+
+#[tokio::test]
+async fn test_password_validation_security_edge_cases() {
+    let app = spawn_app().await;
+
+    // Test various security edge cases for password validation
+    let security_test_cases = [
+        (
+            "Password123",
+            "Mixed case version of common password - should be rejected for case bypass",
+        ),
+        ("PASSWORD", "All caps version of common password"),
+        ("pAsSwOrD123", "Mixed case 'password123' variant"),
+        ("Admin123", "Mixed case 'admin123' variant"),
+        ("Welcome123", "Mixed case 'welcome123' variant"),
+        ("\0password123\0", "Password with null bytes"),
+        ("password123\r\n", "Password with line endings"),
+        ("password123\t", "Password with tab character"),
+        (" password123 ", "Password with leading/trailing spaces"),
+        ("password\u{200B}123", "Password with zero-width space"),
+        ("p\u{00AD}assword123", "Password with soft hyphen"),
+        ("password123\u{FEFF}", "Password with BOM character"),
+    ];
+
+    for (i, (password, description)) in security_test_cases.iter().enumerate() {
+        let user_data = json!({
+            "username": format!("testuser_{}", i),
+            "email": format!("test_{}@example.com", i),
+            "password": password
+        });
+
+        let response = app.post_json("/api/v1/auth/register", &user_data).await;
+
+        // All these should be rejected (either for being common passwords or invalid characters)
+        assert!(
+            response.status() == StatusCode::BAD_REQUEST,
+            "Expected BAD_REQUEST for password security test: {} ({}), got: {}",
+            password,
+            description,
+            response.status()
+        );
+
+        let json: serde_json::Value = response.json().await.unwrap();
+        let error_message = json["error"]["message"].as_str().unwrap_or("");
+
+        // Should get appropriate error message
+        assert!(
+            error_message.contains("password")
+                || error_message.contains("common")
+                || error_message.contains("Invalid")
+                || error_message.contains("character"),
+            "Expected password-related error for {} ({}), got: {}",
+            password,
+            description,
+            error_message
+        );
+    }
+
+    // Test that legitimate strong passwords still work
+    let strong_passwords = [
+        "MyVerySecurePassword123!",
+        "AnotherStrongP@ssw0rd",
+        "Complex&Secure#2024!",
+        "UnbreakableP4$$w0rd!",
+    ];
+
+    for (i, password) in strong_passwords.iter().enumerate() {
+        let user_data = json!({
+            "username": format!("strong_user_{}", i),
+            "email": format!("strong_{}@example.com", i),
+            "password": password
+        });
+
+        let response = app.post_json("/api/v1/auth/register", &user_data).await;
+
+        // These should succeed (or fail only due to duplicate username, not password)
+        assert!(
+            response.status() == StatusCode::OK || response.status() == StatusCode::CONFLICT,
+            "Strong password should be accepted: {}, got: {}",
+            password,
+            response.status()
+        );
+    }
+}

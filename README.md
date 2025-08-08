@@ -145,7 +145,7 @@ cd web && pnpm dev
 - **⚙️ Background Tasks** - Async job processing with retry logic and dead letter queue
 - **🏗️ Module Generator** - Secure template-based code generation with ownership patterns, transaction safety, and comprehensive testing
 - **📊 API Documentation** - Interactive OpenAPI/Swagger docs
-- **🧪 Testing Framework** - 137 integration tests + comprehensive API endpoint testing (81 endpoints)
+- **🧪 Testing Framework** - 148 integration tests + comprehensive API endpoint testing (83 endpoints)
 - **📊 Monitoring & Observability** - Complete monitoring system with 14 API endpoints, comprehensive web UI dashboard, advanced tag filtering, RBAC-integrated interface, enhanced error handling
 - **🔥 Chaos Testing** - Docker-based resilience testing with 10 scenarios
 - **⚙️ Admin CLI** - Direct database access for monitoring and maintenance
@@ -164,7 +164,7 @@ cargo run -- revert module books --dry-run               # Preview revert
 ./scripts/test-template-with-curl.sh books               # Test generated API
 
 # Run tests
-cargo nextest run                    # Integration tests (137 tests)
+cargo nextest run                    # Integration tests (148 tests)
 ./scripts/test-with-curl.sh         # API endpoint tests (81 tests including monitoring)
 ./scripts/test-generate.sh          # Module generator system tests
 ./scripts/test-chaos.sh             # Chaos testing (10 scenarios)
@@ -201,7 +201,7 @@ rust-fullstack-starter/
     │   ├── monitoring/ # Observability system (14 endpoints)
     │   └── ...       # Health, errors, database, server
     ├── migrations/   # Database schema evolution (6 migrations)
-    └── tests/        # Integration tests (135 tests)
+    └── tests/        # Integration tests (146 tests)
 ```
 
 ## Documentation

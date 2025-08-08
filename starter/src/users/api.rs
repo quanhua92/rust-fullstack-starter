@@ -83,6 +83,11 @@ pub async fn get_user_by_id(
         .await
         .map_err(Error::from_sqlx)?;
 
+    // For regular users, check if they're trying to access their own profile first (optimization)
+    if auth_user.role == crate::rbac::UserRole::User && auth_user.id != id {
+        return Err(Error::NotFound("User not found".to_string()));
+    }
+
     // Get target user to access their role for authorization
     let target_user = user_services::find_user_by_id(conn.as_mut(), id).await?;
     let target_user = match target_user {

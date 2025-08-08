@@ -8,7 +8,7 @@ This guide covers the continuous integration and deployment (CI/CD) setup for th
 graph TB
     subgraph "🔄 CI/CD Pipeline Overview"
         subgraph "🧪 Quality Gates"
-            TEST[🧪 Test Suite<br/>Unit + Integration<br/>119 tests]
+            TEST[🧪 Test Suite<br/>Unit + Integration<br/>148 tests]
             SECURITY[🔒 Security Scan<br/>Dependencies + Secrets<br/>Container scan]
             LINT[📝 Code Quality<br/>Format + Clippy<br/>SQLx prepare]
         end

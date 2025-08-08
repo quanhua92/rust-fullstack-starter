@@ -73,9 +73,98 @@ impl CreateUserRequest {
 }
 
 pub fn validate_email(email: &str) -> Result<()> {
-    if email.len() < 3 || !email.contains('@') || email.len() > 254 {
+    // Basic length checks
+    if email.len() < 3 || email.len() > 254 {
         return Err(Error::validation("email", "Invalid email format"));
     }
+
+    // Check for exactly one @ symbol
+    let at_count = email.chars().filter(|&c| c == '@').count();
+    if at_count != 1 {
+        return Err(Error::validation("email", "Invalid email format"));
+    }
+
+    // Split into local and domain parts
+    let parts: Vec<&str> = email.split('@').collect();
+    if parts.len() != 2 {
+        return Err(Error::validation("email", "Invalid email format"));
+    }
+
+    let local_part = parts[0];
+    let domain_part = parts[1];
+
+    // Validate local part
+    if local_part.is_empty() || local_part.len() > 64 {
+        return Err(Error::validation("email", "Invalid email format"));
+    }
+
+    // Local part cannot start or end with dots
+    if local_part.starts_with('.') || local_part.ends_with('.') {
+        return Err(Error::validation("email", "Invalid email format"));
+    }
+
+    // No consecutive dots in local part
+    if local_part.contains("..") {
+        return Err(Error::validation("email", "Invalid email format"));
+    }
+
+    // Check for valid characters in local part (simplified RFC compliance)
+    for c in local_part.chars() {
+        if !c.is_alphanumeric() && !matches!(c, '.' | '_' | '-' | '+') {
+            return Err(Error::validation("email", "Invalid email format"));
+        }
+    }
+
+    // Validate domain part
+    if domain_part.is_empty() || domain_part.len() > 253 {
+        return Err(Error::validation("email", "Invalid email format"));
+    }
+
+    // Domain cannot start or end with hyphens or dots
+    if domain_part.starts_with('-')
+        || domain_part.ends_with('-')
+        || domain_part.starts_with('.')
+        || domain_part.ends_with('.')
+    {
+        return Err(Error::validation("email", "Invalid email format"));
+    }
+
+    // Check for valid domain format (must contain at least one dot for TLD)
+    if !domain_part.contains('.') {
+        return Err(Error::validation("email", "Invalid email format"));
+    }
+
+    // Split domain into labels
+    let domain_labels: Vec<&str> = domain_part.split('.').collect();
+    if domain_labels.len() < 2 {
+        return Err(Error::validation("email", "Invalid email format"));
+    }
+
+    // Validate each domain label
+    for label in &domain_labels {
+        if label.is_empty() || label.len() > 63 {
+            return Err(Error::validation("email", "Invalid email format"));
+        }
+
+        // Label cannot start or end with hyphen
+        if label.starts_with('-') || label.ends_with('-') {
+            return Err(Error::validation("email", "Invalid email format"));
+        }
+
+        // Check for valid characters in domain labels
+        for c in label.chars() {
+            if !c.is_alphanumeric() && c != '-' {
+                return Err(Error::validation("email", "Invalid email format"));
+            }
+        }
+    }
+
+    // TLD (last label) should be at least 2 characters and only letters
+    let tld = domain_labels.last().unwrap();
+    if tld.len() < 2 || !tld.chars().all(|c| c.is_alphabetic()) {
+        return Err(Error::validation("email", "Invalid email format"));
+    }
+
     Ok(())
 }
 
@@ -171,10 +260,12 @@ pub fn validate_password(password: &str) -> Result<()> {
 }
 
 /// Check if password is in a list of common weak passwords
+/// Uses constant-time comparison to prevent timing attacks
+/// Checks both exact match and lowercase version to prevent case bypass
 fn is_common_password(password: &str) -> bool {
-    static COMMON_PASSWORDS: once_cell::sync::Lazy<std::collections::HashSet<&'static str>> =
+    static COMMON_PASSWORDS: once_cell::sync::Lazy<Vec<&'static str>> =
         once_cell::sync::Lazy::new(|| {
-            [
+            vec![
                 "password",
                 "123456",
                 "password123",
@@ -185,13 +276,11 @@ fn is_common_password(password: &str) -> bool {
                 "monkey",
                 "1234567890",
                 "abc123",
-                "Password1",
                 "password1",
                 "123456789",
                 "welcome123",
                 "admin123",
                 "qwerty123",
-                "Password123",
                 "12345678",
                 "111111",
                 "123123",
@@ -209,13 +298,59 @@ fn is_common_password(password: &str) -> bool {
                 "azerty",
                 "trustno1",
                 "123qwe",
+                // Additional common variants
+                "password123!",
+                "admin123!",
+                "qwerty123!",
+                "welcome123!",
+                "password1!",
+                "admin1",
+                "qwerty1",
+                "welcome1",
             ]
-            .iter()
-            .cloned()
-            .collect()
         });
 
-    COMMON_PASSWORDS.contains(password.to_lowercase().as_str())
+    // Check both the password as-is and its lowercase version
+    // Use constant-time comparison to prevent timing attacks
+    let password_lower = password.to_lowercase();
+
+    let mut found = false;
+    for common_password in COMMON_PASSWORDS.iter() {
+        // Check exact match
+        if constant_time_eq(password.as_bytes(), common_password.as_bytes()) {
+            found = true;
+            // Continue the loop to maintain constant time
+        }
+        // Check lowercase match
+        if constant_time_eq(password_lower.as_bytes(), common_password.as_bytes()) {
+            found = true;
+            // Continue the loop to maintain constant time
+        }
+    }
+    found
+}
+
+/// Constant-time string comparison to prevent timing attacks
+fn constant_time_eq(a: &[u8], b: &[u8]) -> bool {
+    if a.len() != b.len() {
+        // Even for different lengths, we should do some work to maintain timing
+        let mut _result = 0u8;
+        for (i, &byte_a) in a.iter().enumerate() {
+            let byte_b = b.get(i % b.len().max(1)).copied().unwrap_or(0);
+            _result |= byte_a ^ byte_b;
+        }
+        // Ensure we've done similar work regardless of length difference
+        for _ in 0..b.len().saturating_sub(a.len()) {
+            _result |= 0;
+        }
+        false
+    } else {
+        let mut result = 0u8;
+        for (byte_a, byte_b) in a.iter().zip(b.iter()) {
+            result |= byte_a ^ byte_b;
+        }
+        result == 0
+    }
 }
 
 // New request/response models for user management endpoints
