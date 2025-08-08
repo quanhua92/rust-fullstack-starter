@@ -172,44 +172,50 @@ pub fn validate_password(password: &str) -> Result<()> {
 
 /// Check if password is in a list of common weak passwords
 fn is_common_password(password: &str) -> bool {
-    const COMMON_PASSWORDS: &[&str] = &[
-        "password",
-        "123456",
-        "password123",
-        "admin",
-        "qwerty",
-        "letmein",
-        "welcome",
-        "monkey",
-        "1234567890",
-        "abc123",
-        "Password1",
-        "password1",
-        "123456789",
-        "welcome123",
-        "admin123",
-        "qwerty123",
-        "Password123",
-        "12345678",
-        "111111",
-        "123123",
-        "1234567",
-        "1q2w3e4r",
-        "asdfgh",
-        "zxcvbn",
-        "qwertyui",
-        "000000",
-        "1234",
-        "iloveyou",
-        "dragon",
-        "sunshine",
-        "princess",
-        "azerty",
-        "trustno1",
-        "123qwe",
-    ];
+    static COMMON_PASSWORDS: once_cell::sync::Lazy<std::collections::HashSet<&'static str>> =
+        once_cell::sync::Lazy::new(|| {
+            [
+                "password",
+                "123456",
+                "password123",
+                "admin",
+                "qwerty",
+                "letmein",
+                "welcome",
+                "monkey",
+                "1234567890",
+                "abc123",
+                "Password1",
+                "password1",
+                "123456789",
+                "welcome123",
+                "admin123",
+                "qwerty123",
+                "Password123",
+                "12345678",
+                "111111",
+                "123123",
+                "1234567",
+                "1q2w3e4r",
+                "asdfgh",
+                "zxcvbn",
+                "qwertyui",
+                "000000",
+                "1234",
+                "iloveyou",
+                "dragon",
+                "sunshine",
+                "princess",
+                "azerty",
+                "trustno1",
+                "123qwe",
+            ]
+            .iter()
+            .cloned()
+            .collect()
+        });
 
-    COMMON_PASSWORDS.contains(&password.to_lowercase().as_str())
+    COMMON_PASSWORDS.contains(password.to_lowercase().as_str())
 }
 
 // New request/response models for user management endpoints
