@@ -776,8 +776,8 @@ async fn test_password_validation_security_edge_cases() {
         // All these should be rejected (either for being common passwords or invalid characters)
         assert!(
             response.status() == StatusCode::BAD_REQUEST,
-            "Expected BAD_REQUEST for password security test: {} ({}), got: {}",
-            password,
+            "Expected BAD_REQUEST for password security test case {} ({}), got: {}",
+            i,
             description,
             response.status()
         );
@@ -791,8 +791,8 @@ async fn test_password_validation_security_edge_cases() {
                 || error_message.contains("common")
                 || error_message.contains("Invalid")
                 || error_message.contains("character"),
-            "Expected password-related error for {} ({}), got: {}",
-            password,
+            "Expected password-related error for test case {} ({}), got: {}",
+            i,
             description,
             error_message
         );
@@ -818,8 +818,8 @@ async fn test_password_validation_security_edge_cases() {
         // These should succeed (or fail only due to duplicate username, not password)
         assert!(
             response.status() == StatusCode::OK || response.status() == StatusCode::CONFLICT,
-            "Strong password should be accepted: {}, got: {}",
-            password,
+            "Strong password test case {} should be accepted, got: {}",
+            i,
             response.status()
         );
     }
