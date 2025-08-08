@@ -8,6 +8,12 @@ use chrono::{Duration, Utc};
 use sqlx::Acquire;
 use uuid::Uuid;
 
+// Dummy hash with valid bcrypt format for timing attack protection.
+// Using a validly formatted hash is crucial to prevent the password verification
+// function from returning early due to a parsing error, which would reintroduce
+// a timing vulnerability.
+const DUMMY_HASH: &str = "$2b$12$z3qB8v9ttW8uOqB8v9ttW8uOqB8v9tttW8uOqB8v9tttW8uOqB8v9";
+
 fn generate_session_token() -> String {
     use base64::Engine;
     use rand::Rng;
@@ -159,17 +165,9 @@ pub async fn login(conn: &mut DbConn, req: LoginRequest) -> Result<LoginResponse
     req.validate()?;
 
     // Always perform the same amount of work regardless of user existence to prevent timing attacks
-    let (user_option, dummy_hash) = match (&req.username, &req.email) {
-        (Some(username), None) => {
-            let user = user_services::find_user_by_username(conn, username).await?;
-            let dummy = "$2b$12$dummy.hash.for.timing.protection.purposes.only";
-            (user, dummy)
-        }
-        (None, Some(email)) => {
-            let user = user_services::find_user_by_email(conn, email).await?;
-            let dummy = "$2b$12$dummy.hash.for.timing.protection.purposes.only";
-            (user, dummy)
-        }
+    let user_option = match (&req.username, &req.email) {
+        (Some(username), None) => user_services::find_user_by_username(conn, username).await?,
+        (None, Some(email)) => user_services::find_user_by_email(conn, email).await?,
         _ => {
             // This should never happen due to validation, but handle it gracefully
             return Err(Error::InvalidCredentials);
@@ -181,7 +179,7 @@ pub async fn login(conn: &mut DbConn, req: LoginRequest) -> Result<LoginResponse
         Some(user) => user_services::verify_password(&req.password, &user.password_hash)?,
         None => {
             // Perform dummy verification to maintain constant timing
-            let _ = user_services::verify_password(&req.password, dummy_hash);
+            let _ = user_services::verify_password(&req.password, DUMMY_HASH);
             false
         }
     };

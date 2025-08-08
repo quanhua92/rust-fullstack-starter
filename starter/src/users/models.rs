@@ -116,9 +116,36 @@ pub fn validate_password(password: &str) -> Result<()> {
     let has_upper = password.chars().any(|c| c.is_uppercase());
     let has_lower = password.chars().any(|c| c.is_lowercase());
     let has_digit = password.chars().any(|c| c.is_numeric());
-    let has_special = password
-        .chars()
-        .any(|c| "!@#$%^&*()_+-=[]{}|;:,.<>?".contains(c));
+    let has_special = password.chars().any(|c| {
+        matches!(
+            c,
+            '!' | '@'
+                | '#'
+                | '$'
+                | '%'
+                | '^'
+                | '&'
+                | '*'
+                | '('
+                | ')'
+                | '_'
+                | '+'
+                | '-'
+                | '='
+                | '['
+                | ']'
+                | '{'
+                | '}'
+                | '|'
+                | ';'
+                | ':'
+                | ','
+                | '.'
+                | '<'
+                | '>'
+                | '?'
+        )
+    });
 
     let strength_count = [has_upper, has_lower, has_digit, has_special]
         .iter()

@@ -132,21 +132,27 @@ pub async fn security_headers_middleware(req: Request, next: Next) -> Response {
     let headers = response.headers_mut();
 
     // Safe for development - prevents MIME sniffing attacks
-    headers.insert("X-Content-Type-Options", "nosniff".parse().unwrap());
+    headers.insert(
+        axum::http::header::X_CONTENT_TYPE_OPTIONS,
+        axum::http::HeaderValue::from_static("nosniff"),
+    );
 
     // Allow same-origin iframes (less restrictive than DENY)
-    headers.insert("X-Frame-Options", "SAMEORIGIN".parse().unwrap());
+    headers.insert(
+        axum::http::header::X_FRAME_OPTIONS,
+        axum::http::HeaderValue::from_static("SAMEORIGIN"),
+    );
 
     // Basic Content Security Policy (relaxed for development)
     headers.insert(
-        "Content-Security-Policy", 
-        "default-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' ws: wss:".parse().unwrap()
+        axum::http::header::CONTENT_SECURITY_POLICY,
+        axum::http::HeaderValue::from_static("default-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' ws: wss:")
     );
 
     // Control referrer information
     headers.insert(
-        "Referrer-Policy",
-        "strict-origin-when-cross-origin".parse().unwrap(),
+        axum::http::header::REFERRER_POLICY,
+        axum::http::HeaderValue::from_static("strict-origin-when-cross-origin"),
     );
 
     // NO HSTS header - allows HTTP in development
