@@ -342,3 +342,125 @@ async fn test_token_refresh_updates_database() {
         "last_refreshed_at should be very recent"
     );
 }
+
+#[tokio::test]
+async fn test_login_timing_attack_protection() {
+    let app = spawn_app().await;
+    let factory = TestDataFactory::new(app.clone());
+
+    // Create a user to test valid credentials
+    factory.create_user("validuser").await;
+
+    // Test data for timing measurements
+    let valid_login_data = json!({
+        "username": "validuser",
+        "password": "WrongPassword"  // Wrong password for existing user
+    });
+
+    let invalid_login_data = json!({
+        "username": "nonexistentuser",
+        "password": "AnyPassword"  // Any password for non-existent user
+    });
+
+    // Warm up the system with a few requests to stabilize timing
+    for _ in 0..3 {
+        let _ = app.post_json("/api/v1/auth/login", &valid_login_data).await;
+        let _ = app.post_json("/api/v1/auth/login", &invalid_login_data).await;
+    }
+
+    // Measure timing for existing user with wrong password (should use real hash)
+    let mut valid_user_times = Vec::new();
+    for _ in 0..5 {
+        let start = std::time::Instant::now();
+        let response = app.post_json("/api/v1/auth/login", &valid_login_data).await;
+        let duration = start.elapsed();
+        
+        // Should return UNAUTHORIZED for wrong password
+        assert_status(&response, reqwest::StatusCode::UNAUTHORIZED);
+        valid_user_times.push(duration);
+    }
+
+    // Measure timing for non-existent user (should use dummy hash)
+    let mut invalid_user_times = Vec::new();
+    for _ in 0..5 {
+        let start = std::time::Instant::now();
+        let response = app.post_json("/api/v1/auth/login", &invalid_login_data).await;
+        let duration = start.elapsed();
+        
+        // Should return UNAUTHORIZED for non-existent user
+        assert_status(&response, reqwest::StatusCode::UNAUTHORIZED);
+        invalid_user_times.push(duration);
+    }
+
+    // Calculate average timing for both scenarios
+    let avg_valid_time = valid_user_times.iter().sum::<std::time::Duration>() / valid_user_times.len() as u32;
+    let avg_invalid_time = invalid_user_times.iter().sum::<std::time::Duration>() / invalid_user_times.len() as u32;
+
+    // The timing difference should be minimal (within 50ms tolerance for integration tests)
+    let timing_diff = if avg_valid_time > avg_invalid_time {
+        avg_valid_time - avg_invalid_time
+    } else {
+        avg_invalid_time - avg_valid_time
+    };
+
+    // In a real timing attack, the difference would be orders of magnitude larger
+    // We allow 50ms tolerance for integration test environment variability
+    assert!(
+        timing_diff < std::time::Duration::from_millis(50),
+        "Timing difference too large: {:?} (avg_valid: {:?}, avg_invalid: {:?}). \
+         This suggests timing attack vulnerability - dummy hash may not be working correctly.",
+        timing_diff, avg_valid_time, avg_invalid_time
+    );
+
+    // Both scenarios should take a reasonable amount of time (bcrypt should be slow)
+    // Bcrypt with cost 12 should take at least a few milliseconds
+    assert!(
+        avg_valid_time > std::time::Duration::from_millis(1),
+        "Valid user password verification too fast: {:?}",
+        avg_valid_time
+    );
+    assert!(
+        avg_invalid_time > std::time::Duration::from_millis(1),
+        "Invalid user dummy hash verification too fast: {:?}",
+        avg_invalid_time
+    );
+
+    // Verify both scenarios return the same error structure
+    let valid_response = app.post_json("/api/v1/auth/login", &valid_login_data).await;
+    let invalid_response = app.post_json("/api/v1/auth/login", &invalid_login_data).await;
+
+    let valid_json: serde_json::Value = valid_response.json().await.unwrap();
+    let invalid_json: serde_json::Value = invalid_response.json().await.unwrap();
+
+    // Both should return the same error message to prevent user enumeration
+    assert_eq!(valid_json["error"]["code"], invalid_json["error"]["code"]);
+    assert_eq!(valid_json["error"]["code"], "INVALID_CREDENTIALS");
+    assert_eq!(valid_json["error"]["message"], "Invalid credentials");
+    assert_eq!(invalid_json["error"]["message"], "Invalid credentials");
+}
+
+#[tokio::test]
+async fn test_login_dummy_hash_error_handling() {
+    let app = spawn_app().await;
+    
+    // Test with non-existent user to trigger dummy hash usage
+    let login_data = json!({
+        "username": "definitelynonexistentuser",
+        "password": "TestPassword123!"
+    });
+
+    // This should use the dummy hash and complete without errors
+    let response = app.post_json("/api/v1/auth/login", &login_data).await;
+    
+    // Should return UNAUTHORIZED (not 500 Internal Server Error)
+    assert_status(&response, reqwest::StatusCode::UNAUTHORIZED);
+    
+    let json: serde_json::Value = response.json().await.unwrap();
+    assert_eq!(json["error"]["message"], "Invalid credentials");
+    assert_eq!(json["error"]["code"], "INVALID_CREDENTIALS");
+    
+    // Verify the response structure is consistent
+    assert_json_field_exists(&json, "error");
+    assert_json_field_exists(&json["error"], "message");
+    assert_json_field_exists(&json["error"], "code");
+}
