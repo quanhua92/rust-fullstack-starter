@@ -273,7 +273,7 @@ pub struct Event {
 }
 
 /// API request structure for creating events
-/// 
+///
 /// Validation limits:
 /// - event_type: max [`MAX_EVENT_TYPE_LENGTH`] characters
 /// - source: max [`MAX_SOURCE_LENGTH`] characters  
@@ -302,41 +302,75 @@ pub struct CreateEventRequest {
 impl Validate for CreateEventRequest {
     fn validate(&self) -> Result<()> {
         if self.event_type.len() > MAX_EVENT_TYPE_LENGTH {
-            return Err(Error::validation("event_type", &format!("Event type too long (max {} characters)", MAX_EVENT_TYPE_LENGTH)));
+            return Err(Error::validation(
+                "event_type",
+                &format!(
+                    "Event type too long (max {} characters)",
+                    MAX_EVENT_TYPE_LENGTH
+                ),
+            ));
         }
         if self.source.len() > MAX_SOURCE_LENGTH {
-            return Err(Error::validation("source", &format!("Source too long (max {} characters)", MAX_SOURCE_LENGTH)));
+            return Err(Error::validation(
+                "source",
+                &format!("Source too long (max {} characters)", MAX_SOURCE_LENGTH),
+            ));
         }
         if let Some(ref message) = self.message
-            && message.len() > MAX_MESSAGE_LENGTH {
-            return Err(Error::validation("message", &format!("Message too long (max {} characters)", MAX_MESSAGE_LENGTH)));
+            && message.len() > MAX_MESSAGE_LENGTH
+        {
+            return Err(Error::validation(
+                "message",
+                &format!("Message too long (max {} characters)", MAX_MESSAGE_LENGTH),
+            ));
         }
         if let Some(ref level) = self.level
-            && level.len() > MAX_LEVEL_LENGTH {
-            return Err(Error::validation("level", &format!("Level too long (max {} characters)", MAX_LEVEL_LENGTH)));
+            && level.len() > MAX_LEVEL_LENGTH
+        {
+            return Err(Error::validation(
+                "level",
+                &format!("Level too long (max {} characters)", MAX_LEVEL_LENGTH),
+            ));
         }
         if self.tags.len() > MAX_TAGS_COUNT {
-            return Err(Error::validation("tags", &format!("Too many tags (max {})", MAX_TAGS_COUNT)));
+            return Err(Error::validation(
+                "tags",
+                &format!("Too many tags (max {})", MAX_TAGS_COUNT),
+            ));
         }
         if self.payload.len() > MAX_PAYLOAD_FIELDS {
-            return Err(Error::validation("payload", &format!("Too many payload fields (max {})", MAX_PAYLOAD_FIELDS)));
+            return Err(Error::validation(
+                "payload",
+                &format!("Too many payload fields (max {})", MAX_PAYLOAD_FIELDS),
+            ));
         }
-        
+
         // Validate JSON size
-        let tags_json = serde_json::to_string(&self.tags).map_err(|e| Error::validation("tags", &format!("Invalid tags JSON: {}", e)))?;
-        let payload_json = serde_json::to_string(&self.payload).map_err(|e| Error::validation("payload", &format!("Invalid payload JSON: {}", e)))?;
-        
+        let tags_json = serde_json::to_string(&self.tags)
+            .map_err(|e| Error::validation("tags", &format!("Invalid tags JSON: {}", e)))?;
+        let payload_json = serde_json::to_string(&self.payload)
+            .map_err(|e| Error::validation("payload", &format!("Invalid payload JSON: {}", e)))?;
+
         if tags_json.len() > MAX_TAGS_JSON_SIZE {
-            return Err(Error::validation("tags", &format!("Tags JSON too large (max {}KB)", MAX_TAGS_JSON_SIZE / 1024)));
+            return Err(Error::validation(
+                "tags",
+                &format!("Tags JSON too large (max {}KB)", MAX_TAGS_JSON_SIZE / 1024),
+            ));
         }
         if payload_json.len() > MAX_PAYLOAD_JSON_SIZE {
-            return Err(Error::validation("payload", &format!("Payload JSON too large (max {}MB)", MAX_PAYLOAD_JSON_SIZE / 1024 / 1024)));
+            return Err(Error::validation(
+                "payload",
+                &format!(
+                    "Payload JSON too large (max {}MB)",
+                    MAX_PAYLOAD_JSON_SIZE / 1024 / 1024
+                ),
+            ));
         }
-        
+
         // Validate event_type is valid
         EventType::from_str(&self.event_type)
             .map_err(|_| Error::validation("event_type", "Invalid event type"))?;
-        
+
         Ok(())
     }
 }
@@ -374,23 +408,42 @@ pub struct CreateMetricRequest {
 impl Validate for CreateMetricRequest {
     fn validate(&self) -> Result<()> {
         if self.name.len() > MAX_METRIC_NAME_LENGTH {
-            return Err(Error::validation("name", &format!("Metric name too long (max {} characters)", MAX_METRIC_NAME_LENGTH)));
+            return Err(Error::validation(
+                "name",
+                &format!(
+                    "Metric name too long (max {} characters)",
+                    MAX_METRIC_NAME_LENGTH
+                ),
+            ));
         }
         if self.labels.len() > MAX_LABELS_COUNT {
-            return Err(Error::validation("labels", &format!("Too many labels (max {})", MAX_LABELS_COUNT)));
+            return Err(Error::validation(
+                "labels",
+                &format!("Too many labels (max {})", MAX_LABELS_COUNT),
+            ));
         }
-        
+
         // Validate labels JSON size
-        let labels_json = serde_json::to_string(&self.labels).map_err(|e| Error::validation("labels", &format!("Invalid labels JSON: {}", e)))?;
+        let labels_json = serde_json::to_string(&self.labels)
+            .map_err(|e| Error::validation("labels", &format!("Invalid labels JSON: {}", e)))?;
         if labels_json.len() > MAX_TAGS_JSON_SIZE {
-            return Err(Error::validation("labels", &format!("Labels JSON too large (max {}KB)", MAX_TAGS_JSON_SIZE / 1024)));
+            return Err(Error::validation(
+                "labels",
+                &format!(
+                    "Labels JSON too large (max {}KB)",
+                    MAX_TAGS_JSON_SIZE / 1024
+                ),
+            ));
         }
-        
+
         // Validate metric value is finite
         if !self.value.is_finite() {
-            return Err(Error::validation("value", "Metric value must be a finite number"));
+            return Err(Error::validation(
+                "value",
+                "Metric value must be a finite number",
+            ));
         }
-        
+
         Ok(())
     }
 }

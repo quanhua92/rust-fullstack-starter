@@ -1229,6 +1229,14 @@ export interface components {
 			/** Format: double */
 			threshold_value?: number | null;
 		};
+		/** @description API request structure for creating events
+		 *
+		 *     Validation limits: *     - event_type: max [`MAX_EVENT_TYPE_LENGTH`] characters
+		 *     - source: max [`MAX_SOURCE_LENGTH`] characters
+		 *     - message: max [`MAX_MESSAGE_LENGTH`] characters
+		 *     - level: max [`MAX_LEVEL_LENGTH`] characters
+		 *     - tags: max [`MAX_TAGS_COUNT`] entries, max [`MAX_TAGS_JSON_SIZE`] bytes JSON
+		 *     - payload: max [`MAX_PAYLOAD_FIELDS`] fields, max [`MAX_PAYLOAD_JSON_SIZE`] bytes JSON */
 		CreateEventRequest: {
 			event_type: string;
 			level?: string | null;
@@ -1250,6 +1258,11 @@ export interface components {
 			severity: components["schemas"]["IncidentSeverity"];
 			title: string;
 		};
+		/** @description API request structure for submitting metrics
+		 *
+		 *     Validation limits: *     - name: max [`MAX_METRIC_NAME_LENGTH`] characters
+		 *     - value: must be finite number
+		 *     - labels: max [`MAX_LABELS_COUNT`] entries, max [`MAX_TAGS_JSON_SIZE`] bytes JSON */
 		CreateMetricRequest: {
 			labels?: {
 				[key: string]: string;

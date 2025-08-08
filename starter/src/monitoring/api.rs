@@ -140,15 +140,35 @@ fn is_user_authorized_for_metric_name(
     Ok(false)
 }
 
-/// Parse tags query parameter string into HashMap
+/// Parse tags query parameter string into HashMap with comprehensive validation
 /// Format: "key1:value1,key2:value2"
+///
+/// Security validations:
+/// - Maximum number of tags: 50
+/// - Maximum key length: 100 characters
+/// - Maximum value length: 500 characters
+/// - Only alphanumeric, underscore, hyphen, and dot allowed in keys
+/// - Prevents injection attacks and resource exhaustion
 fn parse_tags_query(tags_str: &str) -> Result<HashMap<String, String>, Error> {
+    const MAX_TAG_PAIRS: usize = 50;
+    const MAX_TAG_KEY_LENGTH: usize = 100;
+    const MAX_TAG_VALUE_LENGTH: usize = 500;
+
     let mut tags = HashMap::new();
+    let mut pair_count = 0;
 
     for pair in tags_str.split(',') {
         let pair = pair.trim();
         if pair.is_empty() {
             continue;
+        }
+
+        pair_count += 1;
+        if pair_count > MAX_TAG_PAIRS {
+            return Err(Error::validation(
+                "tags",
+                &format!("Too many tag pairs (maximum {})", MAX_TAG_PAIRS),
+            ));
         }
 
         let parts: Vec<&str> = pair.splitn(2, ':').collect();
@@ -159,8 +179,8 @@ fn parse_tags_query(tags_str: &str) -> Result<HashMap<String, String>, Error> {
             ));
         }
 
-        let key = parts[0].trim().to_string();
-        let value = parts[1].trim().to_string();
+        let key = parts[0].trim();
+        let value = parts[1].trim();
 
         if key.is_empty() || value.is_empty() {
             return Err(Error::validation(
@@ -169,7 +189,46 @@ fn parse_tags_query(tags_str: &str) -> Result<HashMap<String, String>, Error> {
             ));
         }
 
-        tags.insert(key, value);
+        if key.len() > MAX_TAG_KEY_LENGTH {
+            return Err(Error::validation(
+                "tags",
+                &format!(
+                    "Tag key too long (maximum {} characters)",
+                    MAX_TAG_KEY_LENGTH
+                ),
+            ));
+        }
+
+        if value.len() > MAX_TAG_VALUE_LENGTH {
+            return Err(Error::validation(
+                "tags",
+                &format!(
+                    "Tag value too long (maximum {} characters)",
+                    MAX_TAG_VALUE_LENGTH
+                ),
+            ));
+        }
+
+        // Validate key contains only safe characters to prevent injection
+        if !key
+            .chars()
+            .all(|c| c.is_alphanumeric() || c == '_' || c == '-' || c == '.')
+        {
+            return Err(Error::validation(
+                "tags",
+                "Tag keys must contain only alphanumeric characters, underscores, hyphens, and dots",
+            ));
+        }
+
+        // Prevent duplicate keys
+        if tags.contains_key(key) {
+            return Err(Error::validation(
+                "tags",
+                "Duplicate tag keys are not allowed",
+            ));
+        }
+
+        tags.insert(key.to_string(), value.to_string());
     }
 
     Ok(tags)
@@ -348,7 +407,7 @@ pub async fn get_event_by_id(
         .map_err(Error::from_sqlx)?;
 
     let event = services::find_event_by_id(conn.as_mut(), id).await?;
-    let event = event.ok_or_else(|| Error::NotFound(format!("Event with id {id}")))?;
+    let event = event.ok_or_else(|| Error::NotFound("Event not found".to_string()))?;
     Ok(Json(ApiResponse::success(event)))
 }
 
@@ -600,7 +659,7 @@ pub async fn get_incident_by_id(
         .map_err(Error::from_sqlx)?;
 
     let incident = services::find_incident_by_id(conn.as_mut(), id).await?;
-    let incident = incident.ok_or_else(|| Error::NotFound(format!("Incident with id {id}")))?;
+    let incident = incident.ok_or_else(|| Error::NotFound("Incident not found".to_string()))?;
     Ok(Json(ApiResponse::success(incident)))
 }
 
@@ -641,7 +700,7 @@ pub async fn update_incident(
     // Get the incident first to check ownership (with SELECT FOR UPDATE to prevent race conditions)
     let current_incident = services::find_incident_by_id_for_update(tx.as_mut(), id).await?;
     let current_incident =
-        current_incident.ok_or_else(|| Error::NotFound(format!("Incident with id {id}")))?;
+        current_incident.ok_or_else(|| Error::NotFound("Incident not found".to_string()))?;
 
     // Check if user can update this incident
     let can_update = auth_user

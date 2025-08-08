@@ -4540,25 +4540,29 @@
       },
       "CreateEventRequest": {
         "type": "object",
+        "description": "API request structure for creating events\n\nValidation limits:\n- event_type: max [`MAX_EVENT_TYPE_LENGTH`] characters\n- source: max [`MAX_SOURCE_LENGTH`] characters\n- message: max [`MAX_MESSAGE_LENGTH`] characters\n- level: max [`MAX_LEVEL_LENGTH`] characters\n- tags: max [`MAX_TAGS_COUNT`] entries, max [`MAX_TAGS_JSON_SIZE`] bytes JSON\n- payload: max [`MAX_PAYLOAD_FIELDS`] fields, max [`MAX_PAYLOAD_JSON_SIZE`] bytes JSON",
         "required": [
           "event_type",
           "source"
         ],
         "properties": {
           "event_type": {
-            "type": "string"
+            "type": "string",
+            "maxLength": 50
           },
           "level": {
             "type": [
               "string",
               "null"
-            ]
+            ],
+            "maxLength": 20
           },
           "message": {
             "type": [
               "string",
               "null"
-            ]
+            ],
+            "maxLength": 10000
           },
           "payload": {
             "type": "object",
@@ -4575,7 +4579,8 @@
             "format": "date-time"
           },
           "source": {
-            "type": "string"
+            "type": "string",
+            "maxLength": 200
           },
           "tags": {
             "type": "object",
@@ -4616,6 +4621,7 @@
       },
       "CreateMetricRequest": {
         "type": "object",
+        "description": "API request structure for submitting metrics\n\nValidation limits:\n- name: max [`MAX_METRIC_NAME_LENGTH`] characters\n- value: must be finite number\n- labels: max [`MAX_LABELS_COUNT`] entries, max [`MAX_TAGS_JSON_SIZE`] bytes JSON",
         "required": [
           "name",
           "metric_type",
@@ -4635,7 +4641,8 @@
             "$ref": "#/components/schemas/MetricType"
           },
           "name": {
-            "type": "string"
+            "type": "string",
+            "maxLength": 100
           },
           "recorded_at": {
             "type": [

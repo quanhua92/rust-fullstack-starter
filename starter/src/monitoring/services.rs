@@ -576,7 +576,7 @@ pub async fn get_incident_timeline(
     // Get incident details first
     let incident = find_incident_by_id(conn, incident_id)
         .await?
-        .ok_or_else(|| Error::NotFound(format!("Incident with id {incident_id}")))?;
+        .ok_or_else(|| Error::NotFound("Incident not found".to_string()))?;
 
     let limit = limit.unwrap_or(100);
     let offset = offset.unwrap_or(0);
@@ -652,57 +652,37 @@ pub async fn get_incident_timeline(
 pub async fn get_monitoring_stats(conn: &mut DbConn) -> Result<MonitoringStats> {
     let one_hour_ago = Utc::now() - chrono::Duration::hours(1);
 
-    let total_events = sqlx::query_scalar!("SELECT COUNT(*) FROM events")
-        .fetch_one(&mut *conn)
-        .await
-        .map_err(Error::from_sqlx)?
-        .unwrap_or(0);
-
-    let total_metrics = sqlx::query_scalar!("SELECT COUNT(*) FROM metrics")
-        .fetch_one(&mut *conn)
-        .await
-        .map_err(Error::from_sqlx)?
-        .unwrap_or(0);
-
-    let active_alerts = sqlx::query_scalar!("SELECT COUNT(*) FROM alerts WHERE status = 'active'")
-        .fetch_one(&mut *conn)
-        .await
-        .map_err(Error::from_sqlx)?
-        .unwrap_or(0);
-
-    let open_incidents = sqlx::query_scalar!(
-        "SELECT COUNT(*) FROM incidents WHERE status IN ('open', 'investigating')"
-    )
-    .fetch_one(&mut *conn)
-    .await
-    .map_err(Error::from_sqlx)?
-    .unwrap_or(0);
-
-    let events_last_hour = sqlx::query_scalar!(
-        "SELECT COUNT(*) FROM events WHERE created_at >= $1",
+    // Optimize with a single query using CTEs (Common Table Expressions) to reduce database roundtrips
+    // This reduces 6 separate queries to 1 query, improving performance and consistency
+    let stats = sqlx::query!(
+        r#"
+        WITH stats AS (
+            SELECT 
+                (SELECT COUNT(*) FROM events) as total_events,
+                (SELECT COUNT(*) FROM metrics) as total_metrics,
+                (SELECT COUNT(*) FROM alerts WHERE status = 'active') as active_alerts,
+                (SELECT COUNT(*) FROM incidents WHERE status IN ('open', 'investigating')) as open_incidents,
+                (SELECT COUNT(*) FROM events WHERE created_at >= $1) as events_last_hour,
+                (SELECT COUNT(*) FROM metrics WHERE created_at >= $1) as metrics_last_hour
+        )
+        SELECT 
+            total_events, total_metrics, active_alerts, 
+            open_incidents, events_last_hour, metrics_last_hour
+        FROM stats
+        "#,
         one_hour_ago
     )
     .fetch_one(&mut *conn)
     .await
-    .map_err(Error::from_sqlx)?
-    .unwrap_or(0);
-
-    let metrics_last_hour = sqlx::query_scalar!(
-        "SELECT COUNT(*) FROM metrics WHERE created_at >= $1",
-        one_hour_ago
-    )
-    .fetch_one(&mut *conn)
-    .await
-    .map_err(Error::from_sqlx)?
-    .unwrap_or(0);
+    .map_err(Error::from_sqlx)?;
 
     Ok(MonitoringStats {
-        total_events,
-        total_metrics,
-        active_alerts,
-        open_incidents,
-        events_last_hour,
-        metrics_last_hour,
+        total_events: stats.total_events.unwrap_or(0),
+        total_metrics: stats.total_metrics.unwrap_or(0),
+        active_alerts: stats.active_alerts.unwrap_or(0),
+        open_incidents: stats.open_incidents.unwrap_or(0),
+        events_last_hour: stats.events_last_hour.unwrap_or(0),
+        metrics_last_hour: stats.metrics_last_hour.unwrap_or(0),
     })
 }
 
@@ -710,14 +690,20 @@ pub async fn get_prometheus_metrics(conn: &mut DbConn) -> Result<String> {
     // Get metrics from the last 24 hours to keep output manageable
     let last_24h = Utc::now() - chrono::Duration::hours(24);
 
+    // Security: Limit to 10,000 metrics to prevent memory exhaustion and slow responses
+    // This protects against scenarios where a system has accumulated millions of metrics
+    const MAX_PROMETHEUS_METRICS: i64 = 10_000;
+
     let metrics = sqlx::query!(
         r#"
         SELECT name, metric_type, value, labels, recorded_at
         FROM metrics 
         WHERE recorded_at >= $1
         ORDER BY name, recorded_at DESC
+        LIMIT $2
         "#,
-        last_24h
+        last_24h,
+        MAX_PROMETHEUS_METRICS
     )
     .fetch_all(&mut *conn)
     .await

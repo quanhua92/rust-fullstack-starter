@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n        SELECT name, metric_type, value, labels, recorded_at\n        FROM metrics \n        WHERE recorded_at >= $1\n        ORDER BY name, recorded_at DESC\n        ",
+  "query": "\n        SELECT name, metric_type, value, labels, recorded_at\n        FROM metrics \n        WHERE recorded_at >= $1\n        ORDER BY name, recorded_at DESC\n        LIMIT $2\n        ",
   "describe": {
     "columns": [
       {
@@ -31,7 +31,8 @@
     ],
     "parameters": {
       "Left": [
-        "Timestamptz"
+        "Timestamptz",
+        "Int8"
       ]
     },
     "nullable": [
@@ -42,5 +43,5 @@
       false
     ]
   },
-  "hash": "701a3a543deba5bd4fcd082c5414363cc3148f8b44583279865943b9880a90d6"
+  "hash": "6695c576a3eb41e8a73aa61ffb1caa1f2aaf883efb405d0ed43609b3b0528963"
 }

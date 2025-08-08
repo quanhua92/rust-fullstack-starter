@@ -1,0 +1,52 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        WITH stats AS (\n            SELECT \n                (SELECT COUNT(*) FROM events) as total_events,\n                (SELECT COUNT(*) FROM metrics) as total_metrics,\n                (SELECT COUNT(*) FROM alerts WHERE status = 'active') as active_alerts,\n                (SELECT COUNT(*) FROM incidents WHERE status IN ('open', 'investigating')) as open_incidents,\n                (SELECT COUNT(*) FROM events WHERE created_at >= $1) as events_last_hour,\n                (SELECT COUNT(*) FROM metrics WHERE created_at >= $1) as metrics_last_hour\n        )\n        SELECT \n            total_events, total_metrics, active_alerts, \n            open_incidents, events_last_hour, metrics_last_hour\n        FROM stats\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "total_events",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 1,
+        "name": "total_metrics",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 2,
+        "name": "active_alerts",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 3,
+        "name": "open_incidents",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 4,
+        "name": "events_last_hour",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 5,
+        "name": "metrics_last_hour",
+        "type_info": "Int8"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Timestamptz"
+      ]
+    },
+    "nullable": [
+      null,
+      null,
+      null,
+      null,
+      null,
+      null
+    ]
+  },
+  "hash": "ab9b711be98a21cf718a986aab92a387962540c62b0724839d6ff78fcec275db"
+}
