@@ -506,10 +506,10 @@ impl CliApp {
                 if filename_str.contains(&plural) {
                     migration_files.push(entry.path());
                     // Extract migration number for revert
-                    if let Some(num_str) = filename_str.split('_').next() {
-                        if let Ok(num) = num_str.parse::<u32>() {
-                            migration_number = Some(num);
-                        }
+                    if let Some(num_str) = filename_str.split('_').next()
+                        && let Ok(num) = num_str.parse::<u32>()
+                    {
+                        migration_number = Some(num);
                     }
                 }
             }
@@ -724,10 +724,10 @@ fn get_latest_migration_number(migrations_dir: &str) -> Result<u32, Box<dyn std:
         let filename = entry.file_name();
         let filename_str = filename.to_string_lossy();
 
-        if let Some(number_str) = filename_str.split('_').next() {
-            if let Ok(number) = number_str.parse::<u32>() {
-                max_number = max_number.max(number);
-            }
+        if let Some(number_str) = filename_str.split('_').next()
+            && let Ok(number) = number_str.parse::<u32>()
+        {
+            max_number = max_number.max(number);
         }
     }
 

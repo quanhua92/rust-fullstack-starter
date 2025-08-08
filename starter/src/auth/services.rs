@@ -144,12 +144,12 @@ pub async fn validate_session_with_user(
 ) -> Result<Option<crate::users::models::User>> {
     let session = find_session_by_token(conn, token).await?;
 
-    if let Some(session) = session {
-        if !session.is_expired() {
-            update_session_activity(conn, session.id).await?;
-            let user = user_services::find_user_by_id(conn, session.user_id).await?;
-            return Ok(user);
-        }
+    if let Some(session) = session
+        && !session.is_expired()
+    {
+        update_session_activity(conn, session.id).await?;
+        let user = user_services::find_user_by_id(conn, session.user_id).await?;
+        return Ok(user);
     }
 
     Ok(None)

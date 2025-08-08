@@ -257,34 +257,34 @@ impl TaskHandler for DelayTaskHandler {
         );
 
         // Check deadline before starting work
-        if let Some(deadline) = deadline_str {
-            if let Ok(deadline_time) = chrono::DateTime::parse_from_rfc3339(deadline) {
-                let deadline_utc = deadline_time.with_timezone(&chrono::Utc);
-                let now = chrono::Utc::now();
-                if now >= deadline_utc {
-                    tracing::warn!(
-                        "Task {} already past deadline: {} vs {}",
-                        task_id,
-                        now,
-                        deadline_utc
-                    );
-                    return Err(TaskError::Execution(format!(
-                        "Task {task_id} missed deadline: {now} vs {deadline_utc}"
-                    )));
-                }
+        if let Some(deadline) = deadline_str
+            && let Ok(deadline_time) = chrono::DateTime::parse_from_rfc3339(deadline)
+        {
+            let deadline_utc = deadline_time.with_timezone(&chrono::Utc);
+            let now = chrono::Utc::now();
+            if now >= deadline_utc {
+                tracing::warn!(
+                    "Task {} already past deadline: {} vs {}",
+                    task_id,
+                    now,
+                    deadline_utc
+                );
+                return Err(TaskError::Execution(format!(
+                    "Task {task_id} missed deadline: {now} vs {deadline_utc}"
+                )));
+            }
 
-                let time_remaining = (deadline_utc - now).num_seconds();
-                if time_remaining < delay_seconds as i64 {
-                    tracing::warn!(
-                        "Task {} cannot complete within deadline: {}s remaining, {}s needed",
-                        task_id,
-                        time_remaining,
-                        delay_seconds
-                    );
-                    return Err(TaskError::Execution(format!(
-                        "Task {task_id} insufficient time: {time_remaining}s remaining, {delay_seconds}s needed"
-                    )));
-                }
+            let time_remaining = (deadline_utc - now).num_seconds();
+            if time_remaining < delay_seconds as i64 {
+                tracing::warn!(
+                    "Task {} cannot complete within deadline: {}s remaining, {}s needed",
+                    task_id,
+                    time_remaining,
+                    delay_seconds
+                );
+                return Err(TaskError::Execution(format!(
+                    "Task {task_id} insufficient time: {time_remaining}s remaining, {delay_seconds}s needed"
+                )));
             }
         }
 
@@ -293,21 +293,21 @@ impl TaskHandler for DelayTaskHandler {
         tokio::time::sleep(std::time::Duration::from_secs(delay_seconds)).await;
 
         // Check deadline again after work
-        if let Some(deadline) = deadline_str {
-            if let Ok(deadline_time) = chrono::DateTime::parse_from_rfc3339(deadline) {
-                let deadline_utc = deadline_time.with_timezone(&chrono::Utc);
-                let now = chrono::Utc::now();
-                if now >= deadline_utc {
-                    tracing::warn!(
-                        "Task {} completed but past deadline: {} vs {}",
-                        task_id,
-                        now,
-                        deadline_utc
-                    );
-                    return Err(TaskError::Execution(format!(
-                        "Task {task_id} completed past deadline: {now} vs {deadline_utc}"
-                    )));
-                }
+        if let Some(deadline) = deadline_str
+            && let Ok(deadline_time) = chrono::DateTime::parse_from_rfc3339(deadline)
+        {
+            let deadline_utc = deadline_time.with_timezone(&chrono::Utc);
+            let now = chrono::Utc::now();
+            if now >= deadline_utc {
+                tracing::warn!(
+                    "Task {} completed but past deadline: {} vs {}",
+                    task_id,
+                    now,
+                    deadline_utc
+                );
+                return Err(TaskError::Execution(format!(
+                    "Task {task_id} completed past deadline: {now} vs {deadline_utc}"
+                )));
             }
         }
 

@@ -321,13 +321,13 @@ impl TaskProcessor {
         // Check circuit breaker if enabled
         if self.config.enable_circuit_breaker {
             let mut circuit_breakers = self.circuit_breakers.write().await;
-            if let Some(cb) = circuit_breakers.get_mut(&task.task_type) {
-                if !cb.should_allow_operation() {
-                    let error = "Circuit breaker is open";
-                    warn!("Task {} blocked by circuit breaker", task.id);
-                    self.mark_task_failed(task.id, error).await?;
-                    return Ok(());
-                }
+            if let Some(cb) = circuit_breakers.get_mut(&task.task_type)
+                && !cb.should_allow_operation()
+            {
+                let error = "Circuit breaker is open";
+                warn!("Task {} blocked by circuit breaker", task.id);
+                self.mark_task_failed(task.id, error).await?;
+                return Ok(());
             }
         }
 

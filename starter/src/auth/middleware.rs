@@ -93,16 +93,15 @@ pub async fn optional_auth_middleware(
             // Try to validate session
             if let Ok(Some(user)) =
                 services::validate_session_with_user(conn.as_mut(), &token).await
+                && user.is_active
             {
-                if user.is_active {
-                    // Add user info to request extensions
-                    req.extensions_mut().insert(AuthUser {
-                        id: user.id,
-                        username: user.username,
-                        email: user.email,
-                        role: user.role,
-                    });
-                }
+                // Add user info to request extensions
+                req.extensions_mut().insert(AuthUser {
+                    id: user.id,
+                    username: user.username,
+                    email: user.email,
+                    role: user.role,
+                });
             }
         }
     }
