@@ -1488,9 +1488,9 @@ async fn test_security_input_validation_task_creation() {
     // The validation error can come from either our validation or server-side validation
     let error_message = json["error"]["message"].as_str().unwrap();
     assert!(
-        error_message.contains("alphanumeric") || 
-        error_message.contains("not registered") ||
-        error_message.contains("Invalid")
+        error_message.contains("alphanumeric")
+            || error_message.contains("not registered")
+            || error_message.contains("Invalid")
     );
 
     // Test empty task_type (should be rejected)
@@ -1554,10 +1554,10 @@ async fn test_security_payload_size_limits() {
         .await;
     // Server may return 413 (Payload Too Large) or 400 (Bad Request) depending on where validation occurs
     assert!(
-        response.status() == StatusCode::BAD_REQUEST || 
-        response.status() == StatusCode::PAYLOAD_TOO_LARGE
+        response.status() == StatusCode::BAD_REQUEST
+            || response.status() == StatusCode::PAYLOAD_TOO_LARGE
     );
-    
+
     if response.status() == StatusCode::BAD_REQUEST {
         let json: serde_json::Value = response.json().await.unwrap();
         assert!(json["error"]["message"].as_str().unwrap().contains("1MB"));
@@ -1690,10 +1690,13 @@ async fn test_security_rbac_stats_endpoint_protection() {
 
     // Manually promote to admin in database
     let admin_json: serde_json::Value = admin_response.json().await.unwrap();
-    
+
     // Debug print to see the actual response structure
-    println!("Admin registration response: {}", serde_json::to_string_pretty(&admin_json).unwrap());
-    
+    println!(
+        "Admin registration response: {}",
+        serde_json::to_string_pretty(&admin_json).unwrap()
+    );
+
     let admin_id: uuid::Uuid = if let Some(id) = admin_json["data"]["user"]["id"].as_str() {
         uuid::Uuid::parse_str(id).unwrap()
     } else if let Some(id) = admin_json["data"]["id"].as_str() {
