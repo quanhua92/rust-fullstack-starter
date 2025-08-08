@@ -585,18 +585,18 @@ async fn test_session_fixation_prevention() {
 
     // Step 1: Login to create an active session
     let login_data = json!({
-        "username": "testuser", 
+        "username": "testuser",
         "password": "SecurePass123!"
     });
 
     let login_response = app.post_json("/api/v1/auth/login", &login_data).await;
     assert_status(&login_response, StatusCode::OK);
-    
+
     let auth_token = app.extract_auth_token(login_response).await;
 
     // Step 2: Use direct database access to simulate an old session (older than 30 days)
     let mut conn = app.db().await;
-    
+
     // Get user ID from the current session
     let session_data = sqlx::query!(
         "SELECT user_id FROM sessions WHERE token = $1",
@@ -605,13 +605,13 @@ async fn test_session_fixation_prevention() {
     .fetch_one(&mut *conn)
     .await
     .expect("Failed to fetch session data");
-    
+
     let user_id = session_data.user_id;
 
     // Create an old session (simulate session older than 30 days)
     let old_token = "old-session-token-12345";
     let old_last_activity = chrono::Utc::now() - chrono::Duration::days(35); // 35 days ago
-    
+
     sqlx::query!(
         "INSERT INTO sessions (user_id, token, expires_at, last_activity_at, is_active) 
          VALUES ($1, $2, $3, $4, true)",
@@ -627,7 +627,7 @@ async fn test_session_fixation_prevention() {
     // Create a recent session (less than 30 days old)
     let recent_token = "recent-session-token-67890";
     let recent_last_activity = chrono::Utc::now() - chrono::Duration::days(10); // 10 days ago
-    
+
     sqlx::query!(
         "INSERT INTO sessions (user_id, token, expires_at, last_activity_at, is_active) 
          VALUES ($1, $2, $3, $4, true)",
@@ -651,7 +651,10 @@ async fn test_session_fixation_prevention() {
     .count
     .unwrap_or(0);
 
-    assert_eq!(active_sessions_before, 3, "Should have 3 active sessions initially");
+    assert_eq!(
+        active_sessions_before, 3,
+        "Should have 3 active sessions initially"
+    );
 
     // Step 3: Perform another login - this should trigger session fixation prevention
     // The login should invalidate only sessions older than 30 days
@@ -682,7 +685,7 @@ async fn test_session_fixation_prevention() {
                 old_session_found = true;
                 // Old session (35+ days) should be deactivated due to session fixation prevention
                 assert!(
-                    !session.is_active, 
+                    !session.is_active,
                     "Old session (35+ days) should be deactivated for session fixation prevention"
                 );
             }
@@ -705,8 +708,14 @@ async fn test_session_fixation_prevention() {
 
     // Verify all expected sessions were found
     assert!(old_session_found, "Old session should exist in database");
-    assert!(recent_session_found, "Recent session should exist in database"); 
-    assert!(current_session_active, "Current session should remain active");
+    assert!(
+        recent_session_found,
+        "Recent session should exist in database"
+    );
+    assert!(
+        current_session_active,
+        "Current session should remain active"
+    );
     assert!(new_session_created, "New session should be created");
 
     // Step 5: Verify current session still works (not affected by fixation prevention)
@@ -726,7 +735,10 @@ async fn test_session_fixation_prevention() {
 
     // Should have one less active session (old session deactivated)
     // Original session + recent session + new session = 3 active sessions
-    assert_eq!(active_sessions_after, 3, "Should have 3 active sessions after login (old session deactivated)");
+    assert_eq!(
+        active_sessions_after, 3,
+        "Should have 3 active sessions after login (old session deactivated)"
+    );
 }
 
 #[tokio::test]
