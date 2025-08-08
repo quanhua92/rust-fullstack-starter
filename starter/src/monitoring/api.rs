@@ -16,6 +16,130 @@ use std::collections::HashMap;
 use utoipa::IntoParams;
 use uuid::Uuid;
 
+/// Check if a user is authorized to create events for a given source
+///
+/// Authorization rules:
+/// 1. Generic sources (no prefix) are allowed for all users
+/// 2. Sources starting with username- are allowed for that user  
+/// 3. Sources starting with user-{user_id} are allowed for that user
+/// 4. System sources (system-, health-, monitoring-) require moderator+ role
+fn is_user_authorized_for_source(auth_user: &AuthUser, source: &str) -> Result<bool, Error> {
+    // System sources require moderator+ permissions
+    if source.starts_with("system-")
+        || source.starts_with("health-")
+        || source.starts_with("monitoring-")
+    {
+        return Ok(auth_user
+            .role
+            .has_role_or_higher(crate::rbac::models::UserRole::Moderator));
+    }
+
+    // Allow generic sources (no specific ownership prefix) and test sources
+    if !source.contains('-')
+        || source.starts_with("app-")
+        || source.starts_with("web-")
+        || source.starts_with("api-")
+        || source.starts_with("test-")
+        || source.starts_with("db-")
+    {
+        return Ok(true);
+    }
+
+    // Check username-based ownership
+    let username_prefix = format!("{}-", auth_user.username);
+    if source.starts_with(&username_prefix) {
+        return Ok(true);
+    }
+
+    // Check user ID-based ownership
+    let user_id_prefix = format!("user-{}-", auth_user.id);
+    if source.starts_with(&user_id_prefix) {
+        return Ok(true);
+    }
+
+    // Check for service-specific prefixes that include user identification
+    // Allow sources like: {username}-service-*, {username}-worker-*, etc.
+    if let Some(dash_pos) = source.find('-') {
+        let potential_username = &source[..dash_pos];
+        if potential_username == auth_user.username {
+            return Ok(true);
+        }
+    }
+
+    // Default: not authorized
+    Ok(false)
+}
+
+/// Check if a user is authorized to create metrics with a given name
+///
+/// Authorization rules:
+/// 1. Generic metric names are allowed for all users (http_requests, response_time, etc.)
+/// 2. Metrics starting with username_ are allowed for that user
+/// 3. Metrics starting with user_{user_id}_ are allowed for that user  
+/// 4. System metrics (system_, health_, monitoring_) require moderator+ role
+fn is_user_authorized_for_metric_name(
+    auth_user: &AuthUser,
+    metric_name: &str,
+) -> Result<bool, Error> {
+    // System metrics require moderator+ permissions
+    if metric_name.starts_with("system_")
+        || metric_name.starts_with("health_")
+        || metric_name.starts_with("monitoring_")
+    {
+        return Ok(auth_user
+            .role
+            .has_role_or_higher(crate::rbac::models::UserRole::Moderator));
+    }
+
+    // Allow common generic metric names
+    let generic_metrics = [
+        "http_requests",
+        "http_requests_total",
+        "response_time",
+        "response_time_seconds",
+        "cpu_usage",
+        "memory_usage",
+        "disk_usage",
+        "network_bytes",
+        "error_rate",
+        "latency",
+        "throughput",
+        "requests_per_second",
+        "active_connections",
+        "queue_size",
+    ];
+
+    for generic in &generic_metrics {
+        if metric_name.starts_with(generic) {
+            return Ok(true);
+        }
+    }
+
+    // Check username-based ownership
+    let username_prefix = format!("{}_", auth_user.username);
+    if metric_name.starts_with(&username_prefix) {
+        return Ok(true);
+    }
+
+    // Check user ID-based ownership
+    let user_id_prefix = format!("user_{}_", auth_user.id);
+    if metric_name.starts_with(&user_id_prefix) {
+        return Ok(true);
+    }
+
+    // Check for service-specific metrics that include user identification
+    // Allow metrics like: {username}_service_*, {username}_worker_*, etc.
+    if let Some(underscore_pos) = metric_name.find('_') {
+        let potential_username = &metric_name[..underscore_pos];
+        if potential_username == auth_user.username {
+            return Ok(true);
+        }
+    }
+
+    // Default: not authorized
+    Ok(false)
+}
+
 /// Parse tags query parameter string into HashMap
 /// Format: "key1:value1,key2:value2"
 fn parse_tags_query(tags_str: &str) -> Result<HashMap<String, String>, Error> {
@@ -123,14 +247,21 @@ pub async fn create_event(
         .await
         .map_err(Error::from_sqlx)?;
 
-    // Users can create events for their own services, moderators+ can create any events
+    // Authorization: Users can create events for sources they own, moderators+ can create any events
     if !auth_user
         .role
         .has_role_or_higher(crate::rbac::models::UserRole::Moderator)
     {
-        // Basic users can only create events for sources they own
-        // For now, allow all authenticated users to create events
-        // In production, you might want to restrict based on service ownership
+        // Basic users can only create events for sources they own or generic sources
+        // Source ownership is determined by source prefix matching username or user ID
+        let is_authorized_source = is_user_authorized_for_source(&auth_user, &request.source)?;
+
+        if !is_authorized_source {
+            return Err(Error::Forbidden(format!(
+                "Users can only create events for their own sources. Source '{}' is not authorized for user '{}'",
+                request.source, auth_user.username
+            )));
+        }
     }
 
     let event = services::create_event(conn.as_mut(), request).await?;
@@ -238,7 +369,7 @@ pub async fn get_event_by_id(
 )]
 pub async fn create_metric(
     State(app_state): State<AppState>,
-    Extension(_auth_user): Extension<AuthUser>,
+    Extension(auth_user): Extension<AuthUser>,
     Json(request): Json<CreateMetricRequest>,
 ) -> Result<Json<ApiResponse<Metric>>, Error> {
     let mut conn = app_state
@@ -247,6 +378,21 @@ pub async fn create_metric(
         .acquire()
         .await
         .map_err(Error::from_sqlx)?;
+
+    // Authorization: Users can create metrics with names they own, moderators+ can create any metrics
+    if !auth_user
+        .role
+        .has_role_or_higher(crate::rbac::models::UserRole::Moderator)
+    {
+        let is_authorized_metric = is_user_authorized_for_metric_name(&auth_user, &request.name)?;
+
+        if !is_authorized_metric {
+            return Err(Error::Forbidden(format!(
+                "Users can only create metrics with names they own. Metric '{}' is not authorized for user '{}'",
+                request.name, auth_user.username
+            )));
+        }
+    }
 
     let metric = services::create_metric(conn.as_mut(), request).await?;
     Ok(Json(ApiResponse::success(metric)))
@@ -484,15 +630,16 @@ pub async fn update_incident(
     Path(id): Path<Uuid>,
     Json(request): Json<UpdateIncidentRequest>,
 ) -> Result<Json<ApiResponse<Incident>>, Error> {
-    let mut conn = app_state
+    // Use transaction to prevent race conditions
+    let mut tx = app_state
         .database
         .pool
-        .acquire()
+        .begin()
         .await
         .map_err(Error::from_sqlx)?;
 
-    // Get the incident first to check ownership
-    let current_incident = services::find_incident_by_id(conn.as_mut(), id).await?;
+    // Get the incident first to check ownership (with SELECT FOR UPDATE to prevent race conditions)
+    let current_incident = services::find_incident_by_id_for_update(tx.as_mut(), id).await?;
     let current_incident =
         current_incident.ok_or_else(|| Error::NotFound(format!("Incident with id {id}")))?;
 
@@ -506,7 +653,11 @@ pub async fn update_incident(
         return Err(Error::Forbidden("Cannot update this incident".to_string()));
     }
 
-    let incident = services::update_incident(conn.as_mut(), id, request).await?;
+    // Update the incident within the transaction
+    let incident = services::update_incident_in_transaction(tx.as_mut(), id, request).await?;
+
+    // Commit the transaction
+    tx.commit().await.map_err(Error::from_sqlx)?;
 
     Ok(Json(ApiResponse::success(incident)))
 }

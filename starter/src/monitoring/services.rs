@@ -408,7 +408,99 @@ pub async fn find_incident_by_id(conn: &mut DbConn, id: Uuid) -> Result<Option<I
     Ok(incident)
 }
 
+/// Find incident by ID with SELECT FOR UPDATE to prevent race conditions
+pub async fn find_incident_by_id_for_update(
+    conn: &mut DbConn,
+    id: Uuid,
+) -> Result<Option<Incident>> {
+    let incident = sqlx::query_as!(
+        Incident,
+        r#"
+        SELECT id, title, description, 
+               severity, status, 
+               started_at, resolved_at, root_cause, 
+               created_by, assigned_to, created_at, updated_at
+        FROM incidents
+        WHERE id = $1
+        FOR UPDATE
+        "#,
+        id
+    )
+    .fetch_optional(&mut *conn)
+    .await
+    .map_err(Error::from_sqlx)?;
+
+    Ok(incident)
+}
+
 pub async fn update_incident(
+    conn: &mut DbConn,
+    id: Uuid,
+    request: UpdateIncidentRequest,
+) -> Result<Incident> {
+    let updated_incident = sqlx::query!(
+        r#"
+        UPDATE incidents 
+        SET title = COALESCE($2, title),
+            description = COALESCE($3, description),
+            severity = COALESCE($4, severity),
+            status = COALESCE($5, status),
+            root_cause = COALESCE($6, root_cause),
+            assigned_to = COALESCE($7, assigned_to),
+            resolved_at = CASE 
+                WHEN $5 = 'resolved' AND resolved_at IS NULL 
+                THEN NOW() 
+                ELSE resolved_at 
+            END,
+            updated_at = NOW()
+        WHERE id = $1
+        RETURNING id, title, description, 
+                 severity, status, 
+                 started_at, resolved_at, root_cause, 
+                 created_by, assigned_to, created_at, updated_at
+        "#,
+        id,
+        request.title,
+        request.description,
+        request.severity.map(|s| s.to_string()),
+        request.status.map(|s| s.to_string()),
+        request.root_cause,
+        request.assigned_to
+    )
+    .fetch_one(&mut *conn)
+    .await
+    .map_err(Error::from_sqlx)?;
+
+    let incident = Incident {
+        id: updated_incident.id,
+        title: updated_incident.title,
+        description: updated_incident.description,
+        severity: IncidentSeverity::from_str(&updated_incident.severity).map_err(|_| {
+            Error::InvalidInput(format!(
+                "Invalid incident severity in database: {}",
+                updated_incident.severity
+            ))
+        })?,
+        status: IncidentStatus::from_str(&updated_incident.status).map_err(|_| {
+            Error::InvalidInput(format!(
+                "Invalid incident status in database: {}",
+                updated_incident.status
+            ))
+        })?,
+        started_at: updated_incident.started_at,
+        resolved_at: updated_incident.resolved_at,
+        root_cause: updated_incident.root_cause,
+        created_by: updated_incident.created_by,
+        assigned_to: updated_incident.assigned_to,
+        created_at: updated_incident.created_at,
+        updated_at: updated_incident.updated_at,
+    };
+
+    Ok(incident)
+}
+
+/// Update incident within a transaction (for use with explicit transactions)
+pub async fn update_incident_in_transaction(
     conn: &mut DbConn,
     id: Uuid,
     request: UpdateIncidentRequest,
