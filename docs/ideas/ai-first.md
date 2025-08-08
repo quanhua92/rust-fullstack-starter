@@ -1421,7 +1421,7 @@ graph TB
 # 1. Clone and setup
 git clone https://github.com/username/ai-fullstack-starter.git
 cd ai-fullstack-starter
-./scripts/setup.sh
+./scripts/dev-server.sh 3000
 
 # 2. Configure AI providers (environment variables)
 cp .env.example .env
@@ -1430,7 +1430,7 @@ cp .env.example .env
 # ANTHROPIC_API_KEY=sk-ant-...
 
 # 3. Start development environment
-./scripts/dev.sh
+./scripts/dev-server.sh 3000
 
 # 4. Open browser to http://localhost:3000
 # - Chat interface ready to use

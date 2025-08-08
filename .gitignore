@@ -8,7 +8,6 @@
 
 # Temporary Files
 /.sqlx/
-./tasks/
 local/
 .fastembed_cache
 tmp

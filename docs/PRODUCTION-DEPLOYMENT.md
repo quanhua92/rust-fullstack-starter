@@ -10,6 +10,9 @@
 cp .env.example .env.prod
 nano .env.prod  # ⚠️ CRITICAL: Change all passwords and secrets
 
+# Create required directories
+mkdir -p backups ssl
+
 # Deploy with automated script
 ./scripts/deploy-prod.sh
 
@@ -175,7 +178,7 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./backups:/backups
+      - ./backups:/backups  # Directory for database dumps
     networks:
       - app-network
     healthcheck:
@@ -225,8 +228,8 @@ services:
       - "80:80"
       - "443:443"
     volumes:
-      - ./nginx/prod.conf:/etc/nginx/nginx.conf:ro
-      - ./ssl:/etc/ssl/certs:ro
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./ssl:/etc/ssl/certs:ro  # Directory for SSL certificates
     depends_on:
       app-server:
         condition: service_healthy

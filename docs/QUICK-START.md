@@ -89,7 +89,7 @@ cd web && pnpm dev                          # React dev server (port 5173)
 ```bash
 # Quality checks (run before commits)
 ./scripts/check.sh                          # Backend: format, lint, test
-cd web && ./scripts/check-web.sh            # Frontend: 10-step validation
+web/scripts/check-web.sh                   # Frontend: 10-step validation
 
 # Testing
 cargo nextest run                           # 182 integration tests

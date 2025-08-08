@@ -478,13 +478,13 @@ let tasks_with_users = sqlx::query_as!(
 
 **Code splitting and lazy loading**:
 ```typescript
-// Route-based code splitting
-const Dashboard = lazy(() => import('../pages/Dashboard'));
-const TaskDetail = lazy(() => import('../pages/TaskDetail'));
+// Route-based code splitting examples
+const AdminIndex = lazy(() => import('~/components/AdminDashboard'));
+const TaskDetail = lazy(() => import('~/components/TaskDetail'));
 
-// Component lazy loading
+// Component lazy loading example
 const AdminPanel = lazy(() => 
-  import('../components/admin/AdminPanel').then(module => ({
+  import('~/components/AdminPanel').then(module => ({
     default: module.AdminPanel
   }))
 );
