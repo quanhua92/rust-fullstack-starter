@@ -943,7 +943,7 @@ This authentication system implements comprehensive security measures to protect
 - **International domain support**: Proper validation of international domain names and characters
 
 ### Security Testing
-The system includes comprehensive security testing with **149 integration tests**, including:
+The system includes comprehensive security testing with **182 integration tests**, including:
 - **Timing attack protection tests**: Verify constant-time behavior
 - **Session fixation prevention tests**: Validate session cleanup during login
 - **Password validation security tests**: Test case variations and bypass attempts

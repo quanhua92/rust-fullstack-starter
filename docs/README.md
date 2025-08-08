@@ -26,8 +26,8 @@ open http://localhost:3000
 
 ### 🏗️ **Understand the Architecture** *(1-2 hours)*
 - **[System Overview](#system-overview)** - How the pieces fit together
-- **[.*](../guides/03-patterns.md)** - Reliability and error handling
-- **[.*](../guides/learning-philosophy.md)** - Design decisions explained
+- **[Key Patterns](guides/03-patterns.md)** - Reliability and error handling
+- **[Why This Approach?](guides/learning-philosophy.md)** - Design decisions explained
 
 ### 🎓 **Master Full-Stack Development** *(Self-paced)*
 - **[Complete Learning Paths](#learning-paths)** - Beginner → Intermediate → Advanced
@@ -492,19 +492,19 @@ The starter includes comprehensive testing patterns:
 ### Architecture Guides
 Comprehensive guides in **[`guides/`](guides/)**:
 
-- **[.*](../guides/01-architecture.md)** - System design and component overview
-- **[.*](../guides/02-authentication-and-authorization.md)** - User management and security
-- **[.*](../guides/03-patterns.md)** - Service layer and architectural patterns
-- **[.*](../guides/04-background-tasks.md)** - Async job processing system
-- **[.*](../guides/05-task-handlers-reference.md)** - Built-in task type examples
-- **[.*](../guides/06-task-types.md)** - Creating custom task handlers
-- **[.*](../guides/07-task-registry.md)** - Organizing and managing tasks
-- **[.*](../guides/08-testing.md)** - Comprehensive testing framework
-- **[.*](../guides/09-chaos-testing.md)** - Resilience testing and failure simulation
-- **[.*](../guides/10-web-frontend-integration.md)** - React ↔ Rust patterns, OpenAPI workflow
-- **[.*](../guides/11-debugging-and-troubleshooting.md)** - Systematic problem solving
-- **[.*](../guides/12-user-management.md)** - Complete user lifecycle with 12 endpoints
-- **[.*](../guides/13-react-frontend-patterns.md)** - Modern React Query patterns, state management
+- **[01 - Architecture](guides/01-architecture.md)** - System design and component overview
+- **[02 - Authentication](guides/02-authentication-and-authorization.md)** - User management and security
+- **[03 - Design Patterns](guides/03-patterns.md)** - Service layer and architectural patterns
+- **[04 - Background Tasks](guides/04-background-tasks.md)** - Async job processing system
+- **[05 - Task Handlers Reference](guides/05-task-handlers-reference.md)** - Built-in task type examples
+- **[06 - Custom Task Types](guides/06-task-types.md)** - Creating custom task handlers
+- **[07 - Task Registry](guides/07-task-registry.md)** - Organizing and managing tasks
+- **[08 - Testing](guides/08-testing.md)** - Comprehensive testing framework
+- **[09 - Chaos Testing](guides/09-chaos-testing.md)** - Resilience testing and failure simulation
+- **[10 - Web Frontend Integration](guides/10-web-frontend-integration.md)** - React ↔ Rust patterns, OpenAPI workflow
+- **[11 - Debugging & Troubleshooting](guides/11-debugging-and-troubleshooting.md)** - Systematic problem solving
+- **[12 - User Management](guides/12-user-management.md)** - Complete user lifecycle with 12 endpoints
+- **[13 - React Frontend Patterns](guides/13-react-frontend-patterns.md)** - Modern React Query patterns, state management
 
 ### Reference Documentation
 - **[Task Handlers](reference/task-handlers.md)** - Built-in task type reference
@@ -520,19 +520,19 @@ Comprehensive guides in **[`guides/`](guides/)**:
 
 ### 🏗️ **Want to Understand How It Works?**
 - **[System Overview](#system-overview)** - Architecture and component relationships
-- **[.*](../guides/02-authentication-and-authorization.md)** - Secure user management patterns
-- **[.*](../guides/04-background-tasks.md)** - Async job processing system
-- **[.*](../guides/10-web-frontend-integration.md)** - React ↔ Rust patterns, OpenAPI workflow
+- **[Authentication Guide](guides/02-authentication-and-authorization.md)** - Secure user management patterns
+- **[Background Tasks](guides/04-background-tasks.md)** - Async job processing system
+- **[Web Integration](guides/10-web-frontend-integration.md)** - React ↔ Rust patterns, OpenAPI workflow
 
 ### 🚢 **Ready for Production?**
 - **[Production Deployment](production-deployment.md)** - Docker, Kubernetes, security
-- **[.*](../guides/08-testing.md)** - 137 integration tests + comprehensive API testing (81 endpoints) + chaos testing
-- **[.*](../guides/11-debugging-and-troubleshooting.md)** - Systematic problem solving
+- **[Testing Strategy](guides/08-testing.md)** - 182 integration tests + comprehensive API testing (48 endpoints) + chaos testing
+- **[Debugging Guide](guides/11-debugging-and-troubleshooting.md)** - Systematic problem solving
 - **[Performance & Monitoring](reference/reliability.md)** - Optimization and observability
 
 ### 🎓 **Master Full-Stack Development** *(Advanced)*
 
-> **[.*](../guides/learning-philosophy.md)** - First principles approach to understanding systems
+> **[📖 Learning Philosophy](guides/learning-philosophy.md)** - First principles approach to understanding systems
 
 This starter includes comprehensive educational content for deep learning:
 
@@ -554,22 +554,22 @@ This starter includes comprehensive educational content for deep learning:
 **Difficulty**: ⭐⭐☆☆☆ (Beginner)  
 **Goal**: Build fundamental mental models for full-stack development
 
-1. **[.*](../guides/learning-philosophy.md)** *(⚡ Quick Read)*
+1. **[📖 Learning Philosophy](guides/learning-philosophy.md)** *(⚡ Quick Read)*
    - First principles thinking for developers
    - Mental model building strategies
    - Why before how methodology
 
-2. **[.*](../guides/01-architecture.md)** *(🏗️ Foundation)*
+2. **[🏗️ Architecture Overview](guides/01-architecture.md)** *(🏗️ Foundation)*
    - **Why**: Single binary vs microservices tradeoffs
    - **Mental Model**: Layer-based system thinking
    - **Practice**: Trace a request through all layers
 
-3. **[.*](../guides/02-authentication-and-authorization.md)** *(🔐 Core Concept)*
+3. **[🔐 Authentication System](guides/02-authentication-and-authorization.md)** *(🔐 Core Concept)*
    - **Why**: Sessions vs JWT tradeoffs for this use case
    - **Mental Model**: Identity verification and state management
    - **Practice**: Implement user registration flow
 
-4. **[.*](../guides/10-web-frontend-integration.md)** *(🌐 Connection)*
+4. **[🌐 Full-Stack Integration](guides/10-web-frontend-integration.md)** *(🌐 Connection)*
    - **Why**: OpenAPI-driven development approach
    - **Mental Model**: Type-safe contract between frontend and backend
    - **Practice**: Add a new API endpoint with frontend integration
@@ -581,22 +581,22 @@ This starter includes comprehensive educational content for deep learning:
 **Difficulty**: ⭐⭐⭐☆☆ (Intermediate)  
 **Goal**: Master implementation patterns and testing strategies
 
-5. **[.*](../guides/04-background-tasks.md)** *(⚙️ Complex System)*
+5. **[⚙️ Background Tasks](guides/04-background-tasks.md)** *(⚙️ Complex System)*
    - **Why**: Async processing necessity and patterns
    - **Mental Model**: Queue-based task processing
    - **Practice**: Create custom task handlers
 
-6. **[.*](../guides/07-task-registry.md)** *(📋 Organization)*
+6. **[📋 Task Registry](guides/07-task-registry.md)** *(📋 Organization)*
    - **Why**: Organization and scalability patterns
    - **Mental Model**: Domain-driven task organization
    - **Practice**: Implement domain-specific task registry
 
-7. **[.*](../guides/08-testing.md)** *(✅ Quality)*
+7. **[✅ Testing Strategy](guides/08-testing.md)** *(✅ Quality)*
    - **Why**: Integration tests over unit tests for this architecture
    - **Mental Model**: TestApp pattern and isolation strategies
    - **Practice**: Write tests for your custom features
 
-8. **[.*](../guides/11-debugging-and-troubleshooting.md)** *(🔧 Essential Skill)*
+8. **[🔧 Debugging & Troubleshooting](guides/11-debugging-and-troubleshooting.md)** *(🔧 Essential Skill)*
    - **Why**: Systematic debugging from first principles
    - **Mental Model**: Layer-based problem isolation
    - **Practice**: Debug real issues in the application
@@ -613,7 +613,7 @@ This starter includes comprehensive educational content for deep learning:
    - **Mental Model**: Infrastructure as code and deployment pipelines
    - **Practice**: Deploy to staging environment
 
-10. **[.*](../guides/09-chaos-testing.md)** *(🌪️ Resilience)*
+10. **[🌪️ Chaos Engineering](guides/09-chaos-testing.md)** *(🌪️ Resilience)*
     - **Why**: Building antifragile systems
     - **Mental Model**: Controlled failure experimentation
     - **Practice**: Design and run chaos experiments

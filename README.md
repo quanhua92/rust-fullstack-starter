@@ -50,7 +50,7 @@ cd rust-fullstack-starter
 
 **Check health:**
 ```bash
-curl http://localhost:3000/health
+curl http://localhost:3000/api/v1/health
 ```
 
 **Explore API documentation:**
@@ -145,7 +145,7 @@ cd web && pnpm dev
 - **⚙️ Background Tasks** - Async job processing with retry logic and dead letter queue
 - **🏗️ Module Generator** - Secure template-based code generation with ownership patterns, transaction safety, and comprehensive testing
 - **📊 API Documentation** - Interactive OpenAPI/Swagger docs
-- **🧪 Testing Framework** - 182 integration tests + comprehensive API endpoint testing (83 endpoints) including security vulnerability tests
+- **🧪 Testing Framework** - 182 integration tests + comprehensive API endpoint testing (48 endpoints) including security vulnerability tests
 - **📊 Monitoring & Observability** - Complete monitoring system with 14 API endpoints, comprehensive security protections, web UI dashboard, advanced tag filtering, RBAC-integrated interface with ownership-based authorization
 - **🔥 Chaos Testing** - Docker-based resilience testing with 10 scenarios
 - **⚙️ Admin CLI** - Direct database access for monitoring and maintenance
@@ -164,8 +164,8 @@ cargo run -- revert module books --dry-run               # Preview revert
 ./scripts/test-template-with-curl.sh books               # Test generated API
 
 # Run tests
-cargo nextest run                    # Integration tests (157 tests)
-./scripts/test-with-curl.sh         # API endpoint tests (81 tests including monitoring)
+cargo nextest run                    # Integration tests (182 tests)
+./scripts/test-with-curl.sh         # API endpoint tests (48 endpoints)
 ./scripts/test-generate.sh          # Module generator system tests
 ./scripts/test-chaos.sh             # Chaos testing (10 scenarios)
 
@@ -201,7 +201,7 @@ rust-fullstack-starter/
     │   ├── monitoring/ # Observability system (14 endpoints)
     │   └── ...       # Health, errors, database, server
     ├── migrations/   # Database schema evolution (6 migrations)
-    └── tests/        # Integration tests (146 tests)
+    └── tests/        # Integration tests (182 tests)
 ```
 
 ## Documentation
