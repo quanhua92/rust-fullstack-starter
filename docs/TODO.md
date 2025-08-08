@@ -7,6 +7,42 @@
 
 ---
 
+## Security Enhancements (Future Implementation) 🔒
+
+### ⏳ Security Phase 1: Authentication Hardening
+**Priority**: 🟡 Medium - Important security features
+
+**Tasks**:
+- [ ] Implement account lockout functionality
+  - Add database migration for `failed_login_attempts INTEGER DEFAULT 0`
+  - Add database migration for `locked_until TIMESTAMPTZ`
+  - Add database migration for `last_failed_login_at TIMESTAMPTZ`
+  - Implement lockout logic (5 attempts = 30 minute lockout)
+  - Add unlock mechanism for admins
+
+### ⏳ Security Phase 2: Rate Limiting
+**Priority**: 🟡 Medium - DoS protection
+
+**Tasks**:
+- [ ] Implement login endpoint rate limiting
+  - Add in-memory or Redis-based rate limiter
+  - Configure limits (e.g., 10 attempts per IP per 15 minutes)
+  - Add rate limit headers to responses
+- [ ] Implement registration endpoint rate limiting
+  - Prevent signup abuse
+  - Configure appropriate limits
+
+### ⏳ Security Phase 3: Production Security Headers
+**Priority**: 🟢 Low - Production deployment feature
+
+**Tasks**:
+- [ ] Add HTTPS enforcement (HSTS) for production
+- [ ] Implement environment-based security header configuration
+- [ ] Add Content Security Policy refinements
+- [ ] Add security header testing
+
+---
+
 ## Future Enhancements (Optional) 🔍 AVAILABLE IF DESIRED
 
 ### ⏳ Step 6.1: Interactive Learning Elements

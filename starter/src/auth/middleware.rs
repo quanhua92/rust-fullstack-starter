@@ -126,3 +126,32 @@ pub async fn admin_middleware(req: Request, next: Next) -> Result<Response, Erro
 
     Ok(next.run(req).await)
 }
+
+/// Development-safe security headers middleware
+pub async fn security_headers_middleware(req: Request, next: Next) -> Response {
+    let mut response = next.run(req).await;
+    let headers = response.headers_mut();
+
+    // Safe for development - prevents MIME sniffing attacks
+    headers.insert("X-Content-Type-Options", "nosniff".parse().unwrap());
+
+    // Allow same-origin iframes (less restrictive than DENY)
+    headers.insert("X-Frame-Options", "SAMEORIGIN".parse().unwrap());
+
+    // Basic Content Security Policy (relaxed for development)
+    headers.insert(
+        "Content-Security-Policy", 
+        "default-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' ws: wss:".parse().unwrap()
+    );
+
+    // Control referrer information
+    headers.insert(
+        "Referrer-Policy",
+        "strict-origin-when-cross-origin".parse().unwrap(),
+    );
+
+    // NO HSTS header - allows HTTP in development
+    // Production deployments should add: Strict-Transport-Security: max-age=31536000; includeSubDomains
+
+    response
+}

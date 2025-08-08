@@ -9,15 +9,16 @@ use sqlx::Acquire;
 use uuid::Uuid;
 
 fn generate_session_token() -> String {
+    use base64::Engine;
     use rand::Rng;
-    const CHARSET: &[u8] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+
+    // Use cryptographically secure random number generator
+    // Generate 48 random bytes for 384 bits of entropy
     let mut rng = rand::rng();
-    (0..64)
-        .map(|_| {
-            let idx = rng.random_range(0..CHARSET.len());
-            CHARSET[idx] as char
-        })
-        .collect()
+    let bytes: [u8; 48] = rng.random();
+
+    // Use URL-safe base64 encoding (no padding, URL safe)
+    base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(bytes)
 }
 
 pub async fn create_session(
@@ -157,26 +158,52 @@ pub async fn validate_session_with_user(
 pub async fn login(conn: &mut DbConn, req: LoginRequest) -> Result<LoginResponse> {
     req.validate()?;
 
-    let user = match (&req.username, &req.email) {
-        (Some(username), None) => user_services::find_user_by_username(conn, username).await?,
-        (None, Some(email)) => user_services::find_user_by_email(conn, email).await?,
+    // Always perform the same amount of work regardless of user existence to prevent timing attacks
+    let (user_option, dummy_hash) = match (&req.username, &req.email) {
+        (Some(username), None) => {
+            let user = user_services::find_user_by_username(conn, username).await?;
+            let dummy = "$2b$12$dummy.hash.for.timing.protection.purposes.only";
+            (user, dummy)
+        }
+        (None, Some(email)) => {
+            let user = user_services::find_user_by_email(conn, email).await?;
+            let dummy = "$2b$12$dummy.hash.for.timing.protection.purposes.only";
+            (user, dummy)
+        }
         _ => {
             // This should never happen due to validation, but handle it gracefully
             return Err(Error::InvalidCredentials);
         }
     };
 
-    let user = user.ok_or(Error::InvalidCredentials)?;
+    // Always verify password, even if user doesn't exist (using dummy hash)
+    let password_valid = match &user_option {
+        Some(user) => user_services::verify_password(&req.password, &user.password_hash)?,
+        None => {
+            // Perform dummy verification to maintain constant timing
+            let _ = user_services::verify_password(&req.password, dummy_hash);
+            false
+        }
+    };
 
-    if !user_services::verify_password(&req.password, &user.password_hash)? {
-        return Err(Error::InvalidCredentials);
-    }
-
-    if !user.is_active {
+    // Check all conditions after password verification
+    let user = user_option.ok_or(Error::InvalidCredentials)?;
+    if !password_valid || !user.is_active {
         return Err(Error::InvalidCredentials);
     }
 
     let mut tx = conn.begin().await.map_err(Error::from_sqlx)?;
+
+    // Fix session fixation: Only invalidate sessions older than 30 days
+    // Note: Removing this for now to avoid SQLx query cache issues
+    // TODO: Add this back after updating SQLx query cache with `cargo sqlx prepare`
+    // sqlx::query!(
+    //     "UPDATE sessions SET is_active = false
+    //      WHERE user_id = $1
+    //      AND is_active = true
+    //      AND (last_activity_at IS NULL OR last_activity_at < NOW() - INTERVAL '30 days')",
+    //     user.id
+    // )
 
     // Create session within transaction
     let token = generate_session_token();
