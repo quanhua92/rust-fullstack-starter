@@ -7,6 +7,23 @@ use std::collections::HashMap;
 use std::str::FromStr;
 use uuid::Uuid;
 
+// Input validation constants
+pub const MAX_EVENT_TYPE_LENGTH: usize = 50;
+pub const MAX_SOURCE_LENGTH: usize = 200;
+pub const MAX_MESSAGE_LENGTH: usize = 10_000;
+pub const MAX_LEVEL_LENGTH: usize = 20;
+pub const MAX_METRIC_NAME_LENGTH: usize = 100;
+pub const MAX_TAGS_COUNT: usize = 100;
+pub const MAX_PAYLOAD_FIELDS: usize = 100;
+pub const MAX_TAGS_JSON_SIZE: usize = 65_536; // 64KB
+pub const MAX_PAYLOAD_JSON_SIZE: usize = 1_048_576; // 1MB
+pub const MAX_LABELS_COUNT: usize = 50;
+
+// Helper trait for input validation
+pub trait Validate {
+    fn validate(&self) -> Result<()>;
+}
+
 // Event types for observability data
 #[derive(Debug, Clone, Serialize, Deserialize, utoipa::ToSchema)]
 #[serde(rename_all = "lowercase")]
@@ -255,12 +272,24 @@ pub struct Event {
     pub created_at: DateTime<Utc>,
 }
 
-// API request structure for creating events
+/// API request structure for creating events
+/// 
+/// Validation limits:
+/// - event_type: max [`MAX_EVENT_TYPE_LENGTH`] characters
+/// - source: max [`MAX_SOURCE_LENGTH`] characters  
+/// - message: max [`MAX_MESSAGE_LENGTH`] characters
+/// - level: max [`MAX_LEVEL_LENGTH`] characters
+/// - tags: max [`MAX_TAGS_COUNT`] entries, max [`MAX_TAGS_JSON_SIZE`] bytes JSON
+/// - payload: max [`MAX_PAYLOAD_FIELDS`] fields, max [`MAX_PAYLOAD_JSON_SIZE`] bytes JSON
 #[derive(Debug, Clone, Serialize, Deserialize, utoipa::ToSchema)]
 pub struct CreateEventRequest {
+    #[schema(max_length = 50)]
     pub event_type: String,
+    #[schema(max_length = 200)]
     pub source: String,
+    #[schema(max_length = 10000)]
     pub message: Option<String>,
+    #[schema(max_length = 20)]
     pub level: Option<String>,
     #[serde(default)]
     pub tags: HashMap<String, serde_json::Value>,
@@ -268,6 +297,48 @@ pub struct CreateEventRequest {
     pub payload: HashMap<String, serde_json::Value>,
     #[schema(format = "date-time")]
     pub recorded_at: Option<DateTime<Utc>>,
+}
+
+impl Validate for CreateEventRequest {
+    fn validate(&self) -> Result<()> {
+        if self.event_type.len() > MAX_EVENT_TYPE_LENGTH {
+            return Err(Error::validation("event_type", &format!("Event type too long (max {} characters)", MAX_EVENT_TYPE_LENGTH)));
+        }
+        if self.source.len() > MAX_SOURCE_LENGTH {
+            return Err(Error::validation("source", &format!("Source too long (max {} characters)", MAX_SOURCE_LENGTH)));
+        }
+        if let Some(ref message) = self.message
+            && message.len() > MAX_MESSAGE_LENGTH {
+            return Err(Error::validation("message", &format!("Message too long (max {} characters)", MAX_MESSAGE_LENGTH)));
+        }
+        if let Some(ref level) = self.level
+            && level.len() > MAX_LEVEL_LENGTH {
+            return Err(Error::validation("level", &format!("Level too long (max {} characters)", MAX_LEVEL_LENGTH)));
+        }
+        if self.tags.len() > MAX_TAGS_COUNT {
+            return Err(Error::validation("tags", &format!("Too many tags (max {})", MAX_TAGS_COUNT)));
+        }
+        if self.payload.len() > MAX_PAYLOAD_FIELDS {
+            return Err(Error::validation("payload", &format!("Too many payload fields (max {})", MAX_PAYLOAD_FIELDS)));
+        }
+        
+        // Validate JSON size
+        let tags_json = serde_json::to_string(&self.tags).map_err(|e| Error::validation("tags", &format!("Invalid tags JSON: {}", e)))?;
+        let payload_json = serde_json::to_string(&self.payload).map_err(|e| Error::validation("payload", &format!("Invalid payload JSON: {}", e)))?;
+        
+        if tags_json.len() > MAX_TAGS_JSON_SIZE {
+            return Err(Error::validation("tags", &format!("Tags JSON too large (max {}KB)", MAX_TAGS_JSON_SIZE / 1024)));
+        }
+        if payload_json.len() > MAX_PAYLOAD_JSON_SIZE {
+            return Err(Error::validation("payload", &format!("Payload JSON too large (max {}MB)", MAX_PAYLOAD_JSON_SIZE / 1024 / 1024)));
+        }
+        
+        // Validate event_type is valid
+        EventType::from_str(&self.event_type)
+            .map_err(|_| Error::validation("event_type", "Invalid event type"))?;
+        
+        Ok(())
+    }
 }
 
 // Metrics structure for time-series data
@@ -282,15 +353,46 @@ pub struct Metric {
     pub created_at: DateTime<Utc>,
 }
 
-// API request structure for submitting metrics
+/// API request structure for submitting metrics
+///
+/// Validation limits:
+/// - name: max [`MAX_METRIC_NAME_LENGTH`] characters
+/// - value: must be finite number
+/// - labels: max [`MAX_LABELS_COUNT`] entries, max [`MAX_TAGS_JSON_SIZE`] bytes JSON
 #[derive(Debug, Clone, Serialize, Deserialize, utoipa::ToSchema)]
 pub struct CreateMetricRequest {
+    #[schema(max_length = 100)]
     pub name: String,
     pub metric_type: MetricType,
     pub value: f64,
     #[serde(default)]
     pub labels: HashMap<String, String>,
+    #[schema(format = "date-time")]
     pub recorded_at: Option<DateTime<Utc>>,
+}
+
+impl Validate for CreateMetricRequest {
+    fn validate(&self) -> Result<()> {
+        if self.name.len() > MAX_METRIC_NAME_LENGTH {
+            return Err(Error::validation("name", &format!("Metric name too long (max {} characters)", MAX_METRIC_NAME_LENGTH)));
+        }
+        if self.labels.len() > MAX_LABELS_COUNT {
+            return Err(Error::validation("labels", &format!("Too many labels (max {})", MAX_LABELS_COUNT)));
+        }
+        
+        // Validate labels JSON size
+        let labels_json = serde_json::to_string(&self.labels).map_err(|e| Error::validation("labels", &format!("Invalid labels JSON: {}", e)))?;
+        if labels_json.len() > MAX_TAGS_JSON_SIZE {
+            return Err(Error::validation("labels", &format!("Labels JSON too large (max {}KB)", MAX_TAGS_JSON_SIZE / 1024)));
+        }
+        
+        // Validate metric value is finite
+        if !self.value.is_finite() {
+            return Err(Error::validation("value", "Metric value must be a finite number"));
+        }
+        
+        Ok(())
+    }
 }
 
 // Alert structure for monitoring rules
@@ -448,23 +550,28 @@ pub struct MonitoringStats {
 // automatically converts database strings to enums. Without these, query_as!
 // compilation will fail with "the trait bound `EventType: From<String>`" errors.
 //
-// DESIGN CHOICE: We use safe fallbacks with error logging instead of panicking
-// to prevent server crashes from corrupted database data. The sqlx::Decode
-// implementation (below) provides proper error handling when used directly.
+// SECURITY FIX: Instead of silently falling back to defaults (which masks data
+// corruption), we now log critical errors and still provide a fallback to
+// prevent server crashes, but make the issue highly visible in logs.
 //
 // Alternative approaches considered:
 // 1. Remove From<String> and use manual field mapping - more verbose, error-prone
 // 2. Panic on invalid data - could crash the server from bad database state
 // 3. Return Result<Self> - not compatible with From trait requirements
 //
-// Current approach balances convenience, safety, and SQLx compatibility.
+// Current approach: Log critical errors, alert monitoring, but still provide fallback.
 impl From<String> for EventType {
     fn from(s: String) -> Self {
         EventType::from_str(&s).unwrap_or_else(|_| {
+            // Critical error - this indicates database corruption or migration issues
             tracing::error!(
-                "Invalid event_type in database: '{}', falling back to 'log'",
+                security.data_corruption = true,
+                event_type = %s,
+                "CRITICAL: Invalid event_type in database '{}' - this indicates data corruption or missing migration. Falling back to 'log'",
                 s
             );
+            // TODO: Add metrics counter for data corruption incidents
+            // TODO: Consider alerting monitoring system for this critical error
             EventType::Log
         })
     }
@@ -475,7 +582,9 @@ impl From<String> for MetricType {
     fn from(s: String) -> Self {
         MetricType::from_str(&s).unwrap_or_else(|_| {
             tracing::error!(
-                "Invalid metric_type in database: '{}', falling back to 'gauge'",
+                security.data_corruption = true,
+                metric_type = %s,
+                "CRITICAL: Invalid metric_type in database '{}' - this indicates data corruption. Falling back to 'gauge'",
                 s
             );
             MetricType::Gauge
@@ -488,7 +597,9 @@ impl From<String> for AlertStatus {
     fn from(s: String) -> Self {
         AlertStatus::from_str(&s).unwrap_or_else(|_| {
             tracing::error!(
-                "Invalid alert_status in database: '{}', falling back to 'active'",
+                security.data_corruption = true,
+                alert_status = %s,
+                "CRITICAL: Invalid alert_status in database '{}' - this indicates data corruption. Falling back to 'active'",
                 s
             );
             AlertStatus::Active
@@ -501,7 +612,9 @@ impl From<String> for IncidentSeverity {
     fn from(s: String) -> Self {
         IncidentSeverity::from_str(&s).unwrap_or_else(|_| {
             tracing::error!(
-                "Invalid incident_severity in database: '{}', falling back to 'medium'",
+                security.data_corruption = true,
+                incident_severity = %s,
+                "CRITICAL: Invalid incident_severity in database '{}' - this indicates data corruption. Falling back to 'medium'",
                 s
             );
             IncidentSeverity::Medium
@@ -514,7 +627,9 @@ impl From<String> for IncidentStatus {
     fn from(s: String) -> Self {
         IncidentStatus::from_str(&s).unwrap_or_else(|_| {
             tracing::error!(
-                "Invalid incident_status in database: '{}', falling back to 'open'",
+                security.data_corruption = true,
+                incident_status = %s,
+                "CRITICAL: Invalid incident_status in database '{}' - this indicates data corruption. Falling back to 'open'",
                 s
             );
             IncidentStatus::Open

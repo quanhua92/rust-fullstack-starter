@@ -12,14 +12,16 @@ use uuid::Uuid;
 // Event management functions
 
 pub async fn create_event(conn: &mut DbConn, request: CreateEventRequest) -> Result<Event> {
+    // Validate input using the Validate trait
+    request.validate()?;
+
     let id = Uuid::new_v4();
     let recorded_at = request.recorded_at.unwrap_or_else(Utc::now);
-    let tags = json!(request.tags);
-    let payload = json!(request.payload);
+    let tags_json = json!(request.tags);
+    let payload_json = json!(request.payload);
 
-    // Validate event_type string and convert to enum
-    let event_type = EventType::from_str(&request.event_type)
-        .map_err(|_| Error::validation("event_type", "Invalid event type"))?;
+    // Convert event_type string to enum (already validated in request.validate())
+    let event_type = EventType::from_str(&request.event_type).unwrap();
 
     let event = sqlx::query!(
         r#"
@@ -32,8 +34,8 @@ pub async fn create_event(conn: &mut DbConn, request: CreateEventRequest) -> Res
         request.source,
         request.message,
         request.level,
-        tags,
-        payload,
+        tags_json,
+        payload_json,
         recorded_at
     )
     .fetch_one(&mut *conn)
@@ -141,6 +143,9 @@ pub async fn find_event_by_id(conn: &mut DbConn, id: Uuid) -> Result<Option<Even
 // Metric management functions
 
 pub async fn create_metric(conn: &mut DbConn, request: CreateMetricRequest) -> Result<Metric> {
+    // Validate input using the Validate trait
+    request.validate()?;
+
     let id = Uuid::new_v4();
     let recorded_at = request.recorded_at.unwrap_or_else(Utc::now);
     let labels = json!(request.labels);
