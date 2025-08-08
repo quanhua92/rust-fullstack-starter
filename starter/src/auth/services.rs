@@ -181,7 +181,7 @@ pub async fn login(conn: &mut DbConn, req: LoginRequest) -> Result<LoginResponse
             // Perform dummy verification to maintain constant timing
             // We must handle the result to ensure the computation actually happens
             match user_services::verify_password(&req.password, DUMMY_HASH) {
-                Ok(_) => false, // Always false for non-existent users
+                Ok(_) => false,  // Always false for non-existent users
                 Err(_) => false, // Even if dummy hash fails to parse, return false
             }
         }
