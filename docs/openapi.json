@@ -1479,6 +1479,17 @@
             }
           },
           {
+            "name": "priority",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          {
             "name": "limit",
             "in": "query",
             "required": false,
@@ -5522,6 +5533,12 @@
               "null"
             ],
             "format": "int64"
+          },
+          "priority": {
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "status": {
             "type": [

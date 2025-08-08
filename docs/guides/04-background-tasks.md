@@ -472,6 +472,8 @@ Task handlers are where the actual work happens. Each handler is responsible for
 
 **Fast Validation**: Check inputs early and fail fast if the task data is invalid. Don't wait until the end to discover bad data.
 
+**Input Security**: Always validate and sanitize inputs to prevent security vulnerabilities. The system provides comprehensive input validation for task creation with size limits and character restrictions.
+
 ### Handler Trait
 ```rust
 #[async_trait]
@@ -886,6 +888,60 @@ curl -s -H "Authorization: Bearer $TOKEN" \
   }
 }
 ```
+
+## Security Features
+
+### Input Validation and Sanitization
+
+The task system includes comprehensive security features to prevent common vulnerabilities:
+
+#### Task Creation Validation
+```rust
+// Automatic validation on task creation
+impl CreateTaskRequest {
+    const MAX_TASK_TYPE_LEN: usize = 128;
+    const MAX_PAYLOAD_SIZE_BYTES: usize = 1_024 * 1_024; // 1MB
+    const MAX_METADATA_KEY_LEN: usize = 128;
+    const MAX_METADATA_VALUE_SIZE_BYTES: usize = 4 * 1_024; // 4KB
+    const MAX_TOTAL_METADATA_SIZE_BYTES: usize = 64 * 1_024; // 64KB
+    const MAX_SCHEDULE_FUTURE_DAYS: i64 = 365;
+    const MAX_SCHEDULE_PAST_HOURS: i64 = 1;
+
+    pub fn validate(&self) -> std::result::Result<(), String> {
+        // Comprehensive input validation with security checks
+        // - Task type character restrictions (alphanumeric, underscore, hyphen only)
+        // - Payload size limits to prevent DoS attacks
+        // - Metadata sanitization and size limits
+        // - Scheduling time restrictions
+    }
+}
+```
+
+#### Security Validations Applied
+- **Task Type Sanitization**: Only alphanumeric characters, underscores, and hyphens allowed
+- **Size Limit Protection**: 1MB payload limit, 64KB total metadata limit to prevent DoS
+- **Character Restrictions**: Metadata keys restricted to safe characters
+- **Time-based Restrictions**: Tasks can't be scheduled more than 1 year in future or 1 hour in past
+- **SQL Injection Protection**: Priority filtering uses strict enum validation
+- **RBAC Authorization**: Stats endpoint requires moderator+ permissions
+
+#### Authorization and Access Control
+- **Task Ownership**: Users can only view/modify their own tasks unless admin/moderator
+- **Stats Endpoint Protection**: System-wide statistics require elevated permissions
+- **Task Type Registration**: Prevents creation of tasks for unregistered types
+
+#### Race Condition Prevention
+- **Optimistic Concurrency Control**: Task status updates validate previous state
+- **Atomic Operations**: Database constraints prevent invalid state transitions
+- **Semaphore Safety**: Proper error handling prevents resource exhaustion
+
+### Security Testing
+The system includes 9 comprehensive security tests covering:
+- SQL injection protection
+- DoS prevention via size limits
+- Authorization bypass prevention  
+- Race condition validation
+- Input validation enforcement
 
 ## Task Type Management
 

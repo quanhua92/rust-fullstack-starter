@@ -221,6 +221,14 @@ pub struct CreateTaskRequest {
 }
 
 impl CreateTaskRequest {
+    const MAX_TASK_TYPE_LEN: usize = 128;
+    const MAX_PAYLOAD_SIZE_BYTES: usize = 1_024 * 1_024; // 1MB
+    const MAX_METADATA_KEY_LEN: usize = 128;
+    const MAX_METADATA_VALUE_SIZE_BYTES: usize = 4 * 1_024; // 4KB
+    const MAX_TOTAL_METADATA_SIZE_BYTES: usize = 64 * 1_024; // 64KB
+    const MAX_SCHEDULE_FUTURE_DAYS: i64 = 365;
+    const MAX_SCHEDULE_PAST_HOURS: i64 = 1;
+
     pub fn new(task_type: impl Into<String>, payload: serde_json::Value) -> Self {
         Self {
             task_type: task_type.into(),
@@ -231,6 +239,104 @@ impl CreateTaskRequest {
             created_by: None,
             metadata: HashMap::new(),
         }
+    }
+
+    /// Validates the CreateTaskRequest for security and correctness
+    pub fn validate(&self) -> std::result::Result<(), String> {
+        // Validate task_type is not empty and contains only safe characters
+        if self.task_type.is_empty() {
+            return Err("Task type cannot be empty".to_string());
+        }
+
+        if self.task_type.len() > Self::MAX_TASK_TYPE_LEN {
+            return Err(format!(
+                "Task type cannot exceed {} characters",
+                Self::MAX_TASK_TYPE_LEN
+            ));
+        }
+
+        // Only allow alphanumeric characters, underscores, and hyphens in task_type
+        if !self
+            .task_type
+            .chars()
+            .all(|c| c.is_alphanumeric() || c == '_' || c == '-')
+        {
+            return Err(
+                "Task type can only contain alphanumeric characters, underscores, and hyphens"
+                    .to_string(),
+            );
+        }
+
+        // Validate payload is a reasonable size (prevent DoS attacks)
+        let payload_str = self.payload.to_string();
+        if payload_str.len() > Self::MAX_PAYLOAD_SIZE_BYTES {
+            return Err(format!(
+                "Task payload cannot exceed {}MB",
+                Self::MAX_PAYLOAD_SIZE_BYTES / (1024 * 1024)
+            ));
+        }
+
+        // Validate metadata keys and values
+        for (key, value) in &self.metadata {
+            if key.is_empty() || key.len() > Self::MAX_METADATA_KEY_LEN {
+                return Err(format!(
+                    "Metadata keys must be 1-{} characters long",
+                    Self::MAX_METADATA_KEY_LEN
+                ));
+            }
+
+            // Only allow alphanumeric characters, underscores, and hyphens in metadata keys
+            if !key
+                .chars()
+                .all(|c| c.is_alphanumeric() || c == '_' || c == '-')
+            {
+                return Err("Metadata keys can only contain alphanumeric characters, underscores, and hyphens".to_string());
+            }
+
+            let value_str = value.to_string();
+            if value_str.len() > Self::MAX_METADATA_VALUE_SIZE_BYTES {
+                return Err(format!(
+                    "Metadata values cannot exceed {}KB",
+                    Self::MAX_METADATA_VALUE_SIZE_BYTES / 1024
+                ));
+            }
+        }
+
+        // Validate total metadata size
+        let total_metadata_size: usize = self
+            .metadata
+            .iter()
+            .map(|(k, v)| k.len() + v.to_string().len())
+            .sum();
+        if total_metadata_size > Self::MAX_TOTAL_METADATA_SIZE_BYTES {
+            return Err(format!(
+                "Total metadata size cannot exceed {}KB",
+                Self::MAX_TOTAL_METADATA_SIZE_BYTES / 1024
+            ));
+        }
+
+        // Validate scheduled_at is not too far in the future
+        if let Some(scheduled_at) = self.scheduled_at {
+            let now = chrono::Utc::now();
+            let max_future = now + chrono::Duration::days(Self::MAX_SCHEDULE_FUTURE_DAYS);
+            if scheduled_at > max_future {
+                return Err(format!(
+                    "Tasks cannot be scheduled more than {} days in the future",
+                    Self::MAX_SCHEDULE_FUTURE_DAYS
+                ));
+            }
+
+            // Don't allow scheduling tasks too far in the past
+            let max_past = now - chrono::Duration::hours(Self::MAX_SCHEDULE_PAST_HOURS);
+            if scheduled_at < max_past {
+                return Err(format!(
+                    "Tasks cannot be scheduled more than {} hour(s) in the past",
+                    Self::MAX_SCHEDULE_PAST_HOURS
+                ));
+            }
+        }
+
+        Ok(())
     }
 
     pub fn with_priority(mut self, priority: TaskPriority) -> Self {
