@@ -208,25 +208,17 @@ rust-fullstack-starter/
 
 **📚 Complete documentation available in [`docs/`](docs/)**
 
-### Quick Links
-- **[Getting Started](docs/getting-started/getting-started.md)** - Detailed setup guide
-- **[Development Guide](docs/getting-started/development.md)** - Daily workflow
-- **[Architecture Guides](docs/guides/)** - System design and patterns
-- **[API Reference](docs/reference/api-reference.md)** - Complete endpoint docs
-- **[Production Deployment](docs/deployment/production-deployment.md)** - Docker deployment
+### Quick Navigation
+- **[Quick Start](docs/QUICK-START.md)** - 2-minute setup guide
+- **[Architecture Guide](docs/ARCHITECTURE-GUIDE.md)** - System design and patterns
+- **[Implementation Guide](docs/IMPLEMENTATION-GUIDE.md)** - Core systems and testing
+- **[API Reference](docs/API-REFERENCE.md)** - All 48 endpoints with examples
+- **[Production Deployment](docs/PRODUCTION-DEPLOYMENT.md)** - Docker deployment
+- **[Troubleshooting](docs/TROUBLESHOOTING.md)** - Debugging and diagnostics
+- **[Advanced Topics](docs/ADVANCED-TOPICS.md)** - Chaos testing and frontend patterns
 
-### Learning Guides
-- [Authentication & Authorization](docs/guides/02-authentication-and-authorization.md) - **Session-based auth with RBAC**
-- [User Management System](docs/guides/12-user-management.md) - **Complete user lifecycle with 12 endpoints**
-- [Background Tasks](docs/guides/04-background-tasks.md)
-- [Module Generator](docs/reference/module-generator.md) - **Template-based CRUD generation with safety features**
-- [Module Generator: First Principles](docs/guides/16-module-generator-first-principles.md) - **Deep dive into architecture and patterns**
-- [Testing Framework](docs/guides/08-testing.md)
-- [Chaos Testing](docs/guides/09-chaos-testing.md) - **Enhanced with 10 scenarios**
-- [Monitoring & Observability](docs/guides/15-monitoring-and-observability.md) - **Complete monitoring system with 14 endpoints**
-
-### Inspiration & Ideas
-- [AI Development Ideas](docs/reference/AI-IDEAS.md) - **💡 Conceptual exploration of AI-first patterns for inspiration** - *Ideas for building AI-powered applications using this starter as foundation*
+### Additional Resources
+- **[AI-First Development Ideas](docs/ideas/ai-first.md)** - Conceptual approaches and future enhancements
 
 ## API Endpoints
 
@@ -315,7 +307,7 @@ cargo run -- admin clear-completed              # Clean old tasks
 
 ```bash
 # Docker deployment
-cp .env.prod.example .env.prod
+cp .env.example .env.prod
 # Edit .env.prod with production settings
 docker-compose -f docker-compose.prod.yaml --env-file .env.prod up -d
 ```
@@ -326,4 +318,4 @@ MIT License - see LICENSE file for details.
 
 ---
 
-*Ready to build? Start with the [Getting Started Guide](docs/getting-started/getting-started.md) for detailed setup instructions.*
+*Ready to build? Start with the [Quick Start Guide](docs/QUICK-START.md) for 2-minute setup or explore the [complete documentation](docs/) for deeper learning.*

@@ -22,7 +22,7 @@ This file provides guidance to Claude Code when working with this Rust fullstack
 ./scripts/dev-server.sh              # Complete environment: DB + web + API + worker
 ./scripts/check.sh                   # Quality checks (MANDATORY before commit)
 ./scripts/check.sh --web             # Comprehensive checks including frontend tests
-./scripts/test-with-curl.sh          # 83 API endpoint tests
+./scripts/test-with-curl.sh          # 48 API endpoint tests
 ./scripts/reset-all.sh --reset-database  # Clean reset
 
 # Testing
@@ -35,7 +35,7 @@ cd web && ./scripts/check-web.sh    # Frontend quality checks
 - `check.sh` - **Quality validation (9 steps, ~40s) - use `--web` for full frontend checks**
 - `dev-server.sh` - Complete development environment
 - `server.sh` / `worker.sh` - Individual services
-- `test-with-curl.sh` - API testing (81 endpoints)
+- `test-with-curl.sh` - API testing (48 endpoints)
 - `test-chaos.sh` - Resilience testing
 - `test-template-with-curl.sh` - Generated module API testing
 - `test-generate.sh` - Module generator system validation
