@@ -192,15 +192,51 @@ curl -X PUT http://localhost:3000/api/v1/monitoring/incidents/$INCIDENT_ID \
   }'
 ```
 
-## Access Control
+## Security and Access Control
 
-The monitoring system integrates with the existing RBAC system:
+The monitoring system implements comprehensive security protections and integrates with the existing RBAC system:
+
+### Access Control Matrix
 
 | Role | Permissions |
 |------|-------------|
-| **User** | Create events/metrics, view own incidents, create incidents |
-| **Moderator** | All user permissions + manage alerts, view all incidents, system stats |
+| **User** | Create events/metrics for owned sources, view own incidents, create incidents |
+| **Moderator** | All user permissions + manage alerts, system sources/metrics, view all incidents, system stats |
 | **Admin** | All moderator permissions + system configuration |
+
+### Security Features
+
+#### 🔒 **Authorization Boundaries**
+- **Source Ownership**: Users can only create events for sources they own (username-prefixed or generic sources)
+- **Metric Authorization**: Users restricted to generic metrics or user-prefixed metric names
+- **System Privileges**: System sources (`system-*`, `health-*`, `monitoring-*`) require moderator+ role
+- **Ownership Validation**: Automatic validation of source/metric name ownership patterns
+
+#### 🛡️ **Input Validation & DoS Protection**
+- **Field Length Limits**: 
+  - Event types: 50 characters max
+  - Sources: 200 characters max  
+  - Messages: 10,000 characters max
+  - Metric names: 100 characters max
+- **Tag Validation**: Maximum 50 tag pairs, 100-character keys, 500-character values
+- **Character Restrictions**: Only alphanumeric, underscore, hyphen, and dot allowed in tag keys
+- **Injection Prevention**: Comprehensive validation prevents SQL injection and XSS attacks
+
+#### 🔐 **Transaction Integrity**
+- **Race Condition Prevention**: Uses `SELECT FOR UPDATE` for critical operations
+- **Atomic Updates**: Incident modifications wrapped in database transactions
+- **Optimistic Locking**: Prevents concurrent modification conflicts
+
+#### 📊 **Resource Protection**
+- **Prometheus Pagination**: 10,000 metric limit prevents memory exhaustion
+- **Query Optimization**: Stats endpoint uses single CTE query instead of 6 separate queries
+- **Error Message Security**: No UUID or sensitive data disclosure in error responses
+
+#### 🔍 **Security Testing**
+- **Comprehensive Coverage**: 38+ security-focused integration tests
+- **Boundary Testing**: Authorization edge cases and privilege escalation prevention  
+- **Input Validation**: DoS protection and injection attack prevention
+- **Error Handling**: Information disclosure prevention validation
 
 ## Prometheus Integration
 

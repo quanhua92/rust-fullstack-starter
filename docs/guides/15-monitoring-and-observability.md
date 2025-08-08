@@ -721,13 +721,33 @@ pub async fn get_user_session_events(
 
 ## Integration & Architecture
 
-### RBAC Integration
+### RBAC Integration & Security
 
 | Role | Permissions |
 |------|------------|
-| **User** | Create events/metrics, view own incidents, create incidents |
-| **Moderator** | + Create alerts, view all incidents, system stats |
+| **User** | Create events/metrics for owned sources, view own incidents, create incidents |
+| **Moderator** | + Create alerts, system sources/metrics, view all incidents, system stats |
 | **Admin** | + System configuration, user management |
+
+#### Security Features
+
+**🔒 Authorization Boundaries**
+- Users can only create events for sources they own (`username-*`) or generic sources
+- Metric names restricted to generic patterns or user-prefixed (`username_*`) 
+- System sources/metrics (`system-*`, `health-*`, `monitoring-*`) require moderator+ role
+- Dynamic ownership validation based on username and user ID patterns
+
+**🛡️ Input Validation & DoS Protection**
+- Field length limits: event types (50), sources (200), messages (10K), metric names (100 chars)
+- Tag validation: max 50 pairs, 100-char keys, 500-char values with character restrictions
+- Injection prevention: only alphanumeric, underscore, hyphen, dot allowed in tag keys
+- Resource limits: Prometheus metrics capped at 10,000 items to prevent memory exhaustion
+
+**🔐 Database Security**
+- Transaction integrity with `SELECT FOR UPDATE` for race condition prevention
+- Query optimization using CTE instead of multiple queries for better performance
+- Error message security: no UUID or sensitive data disclosure in responses
+- Enhanced enum conversion with critical error logging for data corruption detection
 
 ### Internal Service Integration
 

@@ -64,13 +64,40 @@
 - **MAX_SCHEDULE_FUTURE_DAYS**: 365 days
 - **MAX_SCHEDULE_PAST_HOURS**: 1 hour
 
+### Monitoring & Observability Security
+
+#### Authorization Boundaries
+- **Source Ownership Validation**: Users can only create events for sources they own or generic sources
+- **Metric Name Authorization**: Users restricted to generic metrics or user-prefixed metric names  
+- **System Privilege Enforcement**: System sources/metrics (`system-*`, `health-*`, `monitoring-*`) require moderator+ role
+- **Dynamic Ownership Checking**: Username and user ID-based ownership pattern validation
+- **Implementation**: `starter/src/monitoring/api.rs:19-141`
+
+#### Input Validation & DoS Protection
+- **Comprehensive Field Limits**: Event types (50), sources (200), messages (10K), metric names (100 chars)
+- **Tag Parsing Security**: Max 50 pairs, 100-char keys, 500-char values with character restrictions
+- **Injection Prevention**: Alphanumeric + underscore/hyphen/dot only in tag keys
+- **Duplicate Key Prevention**: Tag parsing prevents duplicate key attacks
+- **Finite Value Validation**: Metrics must contain finite numbers (no NaN/infinity)
+- **Implementation**: `starter/src/monitoring/models.rs:45-119`, `starter/src/monitoring/api.rs:152-235`
+
+#### Database Security & Performance
+- **Query Optimization**: Stats endpoint uses single CTE query instead of 6 separate queries
+- **Transaction Integrity**: `SELECT FOR UPDATE` prevents race conditions in incident updates
+- **Resource Protection**: Prometheus metrics limited to 10,000 items to prevent memory exhaustion
+- **Error Message Security**: No UUID or sensitive data disclosure in error responses
+- **From<String> Safety**: Enhanced enum conversion with critical error logging for data corruption detection
+- **Implementation**: `starter/src/monitoring/services.rs:385-411`, `starter/src/monitoring/api.rs:686-722`
+
 ### Testing Coverage
-- **159 Integration Tests**: Comprehensive test suite including security vulnerability tests
+- **182 Integration Tests**: Comprehensive test suite including security vulnerability tests
+- **10 Monitoring Security Tests**: Dedicated security tests for input validation, authorization boundaries, error message security, resource protection, and transaction integrity
 - **9 Tasks Security Tests**: Dedicated security vulnerability tests for tasks module covering SQL injection, DoS prevention, authorization bypass, race conditions, and input validation
 - **Timing Attack Tests**: Specific tests to verify constant-time behavior
 - **Session Fixation Tests**: Validates session cleanup behavior during login
 - **RBAC Security Tests**: Complete role-based access control validation
 - **Database Consistency Tests**: Transaction handling and error propagation validation
+- **Authorization Edge Case Tests**: 28 tests covering ownership patterns and privilege escalation prevention
 
 ## Known Security Issues
 
