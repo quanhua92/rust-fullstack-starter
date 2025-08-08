@@ -145,6 +145,10 @@ graph LR
 3. **Understanding errors** → [TROUBLESHOOTING](TROUBLESHOOTING.md#systematic-debugging)
 4. **Production issues** → [PRODUCTION-DEPLOYMENT](PRODUCTION-DEPLOYMENT.md#troubleshooting-production)
 
+## 💡 Additional Resources
+
+- **[AI-First Development Ideas](ideas/ai-first.md)** - Conceptual approaches and future enhancements
+
 ---
 
 *This documentation is designed to get you productive immediately while providing the depth needed to build serious applications. Start with the quick start, then dive deeper into the areas most relevant to your goals.*
