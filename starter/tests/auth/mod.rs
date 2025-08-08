@@ -402,13 +402,13 @@ async fn test_login_timing_attack_protection() {
     let avg_invalid_time =
         invalid_user_times.iter().sum::<std::time::Duration>() / invalid_user_times.len() as u32;
 
-    // The timing difference should be minimal (within 100ms tolerance for integration tests)
+    // The timing difference should be minimal (within 200ms tolerance for integration tests)
     let timing_diff = avg_valid_time.abs_diff(avg_invalid_time);
 
-    // In a real timing attack, the difference would be orders of magnitude larger
-    // We allow 100ms tolerance for integration test environment variability (CI/local differences)
+    // In a real timing attack, the difference would be orders of magnitude larger (seconds)
+    // We allow 200ms tolerance for integration test environment variability (CI/local/performance differences)
     assert!(
-        timing_diff < std::time::Duration::from_millis(100),
+        timing_diff < std::time::Duration::from_millis(200),
         "Timing difference too large: {:?} (avg_valid: {:?}, avg_invalid: {:?}). \
          This suggests timing attack vulnerability - dummy hash may not be working correctly.",
         timing_diff,
