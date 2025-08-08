@@ -308,22 +308,32 @@ cargo run -- revert module books --yes
 **Placeholder replacement with validation**:
 
 ```rust
-// Template: src/{{module_name}}/models.rs
+// Template: src/__MODULE_NAME__/models.rs
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
+use sqlx::FromRow;
+use uuid::Uuid;
 use utoipa::ToSchema;
 
-#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
-pub struct {{struct_name}} {
-    pub id: uuid::Uuid,
+#[derive(Debug, Clone, Serialize, Deserialize, FromRow, ToSchema)]
+pub struct __MODULE_STRUCT__ {
+    pub id: Uuid,
     pub name: String,
     pub description: Option<String>,
-    pub created_at: time::OffsetDateTime,
-    pub updated_at: time::OffsetDateTime,
+    pub created_by: Uuid,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
 }
 
-#[derive(Debug, Deserialize, ToSchema)]  
-pub struct Create{{struct_name}}Request {
+#[derive(Debug, Deserialize, ToSchema)]
+pub struct Create__MODULE_STRUCT__Request {
     pub name: String,
+    pub description: Option<String>,
+}
+
+#[derive(Debug, Deserialize, ToSchema)]
+pub struct Update__MODULE_STRUCT__Request {
+    pub name: Option<String>,
     pub description: Option<String>,
 }
 ```
