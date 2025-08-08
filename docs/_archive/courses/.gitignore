@@ -1,7 +1,0 @@
-# Ignore personalized student learning journals
-STUDENT_BOOK.*.md
-
-# Students should create their own copies like:
-# STUDENT_BOOK.john.md
-# STUDENT_BOOK.mary.md
-# STUDENT_BOOK.my-name.md
