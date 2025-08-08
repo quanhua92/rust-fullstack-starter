@@ -7,7 +7,7 @@
 ### 1-Minute Deploy
 ```bash
 # Copy and configure production environment
-cp .env.prod.example .env.prod
+cp .env.example .env.prod
 nano .env.prod  # ⚠️ CRITICAL: Change all passwords and secrets
 
 # Deploy with automated script
