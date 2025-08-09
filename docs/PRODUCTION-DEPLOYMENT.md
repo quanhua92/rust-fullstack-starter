@@ -11,7 +11,7 @@ cp .env.example .env.prod
 nano .env.prod  # ⚠️ CRITICAL: Change all passwords and secrets
 
 # Create required directories
-mkdir -p backups ssl
+mkdir -p backups nginx/ssl
 
 # Deploy with automated script
 ./scripts/deploy-prod.sh
@@ -229,7 +229,7 @@ services:
       - "443:443"
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./ssl:/etc/ssl/certs:ro  # Directory for SSL certificates
+      - ./nginx/ssl:/etc/nginx/ssl:ro  # Directory for SSL certificates
     depends_on:
       app-server:
         condition: service_healthy
@@ -312,8 +312,8 @@ server {
     server_name yourdomain.com;
 
     # SSL Configuration
-    ssl_certificate /etc/ssl/certs/fullchain.pem;
-    ssl_certificate_key /etc/ssl/certs/privkey.pem;
+    ssl_certificate /etc/nginx/ssl/fullchain.pem;
+    ssl_certificate_key /etc/nginx/ssl/privkey.pem;
     ssl_protocols TLSv1.2 TLSv1.3;
     ssl_ciphers HIGH:!aNULL:!MD5;
     ssl_prefer_server_ciphers on;

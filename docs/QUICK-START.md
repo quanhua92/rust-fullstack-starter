@@ -19,7 +19,7 @@ open http://localhost:3000
 **That's it!** 🎉 You now have a complete working application:
 
 - ✅ **React 18 Frontend** with authentication, admin dashboard, type-safe API integration
-- ✅ **REST API** (48 endpoints) with OpenAPI documentation at `/api-docs`
+- ✅ **REST API** (37 endpoints) with OpenAPI documentation at `/api-docs`
 - ✅ **PostgreSQL Database** with migrations and sample data
 - ✅ **Background Task System** with retry logic and monitoring
 - ✅ **Unified Static Serving** - Single server for both API and frontend
@@ -60,7 +60,7 @@ curl -H "Authorization: Bearer $TOKEN" http://localhost:3000/api/v1/tasks
 ```
 
 ### Explore API Documentation
-Visit **http://localhost:3000/api-docs** for interactive Swagger UI with all 48 endpoints.
+Visit **http://localhost:3000/api-docs** for interactive Swagger UI with all 37 endpoints.
 
 ## Prerequisites
 
@@ -93,7 +93,7 @@ web/scripts/check-web.sh                   # Frontend: 10-step validation
 
 # Testing
 cargo nextest run                           # 182 integration tests
-./scripts/test-with-curl.sh                 # Test all 48 API endpoints
+./scripts/test-with-curl.sh                 # Test all 37 API endpoints
 ./scripts/test-chaos.sh                     # Resilience testing
 ```
 
