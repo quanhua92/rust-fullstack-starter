@@ -17,8 +17,12 @@ beforeEach(() => {
 // Clean up after each test
 afterEach(() => {
 	// Reset all mocks
-	if (global.fetch && typeof global.fetch === "function" && 'mockClear' in global.fetch) {
-		const mockFetch = global.fetch as any;
+	if (
+		global.fetch &&
+		typeof global.fetch === "function" &&
+		"mockClear" in global.fetch
+	) {
+		const mockFetch = global.fetch as unknown as { mockClear?: () => void };
 		if (typeof mockFetch.mockClear === "function") {
 			mockFetch.mockClear();
 		}

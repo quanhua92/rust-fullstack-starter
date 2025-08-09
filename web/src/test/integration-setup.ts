@@ -28,9 +28,16 @@ export const setupIntegrationTest = () => {
 // Helper to run tests only if server is available
 export const describeIntegration = (name: string, fn: () => void) => {
 	const shouldSkip = process.env.SKIP_INTEGRATION === "true";
-	
+
 	// Use global describe from vitest
-	const globalDescribe = (globalThis as any).describe;
+	const globalDescribe = (
+		globalThis as unknown as {
+			describe: {
+				(name: string, fn: () => void): void;
+				skip: (name: string, fn: () => void) => void;
+			};
+		}
+	).describe;
 
 	if (shouldSkip) {
 		globalDescribe.skip(`${name} (INTEGRATION SKIPPED)`, fn);

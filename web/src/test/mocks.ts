@@ -61,8 +61,8 @@ export const mockHealthResponse: components["schemas"]["HealthResponse"] = {
 	uptime: 123.456,
 	documentation: {
 		api_docs: "/api-docs",
-		openapi_json: "/api-docs/openapi.json"
-	}
+		openapi_json: "/api-docs/openapi.json",
+	},
 };
 
 export const mockTaskStats: components["schemas"]["TaskStats"] = {
@@ -76,22 +76,17 @@ export const mockTaskStats: components["schemas"]["TaskStats"] = {
 };
 
 // API response wrappers
-export const mockApiResponse = <T>(
-	data: T,
-) => ({
+export const mockApiResponse = <T>(data: T) => ({
 	success: true,
 	data,
 	message: null,
 });
 
-export const mockApiError = (
-	message: string,
-	code = "UNKNOWN_ERROR",
-) => ({
+export const mockApiError = (message: string, code = "UNKNOWN_ERROR") => ({
 	success: false,
 	error: {
 		code,
-		message
+		message,
 	},
 	message: null,
 });

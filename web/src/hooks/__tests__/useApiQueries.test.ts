@@ -4,6 +4,7 @@ import {
 	mockHealthResponse,
 	mockTaskStats,
 } from "@/test/mocks";
+import type { components } from "@/types/api";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { renderHook, waitFor } from "@testing-library/react";
 import React, { type ReactNode } from "react";
@@ -207,7 +208,10 @@ describe("useApiQueries Hook Tests", () => {
 			});
 
 			it("should handle missing task stats data", async () => {
-				const mockResponse = { ...mockApiResponse(mockTaskStats), data: undefined };
+				const mockResponse = {
+					...mockApiResponse(mockTaskStats),
+					data: undefined,
+				};
 				vi.mocked(apiClient.getTaskStats).mockResolvedValue(mockResponse);
 
 				const { result } = renderHook(() => useTaskStats(), { wrapper });
@@ -311,7 +315,7 @@ describe("useApiQueries Hook Tests", () => {
 					level: "info" as const,
 					limit: 10,
 				};
-				const mockEvents: any[] = [];
+				const mockEvents: components["schemas"]["Event"][] = [];
 				const mockResponse = mockApiResponse(mockEvents);
 				vi.mocked(apiClient.getEvents).mockResolvedValue(mockResponse);
 
