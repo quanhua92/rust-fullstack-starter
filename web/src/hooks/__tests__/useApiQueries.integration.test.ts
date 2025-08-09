@@ -37,7 +37,7 @@ describeIntegration("useApiQueries Hook Integration Tests", () => {
 		);
 	});
 
-	beforeAll(() => {
+	beforeEach(() => {
 		// Create fresh QueryClient for each test
 		queryClient = new QueryClient({
 			defaultOptions: {
@@ -71,8 +71,7 @@ describeIntegration("useApiQueries Hook Integration Tests", () => {
 		// Clear auth token
 		setAuthToken(null);
 
-		// Clear query cache
-		queryClient.clear();
+		// Note: No need to clear query cache since we create fresh QueryClient for each test
 	});
 
 	describe("Health Hooks Integration", () => {
@@ -107,35 +106,40 @@ describeIntegration("useApiQueries Hook Integration Tests", () => {
 		});
 
 		it("should handle health endpoint errors gracefully", async () => {
-			// Create a client with wrong base URL to trigger error
-			const badClient = new (
-				apiClient.constructor as unknown as new (
-					baseUrl: string,
-				) => typeof apiClient
-			)("http://localhost:9999/api/v1");
-			Object.assign(apiClient, badClient);
-
-			const { result } = renderHook(() => useHealthBasic(), { wrapper });
-
-			await waitFor(
-				() => {
-					expect(result.current.isError).toBe(true);
-				},
-				{ timeout: 10000 },
-			);
-
-			expect(result.current.error).toBeDefined();
-			expect(result.current.data).toBeUndefined();
-
-			// Restore correct client
-			Object.assign(
-				apiClient,
-				new (
+			// Store original client for restoration
+			const originalClient = { ...apiClient };
+			
+			try {
+				// Create a client with wrong base URL to trigger error
+				const badClient = new (
 					apiClient.constructor as unknown as new (
 						baseUrl: string,
 					) => typeof apiClient
-				)(baseUrl),
-			);
+				)("http://localhost:9999/api/v1");
+				Object.assign(apiClient, badClient);
+
+				const { result } = renderHook(() => useHealthBasic(), { wrapper });
+
+				await waitFor(
+					() => {
+						expect(result.current.isError).toBe(true);
+					},
+					{ timeout: 10000 },
+				);
+
+				expect(result.current.error).toBeDefined();
+				expect(result.current.data).toBeUndefined();
+			} finally {
+				// Always restore correct client
+				Object.assign(
+					apiClient,
+					new (
+						apiClient.constructor as unknown as new (
+							baseUrl: string,
+						) => typeof apiClient
+					)(baseUrl),
+				);
+			}
 		});
 
 		it("should refetch health data when manually triggered", async () => {
@@ -615,35 +619,42 @@ describeIntegration("useApiQueries Hook Integration Tests", () => {
 		});
 
 		it("should retry failed requests automatically", async () => {
-			// First, break the connection
+			// Store original baseUrl for restoration
 			const originalBaseUrl = (apiClient as unknown as { baseUrl: string })
 				.baseUrl;
-			(apiClient as unknown as { baseUrl: string }).baseUrl =
-				"http://localhost:9999/api/v1";
 
-			const { result } = renderHook(() => useHealthBasic(), { wrapper });
+			try {
+				// First, break the connection
+				(apiClient as unknown as { baseUrl: string }).baseUrl =
+					"http://localhost:9999/api/v1";
 
-			// Should eventually error out after retries
-			await waitFor(
-				() => {
-					expect(result.current.isError).toBe(true);
-				},
-				{ timeout: 10000 },
-			);
+				const { result } = renderHook(() => useHealthBasic(), { wrapper });
 
-			// Restore connection
-			(apiClient as unknown as { baseUrl: string }).baseUrl = originalBaseUrl;
+				// Should eventually error out after retries
+				await waitFor(
+					() => {
+						expect(result.current.isError).toBe(true);
+					},
+					{ timeout: 10000 },
+				);
 
-			// Manually trigger refetch
-			await result.current.refetch();
+				// Restore connection
+				(apiClient as unknown as { baseUrl: string }).baseUrl = originalBaseUrl;
 
-			// Should recover
-			await waitFor(
-				() => {
-					expect(result.current.isSuccess).toBe(true);
-				},
-				{ timeout: 5000 },
-			);
+				// Manually trigger refetch
+				await result.current.refetch();
+
+				// Should recover
+				await waitFor(
+					() => {
+						expect(result.current.isSuccess).toBe(true);
+					},
+					{ timeout: 5000 },
+				);
+			} finally {
+				// Always restore original baseUrl
+				(apiClient as unknown as { baseUrl: string }).baseUrl = originalBaseUrl;
+			}
 		});
 	});
 });

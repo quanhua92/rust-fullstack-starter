@@ -30,6 +30,18 @@ describeIntegration("API Client Integration Tests", () => {
 		}
 		createdTasks.length = 0;
 
+		// Clean up created users (requires admin privileges - skip if not available)
+		for (const userId of createdUsers) {
+			try {
+				// Note: This would require admin API endpoint for user deletion
+				// For now, we'll just warn about the cleanup limitation
+				console.warn(`User cleanup not implemented for test isolation: ${userId}`);
+			} catch (error) {
+				console.warn(`Failed to cleanup user ${userId}:`, error);
+			}
+		}
+		createdUsers.length = 0;
+
 		// Clear auth token
 		setAuthToken(null);
 	});
