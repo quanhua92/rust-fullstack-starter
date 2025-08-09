@@ -22,11 +22,11 @@ This file provides guidance to Claude Code when working with this Rust fullstack
 ./scripts/dev-server.sh              # Complete environment: DB + web + API + worker
 ./scripts/check.sh                   # Quality checks (MANDATORY before commit)
 ./scripts/check.sh --web             # Comprehensive checks including frontend tests
-./scripts/test-with-curl.sh          # 48 API endpoint tests
+./scripts/test-with-curl.sh          # 37+ API endpoint tests
 ./scripts/reset-all.sh --reset-database  # Clean reset
 
 # Testing
-cargo nextest run                    # 183 integration tests (~21s)
+cargo nextest run                    # 185 integration tests (~21s)
 ./scripts/test-chaos.sh             # Docker-based resilience testing
 cd web && ./scripts/check-web.sh    # Frontend quality checks
 ```
@@ -35,7 +35,7 @@ cd web && ./scripts/check-web.sh    # Frontend quality checks
 - `check.sh` - **Quality validation (9 steps, ~40s) - use `--web` for full frontend checks**
 - `dev-server.sh` - Complete development environment
 - `server.sh` / `worker.sh` - Individual services
-- `test-with-curl.sh` - API testing (48 endpoints)
+- `test-with-curl.sh` - API testing (37+ endpoints)
 - `test-chaos.sh` - Resilience testing
 - `test-template-with-curl.sh` - Generated module API testing
 - `test-generate.sh` - Module generator system validation
@@ -73,8 +73,8 @@ cargo run -- revert module books --yes      # Skip prompts (DANGEROUS)
 
 # Manual integration (3 steps)
 # 1. Add to src/lib.rs: pub mod books;
-# 2. Add to src/server.rs: use crate::books::api::books_routes;
-# 3. Add to src/openapi.rs: use crate::books::models::*;
+# 2. Add to src/core/server.rs: use crate::books::api::books_routes;
+# 3. Add to src/core/openapi.rs: use crate::books::models::*;
 ```
 
 ### Task Handlers
@@ -151,20 +151,32 @@ cargo run -- revert module products --yes
 
 ## Architecture Overview
 
+### Recent Architecture Improvements (Refactoring Branch)
+- **Modular Infrastructure**: Moved core infrastructure files (`config.rs`, `database.rs`, `error.rs`, `server.rs`, `openapi.rs`) to `core/` module for better organization
+- **Simplified Imports**: Common types (`Error`, `AppState`, `Result`, `DbConn`, `DbPool`) are now exported directly from `lib.rs` for easier access throughout the codebase
+- **Domain Separation**: Auth-specific models (`Session`, `ApiKey`) moved from core to appropriate domain module (`auth/`)
+- **Removed Redundancy**: Eliminated `types.rs` re-export file and consolidated type exports in `lib.rs`
+- **Backward Compatibility**: All existing import paths continue to work while enabling cleaner new imports
+
 ### Core Systems
 - **Authentication**: Session-based with 3-tier RBAC (User/Moderator/Admin)
 - **Background Tasks**: Async processing with retry strategies and circuit breakers
-- **User Management**: 12 endpoints for profile/admin operations
-- **Monitoring**: 14 endpoints for events/metrics/alerts/incidents
+- **User Management**: 10 endpoints for profile/admin operations
+- **Monitoring**: 9 endpoints for events/metrics/alerts/incidents
 - **Module Generator**: Template-based code generation with testing validation
-- **Testing**: 183 integration tests with database isolation
+- **Testing**: 185 integration tests with database isolation
 
 ### Module Structure
 ```
 starter/src/
-├── core/          # Application state, database types, result types
+├── core/          # Infrastructure & shared components (NEW ARCHITECTURE)
+│   ├── config.rs  # Application configuration (moved from root)
+│   ├── database.rs # Database connection & migrations (moved from root)
+│   ├── error.rs   # Error handling & HTTP conversion (moved from root)
+│   ├── server.rs  # HTTP server setup & routing (moved from root)
+│   ├── openapi.rs # OpenAPI spec generation (moved from root)
 │   ├── state.rs   # AppState definition
-│   └── types.rs   # DbPool, DbConn, Result
+│   └── types.rs   # DbPool, DbConn, Result type aliases
 ├── api/           # API layer types and utilities
 │   ├── response.rs # ApiResponse, ErrorResponse
 │   └── pagination.rs # Pagination utilities
@@ -173,12 +185,15 @@ starter/src/
 │   ├── types.rs   # Health-specific response types
 │   └── checks.rs  # Health check implementations
 ├── auth/          # Authentication & sessions
-├── users/         # User management (12 endpoints)
+│   ├── models.rs  # Session, ApiKey models (moved from core)
+│   ├── services.rs # Authentication business logic
+│   └── api.rs     # Authentication HTTP handlers
+├── users/         # User management (10 endpoints)
 ├── tasks/         # Background task system
-├── monitoring/    # Observability (14 endpoints)
+├── monitoring/    # Observability (9 endpoints)
 ├── rbac/          # Role-based access control
 ├── cli/           # Admin CLI commands
-└── types.rs       # Backward-compatible re-exports
+└── lib.rs         # Common type exports: Error, AppState, Result, DbConn, DbPool
 ```
 
 ### Key Features
