@@ -63,11 +63,11 @@ verify_all() {
     # 2. Check code structures
     log INFO "Checking code structures..."
     
-    # API Response check
+    # API Response check - updated for new modular structure
     local doc_api=$(rg "ApiResponse.*\{" "$PROJECT_ROOT/docs" | wc -l | tr -d ' ')
     local code_api=0
-    if [ -f "$PROJECT_ROOT/starter/src/api/types.rs" ]; then
-        code_api=$(rg "pub struct ApiResponse" "$PROJECT_ROOT/starter/src/api/types.rs" | wc -l | tr -d ' ')
+    if [ -f "$PROJECT_ROOT/starter/src/api/response.rs" ]; then
+        code_api=$(rg "pub struct ApiResponse" "$PROJECT_ROOT/starter/src/api/response.rs" | wc -l | tr -d ' ')
     fi
     
     if [ "$code_api" -gt 0 ]; then

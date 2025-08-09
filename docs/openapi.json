@@ -337,20 +337,13 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiResponse_HealthResponse"
+                  "$ref": "#/components/schemas/ApiResponse_Value"
                 }
               }
             }
           },
           "503": {
-            "description": "Application is unhealthy",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
+            "description": "Application is unhealthy"
           }
         }
       }
@@ -2972,6 +2965,7 @@
       },
       "ApiResponse_Alert": {
         "type": "object",
+        "description": "Standard API response wrapper\n\nAll successful API responses should use this structure to ensure\nconsistency across the API surface.",
         "required": [
           "success"
         ],
@@ -3048,15 +3042,18 @@
             "type": [
               "string",
               "null"
-            ]
+            ],
+            "description": "Optional message for additional context"
           },
           "success": {
-            "type": "boolean"
+            "type": "boolean",
+            "description": "Whether the request was successful"
           }
         }
       },
       "ApiResponse_AuthUser": {
         "type": "object",
+        "description": "Standard API response wrapper\n\nAll successful API responses should use this structure to ensure\nconsistency across the API surface.",
         "required": [
           "success"
         ],
@@ -3089,21 +3086,25 @@
             "type": [
               "string",
               "null"
-            ]
+            ],
+            "description": "Optional message for additional context"
           },
           "success": {
-            "type": "boolean"
+            "type": "boolean",
+            "description": "Whether the request was successful"
           }
         }
       },
       "ApiResponse_DetailedHealthResponse": {
         "type": "object",
+        "description": "Standard API response wrapper\n\nAll successful API responses should use this structure to ensure\nconsistency across the API surface.",
         "required": [
           "success"
         ],
         "properties": {
           "data": {
             "type": "object",
+            "description": "Detailed health response with component breakdown",
             "required": [
               "status",
               "timestamp",
@@ -3112,6 +3113,7 @@
             "properties": {
               "checks": {
                 "type": "object",
+                "description": "Individual component health checks",
                 "additionalProperties": {
                   "$ref": "#/components/schemas/ComponentHealth"
                 },
@@ -3120,11 +3122,13 @@
                 }
               },
               "status": {
-                "type": "string"
+                "type": "string",
+                "description": "Overall status"
               },
               "timestamp": {
                 "type": "string",
-                "format": "date-time"
+                "format": "date-time",
+                "description": "Timestamp when the check was performed"
               }
             }
           },
@@ -3132,15 +3136,18 @@
             "type": [
               "string",
               "null"
-            ]
+            ],
+            "description": "Optional message for additional context"
           },
           "success": {
-            "type": "boolean"
+            "type": "boolean",
+            "description": "Whether the request was successful"
           }
         }
       },
       "ApiResponse_Event": {
         "type": "object",
+        "description": "Standard API response wrapper\n\nAll successful API responses should use this structure to ensure\nconsistency across the API surface.",
         "required": [
           "success"
         ],
@@ -3195,52 +3202,18 @@
             "type": [
               "string",
               "null"
-            ]
-          },
-          "success": {
-            "type": "boolean"
-          }
-        }
-      },
-      "ApiResponse_HealthResponse": {
-        "type": "object",
-        "required": [
-          "success"
-        ],
-        "properties": {
-          "data": {
-            "type": "object",
-            "required": [
-              "status",
-              "version",
-              "uptime"
             ],
-            "properties": {
-              "status": {
-                "type": "string"
-              },
-              "uptime": {
-                "type": "number",
-                "format": "double"
-              },
-              "version": {
-                "type": "string"
-              }
-            }
-          },
-          "message": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "description": "Optional message for additional context"
           },
           "success": {
-            "type": "boolean"
+            "type": "boolean",
+            "description": "Whether the request was successful"
           }
         }
       },
       "ApiResponse_Incident": {
         "type": "object",
+        "description": "Standard API response wrapper\n\nAll successful API responses should use this structure to ensure\nconsistency across the API surface.",
         "required": [
           "success"
         ],
@@ -3321,15 +3294,18 @@
             "type": [
               "string",
               "null"
-            ]
+            ],
+            "description": "Optional message for additional context"
           },
           "success": {
-            "type": "boolean"
+            "type": "boolean",
+            "description": "Whether the request was successful"
           }
         }
       },
       "ApiResponse_IncidentTimeline": {
         "type": "object",
+        "description": "Standard API response wrapper\n\nAll successful API responses should use this structure to ensure\nconsistency across the API surface.",
         "required": [
           "success"
         ],
@@ -3374,15 +3350,18 @@
             "type": [
               "string",
               "null"
-            ]
+            ],
+            "description": "Optional message for additional context"
           },
           "success": {
-            "type": "boolean"
+            "type": "boolean",
+            "description": "Whether the request was successful"
           }
         }
       },
       "ApiResponse_LoginResponse": {
         "type": "object",
+        "description": "Standard API response wrapper\n\nAll successful API responses should use this structure to ensure\nconsistency across the API surface.",
         "required": [
           "success"
         ],
@@ -3411,15 +3390,18 @@
             "type": [
               "string",
               "null"
-            ]
+            ],
+            "description": "Optional message for additional context"
           },
           "success": {
-            "type": "boolean"
+            "type": "boolean",
+            "description": "Whether the request was successful"
           }
         }
       },
       "ApiResponse_Metric": {
         "type": "object",
+        "description": "Standard API response wrapper\n\nAll successful API responses should use this structure to ensure\nconsistency across the API surface.",
         "required": [
           "success"
         ],
@@ -3465,15 +3447,18 @@
             "type": [
               "string",
               "null"
-            ]
+            ],
+            "description": "Optional message for additional context"
           },
           "success": {
-            "type": "boolean"
+            "type": "boolean",
+            "description": "Whether the request was successful"
           }
         }
       },
       "ApiResponse_MonitoringStats": {
         "type": "object",
+        "description": "Standard API response wrapper\n\nAll successful API responses should use this structure to ensure\nconsistency across the API surface.",
         "required": [
           "success"
         ],
@@ -3519,15 +3504,18 @@
             "type": [
               "string",
               "null"
-            ]
+            ],
+            "description": "Optional message for additional context"
           },
           "success": {
-            "type": "boolean"
+            "type": "boolean",
+            "description": "Whether the request was successful"
           }
         }
       },
       "ApiResponse_RefreshResponse": {
         "type": "object",
+        "description": "Standard API response wrapper\n\nAll successful API responses should use this structure to ensure\nconsistency across the API surface.",
         "required": [
           "success"
         ],
@@ -3553,15 +3541,18 @@
             "type": [
               "string",
               "null"
-            ]
+            ],
+            "description": "Optional message for additional context"
           },
           "success": {
-            "type": "boolean"
+            "type": "boolean",
+            "description": "Whether the request was successful"
           }
         }
       },
       "ApiResponse_String": {
         "type": "object",
+        "description": "Standard API response wrapper\n\nAll successful API responses should use this structure to ensure\nconsistency across the API surface.",
         "required": [
           "success"
         ],
@@ -3573,15 +3564,18 @@
             "type": [
               "string",
               "null"
-            ]
+            ],
+            "description": "Optional message for additional context"
           },
           "success": {
-            "type": "boolean"
+            "type": "boolean",
+            "description": "Whether the request was successful"
           }
         }
       },
       "ApiResponse_TaskResponse": {
         "type": "object",
+        "description": "Standard API response wrapper\n\nAll successful API responses should use this structure to ensure\nconsistency across the API surface.",
         "required": [
           "success"
         ],
@@ -3675,15 +3669,18 @@
             "type": [
               "string",
               "null"
-            ]
+            ],
+            "description": "Optional message for additional context"
           },
           "success": {
-            "type": "boolean"
+            "type": "boolean",
+            "description": "Whether the request was successful"
           }
         }
       },
       "ApiResponse_TaskStats": {
         "type": "object",
+        "description": "Standard API response wrapper\n\nAll successful API responses should use this structure to ensure\nconsistency across the API surface.",
         "required": [
           "success"
         ],
@@ -3734,15 +3731,18 @@
             "type": [
               "string",
               "null"
-            ]
+            ],
+            "description": "Optional message for additional context"
           },
           "success": {
-            "type": "boolean"
+            "type": "boolean",
+            "description": "Whether the request was successful"
           }
         }
       },
       "ApiResponse_TaskTypeResponse": {
         "type": "object",
+        "description": "Standard API response wrapper\n\nAll successful API responses should use this structure to ensure\nconsistency across the API surface.",
         "required": [
           "success"
         ],
@@ -3782,15 +3782,18 @@
             "type": [
               "string",
               "null"
-            ]
+            ],
+            "description": "Optional message for additional context"
           },
           "success": {
-            "type": "boolean"
+            "type": "boolean",
+            "description": "Whether the request was successful"
           }
         }
       },
       "ApiResponse_UserProfile": {
         "type": "object",
+        "description": "Standard API response wrapper\n\nAll successful API responses should use this structure to ensure\nconsistency across the API surface.",
         "required": [
           "success"
         ],
@@ -3843,15 +3846,18 @@
             "type": [
               "string",
               "null"
-            ]
+            ],
+            "description": "Optional message for additional context"
           },
           "success": {
-            "type": "boolean"
+            "type": "boolean",
+            "description": "Whether the request was successful"
           }
         }
       },
       "ApiResponse_UserStats": {
         "type": "object",
+        "description": "Standard API response wrapper\n\nAll successful API responses should use this structure to ensure\nconsistency across the API surface.",
         "required": [
           "success"
         ],
@@ -3905,15 +3911,18 @@
             "type": [
               "string",
               "null"
-            ]
+            ],
+            "description": "Optional message for additional context"
           },
           "success": {
-            "type": "boolean"
+            "type": "boolean",
+            "description": "Whether the request was successful"
           }
         }
       },
       "ApiResponse_Value": {
         "type": "object",
+        "description": "Standard API response wrapper\n\nAll successful API responses should use this structure to ensure\nconsistency across the API surface.",
         "required": [
           "success"
         ],
@@ -3923,15 +3932,18 @@
             "type": [
               "string",
               "null"
-            ]
+            ],
+            "description": "Optional message for additional context"
           },
           "success": {
-            "type": "boolean"
+            "type": "boolean",
+            "description": "Whether the request was successful"
           }
         }
       },
       "ApiResponse_Vec_Alert": {
         "type": "object",
+        "description": "Standard API response wrapper\n\nAll successful API responses should use this structure to ensure\nconsistency across the API surface.",
         "required": [
           "success"
         ],
@@ -4011,15 +4023,18 @@
             "type": [
               "string",
               "null"
-            ]
+            ],
+            "description": "Optional message for additional context"
           },
           "success": {
-            "type": "boolean"
+            "type": "boolean",
+            "description": "Whether the request was successful"
           }
         }
       },
       "ApiResponse_Vec_Event": {
         "type": "object",
+        "description": "Standard API response wrapper\n\nAll successful API responses should use this structure to ensure\nconsistency across the API surface.",
         "required": [
           "success"
         ],
@@ -4077,15 +4092,18 @@
             "type": [
               "string",
               "null"
-            ]
+            ],
+            "description": "Optional message for additional context"
           },
           "success": {
-            "type": "boolean"
+            "type": "boolean",
+            "description": "Whether the request was successful"
           }
         }
       },
       "ApiResponse_Vec_Incident": {
         "type": "object",
+        "description": "Standard API response wrapper\n\nAll successful API responses should use this structure to ensure\nconsistency across the API surface.",
         "required": [
           "success"
         ],
@@ -4169,15 +4187,18 @@
             "type": [
               "string",
               "null"
-            ]
+            ],
+            "description": "Optional message for additional context"
           },
           "success": {
-            "type": "boolean"
+            "type": "boolean",
+            "description": "Whether the request was successful"
           }
         }
       },
       "ApiResponse_Vec_Metric": {
         "type": "object",
+        "description": "Standard API response wrapper\n\nAll successful API responses should use this structure to ensure\nconsistency across the API surface.",
         "required": [
           "success"
         ],
@@ -4226,15 +4247,18 @@
             "type": [
               "string",
               "null"
-            ]
+            ],
+            "description": "Optional message for additional context"
           },
           "success": {
-            "type": "boolean"
+            "type": "boolean",
+            "description": "Whether the request was successful"
           }
         }
       },
       "ApiResponse_Vec_TaskResponse": {
         "type": "object",
+        "description": "Standard API response wrapper\n\nAll successful API responses should use this structure to ensure\nconsistency across the API surface.",
         "required": [
           "success"
         ],
@@ -4331,15 +4355,18 @@
             "type": [
               "string",
               "null"
-            ]
+            ],
+            "description": "Optional message for additional context"
           },
           "success": {
-            "type": "boolean"
+            "type": "boolean",
+            "description": "Whether the request was successful"
           }
         }
       },
       "ApiResponse_Vec_TaskTypeResponse": {
         "type": "object",
+        "description": "Standard API response wrapper\n\nAll successful API responses should use this structure to ensure\nconsistency across the API surface.",
         "required": [
           "success"
         ],
@@ -4382,15 +4409,18 @@
             "type": [
               "string",
               "null"
-            ]
+            ],
+            "description": "Optional message for additional context"
           },
           "success": {
-            "type": "boolean"
+            "type": "boolean",
+            "description": "Whether the request was successful"
           }
         }
       },
       "ApiResponse_Vec_UserProfile": {
         "type": "object",
+        "description": "Standard API response wrapper\n\nAll successful API responses should use this structure to ensure\nconsistency across the API surface.",
         "required": [
           "success"
         ],
@@ -4446,10 +4476,12 @@
             "type": [
               "string",
               "null"
-            ]
+            ],
+            "description": "Optional message for additional context"
           },
           "success": {
-            "type": "boolean"
+            "type": "boolean",
+            "description": "Whether the request was successful"
           }
         }
       },
@@ -4494,19 +4526,24 @@
       },
       "ComponentHealth": {
         "type": "object",
+        "description": "Health status of an individual component",
         "required": [
           "status"
         ],
         "properties": {
-          "details": {},
+          "details": {
+            "description": "Optional additional details"
+          },
           "message": {
             "type": [
               "string",
               "null"
-            ]
+            ],
+            "description": "Optional human-readable message"
           },
           "status": {
-            "type": "string"
+            "type": "string",
+            "description": "Component status (healthy/unhealthy)"
           }
         }
       },
@@ -4793,6 +4830,7 @@
       },
       "DetailedHealthResponse": {
         "type": "object",
+        "description": "Detailed health response with component breakdown",
         "required": [
           "status",
           "timestamp",
@@ -4801,6 +4839,7 @@
         "properties": {
           "checks": {
             "type": "object",
+            "description": "Individual component health checks",
             "additionalProperties": {
               "$ref": "#/components/schemas/ComponentHealth"
             },
@@ -4809,37 +4848,44 @@
             }
           },
           "status": {
-            "type": "string"
+            "type": "string",
+            "description": "Overall status"
           },
           "timestamp": {
             "type": "string",
-            "format": "date-time"
+            "format": "date-time",
+            "description": "Timestamp when the check was performed"
           }
         }
       },
       "ErrorDetail": {
         "type": "object",
+        "description": "Error detail information",
         "required": [
           "code",
           "message"
         ],
         "properties": {
           "code": {
-            "type": "string"
+            "type": "string",
+            "description": "Error code for programmatic handling"
           },
           "message": {
-            "type": "string"
+            "type": "string",
+            "description": "Human-readable error message"
           }
         }
       },
       "ErrorResponse": {
         "type": "object",
+        "description": "Standard error response structure",
         "required": [
           "error"
         ],
         "properties": {
           "error": {
-            "$ref": "#/components/schemas/ErrorDetail"
+            "$ref": "#/components/schemas/ErrorDetail",
+            "description": "Error details"
           }
         }
       },
@@ -4967,6 +5013,7 @@
       },
       "HealthResponse": {
         "type": "object",
+        "description": "Basic health response for simple health checks",
         "required": [
           "status",
           "version",
@@ -4974,14 +5021,17 @@
         ],
         "properties": {
           "status": {
-            "type": "string"
+            "type": "string",
+            "description": "Overall status"
           },
           "uptime": {
             "type": "number",
-            "format": "double"
+            "format": "double",
+            "description": "Uptime in seconds"
           },
           "version": {
-            "type": "string"
+            "type": "string",
+            "description": "Application version"
           }
         }
       },

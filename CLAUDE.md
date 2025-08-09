@@ -162,12 +162,23 @@ cargo run -- revert module products --yes
 ### Module Structure
 ```
 starter/src/
+├── core/          # Application state, database types, result types
+│   ├── state.rs   # AppState definition
+│   └── types.rs   # DbPool, DbConn, Result
+├── api/           # API layer types and utilities
+│   ├── response.rs # ApiResponse, ErrorResponse
+│   └── pagination.rs # Pagination utilities
+├── health/        # Health check system
+│   ├── handlers.rs # HTTP handlers for health endpoints
+│   ├── types.rs   # Health-specific response types
+│   └── checks.rs  # Health check implementations
 ├── auth/          # Authentication & sessions
 ├── users/         # User management (12 endpoints)
 ├── tasks/         # Background task system
 ├── monitoring/    # Observability (14 endpoints)
 ├── rbac/          # Role-based access control
-└── cli/           # Admin CLI commands
+├── cli/           # Admin CLI commands
+└── types.rs       # Backward-compatible re-exports
 ```
 
 ### Key Features
