@@ -173,7 +173,7 @@ cargo run -- revert module products --yes
 - **User Management**: 10 endpoints for profile/admin operations
 - **Monitoring**: 9 endpoints for events/metrics/alerts/incidents
 - **Module Generator**: Template-based code generation with testing validation
-- **Testing**: 185 integration tests with database isolation
+- **Testing**: 183 integration tests with database isolation
 
 ### Module Structure
 ```
