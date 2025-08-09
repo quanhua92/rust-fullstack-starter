@@ -55,11 +55,8 @@ use crate::{
 /// Individual CRUD operations with ownership-based access control
 pub fn __MODULE_NAME_PLURAL___routes() -> Router<AppState> {
     Router::new()
-        .route("/", get(list___MODULE_NAME_PLURAL__))
-        .route("/", post(create___MODULE_NAME__))
-        .route("/{id}", get(get___MODULE_NAME__))
-        .route("/{id}", put(update___MODULE_NAME__))
-        .route("/{id}", delete(delete___MODULE_NAME__))
+        .route("/", get(list___MODULE_NAME_PLURAL__).post(create___MODULE_NAME__))
+        .route("/{id}", get(get___MODULE_NAME__).put(update___MODULE_NAME__).delete(delete___MODULE_NAME__))
 }
 
 /// Moderator __MODULE_NAME__ routes (moderator+ role required)

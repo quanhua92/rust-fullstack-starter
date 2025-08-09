@@ -585,19 +585,16 @@ pub async fn list_task_types(
 /// Public task routes (no authentication required)
 pub fn tasks_public_routes() -> Router<AppState> {
     Router::new()
-        .route("/types", post(register_task_type))
-        .route("/types", get(list_task_types))
+        .route("/types", get(list_task_types).post(register_task_type))
 }
 
 /// Protected task routes (authentication required)
 pub fn tasks_routes() -> Router<AppState> {
     Router::new()
-        .route("/", post(create_task))
-        .route("/", get(list_tasks))
+        .route("/", get(list_tasks).post(create_task))
         .route("/stats", get(get_stats))
         .route("/dead-letter", get(get_dead_letter_queue))
-        .route("/{id}", get(get_task))
-        .route("/{id}", delete(delete_task))
+        .route("/{id}", get(get_task).delete(delete_task))
         .route("/{id}/cancel", post(cancel_task))
         .route("/{id}/retry", post(retry_task))
 }

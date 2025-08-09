@@ -882,16 +882,12 @@ pub fn monitoring_public_routes() -> Router<AppState> {
 /// Protected monitoring routes (authentication required)
 pub fn monitoring_routes() -> Router<AppState> {
     Router::new()
-        .route("/events", post(create_event))
-        .route("/events", get(get_events))
+        .route("/events", post(create_event).get(get_events))
         .route("/events/{id}", get(get_event_by_id))
-        .route("/metrics", post(create_metric))
-        .route("/metrics", get(get_metrics))
+        .route("/metrics", post(create_metric).get(get_metrics))
         .route("/alerts", get(get_alerts))
-        .route("/incidents", post(create_incident))
-        .route("/incidents", get(get_incidents))
-        .route("/incidents/{id}", get(get_incident_by_id))
-        .route("/incidents/{id}", put(update_incident))
+        .route("/incidents", post(create_incident).get(get_incidents))
+        .route("/incidents/{id}", get(get_incident_by_id).put(update_incident))
         .route("/incidents/{id}/timeline", get(get_incident_timeline))
 }
 
