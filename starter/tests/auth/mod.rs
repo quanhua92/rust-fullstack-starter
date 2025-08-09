@@ -824,3 +824,49 @@ async fn test_password_validation_security_edge_cases() {
         );
     }
 }
+
+#[tokio::test]
+async fn test_logout_vs_logout_all_difference() {
+    let app = spawn_app().await;
+    let factory = TestDataFactory::new(app.clone());
+
+    // Create user and two sessions
+    factory.create_user("testuser").await;
+    let login_data = json!({
+        "username": "testuser",
+        "password": "SecurePass123!"
+    });
+
+    let login1 = app.post_json("/api/v1/auth/login", &login_data).await;
+    let token1 = app.extract_auth_token(login1).await.token;
+
+    let login2 = app.post_json("/api/v1/auth/login", &login_data).await;
+    let token2 = app.extract_auth_token(login2).await.token;
+
+    // Verify both sessions work
+    assert_status(&app.get_auth("/api/v1/auth/me", &token1).await, StatusCode::OK);
+    assert_status(&app.get_auth("/api/v1/auth/me", &token2).await, StatusCode::OK);
+
+    // Test /auth/logout (single session) - should only invalidate current session
+    let logout_response = app.post_auth("/api/v1/auth/logout", &token1).await;
+    assert_status(&logout_response, StatusCode::OK);
+
+    // token1 should be invalid, token2 should still work
+    assert_status(&app.get_auth("/api/v1/auth/me", &token1).await, StatusCode::UNAUTHORIZED);
+    assert_status(&app.get_auth("/api/v1/auth/me", &token2).await, StatusCode::OK);
+
+    // Create third session 
+    let login3 = app.post_json("/api/v1/auth/login", &login_data).await;
+    let token3 = app.extract_auth_token(login3).await.token;
+
+    // Test /auth/logout-all - should invalidate all sessions
+    let logout_all_response = app.post_auth("/api/v1/auth/logout-all", &token2).await;
+    assert_status(&logout_all_response, StatusCode::OK);
+
+    let json: serde_json::Value = logout_all_response.json().await.unwrap();
+    assert!(json["message"].as_str().unwrap().contains("session(s)"));
+
+    // Both remaining sessions should be invalid
+    assert_status(&app.get_auth("/api/v1/auth/me", &token2).await, StatusCode::UNAUTHORIZED);
+    assert_status(&app.get_auth("/api/v1/auth/me", &token3).await, StatusCode::UNAUTHORIZED);
+}

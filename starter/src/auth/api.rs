@@ -71,7 +71,7 @@ pub async fn register(
     path = "/auth/logout",
     tag = "Authentication",
     summary = "User logout",
-    description = "Logout current user and end all sessions",
+    description = "Logout current user and end current session",
     responses(
         (status = 200, description = "Logout successful", body = ApiResponse<String>),
         (status = 401, description = "Unauthorized", body = ErrorResponse)
@@ -82,19 +82,28 @@ pub async fn register(
 )]
 pub async fn logout(
     State(app_state): State<AppState>,
-    Extension(auth_user): Extension<AuthUser>,
+    Extension(_auth_user): Extension<AuthUser>,
+    req: Request,
 ) -> Result<Json<ApiResponse<String>>, Error> {
+    // Extract token from Authorization header
+    let token = req
+        .headers()
+        .get("authorization")
+        .and_then(|header| header.to_str().ok())
+        .and_then(|auth_header| auth_header.strip_prefix("Bearer "))
+        .ok_or(Error::Unauthorized)?;
+
     let mut conn = app_state
         .database
         .pool
         .acquire()
         .await
         .map_err(Error::from_sqlx)?;
-    let sessions_deleted = auth_services::logout_all(conn.as_mut(), auth_user.id).await?;
+    
+    auth_services::logout(conn.as_mut(), token).await?;
 
-    Ok(Json(ApiResponse::success_with_message(
+    Ok(Json(ApiResponse::success(
         "Logged out successfully".to_string(),
-        format!("Ended {sessions_deleted} session(s)"),
     )))
 }
 

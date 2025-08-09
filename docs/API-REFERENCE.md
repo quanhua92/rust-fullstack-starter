@@ -78,13 +78,32 @@ POST /auth/logout
 Authorization: Bearer <token>
 ```
 
+**Description**: Logout current user and end **current session only**
+
+**Response**:
+```json
+{
+  "success": true,
+  "data": "Logged out successfully"
+}
+```
+
 ### Logout from All Devices
 ```http
 POST /auth/logout-all
 Authorization: Bearer <token>
 ```
 
-**Description**: Logout current user from all devices and end all sessions
+**Description**: Logout current user from all devices and end **all sessions**
+
+**Response**:
+```json
+{
+  "success": true,
+  "data": "Logged out from all devices",
+  "message": "Ended 3 session(s)"
+}
+```
 
 ### Refresh Token
 ```http
