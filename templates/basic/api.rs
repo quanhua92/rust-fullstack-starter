@@ -35,12 +35,62 @@ pub struct List__MODULE_STRUCT__Query {
     pub search: Option<String>,
 }
 
-/// API endpoints for __MODULE_NAME__ management
+// =============================================================================
+// Route Organization
+// =============================================================================
+//
+// This module provides multiple route functions organized by permission level:
+//
+// 1. __MODULE_NAME_PLURAL___routes() - Protected routes (authentication required)
+//    - Individual CRUD operations with ownership-based access control
+//    - Users can access their own items, moderators/admins can access all
+//
+// 2. Uncomment and implement as needed:
+//
+// __MODULE_NAME_PLURAL___public_routes() - Public routes (no authentication)
+//    - For endpoints like public listings, search, or read-only access
+//
+// __MODULE_NAME_PLURAL___moderator_routes() - Moderator routes
+//    - For bulk operations, reporting, or moderation features
+//    - Requires moderator or admin role
+//
+// __MODULE_NAME_PLURAL___admin_routes() - Admin routes  
+//    - For system administration, user management
+//    - Requires admin role only
+
+/// Protected __MODULE_NAME__ routes (authentication required)
+/// Individual CRUD operations with ownership-based access control
 pub fn __MODULE_NAME_PLURAL___routes() -> Router<AppState> {
     Router::new()
         .route("/", get(list___MODULE_NAME_PLURAL__).post(create___MODULE_NAME__))
         .route("/{id}", get(get___MODULE_NAME__).put(update___MODULE_NAME__).delete(delete___MODULE_NAME__))
 }
+
+// /// Public __MODULE_NAME__ routes (no authentication required)
+// /// Uncomment and implement if you need public endpoints
+// pub fn __MODULE_NAME_PLURAL___public_routes() -> Router<AppState> {
+//     Router::new()
+//         // Example: .route("/public", get(list_public___MODULE_NAME_PLURAL__))
+//         // Example: .route("/catalog", get(get_public_catalog))
+// }
+
+// /// Moderator __MODULE_NAME__ routes (moderator+ role required) 
+// /// Uncomment and implement if you need bulk operations or moderation features
+// pub fn __MODULE_NAME_PLURAL___moderator_routes() -> Router<AppState> {
+//     Router::new()
+//         // Example: .route("/bulk", post(bulk_create___MODULE_NAME_PLURAL__))
+//         // Example: .route("/bulk", put(bulk_update___MODULE_NAME_PLURAL__))  
+//         // Example: .route("/bulk", delete(bulk_delete___MODULE_NAME_PLURAL__))
+//         // Example: .route("/reports", get(get___MODULE_NAME_PLURAL___reports))
+// }
+
+// /// Admin __MODULE_NAME__ routes (admin role required)
+// /// Uncomment and implement if you need admin-only operations
+// pub fn __MODULE_NAME_PLURAL___admin_routes() -> Router<AppState> {
+//     Router::new()
+//         // Example: .route("/admin/stats", get(get___MODULE_NAME_PLURAL___admin_stats))
+//         // Example: .route("/admin/cleanup", post(cleanup___MODULE_NAME_PLURAL__))
+// }
 
 /// List all __MODULE_NAME_PLURAL__
 #[utoipa::path(

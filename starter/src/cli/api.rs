@@ -419,14 +419,34 @@ impl CliApp {
             println!("      - Add: pub mod {plural};");
             println!();
             println!("   5. Add routes to starter/src/core/server.rs (manual step):");
-            println!("      - Import: use crate::{plural}::api::{plural}_routes;");
-            println!(
-                "      - Add route: .nest(\"/{plural}\", {plural}_routes()) inside protected_routes Router"
-            );
-            println!("      - NOTE: Generated routes are protected (require authentication)");
-            println!(
-                "      - INFO: If you need public routes, create a {plural}_public_routes() function"
-            );
+            
+            match template.as_str() {
+                "basic" => {
+                    println!("      - Import: use crate::{plural}::api::{plural}_routes;");
+                    println!("      - Add route: .nest(\"/{plural}\", {plural}_routes()) inside protected_routes");
+                    println!("      - NOTE: Basic template provides protected routes with ownership-based access");
+                    println!();
+                    println!("      📝 Optional: Add other route types by uncommenting in {plural}/api.rs:");
+                    println!("         - Public routes: {plural}_public_routes() → nest in public_routes");
+                    println!("         - Moderator routes: {plural}_moderator_routes() → nest in moderator_routes");
+                    println!("         - Admin routes: {plural}_admin_routes() → nest in admin_routes");
+                }
+                "production" => {
+                    println!("      - Import: use crate::{plural}::api::{{{plural}_routes, {plural}_moderator_routes}};");
+                    println!("      - Add protected routes: .nest(\"/{plural}\", {plural}_routes()) inside protected_routes");
+                    println!("      - Add moderator routes: .nest(\"/{plural}\", {plural}_moderator_routes()) inside moderator_routes");
+                    println!("      - NOTE: Production template separates individual CRUD from bulk operations");
+                    println!();
+                    println!("      📝 Optional: Add other route types by uncommenting in {plural}/api.rs:");
+                    println!("         - Public routes: {plural}_public_routes() → nest in public_routes");
+                    println!("         - Admin routes: {plural}_admin_routes() → nest in admin_routes");
+                }
+                _ => {
+                    println!("      - Import: use crate::{plural}::api::{plural}_routes;");
+                    println!("      - Add route: .nest(\"/{plural}\", {plural}_routes()) inside protected_routes");
+                    println!("      - NOTE: Check template for available route functions");
+                }
+            }
             println!();
             println!("   6. Add to starter/src/core/openapi.rs (manual step):");
             match template.as_str() {

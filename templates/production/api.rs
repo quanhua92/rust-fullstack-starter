@@ -27,18 +27,67 @@ use crate::{
     types::{ApiResponse, AppState, Result, ErrorResponse},
 };
 
-/// Create __MODULE_NAME_PLURAL__ router with all endpoints
+// =============================================================================
+// Route Organization
+// =============================================================================
+//
+// This production template provides multiple route functions organized by permission level:
+//
+// 1. __MODULE_NAME_PLURAL___routes() - Protected routes (authentication required)
+//    - Individual CRUD operations with ownership-based access control
+//    - Users can access their own items, moderators/admins can access all
+//
+// 2. __MODULE_NAME_PLURAL___moderator_routes() - Moderator routes (moderator+ role required)
+//    - Bulk operations for efficient data management
+//    - Requires moderator or admin role
+//
+// 3. Uncomment and implement as needed:
+//
+// __MODULE_NAME_PLURAL___public_routes() - Public routes (no authentication)
+//    - For endpoints like public listings, search, or read-only access
+//
+// __MODULE_NAME_PLURAL___admin_routes() - Admin routes
+//    - For system administration, advanced management features  
+//    - Requires admin role only
+
+/// Protected __MODULE_NAME__ routes (authentication required)
+/// Individual CRUD operations with ownership-based access control
 pub fn __MODULE_NAME_PLURAL___routes() -> Router<AppState> {
     Router::new()
         .route("/", get(list___MODULE_NAME_PLURAL__))
         .route("/", post(create___MODULE_NAME__))
-        .route("/bulk", post(bulk_create___MODULE_NAME_PLURAL__))
-        .route("/bulk", put(bulk_update___MODULE_NAME_PLURAL__))
-        .route("/bulk", delete(bulk_delete___MODULE_NAME_PLURAL__))
         .route("/{id}", get(get___MODULE_NAME__))
         .route("/{id}", put(update___MODULE_NAME__))
         .route("/{id}", delete(delete___MODULE_NAME__))
 }
+
+/// Moderator __MODULE_NAME__ routes (moderator+ role required)
+/// Bulk operations for efficient data management
+pub fn __MODULE_NAME_PLURAL___moderator_routes() -> Router<AppState> {
+    Router::new()
+        .route("/bulk", post(bulk_create___MODULE_NAME_PLURAL__))
+        .route("/bulk", put(bulk_update___MODULE_NAME_PLURAL__))
+        .route("/bulk", delete(bulk_delete___MODULE_NAME_PLURAL__))
+}
+
+// /// Public __MODULE_NAME__ routes (no authentication required)
+// /// Uncomment and implement if you need public endpoints
+// pub fn __MODULE_NAME_PLURAL___public_routes() -> Router<AppState> {
+//     Router::new()
+//         // Example: .route("/catalog", get(get_public___MODULE_NAME_PLURAL___catalog))
+//         // Example: .route("/search", get(search_public___MODULE_NAME_PLURAL__))
+//         // Example: .route("/featured", get(get_featured___MODULE_NAME_PLURAL__))
+// }
+
+// /// Admin __MODULE_NAME__ routes (admin role required)
+// /// Uncomment and implement if you need admin-only operations
+// pub fn __MODULE_NAME_PLURAL___admin_routes() -> Router<AppState> {
+//     Router::new()
+//         // Example: .route("/admin/stats", get(get___MODULE_NAME_PLURAL___admin_stats))
+//         // Example: .route("/admin/export", get(export___MODULE_NAME_PLURAL___data))
+//         // Example: .route("/admin/import", post(import___MODULE_NAME_PLURAL___data))
+//         // Example: .route("/admin/cleanup", post(cleanup_orphaned___MODULE_NAME_PLURAL__))
+// }
 
 /// Query parameters for listing __MODULE_NAME_PLURAL__
 #[derive(Debug, Deserialize, IntoParams, ToSchema)]
