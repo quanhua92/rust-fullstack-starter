@@ -1,0 +1,3 @@
+# Ignore generated documentation folder
+# The canonical OpenAPI spec is maintained in the root docs/ directory
+docs/
