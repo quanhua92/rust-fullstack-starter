@@ -36,6 +36,17 @@ pub struct HealthResponse {
     pub version: String,
     /// Uptime in seconds
     pub uptime: f64,
+    /// API documentation links
+    pub documentation: DocumentationLinks,
+}
+
+/// Documentation links for API reference
+#[derive(Debug, serde::Serialize, utoipa::ToSchema)]
+pub struct DocumentationLinks {
+    /// OpenAPI JSON specification URL
+    pub openapi_json: String,
+    /// API documentation UI URL
+    pub api_docs: String,
 }
 
 /// Detailed health response with component breakdown

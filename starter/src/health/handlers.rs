@@ -21,23 +21,24 @@ use std::collections::HashMap;
     summary = "Basic health check",
     description = "Returns basic application health status with version and uptime",
     responses(
-        (status = 200, description = "Application is healthy", body = ApiResponse<serde_json::Value>),
+        (status = 200, description = "Application is healthy", body = ApiResponse<HealthResponse>),
         (status = 503, description = "Application is unhealthy")
     )
 )]
 pub async fn health(State(state): State<AppState>) -> impl IntoResponse {
     let uptime_seconds = state.start_time.elapsed().as_secs_f64();
 
-    let health_data = serde_json::json!({
-        "status": "healthy",
-        "version": env!("CARGO_PKG_VERSION"),
-        "uptime": uptime_seconds,
-        "documentation": {
-            "openapi_json": "/api-docs/openapi.json",
-            "api_docs": "/api-docs"
-        }
-    });
-    Json(ApiResponse::success(health_data))
+    let health_response = HealthResponse {
+        status: "healthy".to_string(),
+        version: env!("CARGO_PKG_VERSION").to_string(),
+        uptime: uptime_seconds,
+        documentation: DocumentationLinks {
+            openapi_json: "/api-docs/openapi.json".to_string(),
+            api_docs: "/api-docs".to_string(),
+        },
+    };
+
+    Json(ApiResponse::success(health_response))
 }
 
 /// Comprehensive health check with dependencies

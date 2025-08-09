@@ -879,6 +879,30 @@ export interface components {
 		 *
 		 *     All successful API responses should use this structure to ensure
 		 *     consistency across the API surface. */
+		ApiResponse_HealthResponse: {
+			/** @description Basic health response for simple health checks */
+			data?: {
+				/** @description API documentation links */
+				documentation: components["schemas"]["DocumentationLinks"];
+				/** @description Overall status */
+				status: string;
+				/**
+				 * Format: double
+				 * @description Uptime in seconds
+				 */
+				uptime: number;
+				/** @description Application version */
+				version: string;
+			};
+			/** @description Optional message for additional context */
+			message?: string | null;
+			/** @description Whether the request was successful */
+			success: boolean;
+		};
+		/** @description Standard API response wrapper
+		 *
+		 *     All successful API responses should use this structure to ensure
+		 *     consistency across the API surface. */
 		ApiResponse_Incident: {
 			data?: {
 				/** Format: uuid */
@@ -1469,6 +1493,13 @@ export interface components {
 			 */
 			timestamp: string;
 		};
+		/** @description Documentation links for API reference */
+		DocumentationLinks: {
+			/** @description API documentation UI URL */
+			api_docs: string;
+			/** @description OpenAPI JSON specification URL */
+			openapi_json: string;
+		};
 		/** @description Error detail information */
 		ErrorDetail: {
 			/** @description Error code for programmatic handling */
@@ -1515,6 +1546,8 @@ export interface components {
 		EventType: "log" | "metric" | "trace" | "alert";
 		/** @description Basic health response for simple health checks */
 		HealthResponse: {
+			/** @description API documentation links */
+			documentation: components["schemas"]["DocumentationLinks"];
 			/** @description Overall status */
 			status: string;
 			/**
@@ -2101,7 +2134,7 @@ export interface operations {
 					[name: string]: unknown;
 				};
 				content: {
-					"application/json": components["schemas"]["ApiResponse_Value"];
+					"application/json": components["schemas"]["ApiResponse_HealthResponse"];
 				};
 			};
 			/** @description Application is unhealthy */
