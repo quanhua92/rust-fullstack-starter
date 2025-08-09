@@ -421,10 +421,11 @@ impl CliApp {
             println!("   5. Add routes to starter/src/core/server.rs (manual step):");
             println!("      - Import: use crate::{plural}::api::{plural}_routes;");
             println!(
-                "      - Add route: .nest(\"/{plural}\", {plural}_routes()) INSIDE protected_routes"
+                "      - Add route: .nest(\"/{plural}\", {plural}_routes()) inside protected_routes Router"
             );
+            println!("      - NOTE: Generated routes are protected (require authentication)");
             println!(
-                "      - NOTE: Add nest() BEFORE .layer(auth_middleware) for proper authentication"
+                "      - INFO: If you need public routes, create a {plural}_public_routes() function"
             );
             println!();
             println!("   6. Add to starter/src/core/openapi.rs (manual step):");

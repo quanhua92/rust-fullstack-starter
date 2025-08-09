@@ -286,10 +286,32 @@ pub mod books;
 
 // 2. Add to starter/src/core/server.rs  
 use crate::books::api::books_routes;
-router = router.nest("/api/v1/books", books_routes(state.clone()));
+// In protected_routes Router:
+.nest("/books", books_routes())
 
 // 3. Add to starter/src/core/openapi.rs
 use crate::books::models::*;
+```
+
+**Advanced route organization**: Modules can provide multiple route functions organized by permission level:
+
+```rust
+// In books/api.rs
+pub fn books_public_routes() -> Router<AppState> {
+    Router::new()
+        .route("/catalog", get(list_public_books))
+}
+
+pub fn books_routes() -> Router<AppState> {
+    Router::new()
+        .route("/", get(list_my_books))
+        .route("/", post(create_book))
+}
+
+pub fn books_admin_routes() -> Router<AppState> {
+    Router::new()
+        .route("/", delete(bulk_delete_books))
+}
 ```
 
 **Revert with safety checks**:

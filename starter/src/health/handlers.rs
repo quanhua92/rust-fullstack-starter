@@ -6,7 +6,7 @@
 use crate::api::response::{ApiResponse, ErrorResponse};
 use crate::core::AppState;
 use crate::health::{checks, types::*};
-use axum::{Json, extract::State, http::StatusCode, response::IntoResponse};
+use axum::{Json, Router, extract::State, http::StatusCode, response::IntoResponse, routing::get};
 use chrono::Utc;
 use std::collections::HashMap;
 
@@ -217,4 +217,14 @@ pub async fn health_startup(State(state): State<AppState>) -> impl IntoResponse 
     });
 
     (status_code, Json(ApiResponse::success(startup_status)))
+}
+
+/// Health check routes
+pub fn health_routes() -> Router<AppState> {
+    Router::new()
+        .route("/", get(health))
+        .route("/detailed", get(detailed_health))
+        .route("/live", get(health_live))
+        .route("/ready", get(health_ready))
+        .route("/startup", get(health_startup))
 }

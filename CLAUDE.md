@@ -73,8 +73,17 @@ cargo run -- revert module books --yes      # Skip prompts (DANGEROUS)
 
 # Manual integration (3 steps)
 # 1. Add to starter/src/lib.rs: pub mod books;
-# 2. Add to starter/src/core/server.rs: use crate::books::api::books_routes;
+# 2. Add to starter/src/core/server.rs: 
+#    - Import: use crate::books::api::books_routes;
+#    - Add: .nest("/books", books_routes()) inside protected_routes
 # 3. Add to starter/src/core/openapi.rs: use crate::books::models::*;
+
+# Advanced: Multiple route types (if needed)
+# For modules with both public and protected routes:
+# - books_public_routes() for public endpoints (no auth)
+# - books_routes() for protected endpoints (auth required)  
+# - books_moderator_routes() for moderator endpoints
+# - books_admin_routes() for admin endpoints
 ```
 
 ### Task Handlers

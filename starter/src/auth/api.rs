@@ -9,8 +9,10 @@ use crate::{
     api::{ApiResponse, ErrorResponse},
 };
 use axum::{
+    Router,
     extract::{Extension, Request, State},
     response::Json,
+    routing::{get, post},
 };
 
 #[utoipa::path(
@@ -212,4 +214,20 @@ pub async fn refresh(
             "Cannot refresh token yet. Please wait before requesting another refresh.",
         )),
     }
+}
+
+/// Public authentication routes (no authentication required)
+pub fn auth_public_routes() -> Router<AppState> {
+    Router::new()
+        .route("/login", post(login))
+        .route("/register", post(register))
+}
+
+/// Protected authentication routes (authentication required)
+pub fn auth_routes() -> Router<AppState> {
+    Router::new()
+        .route("/logout", post(logout))
+        .route("/logout-all", post(logout_all))
+        .route("/me", get(me))
+        .route("/refresh", post(refresh))
 }
