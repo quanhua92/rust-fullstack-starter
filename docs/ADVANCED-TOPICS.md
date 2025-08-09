@@ -324,9 +324,9 @@ pub fn products_routes() -> Router<AppState> {
 /// Moderator routes - bulk operations requiring elevated permissions
 pub fn products_moderator_routes() -> Router<AppState> {
     Router::new()
-        .route("/bulk", post(bulk_create_products))
-        .route("/bulk", put(bulk_update_products))  
-        .route("/bulk", delete(bulk_delete_products))
+        .route("/bulk", post(bulk_create_products)
+            .put(bulk_update_products)
+            .delete(bulk_delete_products))
 }
 
 // Uncomment and implement as needed:

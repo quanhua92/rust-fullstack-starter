@@ -66,9 +66,9 @@ pub fn __MODULE_NAME_PLURAL___routes() -> Router<AppState> {
 /// Bulk operations for efficient data management
 pub fn __MODULE_NAME_PLURAL___moderator_routes() -> Router<AppState> {
     Router::new()
-        .route("/bulk", post(bulk_create___MODULE_NAME_PLURAL__))
-        .route("/bulk", put(bulk_update___MODULE_NAME_PLURAL__))
-        .route("/bulk", delete(bulk_delete___MODULE_NAME_PLURAL__))
+        .route("/bulk", post(bulk_create___MODULE_NAME_PLURAL__)
+            .put(bulk_update___MODULE_NAME_PLURAL__)
+            .delete(bulk_delete___MODULE_NAME_PLURAL__))
 }
 
 // /// Public __MODULE_NAME__ routes (no authentication required)
