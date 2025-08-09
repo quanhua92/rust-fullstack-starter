@@ -1,9 +1,6 @@
 use crate::auth::models::{LoginRequest, LoginResponse, RegisterRequest, Session};
 use crate::users::{models::UserProfile, services as user_services};
-use crate::{
-    error::Error,
-    types::{DbConn, Result},
-};
+use crate::{DbConn, Error, Result};
 use chrono::{Duration, Utc};
 use sqlx::Acquire;
 use uuid::Uuid;
@@ -58,7 +55,7 @@ pub async fn create_session(
         expires_at: session.expires_at,
         created_at: session.created_at,
         updated_at: session.updated_at,
-        last_activity_at: Some(session.last_activity_at),
+        last_activity_at: session.last_activity_at,
         last_refreshed_at: session.last_refreshed_at,
         user_agent: session.user_agent,
         is_active: session.is_active,
@@ -88,7 +85,7 @@ pub async fn find_session_by_token(conn: &mut DbConn, token: &str) -> Result<Opt
         expires_at: s.expires_at,
         created_at: s.created_at,
         updated_at: s.updated_at,
-        last_activity_at: Some(s.last_activity_at),
+        last_activity_at: s.last_activity_at,
         last_refreshed_at: s.last_refreshed_at,
         user_agent: s.user_agent,
         is_active: s.is_active,
@@ -245,7 +242,7 @@ pub async fn login(conn: &mut DbConn, req: LoginRequest) -> Result<LoginResponse
         expires_at: session.expires_at,
         created_at: session.created_at,
         updated_at: session.updated_at,
-        last_activity_at: Some(session.last_activity_at),
+        last_activity_at: session.last_activity_at,
         last_refreshed_at: session.last_refreshed_at,
         user_agent: session.user_agent,
         is_active: session.is_active,
@@ -318,7 +315,7 @@ pub async fn refresh_session_token(
                 expires_at: s.expires_at,
                 created_at: s.created_at,
                 updated_at: s.updated_at,
-                last_activity_at: Some(s.last_activity_at),
+                last_activity_at: s.last_activity_at,
                 last_refreshed_at: s.last_refreshed_at,
                 user_agent: s.user_agent,
                 is_active: s.is_active,

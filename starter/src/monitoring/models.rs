@@ -1,5 +1,5 @@
-use crate::error::Error;
-use crate::types::Result;
+use crate::Error;
+use crate::Result;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
@@ -623,8 +623,8 @@ impl From<String> for EventType {
                 "CRITICAL: Invalid event_type in database '{}' - this indicates data corruption or missing migration. Falling back to 'log'",
                 s
             );
-            // TODO: Add metrics counter for data corruption incidents
-            // TODO: Consider alerting monitoring system for this critical error
+            // Future enhancement: Add metrics counter for data corruption incidents
+            // Future enhancement: Consider alerting monitoring system for this critical error
             EventType::Log
         })
     }

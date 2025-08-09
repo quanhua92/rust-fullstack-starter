@@ -1,4 +1,4 @@
-use crate::{config::AppConfig, error::Error, types::Result};
+use crate::core::{config::AppConfig, error::Error, types::Result};
 use sqlx::{PgPool, Postgres, migrate::MigrateDatabase, postgres::PgPoolOptions};
 
 #[derive(Clone)]

@@ -1,17 +1,16 @@
 use crate::{
-    api::health,
     auth::{
         api as auth_api,
         middleware::{admin_middleware, auth_middleware},
     },
-    config::AppConfig,
-    database::Database,
-    error::Error,
+    core::{
+        config::AppConfig, database::Database, error::Error, openapi, state::AppState,
+        types::Result,
+    },
+    health,
     monitoring::api as monitoring_api,
-    openapi,
     rbac::middleware::require_moderator_role,
     tasks::api as tasks_api,
-    types::{AppState, Result},
     users::api as users_api,
 };
 use axum::{

@@ -5,8 +5,8 @@ use crate::auth::{
 };
 use crate::users::models::UserProfile;
 use crate::{
-    error::Error,
-    types::{ApiResponse, AppState, ErrorResponse},
+    AppState, Error,
+    api::{ApiResponse, ErrorResponse},
 };
 use axum::{
     extract::{Extension, Request, State},

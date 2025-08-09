@@ -24,7 +24,7 @@ impl Drop for TestDatabase {
 }
 
 /// Get database configuration from environment variables
-fn get_db_config() -> starter::config::AppConfig {
+fn get_db_config() -> starter::AppConfig {
     starter::AppConfig::load().expect("Failed to load config")
 }
 

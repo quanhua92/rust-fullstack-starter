@@ -780,6 +780,10 @@ export interface components {
 		};
 		/** @enum {string} */
 		AlertStatus: "active" | "resolved" | "silenced";
+		/** @description Standard API response wrapper
+		 *
+		 *     All successful API responses should use this structure to ensure
+		 *     consistency across the API surface. */
 		ApiResponse_Alert: {
 			data?: {
 				/** Format: date-time */
@@ -801,9 +805,15 @@ export interface components {
 				/** Format: date-time */
 				updated_at: string;
 			};
+			/** @description Optional message for additional context */
 			message?: string | null;
+			/** @description Whether the request was successful */
 			success: boolean;
 		};
+		/** @description Standard API response wrapper
+		 *
+		 *     All successful API responses should use this structure to ensure
+		 *     consistency across the API surface. */
 		ApiResponse_AuthUser: {
 			data?: {
 				email: string;
@@ -812,21 +822,39 @@ export interface components {
 				role: components["schemas"]["UserRole"];
 				username: string;
 			};
+			/** @description Optional message for additional context */
 			message?: string | null;
+			/** @description Whether the request was successful */
 			success: boolean;
 		};
+		/** @description Standard API response wrapper
+		 *
+		 *     All successful API responses should use this structure to ensure
+		 *     consistency across the API surface. */
 		ApiResponse_DetailedHealthResponse: {
+			/** @description Detailed health response with component breakdown */
 			data?: {
+				/** @description Individual component health checks */
 				checks: {
 					[key: string]: components["schemas"]["ComponentHealth"];
 				};
+				/** @description Overall status */
 				status: string;
-				/** Format: date-time */
+				/**
+				 * Format: date-time
+				 * @description Timestamp when the check was performed
+				 */
 				timestamp: string;
 			};
+			/** @description Optional message for additional context */
 			message?: string | null;
+			/** @description Whether the request was successful */
 			success: boolean;
 		};
+		/** @description Standard API response wrapper
+		 *
+		 *     All successful API responses should use this structure to ensure
+		 *     consistency across the API surface. */
 		ApiResponse_Event: {
 			data?: {
 				/** Format: date-time */
@@ -842,19 +870,39 @@ export interface components {
 				source: string;
 				tags: unknown;
 			};
+			/** @description Optional message for additional context */
 			message?: string | null;
+			/** @description Whether the request was successful */
 			success: boolean;
 		};
+		/** @description Standard API response wrapper
+		 *
+		 *     All successful API responses should use this structure to ensure
+		 *     consistency across the API surface. */
 		ApiResponse_HealthResponse: {
+			/** @description Basic health response for simple health checks */
 			data?: {
+				/** @description API documentation links */
+				documentation: components["schemas"]["DocumentationLinks"];
+				/** @description Overall status */
 				status: string;
-				/** Format: double */
+				/**
+				 * Format: double
+				 * @description Uptime in seconds
+				 */
 				uptime: number;
+				/** @description Application version */
 				version: string;
 			};
+			/** @description Optional message for additional context */
 			message?: string | null;
+			/** @description Whether the request was successful */
 			success: boolean;
 		};
+		/** @description Standard API response wrapper
+		 *
+		 *     All successful API responses should use this structure to ensure
+		 *     consistency across the API surface. */
 		ApiResponse_Incident: {
 			data?: {
 				/** Format: uuid */
@@ -877,9 +925,15 @@ export interface components {
 				/** Format: date-time */
 				updated_at: string;
 			};
+			/** @description Optional message for additional context */
 			message?: string | null;
+			/** @description Whether the request was successful */
 			success: boolean;
 		};
+		/** @description Standard API response wrapper
+		 *
+		 *     All successful API responses should use this structure to ensure
+		 *     consistency across the API surface. */
 		ApiResponse_IncidentTimeline: {
 			data?: {
 				/** Format: date-time */
@@ -892,9 +946,15 @@ export interface components {
 				/** Format: int64 */
 				total_count: number;
 			};
+			/** @description Optional message for additional context */
 			message?: string | null;
+			/** @description Whether the request was successful */
 			success: boolean;
 		};
+		/** @description Standard API response wrapper
+		 *
+		 *     All successful API responses should use this structure to ensure
+		 *     consistency across the API surface. */
 		ApiResponse_LoginResponse: {
 			data?: {
 				/** Format: date-time */
@@ -902,9 +962,15 @@ export interface components {
 				session_token: string;
 				user: components["schemas"]["UserProfile"];
 			};
+			/** @description Optional message for additional context */
 			message?: string | null;
+			/** @description Whether the request was successful */
 			success: boolean;
 		};
+		/** @description Standard API response wrapper
+		 *
+		 *     All successful API responses should use this structure to ensure
+		 *     consistency across the API surface. */
 		ApiResponse_Metric: {
 			data?: {
 				/** Format: date-time */
@@ -919,9 +985,15 @@ export interface components {
 				/** Format: double */
 				value: number;
 			};
+			/** @description Optional message for additional context */
 			message?: string | null;
+			/** @description Whether the request was successful */
 			success: boolean;
 		};
+		/** @description Standard API response wrapper
+		 *
+		 *     All successful API responses should use this structure to ensure
+		 *     consistency across the API surface. */
 		ApiResponse_MonitoringStats: {
 			data?: {
 				/** Format: int64 */
@@ -937,9 +1009,15 @@ export interface components {
 				/** Format: int64 */
 				total_metrics: number;
 			};
+			/** @description Optional message for additional context */
 			message?: string | null;
+			/** @description Whether the request was successful */
 			success: boolean;
 		};
+		/** @description Standard API response wrapper
+		 *
+		 *     All successful API responses should use this structure to ensure
+		 *     consistency across the API surface. */
 		ApiResponse_RefreshResponse: {
 			data?: {
 				/** Format: date-time */
@@ -947,14 +1025,26 @@ export interface components {
 				/** Format: date-time */
 				refreshed_at: string;
 			};
+			/** @description Optional message for additional context */
 			message?: string | null;
+			/** @description Whether the request was successful */
 			success: boolean;
 		};
+		/** @description Standard API response wrapper
+		 *
+		 *     All successful API responses should use this structure to ensure
+		 *     consistency across the API surface. */
 		ApiResponse_String: {
 			data?: string;
+			/** @description Optional message for additional context */
 			message?: string | null;
+			/** @description Whether the request was successful */
 			success: boolean;
 		};
+		/** @description Standard API response wrapper
+		 *
+		 *     All successful API responses should use this structure to ensure
+		 *     consistency across the API surface. */
 		ApiResponse_TaskResponse: {
 			data?: {
 				/** Format: date-time */
@@ -983,9 +1073,15 @@ export interface components {
 				/** Format: date-time */
 				updated_at: string;
 			};
+			/** @description Optional message for additional context */
 			message?: string | null;
+			/** @description Whether the request was successful */
 			success: boolean;
 		};
+		/** @description Standard API response wrapper
+		 *
+		 *     All successful API responses should use this structure to ensure
+		 *     consistency across the API surface. */
 		ApiResponse_TaskStats: {
 			data?: {
 				/** Format: int64 */
@@ -1003,9 +1099,15 @@ export interface components {
 				/** Format: int64 */
 				total: number;
 			};
+			/** @description Optional message for additional context */
 			message?: string | null;
+			/** @description Whether the request was successful */
 			success: boolean;
 		};
+		/** @description Standard API response wrapper
+		 *
+		 *     All successful API responses should use this structure to ensure
+		 *     consistency across the API surface. */
 		ApiResponse_TaskTypeResponse: {
 			data?: {
 				/** Format: date-time */
@@ -1016,9 +1118,15 @@ export interface components {
 				/** Format: date-time */
 				updated_at: string;
 			};
+			/** @description Optional message for additional context */
 			message?: string | null;
+			/** @description Whether the request was successful */
 			success: boolean;
 		};
+		/** @description Standard API response wrapper
+		 *
+		 *     All successful API responses should use this structure to ensure
+		 *     consistency across the API surface. */
 		ApiResponse_UserProfile: {
 			data?: {
 				/** Format: date-time */
@@ -1033,9 +1141,15 @@ export interface components {
 				role: components["schemas"]["UserRole"];
 				username: string;
 			};
+			/** @description Optional message for additional context */
 			message?: string | null;
+			/** @description Whether the request was successful */
 			success: boolean;
 		};
+		/** @description Standard API response wrapper
+		 *
+		 *     All successful API responses should use this structure to ensure
+		 *     consistency across the API surface. */
 		ApiResponse_UserStats: {
 			data?: {
 				/** Format: int64 */
@@ -1053,14 +1167,26 @@ export interface components {
 				/** Format: int64 */
 				total_users: number;
 			};
+			/** @description Optional message for additional context */
 			message?: string | null;
+			/** @description Whether the request was successful */
 			success: boolean;
 		};
+		/** @description Standard API response wrapper
+		 *
+		 *     All successful API responses should use this structure to ensure
+		 *     consistency across the API surface. */
 		ApiResponse_Value: {
 			data?: unknown;
+			/** @description Optional message for additional context */
 			message?: string | null;
+			/** @description Whether the request was successful */
 			success: boolean;
 		};
+		/** @description Standard API response wrapper
+		 *
+		 *     All successful API responses should use this structure to ensure
+		 *     consistency across the API surface. */
 		ApiResponse_Vec_Alert: {
 			data?: {
 				/** Format: date-time */
@@ -1082,9 +1208,15 @@ export interface components {
 				/** Format: date-time */
 				updated_at: string;
 			}[];
+			/** @description Optional message for additional context */
 			message?: string | null;
+			/** @description Whether the request was successful */
 			success: boolean;
 		};
+		/** @description Standard API response wrapper
+		 *
+		 *     All successful API responses should use this structure to ensure
+		 *     consistency across the API surface. */
 		ApiResponse_Vec_Event: {
 			data?: {
 				/** Format: date-time */
@@ -1100,9 +1232,15 @@ export interface components {
 				source: string;
 				tags: unknown;
 			}[];
+			/** @description Optional message for additional context */
 			message?: string | null;
+			/** @description Whether the request was successful */
 			success: boolean;
 		};
+		/** @description Standard API response wrapper
+		 *
+		 *     All successful API responses should use this structure to ensure
+		 *     consistency across the API surface. */
 		ApiResponse_Vec_Incident: {
 			data?: {
 				/** Format: uuid */
@@ -1125,9 +1263,15 @@ export interface components {
 				/** Format: date-time */
 				updated_at: string;
 			}[];
+			/** @description Optional message for additional context */
 			message?: string | null;
+			/** @description Whether the request was successful */
 			success: boolean;
 		};
+		/** @description Standard API response wrapper
+		 *
+		 *     All successful API responses should use this structure to ensure
+		 *     consistency across the API surface. */
 		ApiResponse_Vec_Metric: {
 			data?: {
 				/** Format: date-time */
@@ -1142,9 +1286,15 @@ export interface components {
 				/** Format: double */
 				value: number;
 			}[];
+			/** @description Optional message for additional context */
 			message?: string | null;
+			/** @description Whether the request was successful */
 			success: boolean;
 		};
+		/** @description Standard API response wrapper
+		 *
+		 *     All successful API responses should use this structure to ensure
+		 *     consistency across the API surface. */
 		ApiResponse_Vec_TaskResponse: {
 			data?: {
 				/** Format: date-time */
@@ -1173,9 +1323,15 @@ export interface components {
 				/** Format: date-time */
 				updated_at: string;
 			}[];
+			/** @description Optional message for additional context */
 			message?: string | null;
+			/** @description Whether the request was successful */
 			success: boolean;
 		};
+		/** @description Standard API response wrapper
+		 *
+		 *     All successful API responses should use this structure to ensure
+		 *     consistency across the API surface. */
 		ApiResponse_Vec_TaskTypeResponse: {
 			data?: {
 				/** Format: date-time */
@@ -1186,9 +1342,15 @@ export interface components {
 				/** Format: date-time */
 				updated_at: string;
 			}[];
+			/** @description Optional message for additional context */
 			message?: string | null;
+			/** @description Whether the request was successful */
 			success: boolean;
 		};
+		/** @description Standard API response wrapper
+		 *
+		 *     All successful API responses should use this structure to ensure
+		 *     consistency across the API surface. */
 		ApiResponse_Vec_UserProfile: {
 			data?: {
 				/** Format: date-time */
@@ -1203,7 +1365,9 @@ export interface components {
 				role: components["schemas"]["UserRole"];
 				username: string;
 			}[];
+			/** @description Optional message for additional context */
 			message?: string | null;
+			/** @description Whether the request was successful */
 			success: boolean;
 		};
 		AuthUser: {
@@ -1217,9 +1381,13 @@ export interface components {
 			current_password: string;
 			new_password: string;
 		};
+		/** @description Health status of an individual component */
 		ComponentHealth: {
+			/** @description Optional additional details */
 			details?: unknown;
+			/** @description Optional human-readable message */
 			message?: string | null;
+			/** @description Component status (healthy/unhealthy) */
 			status: string;
 		};
 		CreateAlertRequest: {
@@ -1311,19 +1479,37 @@ export interface components {
 			hard_delete?: boolean | null;
 			reason?: string | null;
 		};
+		/** @description Detailed health response with component breakdown */
 		DetailedHealthResponse: {
+			/** @description Individual component health checks */
 			checks: {
 				[key: string]: components["schemas"]["ComponentHealth"];
 			};
+			/** @description Overall status */
 			status: string;
-			/** Format: date-time */
+			/**
+			 * Format: date-time
+			 * @description Timestamp when the check was performed
+			 */
 			timestamp: string;
 		};
+		/** @description Documentation links for API reference */
+		DocumentationLinks: {
+			/** @description API documentation UI URL */
+			api_docs: string;
+			/** @description OpenAPI JSON specification URL */
+			openapi_json: string;
+		};
+		/** @description Error detail information */
 		ErrorDetail: {
+			/** @description Error code for programmatic handling */
 			code: string;
+			/** @description Human-readable error message */
 			message: string;
 		};
+		/** @description Standard error response structure */
 		ErrorResponse: {
+			/** @description Error details */
 			error: components["schemas"]["ErrorDetail"];
 		};
 		Event: {
@@ -1358,10 +1544,18 @@ export interface components {
 		};
 		/** @enum {string} */
 		EventType: "log" | "metric" | "trace" | "alert";
+		/** @description Basic health response for simple health checks */
 		HealthResponse: {
+			/** @description API documentation links */
+			documentation: components["schemas"]["DocumentationLinks"];
+			/** @description Overall status */
 			status: string;
-			/** Format: double */
+			/**
+			 * Format: double
+			 * @description Uptime in seconds
+			 */
 			uptime: number;
+			/** @description Application version */
 			version: string;
 		};
 		Incident: {

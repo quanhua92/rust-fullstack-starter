@@ -1,7 +1,7 @@
 use once_cell::sync::Lazy;
 use reqwest::redirect::Policy;
 use sqlx::PgPool;
-use starter::{AppConfig, Database, server};
+use starter::{AppConfig, Database, core::server};
 use std::net::SocketAddr;
 use tokio::net::TcpListener;
 
@@ -59,7 +59,7 @@ pub async fn spawn_app() -> TestApp {
     };
 
     // Build application with state
-    let state = starter::types::AppState {
+    let state = starter::AppState {
         config: config.clone(),
         database,
         start_time: std::time::Instant::now(),

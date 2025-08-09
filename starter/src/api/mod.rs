@@ -1,8 +1,11 @@
-pub mod health;
-pub mod types;
+//! API layer types and utilities
+//!
+//! This module contains types and utilities specific to the HTTP API layer,
+//! including response formats, pagination, and request handling utilities.
 
-// Re-export only public-facing types to avoid namespace pollution
-pub use health::{ComponentHealth, DetailedHealthResponse, HealthResponse, HealthStatus};
-pub use types::{
-    ApiResponse, ErrorDetail, ErrorResponse, PaginatedResponse, PaginationInfo, PaginationParams,
-};
+pub mod pagination;
+pub mod response;
+
+// Re-export commonly used API types
+pub use pagination::{PaginatedResponse, PaginationInfo, PaginationParams};
+pub use response::{ApiResponse, ErrorDetail, ErrorResponse};

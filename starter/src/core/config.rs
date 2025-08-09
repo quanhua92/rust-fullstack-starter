@@ -1,5 +1,5 @@
-use crate::error::Error;
-use crate::types::Result;
+use crate::core::error::Error;
+use crate::core::types::Result;
 use secrecy::SecretString;
 use serde::{Deserialize, Deserializer, Serialize};
 use std::time::Duration;

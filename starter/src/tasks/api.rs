@@ -7,14 +7,14 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use crate::{
+    AppState, Error,
+    api::{ApiResponse, ErrorResponse},
     auth::AuthUser,
-    error::Error,
     rbac::services as rbac_services,
     tasks::{
         processor::TaskProcessor,
         types::{CreateTaskRequest, TaskFilter, TaskPriority, TaskResponse, TaskStats, TaskStatus},
     },
-    types::{ApiResponse, AppState, ErrorResponse},
 };
 
 #[derive(Debug, Serialize, Deserialize, utoipa::ToSchema)]

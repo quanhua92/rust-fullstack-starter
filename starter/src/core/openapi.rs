@@ -18,11 +18,14 @@ use crate::tasks::api::{
     CreateTaskApiRequest, RegisterTaskTypeRequest, TaskQueryParams, TaskTypeResponse,
 };
 use crate::tasks::types::{CreateTaskRequest, TaskPriority, TaskResponse, TaskStats, TaskStatus};
-use crate::types::{DetailedHealthResponse, ErrorResponse, HealthResponse};
 use crate::users::models::{
     ChangePasswordRequest, CreateUserRequest, DeleteAccountRequest, DeleteUserRequest,
     RecentRegistrations, ResetPasswordRequest, UpdateProfileRequest, UpdateUserProfileRequest,
     UpdateUserRoleRequest, UpdateUserStatusRequest, User, UserProfile, UserRoleStats, UserStats,
+};
+use crate::{
+    api::ErrorResponse,
+    health::{DetailedHealthResponse, HealthResponse},
 };
 
 #[derive(OpenApi)]
@@ -43,11 +46,11 @@ use crate::users::models::{
     ),
     paths(
         // Health endpoints
-        crate::api::health::health,
-        crate::api::health::detailed_health,
-        crate::api::health::health_live,
-        crate::api::health::health_ready,
-        crate::api::health::health_startup,
+        crate::health::handlers::health,
+        crate::health::handlers::detailed_health,
+        crate::health::handlers::health_live,
+        crate::health::handlers::health_ready,
+        crate::health::handlers::health_startup,
 
         // Auth endpoints
         crate::auth::api::register,

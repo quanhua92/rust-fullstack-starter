@@ -17,11 +17,7 @@ run_cmd "Building project" cargo build
 print_status "step" "Exporting OpenAPI specification..."
 run_cmd "Exporting to docs/openapi.json" cargo run -- export-openapi
 
-# Also update the legacy location for backwards compatibility
-if [[ -f "docs/openapi.json" ]]; then
-    cp docs/openapi.json starter/docs/openapi.json
-    print_status "success" "Updated starter/docs/openapi.json (legacy location)"
-fi
+# Legacy location is no longer maintained - removed to prevent duplication
 
 print_status "step" "Regenerating TypeScript API types..."
 if [[ -d "web" ]]; then
@@ -66,7 +62,6 @@ fi
 print_status "success" "OpenAPI specification preparation complete"
 print_status "info" "Files updated:"
 print_status "info" "  - docs/openapi.json"
-print_status "info" "  - starter/docs/openapi.json"
 if [[ -f "web/src/types/api.ts" ]]; then
     print_status "info" "  - web/src/types/api.ts"
 fi

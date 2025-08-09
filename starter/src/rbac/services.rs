@@ -1,5 +1,5 @@
+use crate::Error;
 use crate::auth::AuthUser;
-use crate::error::Error;
 use crate::rbac::models::{Permission, Resource, UserRole};
 use uuid::Uuid;
 
