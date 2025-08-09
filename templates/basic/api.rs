@@ -14,7 +14,8 @@ use crate::{
     auth::AuthUser,
     rbac::services as rbac_services,
     __MODULE_NAME_PLURAL__::{models::*, services::*},
-    types::{ApiResponse, AppState, Result, ErrorResponse},
+    AppState, Error, Result,
+    api::{ApiResponse, ErrorResponse},
 };
 #[allow(unused_imports)] // These are used in the routes function but compiler can't detect it
 use axum::{
@@ -124,7 +125,7 @@ pub async fn list___MODULE_NAME_PLURAL__(
         .pool
         .acquire()
         .await
-        .map_err(crate::error::Error::from_sqlx)?;
+        .map_err(Error::from_sqlx)?;
 
     let __MODULE_NAME_PLURAL__ = list___MODULE_NAME_PLURAL___service(
         conn.as_mut(),
@@ -171,7 +172,7 @@ pub async fn get___MODULE_NAME__(
         .pool
         .acquire()
         .await
-        .map_err(crate::error::Error::from_sqlx)?;
+        .map_err(Error::from_sqlx)?;
 
     let __MODULE_NAME__ = get___MODULE_NAME___service(conn.as_mut(), id).await?;
     Ok(Json(ApiResponse::success(__MODULE_NAME__)))
@@ -207,7 +208,7 @@ pub async fn create___MODULE_NAME__(
         .pool
         .acquire()
         .await
-        .map_err(crate::error::Error::from_sqlx)?;
+        .map_err(Error::from_sqlx)?;
 
     let __MODULE_NAME__ = create___MODULE_NAME___service(conn.as_mut(), request, auth_user.id).await?;
     Ok(Json(ApiResponse::success(__MODULE_NAME__)))
@@ -245,7 +246,7 @@ pub async fn update___MODULE_NAME__(
         .pool
         .begin()
         .await
-        .map_err(crate::error::Error::from_sqlx)?;
+        .map_err(Error::from_sqlx)?;
 
     // First get the item to check ownership
     let existing_item = get___MODULE_NAME___service(&mut tx, id).await?;
@@ -257,7 +258,7 @@ pub async fn update___MODULE_NAME__(
     
     tx.commit()
         .await
-        .map_err(crate::error::Error::from_sqlx)?;
+        .map_err(Error::from_sqlx)?;
     Ok(Json(ApiResponse::success(__MODULE_NAME__)))
 }
 
@@ -290,7 +291,7 @@ pub async fn delete___MODULE_NAME__(
         .pool
         .begin()
         .await
-        .map_err(crate::error::Error::from_sqlx)?;
+        .map_err(Error::from_sqlx)?;
 
     // First get the item to check ownership
     let existing_item = get___MODULE_NAME___service(&mut tx, id).await?;
@@ -302,7 +303,7 @@ pub async fn delete___MODULE_NAME__(
     
     tx.commit()
         .await
-        .map_err(crate::error::Error::from_sqlx)?;
+        .map_err(Error::from_sqlx)?;
     Ok(Json(ApiResponse::success(())))
 }
 

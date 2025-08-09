@@ -24,7 +24,8 @@ use crate::{
     auth::AuthUser,
     rbac::services as rbac_services,
     __MODULE_NAME_PLURAL__::{models::*, services::*},
-    types::{ApiResponse, AppState, Result, ErrorResponse},
+    AppState, Error, Result,
+    api::{ApiResponse, ErrorResponse},
 };
 
 // =============================================================================
@@ -151,7 +152,7 @@ pub async fn list___MODULE_NAME_PLURAL__(
         Some(
             date_str
                 .parse()
-                .map_err(|_| crate::error::Error::validation("created_after", "Invalid date format"))?,
+                .map_err(|_| Error::validation("created_after", "Invalid date format"))?,
         )
     } else {
         None
@@ -161,7 +162,7 @@ pub async fn list___MODULE_NAME_PLURAL__(
         Some(
             date_str
                 .parse()
-                .map_err(|_| crate::error::Error::validation("created_before", "Invalid date format"))?,
+                .map_err(|_| Error::validation("created_before", "Invalid date format"))?,
         )
     } else {
         None
@@ -209,7 +210,7 @@ pub async fn list___MODULE_NAME_PLURAL__(
         .pool
         .acquire()
         .await
-        .map_err(crate::error::Error::from_sqlx)?;
+        .map_err(Error::from_sqlx)?;
 
     let response = list___MODULE_NAME_PLURAL___service(conn.as_mut(), request).await?;
     Ok(Json(ApiResponse::success(response)))
@@ -241,7 +242,7 @@ pub async fn get___MODULE_NAME__(
         .pool
         .acquire()
         .await
-        .map_err(crate::error::Error::from_sqlx)?;
+        .map_err(Error::from_sqlx)?;
 
     let __MODULE_NAME__ = get___MODULE_NAME___service(conn.as_mut(), id).await?;
     Ok(Json(ApiResponse::success(__MODULE_NAME__)))
@@ -269,7 +270,7 @@ pub async fn create___MODULE_NAME__(
         .pool
         .acquire()
         .await
-        .map_err(crate::error::Error::from_sqlx)?;
+        .map_err(Error::from_sqlx)?;
 
     let __MODULE_NAME__ = create___MODULE_NAME___service(conn.as_mut(), request, auth_user.id).await?;
     Ok(Json(ApiResponse::success(__MODULE_NAME__)))
@@ -303,7 +304,7 @@ pub async fn update___MODULE_NAME__(
         .pool
         .begin()
         .await
-        .map_err(crate::error::Error::from_sqlx)?;
+        .map_err(Error::from_sqlx)?;
 
     // First get the item to check ownership
     let existing_item = get___MODULE_NAME___service(&mut tx, id).await?;
@@ -315,7 +316,7 @@ pub async fn update___MODULE_NAME__(
     
     tx.commit()
         .await
-        .map_err(crate::error::Error::from_sqlx)?;
+        .map_err(Error::from_sqlx)?;
     Ok(Json(ApiResponse::success(__MODULE_NAME__)))
 }
 
@@ -344,7 +345,7 @@ pub async fn delete___MODULE_NAME__(
         .pool
         .begin()
         .await
-        .map_err(crate::error::Error::from_sqlx)?;
+        .map_err(Error::from_sqlx)?;
 
     // First get the item to check ownership
     let existing_item = get___MODULE_NAME___service(&mut tx, id).await?;
@@ -356,7 +357,7 @@ pub async fn delete___MODULE_NAME__(
     
     tx.commit()
         .await
-        .map_err(crate::error::Error::from_sqlx)?;
+        .map_err(Error::from_sqlx)?;
     Ok(Json(ApiResponse::success(())))
 }
 
@@ -385,24 +386,24 @@ pub async fn bulk_create___MODULE_NAME_PLURAL__(
         .pool
         .acquire()
         .await
-        .map_err(crate::error::Error::from_sqlx)?;
+        .map_err(Error::from_sqlx)?;
     
     let mut tx = conn
         .begin()
         .await
-        .map_err(crate::error::Error::from_sqlx)?;
+        .map_err(Error::from_sqlx)?;
     
     let skip_errors = request.skip_errors.unwrap_or(false);
     let response = bulk_create___MODULE_NAME_PLURAL___service(&mut tx, request, auth_user.id).await?;
     
     // If there are errors and skip_errors is false, return a 400 error
     if !skip_errors && !response.errors.is_empty() {
-        return Err(crate::error::Error::validation("bulk_create", &format!("Bulk operation failed with {} errors", response.errors.len())));
+        return Err(Error::validation("bulk_create", &format!("Bulk operation failed with {} errors", response.errors.len())));
     }
     
     tx.commit()
         .await
-        .map_err(crate::error::Error::from_sqlx)?;
+        .map_err(Error::from_sqlx)?;
     
     Ok(Json(ApiResponse::success(response)))
 }
@@ -432,24 +433,24 @@ pub async fn bulk_update___MODULE_NAME_PLURAL__(
         .pool
         .acquire()
         .await
-        .map_err(crate::error::Error::from_sqlx)?;
+        .map_err(Error::from_sqlx)?;
     
     let mut tx = conn
         .begin()
         .await
-        .map_err(crate::error::Error::from_sqlx)?;
+        .map_err(Error::from_sqlx)?;
     
     let skip_errors = request.skip_errors.unwrap_or(false);
     let response = bulk_update___MODULE_NAME_PLURAL___service(&mut tx, request).await?;
     
     // If there are errors and skip_errors is false, return a 400 error
     if !skip_errors && !response.errors.is_empty() {
-        return Err(crate::error::Error::validation("bulk_update", &format!("Bulk operation failed with {} errors", response.errors.len())));
+        return Err(Error::validation("bulk_update", &format!("Bulk operation failed with {} errors", response.errors.len())));
     }
     
     tx.commit()
         .await
-        .map_err(crate::error::Error::from_sqlx)?;
+        .map_err(Error::from_sqlx)?;
     
     Ok(Json(ApiResponse::success(response)))
 }
@@ -480,24 +481,24 @@ pub async fn bulk_delete___MODULE_NAME_PLURAL__(
         .pool
         .acquire()
         .await
-        .map_err(crate::error::Error::from_sqlx)?;
+        .map_err(Error::from_sqlx)?;
     
     let mut tx = conn
         .begin()
         .await
-        .map_err(crate::error::Error::from_sqlx)?;
+        .map_err(Error::from_sqlx)?;
     
     let skip_errors = request.skip_errors.unwrap_or(false);
     let response = bulk_delete___MODULE_NAME_PLURAL___service(&mut tx, request).await?;
     
     // If there are errors and skip_errors is false, return a 400 error
     if !skip_errors && !response.errors.is_empty() {
-        return Err(crate::error::Error::validation("bulk_delete", &format!("Bulk operation failed with {} errors", response.errors.len())));
+        return Err(Error::validation("bulk_delete", &format!("Bulk operation failed with {} errors", response.errors.len())));
     }
     
     tx.commit()
         .await
-        .map_err(crate::error::Error::from_sqlx)?;
+        .map_err(Error::from_sqlx)?;
     
     Ok(Json(ApiResponse::success(response)))
 }
@@ -507,10 +508,10 @@ fn parse_cursor(cursor: &str) -> Result<i64> {
     use base64::{Engine as _, engine::general_purpose::STANDARD as BASE64};
     let decoded = BASE64
         .decode(cursor)
-        .map_err(|_| crate::error::Error::validation("cursor", "Invalid cursor format"))?;
+        .map_err(|_| Error::validation("cursor", "Invalid cursor format"))?;
     let cursor_str = String::from_utf8(decoded)
-        .map_err(|_| crate::error::Error::validation("cursor", "Invalid cursor encoding"))?;
+        .map_err(|_| Error::validation("cursor", "Invalid cursor encoding"))?;
     cursor_str
         .parse::<i64>()
-        .map_err(|_| crate::error::Error::validation("cursor", "Invalid cursor value"))
+        .map_err(|_| Error::validation("cursor", "Invalid cursor value"))
 }

@@ -41,7 +41,7 @@ async fn test___MODULE_NAME___crud_workflow() {
 
     assert_status(&response, StatusCode::OK);
     let list: serde_json::Value = response.json().await.unwrap();
-    assert!(list["data"].as_array().unwrap().len() >= 1);
+    assert!(!list["data"].as_array().unwrap().is_empty());
 
     // Test UPDATE
     let update_data = json!({
@@ -112,12 +112,12 @@ async fn test___MODULE_NAME___access_control() {
     let app = spawn_app().await;
 
     // Test without authentication
-    let response = app.client.get(&format!("{}/api/v1/__MODULE_NAME_PLURAL__", &app.address)).send().await.unwrap();
+    let response = app.client.get(&format!("{}/api/v1/__MODULE_NAME_PLURAL__", app.address)).send().await.unwrap();
     assert_status(&response, StatusCode::UNAUTHORIZED);
 
     // Test with invalid token
     let response = app.client
-        .get(&format!("{}/api/v1/__MODULE_NAME_PLURAL__", &app.address))
+        .get(&format!("{}/api/v1/__MODULE_NAME_PLURAL__", app.address))
         .header("Authorization", "Bearer invalid_token")
         .send()
         .await
