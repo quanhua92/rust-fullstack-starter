@@ -1,23 +1,19 @@
 use crate::{
     auth::{
-        api as auth_api,
+        api::{auth_public_routes, auth_routes},
         middleware::{admin_middleware, auth_middleware},
     },
     core::{
         config::AppConfig, database::Database, error::Error, openapi, state::AppState,
         types::Result,
     },
-    health,
-    monitoring::api as monitoring_api,
+    health::{detailed_health, handlers::health_routes},
+    monitoring::api::{monitoring_moderator_routes, monitoring_public_routes, monitoring_routes},
     rbac::middleware::require_moderator_role,
-    tasks::api as tasks_api,
-    users::api as users_api,
+    tasks::api::{tasks_public_routes, tasks_routes},
+    users::api::{admin_users_routes, users_admin_routes, users_moderator_routes, users_routes},
 };
-use axum::{
-    Json, Router, middleware,
-    response::IntoResponse,
-    routing::{delete, get, post, put},
-};
+use axum::{Json, Router, middleware, response::IntoResponse, routing::get};
 use std::path::Path;
 use std::time::Instant;
 use tokio::net::TcpListener;
@@ -108,70 +104,17 @@ async fn api_docs() -> impl IntoResponse {
 pub fn create_router(state: AppState) -> Router {
     // Public routes (no authentication required)
     let public_routes = Router::new()
-        .route("/health", get(health::health))
-        .route("/health/detailed", get(health::detailed_health))
-        .route("/health/live", get(health::health_live))
-        .route("/health/ready", get(health::health_ready))
-        .route("/health/startup", get(health::health_startup))
-        .route("/auth/login", post(auth_api::login))
-        .route("/auth/register", post(auth_api::register))
-        // Task type registration (public for workers)
-        .route("/tasks/types", post(tasks_api::register_task_type))
-        .route("/tasks/types", get(tasks_api::list_task_types))
-        // Prometheus metrics endpoint (public for scraping)
-        .route(
-            "/monitoring/metrics/prometheus",
-            get(monitoring_api::get_prometheus_metrics),
-        );
+        .nest("/health", health_routes())
+        .nest("/auth", auth_public_routes())
+        .nest("/tasks", tasks_public_routes())
+        .nest("/monitoring", monitoring_public_routes());
 
     // Protected routes (authentication required)
     let protected_routes = Router::new()
-        .route("/auth/logout", post(auth_api::logout))
-        .route("/auth/logout-all", post(auth_api::logout_all))
-        .route("/auth/me", get(auth_api::me))
-        .route("/auth/refresh", post(auth_api::refresh))
-        // User management routes
-        .route("/users/{id}", get(users_api::get_user_by_id))
-        .route("/users/me/profile", put(users_api::update_own_profile))
-        .route("/users/me/password", put(users_api::change_own_password))
-        .route("/users/me", delete(users_api::delete_own_account))
-        // Task management routes
-        .route("/tasks", post(tasks_api::create_task))
-        .route("/tasks", get(tasks_api::list_tasks))
-        .route("/tasks/stats", get(tasks_api::get_stats))
-        .route("/tasks/dead-letter", get(tasks_api::get_dead_letter_queue))
-        // Individual task routes
-        .route("/tasks/{id}", get(tasks_api::get_task))
-        .route("/tasks/{id}", delete(tasks_api::delete_task))
-        .route("/tasks/{id}/cancel", post(tasks_api::cancel_task))
-        .route("/tasks/{id}/retry", post(tasks_api::retry_task))
-        // Monitoring routes (basic access)
-        .route("/monitoring/events", post(monitoring_api::create_event))
-        .route("/monitoring/events", get(monitoring_api::get_events))
-        .route(
-            "/monitoring/events/{id}",
-            get(monitoring_api::get_event_by_id),
-        )
-        .route("/monitoring/metrics", post(monitoring_api::create_metric))
-        .route("/monitoring/metrics", get(monitoring_api::get_metrics))
-        .route("/monitoring/alerts", get(monitoring_api::get_alerts))
-        .route(
-            "/monitoring/incidents",
-            post(monitoring_api::create_incident),
-        )
-        .route("/monitoring/incidents", get(monitoring_api::get_incidents))
-        .route(
-            "/monitoring/incidents/{id}",
-            get(monitoring_api::get_incident_by_id),
-        )
-        .route(
-            "/monitoring/incidents/{id}",
-            put(monitoring_api::update_incident),
-        )
-        .route(
-            "/monitoring/incidents/{id}/timeline",
-            get(monitoring_api::get_incident_timeline),
-        )
+        .nest("/auth", auth_routes())
+        .nest("/users", users_routes())
+        .nest("/tasks", tasks_routes())
+        .nest("/monitoring", monitoring_routes())
         .layer(middleware::from_fn_with_state(
             state.clone(),
             auth_middleware,
@@ -179,18 +122,8 @@ pub fn create_router(state: AppState) -> Router {
 
     // Moderator routes (moderator role or higher required)
     let moderator_routes = Router::new()
-        .route("/users", get(users_api::list_users))
-        .route("/users/{id}/status", put(users_api::update_user_status))
-        .route(
-            "/users/{id}/reset-password",
-            post(users_api::reset_user_password),
-        )
-        // Monitoring routes requiring moderator access
-        .route("/monitoring/alerts", post(monitoring_api::create_alert))
-        .route(
-            "/monitoring/stats",
-            get(monitoring_api::get_monitoring_stats),
-        )
+        .nest("/users", users_moderator_routes())
+        .nest("/monitoring", monitoring_moderator_routes())
         .layer(middleware::from_fn(require_moderator_role))
         .layer(middleware::from_fn_with_state(
             state.clone(),
@@ -199,12 +132,9 @@ pub fn create_router(state: AppState) -> Router {
 
     // Admin routes (admin role required)
     let admin_routes = Router::new()
-        .route("/admin/health", get(health::detailed_health))
-        .route("/admin/users/stats", get(users_api::get_user_stats))
-        .route("/users", post(users_api::create_user))
-        .route("/users/{id}/profile", put(users_api::update_user_profile))
-        .route("/users/{id}/role", put(users_api::update_user_role))
-        .route("/users/{id}", delete(users_api::delete_user))
+        .nest("/users", users_admin_routes())
+        .nest("/admin/users", admin_users_routes())
+        .route("/admin/health", get(detailed_health))
         .layer(middleware::from_fn(admin_middleware))
         .layer(middleware::from_fn_with_state(
             state.clone(),

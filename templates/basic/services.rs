@@ -1,6 +1,6 @@
 //! __MODULE_STRUCT__ business logic and database operations
 
-use crate::{types::{DbConn, Result}, error::Error};
+use crate::{DbConn, Result, Error};
 use super::models::*;
 use uuid::Uuid;
 
@@ -107,10 +107,10 @@ pub async fn update___MODULE_NAME___service(
     let mut __MODULE_NAME__ = get___MODULE_NAME___service(conn, id).await?;
 
     // Validate request
-    if let Some(ref name) = request.name {
-        if name.trim().is_empty() {
-            return Err(Error::validation("name", "Name cannot be empty"));
-        }
+    if let Some(ref name) = request.name
+        && name.trim().is_empty()
+    {
+        return Err(Error::validation("name", "Name cannot be empty"));
     }
 
     // Update the __MODULE_NAME__

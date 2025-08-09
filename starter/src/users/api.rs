@@ -13,8 +13,10 @@ use crate::{
     api::{ApiResponse, ErrorResponse},
 };
 use axum::{
+    Router,
     extract::{Extension, Path, Query, State},
     response::Json,
+    routing::{delete, get, post, put},
 };
 use serde::Deserialize;
 use uuid::Uuid;
@@ -567,4 +569,35 @@ pub async fn get_user_stats(
     let stats = user_services::get_user_stats(conn.as_mut()).await?;
 
     Ok(Json(ApiResponse::success(stats)))
+}
+
+/// Protected user routes (authentication required)
+pub fn users_routes() -> Router<AppState> {
+    Router::new()
+        .route("/{id}", get(get_user_by_id))
+        .route("/me/profile", get(get_profile).put(update_own_profile))
+        .route("/me/password", put(change_own_password))
+        .route("/me", delete(delete_own_account))
+}
+
+/// Moderator user routes (moderator role required)
+pub fn users_moderator_routes() -> Router<AppState> {
+    Router::new()
+        .route("/", get(list_users))
+        .route("/{id}/status", put(update_user_status))
+        .route("/{id}/reset-password", post(reset_user_password))
+}
+
+/// Admin user routes (admin role required)
+pub fn users_admin_routes() -> Router<AppState> {
+    Router::new()
+        .route("/", post(create_user))
+        .route("/{id}/profile", put(update_user_profile))
+        .route("/{id}/role", put(update_user_role))
+        .route("/{id}", delete(delete_user))
+}
+
+/// Admin user stats routes (for /admin/users path)
+pub fn admin_users_routes() -> Router<AppState> {
+    Router::new().route("/stats", get(get_user_stats))
 }

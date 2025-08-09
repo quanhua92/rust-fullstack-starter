@@ -24,21 +24,68 @@ use crate::{
     auth::AuthUser,
     rbac::services as rbac_services,
     __MODULE_NAME_PLURAL__::{models::*, services::*},
-    types::{ApiResponse, AppState, Result, ErrorResponse},
+    AppState, Error, Result,
+    api::{ApiResponse, ErrorResponse},
 };
 
-/// Create __MODULE_NAME_PLURAL__ router with all endpoints
+// =============================================================================
+// Route Organization
+// =============================================================================
+//
+// This production template provides multiple route functions organized by permission level:
+//
+// 1. __MODULE_NAME_PLURAL___routes() - Protected routes (authentication required)
+//    - Individual CRUD operations with ownership-based access control
+//    - Users can access their own items, moderators/admins can access all
+//
+// 2. __MODULE_NAME_PLURAL___moderator_routes() - Moderator routes (moderator+ role required)
+//    - Bulk operations for efficient data management
+//    - Requires moderator or admin role
+//
+// 3. Uncomment and implement as needed:
+//
+// __MODULE_NAME_PLURAL___public_routes() - Public routes (no authentication)
+//    - For endpoints like public listings, search, or read-only access
+//
+// __MODULE_NAME_PLURAL___admin_routes() - Admin routes
+//    - For system administration, advanced management features  
+//    - Requires admin role only
+
+/// Protected __MODULE_NAME__ routes (authentication required)
+/// Individual CRUD operations with ownership-based access control
 pub fn __MODULE_NAME_PLURAL___routes() -> Router<AppState> {
     Router::new()
-        .route("/", get(list___MODULE_NAME_PLURAL__))
-        .route("/", post(create___MODULE_NAME__))
-        .route("/bulk", post(bulk_create___MODULE_NAME_PLURAL__))
-        .route("/bulk", put(bulk_update___MODULE_NAME_PLURAL__))
-        .route("/bulk", delete(bulk_delete___MODULE_NAME_PLURAL__))
-        .route("/{id}", get(get___MODULE_NAME__))
-        .route("/{id}", put(update___MODULE_NAME__))
-        .route("/{id}", delete(delete___MODULE_NAME__))
+        .route("/", get(list___MODULE_NAME_PLURAL__).post(create___MODULE_NAME__))
+        .route("/{id}", get(get___MODULE_NAME__).put(update___MODULE_NAME__).delete(delete___MODULE_NAME__))
 }
+
+/// Moderator __MODULE_NAME__ routes (moderator+ role required)
+/// Bulk operations for efficient data management
+pub fn __MODULE_NAME_PLURAL___moderator_routes() -> Router<AppState> {
+    Router::new()
+        .route("/bulk", post(bulk_create___MODULE_NAME_PLURAL__)
+            .put(bulk_update___MODULE_NAME_PLURAL__)
+            .delete(bulk_delete___MODULE_NAME_PLURAL__))
+}
+
+// /// Public __MODULE_NAME__ routes (no authentication required)
+// /// Uncomment and implement if you need public endpoints
+// pub fn __MODULE_NAME_PLURAL___public_routes() -> Router<AppState> {
+//     Router::new()
+//         // Example: .route("/catalog", get(get_public___MODULE_NAME_PLURAL___catalog))
+//         // Example: .route("/search", get(search_public___MODULE_NAME_PLURAL__))
+//         // Example: .route("/featured", get(get_featured___MODULE_NAME_PLURAL__))
+// }
+
+// /// Admin __MODULE_NAME__ routes (admin role required)
+// /// Uncomment and implement if you need admin-only operations
+// pub fn __MODULE_NAME_PLURAL___admin_routes() -> Router<AppState> {
+//     Router::new()
+//         // Example: .route("/admin/stats", get(get___MODULE_NAME_PLURAL___admin_stats))
+//         // Example: .route("/admin/export", get(export___MODULE_NAME_PLURAL___data))
+//         // Example: .route("/admin/import", post(import___MODULE_NAME_PLURAL___data))
+//         // Example: .route("/admin/cleanup", post(cleanup_orphaned___MODULE_NAME_PLURAL__))
+// }
 
 /// Query parameters for listing __MODULE_NAME_PLURAL__
 #[derive(Debug, Deserialize, IntoParams, ToSchema)]
@@ -102,7 +149,7 @@ pub async fn list___MODULE_NAME_PLURAL__(
         Some(
             date_str
                 .parse()
-                .map_err(|_| crate::error::Error::validation("created_after", "Invalid date format"))?,
+                .map_err(|_| Error::validation("created_after", "Invalid date format"))?,
         )
     } else {
         None
@@ -112,7 +159,7 @@ pub async fn list___MODULE_NAME_PLURAL__(
         Some(
             date_str
                 .parse()
-                .map_err(|_| crate::error::Error::validation("created_before", "Invalid date format"))?,
+                .map_err(|_| Error::validation("created_before", "Invalid date format"))?,
         )
     } else {
         None
@@ -160,7 +207,7 @@ pub async fn list___MODULE_NAME_PLURAL__(
         .pool
         .acquire()
         .await
-        .map_err(crate::error::Error::from_sqlx)?;
+        .map_err(Error::from_sqlx)?;
 
     let response = list___MODULE_NAME_PLURAL___service(conn.as_mut(), request).await?;
     Ok(Json(ApiResponse::success(response)))
@@ -192,7 +239,7 @@ pub async fn get___MODULE_NAME__(
         .pool
         .acquire()
         .await
-        .map_err(crate::error::Error::from_sqlx)?;
+        .map_err(Error::from_sqlx)?;
 
     let __MODULE_NAME__ = get___MODULE_NAME___service(conn.as_mut(), id).await?;
     Ok(Json(ApiResponse::success(__MODULE_NAME__)))
@@ -220,7 +267,7 @@ pub async fn create___MODULE_NAME__(
         .pool
         .acquire()
         .await
-        .map_err(crate::error::Error::from_sqlx)?;
+        .map_err(Error::from_sqlx)?;
 
     let __MODULE_NAME__ = create___MODULE_NAME___service(conn.as_mut(), request, auth_user.id).await?;
     Ok(Json(ApiResponse::success(__MODULE_NAME__)))
@@ -254,7 +301,7 @@ pub async fn update___MODULE_NAME__(
         .pool
         .begin()
         .await
-        .map_err(crate::error::Error::from_sqlx)?;
+        .map_err(Error::from_sqlx)?;
 
     // First get the item to check ownership
     let existing_item = get___MODULE_NAME___service(&mut tx, id).await?;
@@ -266,7 +313,7 @@ pub async fn update___MODULE_NAME__(
     
     tx.commit()
         .await
-        .map_err(crate::error::Error::from_sqlx)?;
+        .map_err(Error::from_sqlx)?;
     Ok(Json(ApiResponse::success(__MODULE_NAME__)))
 }
 
@@ -295,7 +342,7 @@ pub async fn delete___MODULE_NAME__(
         .pool
         .begin()
         .await
-        .map_err(crate::error::Error::from_sqlx)?;
+        .map_err(Error::from_sqlx)?;
 
     // First get the item to check ownership
     let existing_item = get___MODULE_NAME___service(&mut tx, id).await?;
@@ -307,7 +354,7 @@ pub async fn delete___MODULE_NAME__(
     
     tx.commit()
         .await
-        .map_err(crate::error::Error::from_sqlx)?;
+        .map_err(Error::from_sqlx)?;
     Ok(Json(ApiResponse::success(())))
 }
 
@@ -336,24 +383,24 @@ pub async fn bulk_create___MODULE_NAME_PLURAL__(
         .pool
         .acquire()
         .await
-        .map_err(crate::error::Error::from_sqlx)?;
+        .map_err(Error::from_sqlx)?;
     
     let mut tx = conn
         .begin()
         .await
-        .map_err(crate::error::Error::from_sqlx)?;
+        .map_err(Error::from_sqlx)?;
     
     let skip_errors = request.skip_errors.unwrap_or(false);
     let response = bulk_create___MODULE_NAME_PLURAL___service(&mut tx, request, auth_user.id).await?;
     
     // If there are errors and skip_errors is false, return a 400 error
     if !skip_errors && !response.errors.is_empty() {
-        return Err(crate::error::Error::validation("bulk_create", &format!("Bulk operation failed with {} errors", response.errors.len())));
+        return Err(Error::validation("bulk_create", &format!("Bulk operation failed with {} errors", response.errors.len())));
     }
     
     tx.commit()
         .await
-        .map_err(crate::error::Error::from_sqlx)?;
+        .map_err(Error::from_sqlx)?;
     
     Ok(Json(ApiResponse::success(response)))
 }
@@ -383,24 +430,24 @@ pub async fn bulk_update___MODULE_NAME_PLURAL__(
         .pool
         .acquire()
         .await
-        .map_err(crate::error::Error::from_sqlx)?;
+        .map_err(Error::from_sqlx)?;
     
     let mut tx = conn
         .begin()
         .await
-        .map_err(crate::error::Error::from_sqlx)?;
+        .map_err(Error::from_sqlx)?;
     
     let skip_errors = request.skip_errors.unwrap_or(false);
     let response = bulk_update___MODULE_NAME_PLURAL___service(&mut tx, request).await?;
     
     // If there are errors and skip_errors is false, return a 400 error
     if !skip_errors && !response.errors.is_empty() {
-        return Err(crate::error::Error::validation("bulk_update", &format!("Bulk operation failed with {} errors", response.errors.len())));
+        return Err(Error::validation("bulk_update", &format!("Bulk operation failed with {} errors", response.errors.len())));
     }
     
     tx.commit()
         .await
-        .map_err(crate::error::Error::from_sqlx)?;
+        .map_err(Error::from_sqlx)?;
     
     Ok(Json(ApiResponse::success(response)))
 }
@@ -431,24 +478,24 @@ pub async fn bulk_delete___MODULE_NAME_PLURAL__(
         .pool
         .acquire()
         .await
-        .map_err(crate::error::Error::from_sqlx)?;
+        .map_err(Error::from_sqlx)?;
     
     let mut tx = conn
         .begin()
         .await
-        .map_err(crate::error::Error::from_sqlx)?;
+        .map_err(Error::from_sqlx)?;
     
     let skip_errors = request.skip_errors.unwrap_or(false);
     let response = bulk_delete___MODULE_NAME_PLURAL___service(&mut tx, request).await?;
     
     // If there are errors and skip_errors is false, return a 400 error
     if !skip_errors && !response.errors.is_empty() {
-        return Err(crate::error::Error::validation("bulk_delete", &format!("Bulk operation failed with {} errors", response.errors.len())));
+        return Err(Error::validation("bulk_delete", &format!("Bulk operation failed with {} errors", response.errors.len())));
     }
     
     tx.commit()
         .await
-        .map_err(crate::error::Error::from_sqlx)?;
+        .map_err(Error::from_sqlx)?;
     
     Ok(Json(ApiResponse::success(response)))
 }
@@ -458,10 +505,10 @@ fn parse_cursor(cursor: &str) -> Result<i64> {
     use base64::{Engine as _, engine::general_purpose::STANDARD as BASE64};
     let decoded = BASE64
         .decode(cursor)
-        .map_err(|_| crate::error::Error::validation("cursor", "Invalid cursor format"))?;
+        .map_err(|_| Error::validation("cursor", "Invalid cursor format"))?;
     let cursor_str = String::from_utf8(decoded)
-        .map_err(|_| crate::error::Error::validation("cursor", "Invalid cursor encoding"))?;
+        .map_err(|_| Error::validation("cursor", "Invalid cursor encoding"))?;
     cursor_str
         .parse::<i64>()
-        .map_err(|_| crate::error::Error::validation("cursor", "Invalid cursor value"))
+        .map_err(|_| Error::validation("cursor", "Invalid cursor value"))
 }

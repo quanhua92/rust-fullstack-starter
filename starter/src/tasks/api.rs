@@ -1,7 +1,8 @@
 use axum::{
-    Extension,
+    Extension, Router,
     extract::{Path, Query, State},
     response::Json,
+    routing::{get, post},
 };
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
@@ -579,4 +580,20 @@ pub async fn list_task_types(
     .map_err(|e| Error::Internal(format!("Failed to list task types: {e}")))?;
 
     Ok(Json(ApiResponse::success(task_types)))
+}
+
+/// Public task routes (no authentication required)
+pub fn tasks_public_routes() -> Router<AppState> {
+    Router::new().route("/types", get(list_task_types).post(register_task_type))
+}
+
+/// Protected task routes (authentication required)
+pub fn tasks_routes() -> Router<AppState> {
+    Router::new()
+        .route("/", get(list_tasks).post(create_task))
+        .route("/stats", get(get_stats))
+        .route("/dead-letter", get(get_dead_letter_queue))
+        .route("/{id}", get(get_task).delete(delete_task))
+        .route("/{id}/cancel", post(cancel_task))
+        .route("/{id}/retry", post(retry_task))
 }

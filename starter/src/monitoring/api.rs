@@ -8,11 +8,12 @@ use crate::{
     api::{ApiResponse, ErrorResponse},
 };
 use axum::{
-    Extension,
+    Extension, Router,
     body::Body,
     extract::{Path, Query, State},
     http::{StatusCode, header},
     response::{Json, Response},
+    routing::{get, post},
 };
 use serde::Deserialize;
 use std::collections::HashMap;
@@ -871,4 +872,31 @@ monitoring_metrics_last_hour {}
         )
         .body(Body::from(prometheus_output))
         .map_err(|e| Error::internal(&format!("Failed to build response: {e}")))
+}
+
+/// Public monitoring routes (no authentication required)
+pub fn monitoring_public_routes() -> Router<AppState> {
+    Router::new().route("/metrics/prometheus", get(get_prometheus_metrics))
+}
+
+/// Protected monitoring routes (authentication required)
+pub fn monitoring_routes() -> Router<AppState> {
+    Router::new()
+        .route("/events", post(create_event).get(get_events))
+        .route("/events/{id}", get(get_event_by_id))
+        .route("/metrics", post(create_metric).get(get_metrics))
+        .route("/alerts", get(get_alerts))
+        .route("/incidents", post(create_incident).get(get_incidents))
+        .route(
+            "/incidents/{id}",
+            get(get_incident_by_id).put(update_incident),
+        )
+        .route("/incidents/{id}/timeline", get(get_incident_timeline))
+}
+
+/// Moderator monitoring routes (moderator role required)
+pub fn monitoring_moderator_routes() -> Router<AppState> {
+    Router::new()
+        .route("/alerts", post(create_alert))
+        .route("/stats", get(get_monitoring_stats))
 }

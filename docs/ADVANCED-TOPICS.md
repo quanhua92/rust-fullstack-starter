@@ -281,15 +281,79 @@ tests/books/
 **Manual integration prevents accidents**:
 
 ```rust
-// 1. Add to src/lib.rs
+// 1. Add to starter/src/lib.rs
 pub mod books;
 
-// 2. Add to src/server.rs  
+// 2. Add to starter/src/core/server.rs  
 use crate::books::api::books_routes;
-router = router.nest("/api/v1/books", books_routes(state.clone()));
+// In protected_routes Router:
+.nest("/books", books_routes())
 
-// 3. Add to src/openapi.rs
+// 3. Add to starter/src/core/openapi.rs
 use crate::books::models::*;
+```
+
+**Multi-route organization pattern**: Both templates now provide multiple route functions organized by permission level:
+
+### Basic Template Route Structure
+```rust
+// Generated in books/api.rs (basic template)
+/// Protected routes - authentication required, ownership-based access
+pub fn books_routes() -> Router<AppState> {
+    Router::new()
+        .route("/", get(list_books).post(create_book))
+        .route("/{id}", get(get_book).put(update_book).delete(delete_book))
+}
+
+// Uncomment and implement as needed:
+// pub fn books_public_routes() -> Router<AppState> { ... }
+// pub fn books_moderator_routes() -> Router<AppState> { ... }
+// pub fn books_admin_routes() -> Router<AppState> { ... }
+```
+
+### Production Template Route Structure
+```rust
+// Generated in products/api.rs (production template)
+/// Protected routes - individual CRUD with ownership checks
+pub fn products_routes() -> Router<AppState> {
+    Router::new()
+        .route("/", get(list_products).post(create_product))
+        .route("/{id}", get(get_product).put(update_product).delete(delete_product))
+}
+
+/// Moderator routes - bulk operations requiring elevated permissions
+pub fn products_moderator_routes() -> Router<AppState> {
+    Router::new()
+        .route("/bulk", post(bulk_create_products)
+            .put(bulk_update_products)
+            .delete(bulk_delete_products))
+}
+
+// Uncomment and implement as needed:
+// pub fn products_public_routes() -> Router<AppState> { ... }
+// pub fn products_admin_routes() -> Router<AppState> { ... }
+```
+
+### Server Integration Examples
+```rust
+// In starter/src/core/server.rs - Basic template integration
+use crate::books::api::books_routes;
+
+let protected_routes = Router::new()
+    .nest("/books", books_routes())
+    // ... other protected routes
+    .layer(auth_middleware);
+
+// Production template integration with multiple route types
+use crate::products::api::{products_routes, products_moderator_routes};
+
+let protected_routes = Router::new()
+    .nest("/products", products_routes())
+    .layer(auth_middleware);
+
+let moderator_routes = Router::new()
+    .nest("/products", products_moderator_routes())
+    .layer(moderator_middleware);
 ```
 
 **Revert with safety checks**:
