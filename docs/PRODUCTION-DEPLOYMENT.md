@@ -219,8 +219,7 @@ services:
         condition: service_healthy
     networks:
       - app-network
-    deploy:
-      replicas: 2
+    # Note: Scale workers using --scale app-worker=N flag
 
   nginx:
     image: nginx:alpine
