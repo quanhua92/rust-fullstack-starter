@@ -68,7 +68,7 @@ Visit **http://localhost:3000/api-docs** for interactive Swagger UI with all 37 
 - **Node.js 18+** and **pnpm** (`npm install -g pnpm`)
 - **Docker 20.10+** and **Docker Compose 2.0+**
 
-> **Performance Note**: Setup takes 2-3 seconds, 182 tests run in ~21 seconds
+> **Performance Note**: Setup takes 2-3 seconds, 183 tests run in ~21 seconds
 
 ## 🔧 Development Commands
 
@@ -92,7 +92,7 @@ cd web && pnpm dev                          # React dev server (port 5173)
 web/scripts/check-web.sh                   # Frontend: 10-step validation
 
 # Testing
-cargo nextest run                           # 182 integration tests
+cargo nextest run                           # 183 integration tests
 ./scripts/test-with-curl.sh                 # Test all 37 API endpoints
 ./scripts/test-chaos.sh                     # Resilience testing
 ```

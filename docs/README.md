@@ -58,7 +58,7 @@ This starter provides a complete, production-ready foundation:
 
 ### **Developer Experience**
 - ✅ **Type Safety** - End-to-end TypeScript from database to UI
-- ✅ **Testing** - 182 integration tests with database isolation
+- ✅ **Testing** - 183 integration tests with database isolation
 - ✅ **Quality Tools** - Linting, formatting, automated checks
 - ✅ **Hot Reloading** - Fast development iteration
 - ✅ **Interactive Docs** - OpenAPI/Swagger UI with live testing
@@ -80,7 +80,7 @@ This starter provides a complete, production-ready foundation:
 ./scripts/check.sh
 
 # Test all functionality
-cargo nextest run                    # 182 integration tests
+cargo nextest run                    # 183 integration tests
 ./scripts/test-with-curl.sh         # 48 API endpoints
 ```
 

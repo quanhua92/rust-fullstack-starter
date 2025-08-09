@@ -119,7 +119,7 @@
           "Authentication"
         ],
         "summary": "User logout",
-        "description": "Logout current user and end all sessions",
+        "description": "Logout current user and end current session",
         "operationId": "logout",
         "responses": {
           "200": {

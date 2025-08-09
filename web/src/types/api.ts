@@ -63,7 +63,7 @@ export interface paths {
 		put?: never;
 		/**
 		 * User logout
-		 * @description Logout current user and end all sessions
+		 * @description Logout current user and end current session
 		 */
 		post: operations["logout"];
 		delete?: never;

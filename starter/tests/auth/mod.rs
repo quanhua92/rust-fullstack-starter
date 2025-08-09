@@ -844,18 +844,30 @@ async fn test_logout_vs_logout_all_difference() {
     let token2 = app.extract_auth_token(login2).await.token;
 
     // Verify both sessions work
-    assert_status(&app.get_auth("/api/v1/auth/me", &token1).await, StatusCode::OK);
-    assert_status(&app.get_auth("/api/v1/auth/me", &token2).await, StatusCode::OK);
+    assert_status(
+        &app.get_auth("/api/v1/auth/me", &token1).await,
+        StatusCode::OK,
+    );
+    assert_status(
+        &app.get_auth("/api/v1/auth/me", &token2).await,
+        StatusCode::OK,
+    );
 
     // Test /auth/logout (single session) - should only invalidate current session
     let logout_response = app.post_auth("/api/v1/auth/logout", &token1).await;
     assert_status(&logout_response, StatusCode::OK);
 
     // token1 should be invalid, token2 should still work
-    assert_status(&app.get_auth("/api/v1/auth/me", &token1).await, StatusCode::UNAUTHORIZED);
-    assert_status(&app.get_auth("/api/v1/auth/me", &token2).await, StatusCode::OK);
+    assert_status(
+        &app.get_auth("/api/v1/auth/me", &token1).await,
+        StatusCode::UNAUTHORIZED,
+    );
+    assert_status(
+        &app.get_auth("/api/v1/auth/me", &token2).await,
+        StatusCode::OK,
+    );
 
-    // Create third session 
+    // Create third session
     let login3 = app.post_json("/api/v1/auth/login", &login_data).await;
     let token3 = app.extract_auth_token(login3).await.token;
 
@@ -867,6 +879,12 @@ async fn test_logout_vs_logout_all_difference() {
     assert!(json["message"].as_str().unwrap().contains("session(s)"));
 
     // Both remaining sessions should be invalid
-    assert_status(&app.get_auth("/api/v1/auth/me", &token2).await, StatusCode::UNAUTHORIZED);
-    assert_status(&app.get_auth("/api/v1/auth/me", &token3).await, StatusCode::UNAUTHORIZED);
+    assert_status(
+        &app.get_auth("/api/v1/auth/me", &token2).await,
+        StatusCode::UNAUTHORIZED,
+    );
+    assert_status(
+        &app.get_auth("/api/v1/auth/me", &token3).await,
+        StatusCode::UNAUTHORIZED,
+    );
 }

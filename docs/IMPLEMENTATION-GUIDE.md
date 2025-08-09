@@ -263,7 +263,7 @@ pub fn validate_password(password: &str) -> Result<()> {
 ### Why Integration Tests?
 
 **Testing pyramid inverted for web applications**:
-- **90% Integration tests** (182 tests) - HTTP + Database + Business Logic
+- **90% Integration tests** (183 tests) - HTTP + Database + Business Logic
 - **15% Unit tests** (31 tests) - Pure functions, algorithms
 - **5% E2E tests** (13 tests) - Critical user journeys
 

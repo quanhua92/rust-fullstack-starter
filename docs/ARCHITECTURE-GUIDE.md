@@ -358,7 +358,7 @@ async fn test_user_can_create_own_tasks() {
 - **Fast feedback loops** - Changes don't require complex build orchestration
 - **Easy debugging** - Single process, shared error handling, unified logging
 - **Type safety** - End-to-end TypeScript from database to UI
-- **Quality built-in** - 182 integration tests, linting, formatting
+- **Quality built-in** - 183 integration tests, linting, formatting
 
 ### For Production
 - **Single deployment artifact** - Simplifies CI/CD, reduces configuration drift

@@ -99,7 +99,7 @@ pub async fn logout(
         .acquire()
         .await
         .map_err(Error::from_sqlx)?;
-    
+
     auth_services::logout(conn.as_mut(), token).await?;
 
     Ok(Json(ApiResponse::success(
