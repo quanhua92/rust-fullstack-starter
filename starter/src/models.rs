@@ -45,4 +45,3 @@ pub struct ApiKey {
     pub last_used_at: Option<DateTime<Utc>>,
     pub usage_count: i64,
 }
-

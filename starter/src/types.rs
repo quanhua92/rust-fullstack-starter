@@ -1,25 +1,16 @@
-use crate::error::Error;
-use crate::{config::AppConfig, database::Database};
-use std::time::Instant;
+//! Public type re-exports for backward compatibility
+//!
+//! This module maintains backward compatibility by re-exporting types
+//! from their new organized locations. New code should import directly
+//! from the specific modules instead of using these re-exports.
 
-pub type Result<T> = std::result::Result<T, Error>;
-pub type DbPool = sqlx::PgPool;
-pub type DbConn = sqlx::PgConnection;
-
-// Application state shared across handlers
-#[derive(Clone)]
-pub struct AppState {
-    pub database: Database,
-    pub config: AppConfig,
-    pub start_time: Instant,
-}
+// Re-export core types (most commonly used)
+pub use crate::core::{AppState, DbConn, DbPool, Result};
 
 // Re-export API types for backward compatibility
-pub use crate::api::types::{
+pub use crate::api::{
     ApiResponse, ErrorDetail, ErrorResponse, PaginatedResponse, PaginationInfo, PaginationParams,
 };
 
 // Re-export health types for backward compatibility
-pub use crate::api::health::{
-    ComponentHealth, DetailedHealthResponse, HealthResponse, HealthStatus,
-};
+pub use crate::health::{ComponentHealth, DetailedHealthResponse, HealthResponse, HealthStatus};
