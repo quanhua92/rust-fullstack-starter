@@ -99,63 +99,71 @@ Each block follows this structure:
 - [ ] **Verify fixes** against actual code
 ```
 
-## 🛠️ Automated Verification System
+## 🛠️ Documentation Verification Workflow
 
-### Primary Entry Point - Main Orchestrator
+### Step 1: Run Automated Helper Script
 
-**The `docs-verify.sh` script** is your one-stop solution for all documentation verification:
+**The `verify-docs.sh` script** performs initial automated checks:
 
 ```bash
-# Quick verification (recommended for development)
-./tasks/helpers/docs-verify.sh
+# Standard verification (recommended starting point)
+./tasks/helpers/verify-docs.sh
 
-# Comprehensive verification (recommended for CI/releases)  
-./tasks/helpers/docs-verify.sh --full --check-urls
+# Quick check (structures only - for development)
+./tasks/helpers/verify-docs.sh --quick
 
-# Fast check for pre-commit hooks
-./tasks/helpers/docs-verify.sh --quick
+# Full verification (includes URL checking - for releases)  
+./tasks/helpers/verify-docs.sh --full
 
-# Verbose output for debugging
-./tasks/helpers/docs-verify.sh --verbose
-
-# Generate JSON report for dashboards
-./tasks/helpers/docs-verify.sh --report > verification-report.json
+# Verbose output for debugging issues
+./tasks/helpers/verify-docs.sh --verbose
 ```
 
-### Individual Verification Components
+### Step 2: Fix Issues Found by Automated Script
 
-#### Structure Verification (`verify-structures.sh`)
-Automated checking of code structures against documentation:
+Address any errors reported by the automated verification before proceeding to manual blocks.
 
-```bash
-# Check API response types, error enums, config structs
-./tasks/helpers/verify-structures.sh api-responses error-enums
+### Step 3: Sequential 100-Line Block Verification
 
-# Check database table names and CLI commands  
-./tasks/helpers/verify-structures.sh database-tables cli-commands
+After automated fixes, proceed with systematic manual verification in 100-line blocks for comprehensive accuracy.
 
-# Check test counts and categories (auto-discovery)
-./tasks/helpers/verify-structures.sh test-counts
+### Block-by-Block Manual Verification Process
 
-# All structure verification patterns
-./tasks/helpers/verify-structures.sh all --verbose
+Once automated script issues are resolved, proceed with systematic manual verification:
+
+**Block Verification Template:**
+```markdown
+**Block N: FILE.md lines X-Y**
+- [ ] **Read** lines X-Y carefully
+- [ ] **Cross-check** every technical claim against actual code
+- [ ] **Fix immediately** if any discrepancies found
+- [ ] **Update TodoWrite** with progress
+- [ ] **Verify fixes** work correctly
 ```
 
-#### Reference Verification (`verify-references.sh`)
-Automated validation of all references in documentation:
+**Example Block Process:**
+1. Read 100-line block
+2. For each technical claim, verify against source code
+3. Fix any inaccuracies immediately  
+4. Test fixes work (run commands, check files exist, etc.)
+5. Move to next 100-line block
 
+**Cross-Check Commands for Manual Verification:**
 ```bash
-# Check file paths and script references
-./tasks/helpers/verify-references.sh files scripts
+# API structure verification
+rg "pub struct ApiResponse" starter/src/ -A 10
 
-# Check configuration files and import paths
-./tasks/helpers/verify-references.sh configs imports
+# Database table verification  
+rg "CREATE TABLE" starter/migrations/ -A 5
 
-# Check command examples (no network required)
-./tasks/helpers/verify-references.sh commands
+# Test count verification
+find starter/tests -name "*.rs" | xargs rg "#\[tokio::test\]" | wc -l
 
-# Check URL accessibility (requires network)
-./tasks/helpers/verify-references.sh urls --check-urls
+# File path verification
+ls -la ./path/mentioned/in/docs
+
+# Script command verification
+./scripts/script-mentioned-in-docs.sh --help
 ```
 
 ### Manual Cross-Check Commands (for debugging)
@@ -476,13 +484,18 @@ git checkout -b feature/new-functionality
 # 3. Update documentation  
 # ... edit relevant docs ...
 
-# 4. Verify documentation accuracy
-./tasks/helpers/docs-verify.sh
+# 4. STEP 1: Run automated verification
+./tasks/helpers/verify-docs.sh
 
-# 5. Run full verification if major changes
-./tasks/helpers/docs-verify.sh --full --check-urls
+# 5. STEP 2: Fix any automated issues found
 
-# 6. Commit with verification
+# 6. STEP 3: Manual 100-line block verification
+# Read each 100-line block and cross-check technical claims
+
+# 7. STEP 4: Final verification
+./tasks/helpers/verify-docs.sh --full
+
+# 8. Commit with verification
 git add . 
 git commit -m "feat: new functionality with verified docs"
 ```
@@ -496,27 +509,30 @@ git commit -m "feat: new functionality with verified docs"
 
 **Weekly maintenance:**
 ```bash
-# Run comprehensive verification
-./tasks/helpers/docs-verify.sh --full --check-urls --verbose
+# STEP 1: Run comprehensive automated verification
+./tasks/helpers/verify-docs.sh --full --verbose
 
-# Generate verification report
-./tasks/helpers/docs-verify.sh --report > docs/verification-status.json
+# STEP 2: Fix any issues found
 
-# Check for any new patterns that need verification
-./tasks/helpers/verify-structures.sh --dry-run
-./tasks/helpers/verify-references.sh --dry-run
+# STEP 3: Random sampling - verify 2-3 random 100-line blocks manually
+# This catches issues automation might miss
+
+# STEP 4: Final verification
+./tasks/helpers/verify-docs.sh --full
 ```
 
 **Release preparation:**  
 ```bash
-# Complete pre-release verification
-./tasks/helpers/docs-verify.sh --full --check-urls --verbose
+# STEP 1: Complete automated verification
+./tasks/helpers/verify-docs.sh --full --verbose
 
-# Generate final verification report
-./tasks/helpers/docs-verify.sh --report --format json > release-verification.json
+# STEP 2: Fix any issues found
 
-# Final verification before tag
-./tasks/helpers/docs-verify.sh --quick
+# STEP 3: Full manual verification (all 45 blocks)
+# Process all documentation in 100-line blocks
+
+# STEP 4: Final automated verification
+./tasks/helpers/verify-docs.sh --full
 ```
 
 ## 🛡️ Continuous Improvement
@@ -550,11 +566,13 @@ As the codebase grows:
 - [ ] Create issue templates (copy from master plan)
 
 **For each documentation change:**
-- [ ] Read change in 100-line blocks (or use automated scripts)
-- [ ] Run `./tasks/helpers/docs-verify.sh` 
-- [ ] Fix issues immediately if verification fails
-- [ ] Run `./tasks/helpers/docs-verify.sh --verbose` for detailed debugging
-- [ ] Commit with verification proof
+- [ ] **Step 1:** Run `./tasks/helpers/verify-docs.sh`
+- [ ] **Step 2:** Fix any issues found by automated script  
+- [ ] **Step 3:** Process documentation in 100-line blocks sequentially
+- [ ] **Step 4:** Cross-check each technical claim carefully
+- [ ] **Step 5:** Fix inaccuracies immediately during block review
+- [ ] **Step 6:** Run `./tasks/helpers/verify-docs.sh --verbose` final check
+- [ ] **Step 7:** Commit with verification proof
 
 **Weekly maintenance:**
 - [ ] Run full verification audit
@@ -580,21 +598,20 @@ As the codebase grows:
 
 ### Essential Commands
 ```bash
-# Daily development check
-./tasks/helpers/docs-verify.sh --quick
+# STEP 1: Automated verification (always start here)
+./tasks/helpers/verify-docs.sh
 
-# Full verification  
-./tasks/helpers/docs-verify.sh --full --check-urls
+# Quick check (structures only)
+./tasks/helpers/verify-docs.sh --quick
 
-# Debug issues
-./tasks/helpers/docs-verify.sh --verbose
+# Full verification (includes URLs)  
+./tasks/helpers/verify-docs.sh --full
 
-# Generate report
-./tasks/helpers/docs-verify.sh --report
+# Debug issues with verbose output
+./tasks/helpers/verify-docs.sh --verbose
 
-# Individual component checks
-./tasks/helpers/verify-structures.sh api-responses
-./tasks/helpers/verify-references.sh files scripts
+# After automated fixes: Manual 100-line block verification
+# (Read each block, cross-check claims, fix immediately)
 ```
 
 ### File Structure
@@ -603,20 +620,17 @@ tasks/
 ├── docs-verification-master-plan.md    # This comprehensive guide
 ├── USAGE-EXAMPLES.md                    # Quick usage examples
 └── helpers/
-    ├── docs-verify.sh                   # Main orchestrator script  
-    ├── verify-structures.sh             # Structure verification
-    ├── verify-references.sh             # Reference validation
+    ├── verify-docs.sh                   # Main verification script
     └── README.md                        # Helper documentation
 ```
 
 ### Key Features
-- ✅ **Automated verification** - No manual checking required
-- ✅ **Flexible patterns** - Resilient to text changes  
-- ✅ **Comprehensive help** - Detailed --help for every script
-- ✅ **Multiple output formats** - Human, JSON, GitHub Actions
-- ✅ **Parallel execution** - Fast verification (10-30 seconds)
-- ✅ **CI/CD ready** - GitHub Actions integration
-- ✅ **Zero tolerance** - Based on proven methodology
+- ✅ **Two-phase approach** - Automated script first, then manual blocks
+- ✅ **Immediate fixes** - Address issues during verification, not after
+- ✅ **100-line blocks** - Manageable chunks for thorough review
+- ✅ **Cross-checking** - Every technical claim verified against code
+- ✅ **Sequential processing** - Complete coverage, no sections skipped
+- ✅ **Zero tolerance** - Based on proven systematic methodology
 
 ---
 
