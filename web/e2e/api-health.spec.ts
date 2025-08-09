@@ -34,6 +34,7 @@ test.describe('API Health Checks', () => {
   });
 
   test('OpenAPI spec is accessible', async ({ request }) => {
+    // Proxied to backend API through vite dev server
     const response = await request.get('/api-docs/openapi.json');
     await expect(response).toBeOK();
     

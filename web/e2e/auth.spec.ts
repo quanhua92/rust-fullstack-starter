@@ -38,41 +38,42 @@ test.describe('Authentication Flow', () => {
     await page.goto('/auth/register');
     await page.waitForLoadState('networkidle');
 
-    // Fill registration form with dynamic data (handle missing fields gracefully)
-    const usernameField = page.locator('input[placeholder*="username" i]');
-    if (await usernameField.count() > 0) {
-      await usernameField.fill(username);
-    }
+    // Wait for form to fully load and fill registration form
+    await expect(page.locator('input[placeholder*="username" i]')).toBeVisible({ timeout: 5000 });
+    await expect(page.locator('input[type="email"]')).toBeVisible({ timeout: 5000 });
+    await expect(page.locator('input[placeholder="Enter your password"]')).toBeVisible({ timeout: 5000 });
+    await expect(page.locator('input[placeholder="Confirm your password"]')).toBeVisible({ timeout: 5000 });
+
+    // Fill all form fields with unique data
+    await page.locator('input[placeholder*="username" i]').fill(username);
     await page.locator('input[type="email"]').fill(email);
-    await page.locator('input[type="password"]').first().fill(password);
+    await page.locator('input[placeholder="Enter your password"]').fill(password);
+    await page.locator('input[placeholder="Confirm your password"]').fill(password);
     
-    // Handle confirm password field (might not exist)
-    const confirmPasswordField = page.locator('input[type="password"]').last();
-    if (await confirmPasswordField.count() > 1) {
-      await confirmPasswordField.fill(password);
-    }
+    // Wait a moment for form validation
+    await page.waitForTimeout(500);
 
     // Submit registration
     await page.locator('button:has-text("Create Account"), button:has-text("Register"), button[type="submit"]').first().click();
 
-    // Wait for navigation (might redirect to login or dashboard)
+    // Wait for success message and automatic redirect
+    await expect(page.locator('text=Registration successful! Redirecting to login page...')).toBeVisible({ timeout: 8000 });
+    await expect(page).toHaveURL(/.*\/auth\/login/, { timeout: 4000 });
+
+    // Step 2: Login with the registered user (now on login page)
     await page.waitForLoadState('networkidle');
 
-    // Step 2: If we're on login page, proceed with login. Otherwise, we might be already logged in.
-    if (page.url().includes('/auth/login')) {
-      // Fill login form
-      await page.locator('input[type="email"]').fill(email);
-      await page.locator('input[type="password"]').fill(password);
+    // Fill login form
+    await page.locator('input[type="email"]').fill(email);
+    await page.locator('input[type="password"]').fill(password);
 
-      // Submit login
-      await page.locator('button:has-text("Sign In"), button[type="submit"]').first().click();
+    // Submit login
+    await page.locator('button:has-text("Sign In"), button[type="submit"]').first().click();
 
-      // Wait for successful login and navigation
-      await page.waitForLoadState('networkidle');
-    }
+    // Wait for successful login and navigation away from auth pages
+    await page.waitForLoadState('networkidle');
     
     // Verify successful authentication by checking we're not on auth pages
-    // This is more reliable than checking for specific text that might not be loaded yet
     await expect(page).not.toHaveURL(/.*\/auth\/login/);
     await expect(page).not.toHaveURL(/.*\/auth\/register/);
   });
