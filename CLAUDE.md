@@ -72,9 +72,9 @@ cargo run -- revert module books --dry-run  # Preview first
 cargo run -- revert module books --yes      # Skip prompts (DANGEROUS)
 
 # Manual integration (3 steps)
-# 1. Add to src/lib.rs: pub mod books;
-# 2. Add to src/core/server.rs: use crate::books::api::books_routes;
-# 3. Add to src/core/openapi.rs: use crate::books::models::*;
+# 1. Add to starter/src/lib.rs: pub mod books;
+# 2. Add to starter/src/core/server.rs: use crate::books::api::books_routes;
+# 3. Add to starter/src/core/openapi.rs: use crate::books::models::*;
 ```
 
 ### Task Handlers

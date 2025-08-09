@@ -281,14 +281,14 @@ tests/books/
 **Manual integration prevents accidents**:
 
 ```rust
-// 1. Add to src/lib.rs
+// 1. Add to starter/src/lib.rs
 pub mod books;
 
-// 2. Add to src/server.rs  
+// 2. Add to starter/src/core/server.rs  
 use crate::books::api::books_routes;
 router = router.nest("/api/v1/books", books_routes(state.clone()));
 
-// 3. Add to src/openapi.rs
+// 3. Add to starter/src/core/openapi.rs
 use crate::books::models::*;
 ```
 

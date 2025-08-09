@@ -415,10 +415,10 @@ impl CliApp {
             );
             println!("      ./scripts/check.sh");
             println!();
-            println!("   4. Add module to lib.rs (manual step):");
+            println!("   4. Add module to starter/src/lib.rs (manual step):");
             println!("      - Add: pub mod {plural};");
             println!();
-            println!("   5. Add routes to server.rs (manual step):");
+            println!("   5. Add routes to starter/src/core/server.rs (manual step):");
             println!("      - Import: use crate::{plural}::api::{plural}_routes;");
             println!(
                 "      - Add route: .nest(\"/{plural}\", {plural}_routes()) INSIDE protected_routes"
@@ -427,7 +427,7 @@ impl CliApp {
                 "      - NOTE: Add nest() BEFORE .layer(auth_middleware) for proper authentication"
             );
             println!();
-            println!("   6. Add to openapi.rs (manual step):");
+            println!("   6. Add to starter/src/core/openapi.rs (manual step):");
             match template.as_str() {
                 "basic" => {
                     println!(

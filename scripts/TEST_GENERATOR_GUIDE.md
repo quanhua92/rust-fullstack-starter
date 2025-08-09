@@ -69,9 +69,9 @@ cd starter && sqlx migrate run
 cd .. && ./scripts/prepare-sqlx.sh  
 
 # Manual Integration (4 steps - required for testing):
-# Step 1: Add to src/lib.rs: pub mod quicktest;
-# Step 2: Add to src/server.rs: use + routes (for full testing)
-# Step 3: Add to src/openapi.rs: model imports (for API docs)
+# Step 1: Add to starter/src/lib.rs: pub mod quicktest;
+# Step 2: Add to starter/src/core/server.rs: use + routes (for full testing)
+# Step 3: Add to starter/src/core/openapi.rs: model imports (for API docs)
 # Step 4: Add to tests/lib.rs: pub mod quicktest; (for integration tests)
 
 ./scripts/check.sh
@@ -218,9 +218,9 @@ cargo run -- revert module nonexistent --dry-run
    cargo run -- generate module testmodule --template my-template
 
    # Manual Integration (required for testing):
-   # Step 1: Add to src/lib.rs: pub mod testmodule;
-   # Step 2: Add to src/server.rs: use + routes 
-   # Step 3: Add to src/openapi.rs: model imports
+   # Step 1: Add to starter/src/lib.rs: pub mod testmodule;
+   # Step 2: Add to starter/src/core/server.rs: use + routes 
+   # Step 3: Add to starter/src/core/openapi.rs: model imports
    # Step 4: Add to tests/lib.rs: pub mod testmodule;
 
    # Test compilation
@@ -298,10 +298,10 @@ cd starter && sqlx migrate run
 cd .. && ./scripts/prepare-sqlx.sh
 
 # 2. Manual Integration (4 steps - prevents accidental commits):
-# Step 1: Add to src/lib.rs: pub mod products;
-# Step 2: Add to src/server.rs: use crate::products::api::products_routes;
+# Step 1: Add to starter/src/lib.rs: pub mod products;
+# Step 2: Add to starter/src/core/server.rs: use crate::products::api::products_routes;
 #         and .nest("/products", products_routes())
-# Step 3: Add to src/openapi.rs: use crate::products::models::*;
+# Step 3: Add to starter/src/core/openapi.rs: use crate::products::models::*;
 # Step 4: Add to tests/lib.rs: pub mod products;
 
 # 3. Start server and test
@@ -317,12 +317,12 @@ cargo run -- revert module products --yes
 
 For deeper integration testing, follow the 4-step manual integration process:
 
-1. **Add to `src/lib.rs`**:
+1. **Add to `starter/src/lib.rs`**:
    ```rust
    pub mod books;
    ```
 
-2. **Add to `src/server.rs`**:
+2. **Add to `starter/src/core/server.rs`**:
    ```rust
    use crate::books::api::books_routes;
    
@@ -330,7 +330,7 @@ For deeper integration testing, follow the 4-step manual integration process:
    .nest("/api/v1/books", books_routes())
    ```
 
-3. **Add to `src/openapi.rs`**:
+3. **Add to `starter/src/core/openapi.rs`**:
    ```rust
    use crate::books::models::*;
    ```
@@ -372,9 +372,9 @@ The `check.sh` script only tests existing code in the starter project. It does N
 
 **Why 4-Step Integration is Essential**:
 
-1. `src/lib.rs` - Makes module available for compilation
-2. `src/server.rs` - Enables API endpoint registration  
-3. `src/openapi.rs` - Includes models in API documentation
+1. `starter/src/lib.rs` - Makes module available for compilation
+2. `starter/src/core/server.rs` - Enables API endpoint registration  
+3. `starter/src/core/openapi.rs` - Includes models in API documentation
 4. `tests/lib.rs` - **CRITICAL**: Enables integration test compilation
 
 **Without step 4**: Template integration tests are never compiled by `check.sh`, so template bugs go undetected until runtime.
@@ -466,7 +466,7 @@ If tests leave system in bad state:
 rm -rf src/test* tests/test* migrations/*_test*
 
 # Remove from lib.rs if needed
-sed -i '/pub mod test/d' src/lib.rs
+sed -i '/pub mod test/d' starter/src/lib.rs
 ```
 
 ## Adding New Templates
