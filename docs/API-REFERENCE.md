@@ -78,7 +78,55 @@ POST /auth/logout
 Authorization: Bearer <token>
 ```
 
+### Logout from All Devices
+```http
+POST /auth/logout-all
+Authorization: Bearer <token>
+```
+
+**Description**: Logout current user from all devices and end all sessions
+
+### Refresh Token
+```http
+POST /auth/refresh
+Authorization: Bearer <token>
+```
+
+**Response**:
+```json
+{
+  "success": true,
+  "data": {
+    "expires_at": "2024-01-16T10:30:00Z",
+    "refreshed_at": "2024-01-15T10:30:00Z"
+  }
+}
+```
+
 ## 👥 User Management
+
+### Get Own Profile
+```http
+GET /users/me/profile
+Authorization: Bearer <token>
+```
+
+**Response**:
+```json
+{
+  "success": true,
+  "data": {
+    "id": "123e4567-e89b-12d3-a456-426614174000",
+    "username": "newuser",
+    "email": "user@example.com",
+    "role": "user",
+    "is_active": true,
+    "email_verified": true,
+    "created_at": "2024-01-15T10:30:00Z",
+    "last_login_at": "2024-01-15T09:30:00Z"
+  }
+}
+```
 
 ### Update Own Profile
 ```http
@@ -123,6 +171,41 @@ Content-Type: application/json
 }
 ```
 
+### Get User by ID
+```http
+GET /users/{user_id}
+Authorization: Bearer <token>
+```
+
+**Response**:
+```json
+{
+  "success": true,
+  "data": {
+    "id": "456e7890-e89b-12d3-a456-426614174000",
+    "username": "otheruser",
+    "email": "other@example.com",
+    "role": "user",
+    "is_active": true,
+    "email_verified": true,
+    "created_at": "2024-01-10T08:15:00Z"
+  }
+}
+```
+
+### Update User Profile (Admin)
+```http
+PUT /users/{user_id}/profile
+Authorization: Bearer <admin_token>
+Content-Type: application/json
+
+{
+  "username": "updated_username",
+  "email": "updated@example.com",
+  "email_verified": true
+}
+```
+
 ### Update User Role (Admin)
 ```http
 PUT /users/{user_id}/role
@@ -130,7 +213,57 @@ Authorization: Bearer <admin_token>
 Content-Type: application/json
 
 {
-  "role": "moderator"
+  "role": "moderator",
+  "reason": "Promoted for community management"
+}
+```
+
+### Update User Status (Moderator+)
+```http
+PUT /users/{user_id}/status
+Authorization: Bearer <moderator_token>
+Content-Type: application/json
+
+{
+  "is_active": false,
+  "reason": "Account suspended for policy violation"
+}
+```
+
+### Reset User Password (Moderator+)
+```http
+POST /users/{user_id}/reset-password
+Authorization: Bearer <moderator_token>
+Content-Type: application/json
+
+{
+  "new_password": "TempPassword123!",
+  "require_change": true,
+  "reason": "Password reset requested by user"
+}
+```
+
+### Delete User Account (Admin)
+```http
+DELETE /users/{user_id}
+Authorization: Bearer <admin_token>
+Content-Type: application/json
+
+{
+  "hard_delete": false,
+  "reason": "Account deletion requested"
+}
+```
+
+### Delete Own Account
+```http
+DELETE /users/me
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "password": "CurrentPassword123!",
+  "confirmation": "DELETE"
 }
 ```
 
@@ -281,6 +414,31 @@ Authorization: Bearer <token>
 - `level`: Filter by log level
 - `limit`: Number of results
 
+### Get Event by ID
+```http
+GET /monitoring/events/{event_id}
+Authorization: Bearer <token>
+```
+
+**Response**:
+```json
+{
+  "success": true,
+  "data": {
+    "id": "789e1234-e89b-12d3-a456-426614174000",
+    "event_type": "log",
+    "source": "user-service",
+    "message": "User login successful",
+    "level": "info",
+    "tags": {
+      "user_id": "123e4567-e89b-12d3-a456-426614174000"
+    },
+    "recorded_at": "2024-01-15T10:30:00Z",
+    "created_at": "2024-01-15T10:30:05Z"
+  }
+}
+```
+
 ### Submit Metric
 ```http
 POST /monitoring/metrics
@@ -298,6 +456,109 @@ Content-Type: application/json
 }
 ```
 
+### Query Metrics
+```http
+GET /monitoring/metrics?name=response_time_ms&metric_type=histogram&limit=100
+Authorization: Bearer <token>
+```
+
+**Query Parameters**:
+- `name`: Filter by metric name
+- `metric_type`: `counter`, `gauge`, `histogram`, `summary`
+- `start_time`: ISO 8601 datetime for time range start
+- `end_time`: ISO 8601 datetime for time range end
+- `limit`: Number of results
+
+### List Alerts
+```http
+GET /monitoring/alerts
+Authorization: Bearer <token>
+```
+
+**Response**:
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": "alert-123e4567-e89b-12d3-a456-426614174000",
+      "name": "High Error Rate",
+      "query": "error_rate > 0.05",
+      "status": "active",
+      "threshold_value": 0.05,
+      "created_by": "admin-456e7890-e89b-12d3-a456-426614174000",
+      "created_at": "2024-01-15T09:00:00Z",
+      "triggered_at": "2024-01-15T10:30:00Z"
+    }
+  ]
+}
+```
+
+### Create Alert (Moderator+)
+```http
+POST /monitoring/alerts
+Authorization: Bearer <moderator_token>
+Content-Type: application/json
+
+{
+  "name": "Database Connection Alert",
+  "description": "Alert when database connections exceed threshold",
+  "query": "db_connections > 50",
+  "threshold_value": 50
+}
+```
+
+### List Incidents
+```http
+GET /monitoring/incidents?limit=50&offset=0
+Authorization: Bearer <token>
+```
+
+**Response**:
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": "incident-123e4567-e89b-12d3-a456-426614174000",
+      "title": "Database Connection Issues",
+      "description": "Users reporting login failures",
+      "severity": "high",
+      "status": "investigating",
+      "started_at": "2024-01-15T09:30:00Z",
+      "created_at": "2024-01-15T09:32:00Z",
+      "assigned_to": "admin-456e7890-e89b-12d3-a456-426614174000"
+    }
+  ]
+}
+```
+
+### Get Incident by ID
+```http
+GET /monitoring/incidents/{incident_id}
+Authorization: Bearer <token>
+```
+
+**Response**:
+```json
+{
+  "success": true,
+  "data": {
+    "id": "incident-123e4567-e89b-12d3-a456-426614174000",
+    "title": "Database Connection Issues",
+    "description": "Users reporting login failures",
+    "severity": "high",
+    "status": "investigating",
+    "started_at": "2024-01-15T09:30:00Z",
+    "created_at": "2024-01-15T09:32:00Z",
+    "updated_at": "2024-01-15T10:15:00Z",
+    "assigned_to": "admin-456e7890-e89b-12d3-a456-426614174000",
+    "root_cause": null,
+    "resolved_at": null
+  }
+}
+```
+
 ### Create Incident
 ```http
 POST /monitoring/incidents
@@ -307,7 +568,8 @@ Content-Type: application/json
 {
   "title": "Database Connection Issues",
   "description": "Users reporting login failures",
-  "severity": "high"
+  "severity": "high",
+  "assigned_to": "admin-456e7890-e89b-12d3-a456-426614174000"
 }
 ```
 
@@ -382,10 +644,20 @@ GET /health/detailed
 ```
 
 ### Kubernetes Probes
+
+**Liveness Probe**:
 ```http
-GET /health/live     # Liveness probe
-GET /health/ready    # Readiness probe  
-GET /health/startup  # Startup probe
+GET /health/live
+```
+
+**Readiness Probe**:
+```http
+GET /health/ready
+```
+
+**Startup Probe**:
+```http
+GET /health/startup
 ```
 
 ## 👮 Admin Endpoints
