@@ -22,11 +22,11 @@ This file provides guidance to Claude Code when working with this Rust fullstack
 ./scripts/dev-server.sh              # Complete environment: DB + web + API + worker
 ./scripts/check.sh                   # Quality checks (MANDATORY before commit)
 ./scripts/check.sh --web             # Comprehensive checks including frontend tests
-./scripts/test-with-curl.sh          # 83 API endpoint tests
+./scripts/test-with-curl.sh          # 48 API endpoint tests
 ./scripts/reset-all.sh --reset-database  # Clean reset
 
 # Testing
-cargo nextest run                    # 149 integration tests (~21s)
+cargo nextest run                    # 183 integration tests (~21s)
 ./scripts/test-chaos.sh             # Docker-based resilience testing
 cd web && ./scripts/check-web.sh    # Frontend quality checks
 ```
@@ -35,7 +35,7 @@ cd web && ./scripts/check-web.sh    # Frontend quality checks
 - `check.sh` - **Quality validation (9 steps, ~40s) - use `--web` for full frontend checks**
 - `dev-server.sh` - Complete development environment
 - `server.sh` / `worker.sh` - Individual services
-- `test-with-curl.sh` - API testing (81 endpoints)
+- `test-with-curl.sh` - API testing (48 endpoints)
 - `test-chaos.sh` - Resilience testing
 - `test-template-with-curl.sh` - Generated module API testing
 - `test-generate.sh` - Module generator system validation
@@ -157,7 +157,7 @@ cargo run -- revert module products --yes
 - **User Management**: 12 endpoints for profile/admin operations
 - **Monitoring**: 14 endpoints for events/metrics/alerts/incidents
 - **Module Generator**: Template-based code generation with testing validation
-- **Testing**: 149 integration tests with database isolation
+- **Testing**: 183 integration tests with database isolation
 
 ### Module Structure
 ```
@@ -181,7 +181,7 @@ starter/src/
 
 ### Quality Requirements
 1. **Pre-commit**: Always run `./scripts/check.sh`
-2. **Testing**: 149 integration tests must pass
+2. **Testing**: 183 integration tests must pass
 3. **SQLx**: Use `./scripts/prepare-sqlx.sh` for query cache updates
 4. **OpenAPI**: Use `./scripts/prepare-openapi.sh` for API schema updates
 5. **Frontend**: Run `cd web && ./scripts/check-web.sh` for React validation
@@ -221,3 +221,5 @@ validate_project_root
 - `GET /api/v1/admin/users/stats` - User analytics (Admin)
 
 This starter provides a solid foundation for learning Rust web development with modern patterns for authentication, task processing, monitoring, testing, and rapid module scaffolding.
+- cargo nextest list is the reliable way to count for tests
+- parsing @docs/openapi.json is the reliable way to count endpoints

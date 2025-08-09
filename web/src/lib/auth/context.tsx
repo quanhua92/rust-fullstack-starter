@@ -101,20 +101,12 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 			// Don't schedule if token is already expired or expires very soon
 			if (timeUntilExpiration <= 60 * 1000) {
 				// Less than 1 minute remaining
-				console.log("Token expires very soon, forcing refresh now");
 				refreshToken();
 				return;
 			}
 
-			console.log(
-				`Scheduling token refresh in ${Math.round(refreshTime / 1000 / 60)} minutes`,
-			);
-
 			const timeoutId = setTimeout(async () => {
-				const success = await refreshToken();
-				if (!success) {
-					console.log("Token refresh failed, user will be logged out");
-				}
+				await refreshToken();
 			}, refreshTime);
 
 			return timeoutId;
@@ -217,9 +209,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 			const response = await apiClient.refreshToken();
 			if (response.success && response.data) {
 				// Token was successfully refreshed with new expiration
-				console.log(
-					`Token refreshed successfully. New expiration: ${response.data.expires_at}`,
-				);
 				// Update stored expiration time for smart refresh scheduling
 				setTokenExpiration(response.data.expires_at);
 				// Refresh user data to ensure consistency

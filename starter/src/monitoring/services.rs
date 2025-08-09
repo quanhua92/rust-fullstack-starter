@@ -12,14 +12,16 @@ use uuid::Uuid;
 // Event management functions
 
 pub async fn create_event(conn: &mut DbConn, request: CreateEventRequest) -> Result<Event> {
+    // Validate input using the Validate trait
+    request.validate()?;
+
     let id = Uuid::new_v4();
     let recorded_at = request.recorded_at.unwrap_or_else(Utc::now);
-    let tags = json!(request.tags);
-    let payload = json!(request.payload);
+    let tags_json = json!(request.tags);
+    let payload_json = json!(request.payload);
 
-    // Validate event_type string and convert to enum
-    let event_type = EventType::from_str(&request.event_type)
-        .map_err(|_| Error::validation("event_type", "Invalid event type"))?;
+    // Convert event_type string to enum (already validated in request.validate())
+    let event_type = EventType::from_str(&request.event_type).unwrap();
 
     let event = sqlx::query!(
         r#"
@@ -32,8 +34,8 @@ pub async fn create_event(conn: &mut DbConn, request: CreateEventRequest) -> Res
         request.source,
         request.message,
         request.level,
-        tags,
-        payload,
+        tags_json,
+        payload_json,
         recorded_at
     )
     .fetch_one(&mut *conn)
@@ -141,6 +143,9 @@ pub async fn find_event_by_id(conn: &mut DbConn, id: Uuid) -> Result<Option<Even
 // Metric management functions
 
 pub async fn create_metric(conn: &mut DbConn, request: CreateMetricRequest) -> Result<Metric> {
+    // Validate input using the Validate trait
+    request.validate()?;
+
     let id = Uuid::new_v4();
     let recorded_at = request.recorded_at.unwrap_or_else(Utc::now);
     let labels = json!(request.labels);
@@ -403,7 +408,99 @@ pub async fn find_incident_by_id(conn: &mut DbConn, id: Uuid) -> Result<Option<I
     Ok(incident)
 }
 
+/// Find incident by ID with SELECT FOR UPDATE to prevent race conditions
+pub async fn find_incident_by_id_for_update(
+    conn: &mut DbConn,
+    id: Uuid,
+) -> Result<Option<Incident>> {
+    let incident = sqlx::query_as!(
+        Incident,
+        r#"
+        SELECT id, title, description, 
+               severity, status, 
+               started_at, resolved_at, root_cause, 
+               created_by, assigned_to, created_at, updated_at
+        FROM incidents
+        WHERE id = $1
+        FOR UPDATE
+        "#,
+        id
+    )
+    .fetch_optional(&mut *conn)
+    .await
+    .map_err(Error::from_sqlx)?;
+
+    Ok(incident)
+}
+
 pub async fn update_incident(
+    conn: &mut DbConn,
+    id: Uuid,
+    request: UpdateIncidentRequest,
+) -> Result<Incident> {
+    let updated_incident = sqlx::query!(
+        r#"
+        UPDATE incidents 
+        SET title = COALESCE($2, title),
+            description = COALESCE($3, description),
+            severity = COALESCE($4, severity),
+            status = COALESCE($5, status),
+            root_cause = COALESCE($6, root_cause),
+            assigned_to = COALESCE($7, assigned_to),
+            resolved_at = CASE 
+                WHEN $5 = 'resolved' AND resolved_at IS NULL 
+                THEN NOW() 
+                ELSE resolved_at 
+            END,
+            updated_at = NOW()
+        WHERE id = $1
+        RETURNING id, title, description, 
+                 severity, status, 
+                 started_at, resolved_at, root_cause, 
+                 created_by, assigned_to, created_at, updated_at
+        "#,
+        id,
+        request.title,
+        request.description,
+        request.severity.map(|s| s.to_string()),
+        request.status.map(|s| s.to_string()),
+        request.root_cause,
+        request.assigned_to
+    )
+    .fetch_one(&mut *conn)
+    .await
+    .map_err(Error::from_sqlx)?;
+
+    let incident = Incident {
+        id: updated_incident.id,
+        title: updated_incident.title,
+        description: updated_incident.description,
+        severity: IncidentSeverity::from_str(&updated_incident.severity).map_err(|_| {
+            Error::InvalidInput(format!(
+                "Invalid incident severity in database: {}",
+                updated_incident.severity
+            ))
+        })?,
+        status: IncidentStatus::from_str(&updated_incident.status).map_err(|_| {
+            Error::InvalidInput(format!(
+                "Invalid incident status in database: {}",
+                updated_incident.status
+            ))
+        })?,
+        started_at: updated_incident.started_at,
+        resolved_at: updated_incident.resolved_at,
+        root_cause: updated_incident.root_cause,
+        created_by: updated_incident.created_by,
+        assigned_to: updated_incident.assigned_to,
+        created_at: updated_incident.created_at,
+        updated_at: updated_incident.updated_at,
+    };
+
+    Ok(incident)
+}
+
+/// Update incident within a transaction (for use with explicit transactions)
+pub async fn update_incident_in_transaction(
     conn: &mut DbConn,
     id: Uuid,
     request: UpdateIncidentRequest,
@@ -479,7 +576,7 @@ pub async fn get_incident_timeline(
     // Get incident details first
     let incident = find_incident_by_id(conn, incident_id)
         .await?
-        .ok_or_else(|| Error::NotFound(format!("Incident with id {incident_id}")))?;
+        .ok_or_else(|| Error::NotFound("Incident not found".to_string()))?;
 
     let limit = limit.unwrap_or(100);
     let offset = offset.unwrap_or(0);
@@ -555,57 +652,37 @@ pub async fn get_incident_timeline(
 pub async fn get_monitoring_stats(conn: &mut DbConn) -> Result<MonitoringStats> {
     let one_hour_ago = Utc::now() - chrono::Duration::hours(1);
 
-    let total_events = sqlx::query_scalar!("SELECT COUNT(*) FROM events")
-        .fetch_one(&mut *conn)
-        .await
-        .map_err(Error::from_sqlx)?
-        .unwrap_or(0);
-
-    let total_metrics = sqlx::query_scalar!("SELECT COUNT(*) FROM metrics")
-        .fetch_one(&mut *conn)
-        .await
-        .map_err(Error::from_sqlx)?
-        .unwrap_or(0);
-
-    let active_alerts = sqlx::query_scalar!("SELECT COUNT(*) FROM alerts WHERE status = 'active'")
-        .fetch_one(&mut *conn)
-        .await
-        .map_err(Error::from_sqlx)?
-        .unwrap_or(0);
-
-    let open_incidents = sqlx::query_scalar!(
-        "SELECT COUNT(*) FROM incidents WHERE status IN ('open', 'investigating')"
-    )
-    .fetch_one(&mut *conn)
-    .await
-    .map_err(Error::from_sqlx)?
-    .unwrap_or(0);
-
-    let events_last_hour = sqlx::query_scalar!(
-        "SELECT COUNT(*) FROM events WHERE created_at >= $1",
+    // Optimize with a single query using CTEs (Common Table Expressions) to reduce database roundtrips
+    // This reduces 6 separate queries to 1 query, improving performance and consistency
+    let stats = sqlx::query!(
+        r#"
+        WITH stats AS (
+            SELECT 
+                (SELECT COUNT(*) FROM events) as total_events,
+                (SELECT COUNT(*) FROM metrics) as total_metrics,
+                (SELECT COUNT(*) FROM alerts WHERE status = 'active') as active_alerts,
+                (SELECT COUNT(*) FROM incidents WHERE status IN ('open', 'investigating')) as open_incidents,
+                (SELECT COUNT(*) FROM events WHERE created_at >= $1) as events_last_hour,
+                (SELECT COUNT(*) FROM metrics WHERE created_at >= $1) as metrics_last_hour
+        )
+        SELECT 
+            total_events, total_metrics, active_alerts, 
+            open_incidents, events_last_hour, metrics_last_hour
+        FROM stats
+        "#,
         one_hour_ago
     )
     .fetch_one(&mut *conn)
     .await
-    .map_err(Error::from_sqlx)?
-    .unwrap_or(0);
-
-    let metrics_last_hour = sqlx::query_scalar!(
-        "SELECT COUNT(*) FROM metrics WHERE created_at >= $1",
-        one_hour_ago
-    )
-    .fetch_one(&mut *conn)
-    .await
-    .map_err(Error::from_sqlx)?
-    .unwrap_or(0);
+    .map_err(Error::from_sqlx)?;
 
     Ok(MonitoringStats {
-        total_events,
-        total_metrics,
-        active_alerts,
-        open_incidents,
-        events_last_hour,
-        metrics_last_hour,
+        total_events: stats.total_events.unwrap_or(0),
+        total_metrics: stats.total_metrics.unwrap_or(0),
+        active_alerts: stats.active_alerts.unwrap_or(0),
+        open_incidents: stats.open_incidents.unwrap_or(0),
+        events_last_hour: stats.events_last_hour.unwrap_or(0),
+        metrics_last_hour: stats.metrics_last_hour.unwrap_or(0),
     })
 }
 
@@ -613,14 +690,20 @@ pub async fn get_prometheus_metrics(conn: &mut DbConn) -> Result<String> {
     // Get metrics from the last 24 hours to keep output manageable
     let last_24h = Utc::now() - chrono::Duration::hours(24);
 
+    // Security: Limit to 10,000 metrics to prevent memory exhaustion and slow responses
+    // This protects against scenarios where a system has accumulated millions of metrics
+    const MAX_PROMETHEUS_METRICS: i64 = 10_000;
+
     let metrics = sqlx::query!(
         r#"
         SELECT name, metric_type, value, labels, recorded_at
         FROM metrics 
         WHERE recorded_at >= $1
         ORDER BY name, recorded_at DESC
+        LIMIT $2
         "#,
-        last_24h
+        last_24h,
+        MAX_PROMETHEUS_METRICS
     )
     .fetch_all(&mut *conn)
     .await

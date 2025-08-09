@@ -1,0 +1,2 @@
+# Directory for SSL certificates
+# Place fullchain.pem and privkey.pem here for production deployment

@@ -50,7 +50,7 @@ cd rust-fullstack-starter
 
 **Check health:**
 ```bash
-curl http://localhost:3000/health
+curl http://localhost:3000/api/v1/health
 ```
 
 **Explore API documentation:**
@@ -145,8 +145,8 @@ cd web && pnpm dev
 - **⚙️ Background Tasks** - Async job processing with retry logic and dead letter queue
 - **🏗️ Module Generator** - Secure template-based code generation with ownership patterns, transaction safety, and comprehensive testing
 - **📊 API Documentation** - Interactive OpenAPI/Swagger docs
-- **🧪 Testing Framework** - 157 integration tests + comprehensive API endpoint testing (83 endpoints) including 9 security vulnerability tests
-- **📊 Monitoring & Observability** - Complete monitoring system with 14 API endpoints, comprehensive web UI dashboard, advanced tag filtering, RBAC-integrated interface, enhanced error handling
+- **🧪 Testing Framework** - 183 integration tests + comprehensive API endpoint testing (48 endpoints) including security vulnerability tests
+- **📊 Monitoring & Observability** - Complete monitoring system with 14 API endpoints, comprehensive security protections, web UI dashboard, advanced tag filtering, RBAC-integrated interface with ownership-based authorization
 - **🔥 Chaos Testing** - Docker-based resilience testing with 10 scenarios
 - **⚙️ Admin CLI** - Direct database access for monitoring and maintenance
 - **🐳 Docker Support** - Development and production containers with multi-stage builds
@@ -164,8 +164,8 @@ cargo run -- revert module books --dry-run               # Preview revert
 ./scripts/test-template-with-curl.sh books               # Test generated API
 
 # Run tests
-cargo nextest run                    # Integration tests (157 tests)
-./scripts/test-with-curl.sh         # API endpoint tests (81 tests including monitoring)
+cargo nextest run                    # Integration tests (183 tests)
+./scripts/test-with-curl.sh         # API endpoint tests (48 endpoints)
 ./scripts/test-generate.sh          # Module generator system tests
 ./scripts/test-chaos.sh             # Chaos testing (10 scenarios)
 
@@ -201,32 +201,24 @@ rust-fullstack-starter/
     │   ├── monitoring/ # Observability system (14 endpoints)
     │   └── ...       # Health, errors, database, server
     ├── migrations/   # Database schema evolution (6 migrations)
-    └── tests/        # Integration tests (146 tests)
+    └── tests/        # Integration tests (183 tests)
 ```
 
 ## Documentation
 
 **📚 Complete documentation available in [`docs/`](docs/)**
 
-### Quick Links
-- **[Getting Started](docs/getting-started/getting-started.md)** - Detailed setup guide
-- **[Development Guide](docs/development/development.md)** - Daily workflow
-- **[Architecture Guides](docs/guides/)** - System design and patterns
-- **[API Reference](docs/reference/api-reference.md)** - Complete endpoint docs
-- **[Production Deployment](docs/deployment/production-deployment.md)** - Docker deployment
+### Quick Navigation
+- **[Quick Start](docs/QUICK-START.md)** - 2-minute setup guide
+- **[Architecture Guide](docs/ARCHITECTURE-GUIDE.md)** - System design and patterns
+- **[Implementation Guide](docs/IMPLEMENTATION-GUIDE.md)** - Core systems and testing
+- **[API Reference](docs/API-REFERENCE.md)** - All 48 endpoints with examples
+- **[Production Deployment](docs/PRODUCTION-DEPLOYMENT.md)** - Docker deployment
+- **[Troubleshooting](docs/TROUBLESHOOTING.md)** - Debugging and diagnostics
+- **[Advanced Topics](docs/ADVANCED-TOPICS.md)** - Chaos testing and frontend patterns
 
-### Learning Guides
-- [Authentication & Authorization](docs/guides/02-authentication-and-authorization.md) - **Session-based auth with RBAC**
-- [User Management System](docs/guides/12-user-management.md) - **Complete user lifecycle with 12 endpoints**
-- [Background Tasks](docs/guides/04-background-tasks.md)
-- [Module Generator](docs/module-generator.md) - **Template-based CRUD generation with safety features**
-- [Module Generator: First Principles](docs/guides/16-module-generator-first-principles.md) - **Deep dive into architecture and patterns**
-- [Testing Framework](docs/guides/08-testing.md)
-- [Chaos Testing](docs/guides/09-chaos-testing.md) - **Enhanced with 10 scenarios**
-- [Monitoring & Observability](docs/guides/15-monitoring-and-observability.md) - **Complete monitoring system with 14 endpoints**
-
-### Inspiration & Ideas
-- [AI Development Ideas](docs/AI-IDEAS.md) - **💡 Conceptual exploration of AI-first patterns for inspiration** - *Ideas for building AI-powered applications using this starter as foundation*
+### Additional Resources
+- **[AI-First Development Ideas](docs/ideas/ai-first.md)** - Conceptual approaches and future enhancements
 
 ## API Endpoints
 
@@ -315,7 +307,7 @@ cargo run -- admin clear-completed              # Clean old tasks
 
 ```bash
 # Docker deployment
-cp .env.prod.example .env.prod
+cp .env.example .env.prod
 # Edit .env.prod with production settings
 docker-compose -f docker-compose.prod.yaml --env-file .env.prod up -d
 ```
@@ -326,4 +318,4 @@ MIT License - see LICENSE file for details.
 
 ---
 
-*Ready to build? Start with the [Getting Started Guide](docs/getting-started/getting-started.md) for detailed setup instructions.*
+*Ready to build? Start with the [Quick Start Guide](docs/QUICK-START.md) for 2-minute setup or explore the [complete documentation](docs/) for deeper learning.*

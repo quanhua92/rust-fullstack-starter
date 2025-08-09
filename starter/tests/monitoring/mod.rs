@@ -3,6 +3,9 @@ use reqwest::StatusCode;
 use serde_json::json;
 use uuid::Uuid;
 
+// Include security tests
+mod security_tests;
+
 #[tokio::test]
 async fn test_create_event() {
     let app = spawn_app().await;
@@ -475,4 +478,513 @@ async fn test_prometheus_metrics_endpoint() {
     assert!(text.contains("# TYPE"));
     assert!(text.contains("monitoring_total_events"));
     assert!(text.contains("monitoring_total_metrics"));
+}
+
+// ===== SECURITY TESTS FOR TAG PARSING VALIDATION =====
+
+#[tokio::test]
+async fn test_tag_parsing_security_too_many_tags() {
+    let app = spawn_app().await;
+    let factory = TestDataFactory::new(app.clone());
+
+    let unique_username = format!("taguser_{}", &Uuid::new_v4().to_string()[..8]);
+    let (_user, token) = factory.create_authenticated_user(&unique_username).await;
+
+    // Create a query with more than 50 tag pairs (the limit)
+    let mut tag_pairs = Vec::new();
+    for i in 0..51 {
+        tag_pairs.push(format!("key{}:value{}", i, i));
+    }
+    let tags_query = tag_pairs.join(",");
+
+    let response = app
+        .get_auth(
+            &format!("/api/v1/monitoring/events?tags={}", tags_query),
+            &token.token,
+        )
+        .await;
+
+    assert_status(&response, StatusCode::BAD_REQUEST);
+    let json: serde_json::Value = response.json().await.unwrap();
+    let error_message = json["error"]["message"].as_str().unwrap();
+    assert!(error_message.contains("Too many tag pairs"));
+    assert!(error_message.contains("maximum 50"));
+}
+
+#[tokio::test]
+async fn test_tag_parsing_security_key_too_long() {
+    let app = spawn_app().await;
+    let factory = TestDataFactory::new(app.clone());
+
+    let unique_username = format!("taguser_{}", &Uuid::new_v4().to_string()[..8]);
+    let (_user, token) = factory.create_authenticated_user(&unique_username).await;
+
+    // Create a tag key longer than 100 characters (the limit)
+    let long_key = "a".repeat(101);
+    let tags_query = format!("{}:value", long_key);
+
+    let response = app
+        .get_auth(
+            &format!("/api/v1/monitoring/events?tags={}", tags_query),
+            &token.token,
+        )
+        .await;
+
+    assert_status(&response, StatusCode::BAD_REQUEST);
+    let json: serde_json::Value = response.json().await.unwrap();
+    let error_message = json["error"]["message"].as_str().unwrap();
+    assert!(error_message.contains("Tag key too long"));
+    assert!(error_message.contains("maximum 100 characters"));
+}
+
+#[tokio::test]
+async fn test_tag_parsing_security_value_too_long() {
+    let app = spawn_app().await;
+    let factory = TestDataFactory::new(app.clone());
+
+    let unique_username = format!("taguser_{}", &Uuid::new_v4().to_string()[..8]);
+    let (_user, token) = factory.create_authenticated_user(&unique_username).await;
+
+    // Create a tag value longer than 500 characters (the limit)
+    let long_value = "a".repeat(501);
+    let tags_query = format!("key:{}", long_value);
+
+    let response = app
+        .get_auth(
+            &format!("/api/v1/monitoring/events?tags={}", tags_query),
+            &token.token,
+        )
+        .await;
+
+    assert_status(&response, StatusCode::BAD_REQUEST);
+    let json: serde_json::Value = response.json().await.unwrap();
+    let error_message = json["error"]["message"].as_str().unwrap();
+    assert!(error_message.contains("Tag value too long"));
+    assert!(error_message.contains("maximum 500 characters"));
+}
+
+#[tokio::test]
+async fn test_tag_parsing_security_invalid_characters() {
+    let app = spawn_app().await;
+    let factory = TestDataFactory::new(app.clone());
+
+    let unique_username = format!("taguser_{}", &Uuid::new_v4().to_string()[..8]);
+    let (_user, token) = factory.create_authenticated_user(&unique_username).await;
+
+    // Test various invalid characters in tag keys
+    let invalid_keys = vec![
+        ("key$injection", "key%24injection:value"),
+        ("key;drop", "key%3Bdrop:value"),
+        ("key'or'1", "key%27or%271:value"),
+        ("key\"quote", "key%22quote:value"),
+        ("key<script>", "key%3Cscript%3E:value"),
+        ("key|pipe", "key%7Cpipe:value"),
+        ("key%percent", "key%25percent:value"),
+        ("key#hash", "key%23hash:value"),
+        ("key@at", "key%40at:value"),
+        ("key+plus", "key%2Bplus:value"),
+        ("key=equals", "key%3Dequals:value"),
+        ("key space", "key%20space:value"),
+        ("key\ttab", "key%09tab:value"),
+        ("key\nnewline", "key%0Anewline:value"),
+    ];
+
+    for (invalid_key, encoded_query) in invalid_keys {
+        let response = app
+            .get_auth(
+                &format!("/api/v1/monitoring/events?tags={}", encoded_query),
+                &token.token,
+            )
+            .await;
+
+        assert_status(&response, StatusCode::BAD_REQUEST);
+        let json: serde_json::Value = response.json().await.unwrap();
+        let error_message = json["error"]["message"].as_str().unwrap();
+        assert!(
+            error_message.contains("alphanumeric characters, underscores, hyphens, and dots")
+                || error_message.contains("Invalid tag format"),
+            "Failed for key: {} with error: {}",
+            invalid_key,
+            error_message
+        );
+    }
+}
+
+#[tokio::test]
+async fn test_tag_parsing_security_valid_characters() {
+    let app = spawn_app().await;
+    let factory = TestDataFactory::new(app.clone());
+
+    let unique_username = format!("taguser_{}", &Uuid::new_v4().to_string()[..8]);
+    let (_user, token) = factory.create_authenticated_user(&unique_username).await;
+
+    // Test valid characters in tag keys
+    let valid_keys = vec![
+        "key123",
+        "key_underscore",
+        "key-hyphen",
+        "key.dot",
+        "Key_With-Multiple.Valid123",
+        "a",
+        "A",
+        "1",
+        "_",
+        "-",
+        ".",
+    ];
+
+    for valid_key in valid_keys {
+        let tags_query = format!("{}:value", valid_key);
+        let response = app
+            .get_auth(
+                &format!("/api/v1/monitoring/events?tags={}", tags_query),
+                &token.token,
+            )
+            .await;
+
+        // Should not fail due to character validation (may fail for other reasons like no matching events)
+        let status = response.status();
+        assert!(
+            status == StatusCode::OK || status == StatusCode::NOT_FOUND,
+            "Valid key '{}' was rejected with status: {}",
+            valid_key,
+            status
+        );
+    }
+}
+
+#[tokio::test]
+async fn test_tag_parsing_security_duplicate_keys() {
+    let app = spawn_app().await;
+    let factory = TestDataFactory::new(app.clone());
+
+    let unique_username = format!("taguser_{}", &Uuid::new_v4().to_string()[..8]);
+    let (_user, token) = factory.create_authenticated_user(&unique_username).await;
+
+    let tags_query = "key:value1,key:value2"; // Duplicate key
+
+    let response = app
+        .get_auth(
+            &format!("/api/v1/monitoring/events?tags={}", tags_query),
+            &token.token,
+        )
+        .await;
+
+    assert_status(&response, StatusCode::BAD_REQUEST);
+    let json: serde_json::Value = response.json().await.unwrap();
+    let error_message = json["error"]["message"].as_str().unwrap();
+    assert!(error_message.contains("Duplicate tag keys are not allowed"));
+}
+
+#[tokio::test]
+async fn test_tag_parsing_security_empty_keys_values() {
+    let app = spawn_app().await;
+    let factory = TestDataFactory::new(app.clone());
+
+    let unique_username = format!("taguser_{}", &Uuid::new_v4().to_string()[..8]);
+    let (_user, token) = factory.create_authenticated_user(&unique_username).await;
+
+    // Test empty key and value combinations
+    let invalid_tags = vec![
+        ":value",  // Empty key
+        "key:",    // Empty value
+        " :value", // Whitespace-only key
+        "key: ",   // Whitespace-only value
+        "",        // Empty string
+        ":",       // Just colon
+        " : ",     // Just whitespace and colon
+    ];
+
+    for invalid_tag in invalid_tags {
+        let response = app
+            .get_auth(
+                &format!("/api/v1/monitoring/events?tags={}", invalid_tag),
+                &token.token,
+            )
+            .await;
+
+        if !invalid_tag.is_empty() && invalid_tag != " " {
+            assert_status(&response, StatusCode::BAD_REQUEST);
+            let json: serde_json::Value = response.json().await.unwrap();
+            let error_message = json["error"]["message"].as_str().unwrap();
+            assert!(
+                error_message.contains("Tag keys and values cannot be empty")
+                    || error_message.contains("Invalid tag format"),
+                "Failed for tag: '{}' with error: {}",
+                invalid_tag,
+                error_message
+            );
+        }
+    }
+}
+
+// ===== SECURITY TESTS FOR AUTHORIZATION BOUNDARY CONDITIONS =====
+
+#[tokio::test]
+async fn test_event_source_authorization_system_sources_require_moderator() {
+    let app = spawn_app().await;
+    let factory = TestDataFactory::new(app.clone());
+
+    // Create regular user
+    let unique_username = format!("user_{}", &Uuid::new_v4().to_string()[..8]);
+    let (_user, token) = factory.create_authenticated_user(&unique_username).await;
+
+    let system_sources = vec![
+        "system-auth",
+        "health-check",
+        "monitoring-stats",
+        "system-database",
+        "health-api",
+        "monitoring-alerts",
+    ];
+
+    for system_source in system_sources {
+        let event_data = json!({
+            "event_type": "log",
+            "source": system_source,
+            "message": "System event"
+        });
+
+        let response = app
+            .post_json_auth("/api/v1/monitoring/events", &event_data, &token.token)
+            .await;
+
+        assert_status(&response, StatusCode::FORBIDDEN);
+        let json: serde_json::Value = response.json().await.unwrap();
+        let error_message = json["error"]["message"].as_str().unwrap();
+        assert!(error_message.contains("not authorized"));
+        assert!(error_message.contains(&unique_username));
+    }
+}
+
+#[tokio::test]
+async fn test_event_source_authorization_system_sources_allowed_for_moderator() {
+    let app = spawn_app().await;
+    let factory = TestDataFactory::new(app.clone());
+
+    // Create moderator user
+    let unique_username = format!("mod_{}", &Uuid::new_v4().to_string()[..8]);
+    let (_user, token) = factory
+        .create_authenticated_moderator(&unique_username)
+        .await;
+
+    let system_sources = vec!["system-auth", "health-check", "monitoring-stats"];
+
+    for system_source in system_sources {
+        let event_data = json!({
+            "event_type": "log",
+            "source": system_source,
+            "message": "System event from moderator"
+        });
+
+        let response = app
+            .post_json_auth("/api/v1/monitoring/events", &event_data, &token.token)
+            .await;
+
+        assert_status(&response, StatusCode::OK);
+    }
+}
+
+#[tokio::test]
+async fn test_event_source_authorization_generic_sources_allowed() {
+    let app = spawn_app().await;
+    let factory = TestDataFactory::new(app.clone());
+
+    let unique_username = format!("user_{}", &Uuid::new_v4().to_string()[..8]);
+    let (_user, token) = factory.create_authenticated_user(&unique_username).await;
+
+    let allowed_sources = vec![
+        "app-frontend",
+        "web-server",
+        "api-gateway",
+        "test-suite",
+        "db-migration",
+        "generic_source",
+        "simple",
+    ];
+
+    for source in allowed_sources {
+        let event_data = json!({
+            "event_type": "log",
+            "source": source,
+            "message": "Generic event"
+        });
+
+        let response = app
+            .post_json_auth("/api/v1/monitoring/events", &event_data, &token.token)
+            .await;
+
+        assert_status(&response, StatusCode::OK);
+    }
+}
+
+#[tokio::test]
+async fn test_event_source_authorization_user_owned_sources() {
+    let app = spawn_app().await;
+    let factory = TestDataFactory::new(app.clone());
+
+    let unique_username = format!("testuser_{}", &Uuid::new_v4().to_string()[..8]);
+    let (user, token) = factory.create_authenticated_user(&unique_username).await;
+
+    let user_owned_sources = vec![
+        format!("{}-service", unique_username),
+        format!("user-{}-worker", user.id),
+        format!("{}-application", unique_username),
+        format!("{}-module", unique_username),
+    ];
+
+    for source in user_owned_sources {
+        let event_data = json!({
+            "event_type": "log",
+            "source": source,
+            "message": "User-owned event"
+        });
+
+        let response = app
+            .post_json_auth("/api/v1/monitoring/events", &event_data, &token.token)
+            .await;
+
+        assert_status(&response, StatusCode::OK);
+    }
+}
+
+#[tokio::test]
+async fn test_event_source_authorization_other_user_sources_blocked() {
+    let app = spawn_app().await;
+    let factory = TestDataFactory::new(app.clone());
+
+    let user1_username = format!("user1_{}", &Uuid::new_v4().to_string()[..8]);
+    let user2_username = format!("user2_{}", &Uuid::new_v4().to_string()[..8]);
+
+    let (user1, _) = factory.create_authenticated_user(&user1_username).await;
+    let (_user2, token2) = factory.create_authenticated_user(&user2_username).await;
+
+    let other_user_sources = vec![
+        format!("{}-service", user1_username),
+        format!("user-{}-worker", user1.id),
+        format!("unknown_user-service"),
+        format!("other-user-application"),
+    ];
+
+    for source in other_user_sources {
+        let event_data = json!({
+            "event_type": "log",
+            "source": source,
+            "message": "Unauthorized event"
+        });
+
+        let response = app
+            .post_json_auth("/api/v1/monitoring/events", &event_data, &token2.token)
+            .await;
+
+        assert_status(&response, StatusCode::FORBIDDEN);
+        let json: serde_json::Value = response.json().await.unwrap();
+        let error_message = json["error"]["message"].as_str().unwrap();
+        assert!(error_message.contains("not authorized"));
+    }
+}
+
+#[tokio::test]
+async fn test_metric_name_authorization_system_metrics_require_moderator() {
+    let app = spawn_app().await;
+    let factory = TestDataFactory::new(app.clone());
+
+    // Create regular user
+    let unique_username = format!("user_{}", &Uuid::new_v4().to_string()[..8]);
+    let (_user, token) = factory.create_authenticated_user(&unique_username).await;
+
+    let system_metrics = vec![
+        "system_cpu_usage",
+        "health_check_duration",
+        "monitoring_event_count",
+        "system_memory_usage",
+        "health_database_latency",
+        "monitoring_alert_count",
+    ];
+
+    for system_metric in system_metrics {
+        let metric_data = json!({
+            "name": system_metric,
+            "metric_type": "gauge",
+            "value": 50.0
+        });
+
+        let response = app
+            .post_json_auth("/api/v1/monitoring/metrics", &metric_data, &token.token)
+            .await;
+
+        assert_status(&response, StatusCode::FORBIDDEN);
+        let json: serde_json::Value = response.json().await.unwrap();
+        let error_message = json["error"]["message"].as_str().unwrap();
+        assert!(error_message.contains("not authorized"));
+        assert!(error_message.contains(&unique_username));
+    }
+}
+
+#[tokio::test]
+async fn test_metric_name_authorization_generic_metrics_allowed() {
+    let app = spawn_app().await;
+    let factory = TestDataFactory::new(app.clone());
+
+    let unique_username = format!("user_{}", &Uuid::new_v4().to_string()[..8]);
+    let (_user, token) = factory.create_authenticated_user(&unique_username).await;
+
+    let allowed_metrics = vec![
+        "http_requests_total",
+        "response_time_seconds",
+        "cpu_usage",
+        "memory_usage_bytes",
+        "disk_usage_percent",
+        "network_bytes_sent",
+        "error_rate_percent",
+        "latency_ms",
+        "throughput_rps",
+        "requests_per_second",
+        "active_connections_count",
+        "queue_size_items",
+    ];
+
+    for metric in allowed_metrics {
+        let metric_data = json!({
+            "name": metric,
+            "metric_type": "gauge",
+            "value": 42.0
+        });
+
+        let response = app
+            .post_json_auth("/api/v1/monitoring/metrics", &metric_data, &token.token)
+            .await;
+
+        assert_status(&response, StatusCode::OK);
+    }
+}
+
+#[tokio::test]
+async fn test_metric_name_authorization_user_owned_metrics() {
+    let app = spawn_app().await;
+    let factory = TestDataFactory::new(app.clone());
+
+    let unique_username = format!("testuser_{}", &Uuid::new_v4().to_string()[..8]);
+    let (user, token) = factory.create_authenticated_user(&unique_username).await;
+
+    let user_owned_metrics = vec![
+        format!("{}_response_time", unique_username),
+        format!("user_{}_{}", user.id, "request_count"),
+        format!("{}_service_uptime", unique_username),
+        format!("{}_worker_processed", unique_username),
+    ];
+
+    for metric in user_owned_metrics {
+        let metric_data = json!({
+            "name": metric,
+            "metric_type": "counter",
+            "value": 123.0
+        });
+
+        let response = app
+            .post_json_auth("/api/v1/monitoring/metrics", &metric_data, &token.token)
+            .await;
+
+        assert_status(&response, StatusCode::OK);
+    }
 }
