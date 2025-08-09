@@ -1,5 +1,5 @@
 use super::models::{AdminCommands, TaskInfo, TaskStats, TaskStatsSummary};
-use crate::{Database, error::Error};
+use crate::{Database, Error};
 use serde_json::json;
 use sqlx::Row;
 

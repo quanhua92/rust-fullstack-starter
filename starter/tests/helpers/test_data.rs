@@ -1,8 +1,8 @@
 use crate::helpers::test_app::{AuthToken, TestApp};
 use serde_json::json;
 use starter::{
-    models::{CreateUserRequest, User},
     rbac::UserRole,
+    users::models::{CreateUserRequest, User},
 };
 
 pub struct TestDataFactory {
@@ -275,7 +275,7 @@ impl TestDataFactory {
 
 /// Test data builders for creating custom requests  
 pub mod builders {
-    use starter::{models::CreateUserRequest, rbac::UserRole};
+    use starter::{rbac::UserRole, users::models::{CreateUserRequest, User}};
 
     pub struct UserBuilder {
         username: String,

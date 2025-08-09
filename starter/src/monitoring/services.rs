@@ -1,8 +1,5 @@
 use crate::monitoring::models::*;
-use crate::{
-    error::Error,
-    types::{DbConn, Result},
-};
+use crate::{DbConn, Error, Result};
 use chrono::Utc;
 use serde_json::json;
 use std::collections::HashMap;

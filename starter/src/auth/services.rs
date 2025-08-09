@@ -1,9 +1,6 @@
 use crate::auth::models::{LoginRequest, LoginResponse, RegisterRequest, Session};
 use crate::users::{models::UserProfile, services as user_services};
-use crate::{
-    error::Error,
-    types::{DbConn, Result},
-};
+use crate::{DbConn, Error, Result};
 use chrono::{Duration, Utc};
 use sqlx::Acquire;
 use uuid::Uuid;

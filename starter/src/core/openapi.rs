@@ -18,7 +18,7 @@ use crate::tasks::api::{
     CreateTaskApiRequest, RegisterTaskTypeRequest, TaskQueryParams, TaskTypeResponse,
 };
 use crate::tasks::types::{CreateTaskRequest, TaskPriority, TaskResponse, TaskStats, TaskStatus};
-use crate::types::{DetailedHealthResponse, ErrorResponse, HealthResponse};
+use crate::{api::ErrorResponse, health::{DetailedHealthResponse, HealthResponse}};
 use crate::users::models::{
     ChangePasswordRequest, CreateUserRequest, DeleteAccountRequest, DeleteUserRequest,
     RecentRegistrations, ResetPasswordRequest, UpdateProfileRequest, UpdateUserProfileRequest,

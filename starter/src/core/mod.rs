@@ -1,12 +1,21 @@
-//! Core application types and functionality
+//! Core application infrastructure
 //!
-//! This module contains the fundamental types and structures that form
-//! the backbone of the application, including application state, database
-//! types, and result types.
+//! This module contains the fundamental infrastructure components that form
+//! the backbone of the application, including configuration, database,
+//! error handling, application state, server setup, and OpenAPI documentation.
 
+pub mod config;
+pub mod database;
+pub mod error;
+pub mod openapi;
+pub mod server;
 pub mod state;
 pub mod types;
 
-// Re-export commonly used types
+// Re-export commonly used types for convenience
+pub use config::AppConfig;
+pub use database::Database;
+pub use error::Error;
+pub use server::{create_router, start_server};
 pub use state::AppState;
 pub use types::{DbConn, DbPool, Result};

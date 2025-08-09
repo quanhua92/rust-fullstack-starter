@@ -724,7 +724,7 @@ async fn test_metadata_persistence_through_all_state_transitions() {
     let factory = TestDataFactory::new_with_task_types(app.clone()).await;
 
     // Start a task processor for this test (simulates the worker)
-    use starter::database::Database;
+    use starter::Database;
     use starter::tasks::processor::{ProcessorConfig, TaskProcessor};
     use std::time::Duration;
 

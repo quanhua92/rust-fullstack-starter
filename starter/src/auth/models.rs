@@ -1,4 +1,4 @@
-use crate::{error::Error, types::Result};
+use crate::{Error, Result};
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
@@ -122,4 +122,23 @@ pub struct LoginResponse {
 pub struct RefreshResponse {
     pub expires_at: DateTime<Utc>,
     pub refreshed_at: DateTime<Utc>,
+}
+
+// API Keys model
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
+pub struct ApiKey {
+    pub id: Uuid,
+    pub name: String,
+    pub description: Option<String>,
+    #[serde(skip_serializing)] // Never serialize key hash
+    pub key_hash: String,
+    pub key_prefix: String,
+    pub created_by: Uuid,
+    pub expires_at: Option<DateTime<Utc>>,
+    pub is_active: bool,
+    pub permissions: serde_json::Value,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
+    pub last_used_at: Option<DateTime<Utc>>,
+    pub usage_count: i64,
 }

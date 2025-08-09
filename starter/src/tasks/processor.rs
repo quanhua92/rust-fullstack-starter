@@ -7,7 +7,7 @@ use tokio::time::{interval, timeout};
 use tracing::{debug, error, info, warn};
 use uuid::Uuid;
 
-use crate::database::Database;
+use crate::Database;
 use crate::tasks::{
     handlers::TaskHandler,
     retry::CircuitBreaker,

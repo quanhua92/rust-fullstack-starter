@@ -3,7 +3,7 @@
 //! This module defines fundamental types used throughout the application,
 //! including database connections, result types, and other core abstractions.
 
-use crate::error::Error;
+use crate::core::error::Error;
 
 /// Application result type with our custom error
 pub type Result<T> = std::result::Result<T, Error>;

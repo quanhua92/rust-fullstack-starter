@@ -1,6 +1,6 @@
 use crate::{
     auth::services,
-    types::{DbPool, Result},
+    DbPool, Result,
 };
 use tokio::time::{Duration, interval};
 use tracing::{error, info};
@@ -30,6 +30,6 @@ async fn cleanup_expired_sessions(pool: &DbPool) -> Result<u64> {
     let mut conn = pool
         .acquire()
         .await
-        .map_err(crate::error::Error::from_sqlx)?;
+        .map_err(crate::Error::from_sqlx)?;
     services::cleanup_expired_sessions(conn.as_mut()).await
 }

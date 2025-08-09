@@ -1,5 +1,5 @@
-use crate::error::Error;
-use crate::types::Result;
+use crate::Error;
+use crate::Result;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use sqlx::FromRow;

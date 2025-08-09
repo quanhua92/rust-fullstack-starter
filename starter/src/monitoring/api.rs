@@ -3,7 +3,7 @@ use super::services;
 use crate::Error;
 use crate::auth::AuthUser;
 use crate::rbac::services as rbac_services;
-use crate::types::{ApiResponse, AppState, ErrorResponse};
+use crate::{api::{ApiResponse, ErrorResponse}, AppState};
 use axum::{
     Extension,
     body::Body,

@@ -2,7 +2,7 @@ use super::{
     models::{Cli, Commands, GenerateCommands, RevertCommands},
     services::{TaskTypeService, execute_admin_command},
 };
-use crate::{AppConfig, Database, server, tasks};
+use crate::{AppConfig, Database, core::server, tasks};
 use clap::Parser;
 
 /// Main CLI application handler
@@ -135,7 +135,7 @@ impl CliApp {
 
     /// Export OpenAPI specification to file
     async fn export_openapi(&self, output: String) -> Result<(), Box<dyn std::error::Error>> {
-        use crate::openapi;
+        use crate::core::openapi;
         use std::fs;
         use std::path::Path;
 

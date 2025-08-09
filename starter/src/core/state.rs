@@ -4,7 +4,7 @@
 //! all request handlers and contains configuration, database connections,
 //! and other global application context.
 
-use crate::{config::AppConfig, database::Database};
+use crate::core::{config::AppConfig, database::Database};
 use std::time::Instant;
 
 /// Application state shared across all handlers
