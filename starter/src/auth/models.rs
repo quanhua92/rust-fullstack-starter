@@ -11,7 +11,7 @@ pub struct Session {
     pub expires_at: DateTime<Utc>,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
-    pub last_activity_at: Option<DateTime<Utc>>,
+    pub last_activity_at: DateTime<Utc>,
     pub last_refreshed_at: Option<DateTime<Utc>>,
     pub user_agent: Option<String>,
     pub is_active: bool,

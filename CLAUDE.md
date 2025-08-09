@@ -222,4 +222,4 @@ validate_project_root
 
 This starter provides a solid foundation for learning Rust web development with modern patterns for authentication, task processing, monitoring, testing, and rapid module scaffolding.
 - cargo nextest list is the reliable way to count for tests
-- parsing @docs/openapi.json is the reliable way to count endpoints
+- parsing docs/openapi.json is the reliable way to count endpoints
