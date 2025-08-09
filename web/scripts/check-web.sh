@@ -133,7 +133,20 @@ fi
 run_cmd "🏗️ Step 7/9: Production build test" pnpm run build
 
 # 8. Unit/Integration tests
-run_cmd "🧪 Step 8/9: Running unit tests" pnpm run test
+print_status "step" "🧪 Step 8/9: Running frontend tests..."
+
+# Run unit tests first (fast, no server dependencies)
+run_cmd "Running unit tests (mocked)" pnpm run test:unit
+
+# Check if backend server is available for integration tests
+if check_port 3000 || curl -s "http://127.0.0.1:3000/api/v1/health" >/dev/null 2>&1; then
+    print_status "info" "Backend server available - running integration tests"
+    run_cmd "Running integration tests (real server)" pnpm run test:integration
+else
+    print_status "warning" "Backend server not available - skipping integration tests"
+    print_status "info" "Run './scripts/dev-server.sh' to enable integration tests"
+    run_cmd "Running integration tests (skipped)" pnpm run test:integration:skip
+fi
 
 # 9. End-to-end tests with Playwright
 print_status "step" "🎭 Step 9/9: Running E2E tests with Playwright..."

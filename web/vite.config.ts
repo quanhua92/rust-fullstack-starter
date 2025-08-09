@@ -15,6 +15,11 @@ export default defineConfig({
         target: 'http://localhost:3000',
         changeOrigin: true,
         secure: false
+      },
+      '/api-docs': {
+        target: 'http://localhost:3000',
+        changeOrigin: true,
+        secure: false
       }
     }
   },

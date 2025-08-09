@@ -3,7 +3,8 @@
 # Comprehensive quality check script
 # Runs all quality checks: format, lint, prepare SQLx, and tests
 # Usage: ./scripts/check.sh [--web]
-#   --web: Include comprehensive web frontend checks (adds ~30s)
+#   Default: Only run web unit tests (fast, ~30s total)
+#   --web: Include comprehensive web frontend checks (TypeScript, linting, build, E2E tests, adds ~2-3 minutes)
 
 set -e
 
@@ -17,8 +18,15 @@ for arg in "$@"; do
             ;;
         --help|-h)
             echo "Usage: $0 [--web]"
-            echo "  --web    Include comprehensive web frontend checks (TypeScript, linting, tests)"
+            echo ""
+            echo "Options:"
+            echo "  --web    Include comprehensive web frontend checks (TypeScript, linting, build, E2E tests)"
+            echo "           Default: Only run web unit tests (fast, ~2s)"
             echo "  --help   Show this help message"
+            echo ""
+            echo "Examples:"
+            echo "  $0          # Quick check with unit tests only (~30s)"
+            echo "  $0 --web    # Full check with all frontend tests (~2-3 minutes)"
             exit 0
             ;;
         *)
@@ -64,22 +72,24 @@ if [ -d "web" ]; then
         fi
         echo -e "${GREEN}✅ Web frontend comprehensive checks successful${NC}"
     else
-        echo -e "${BLUE}🏗️  Building web frontend (basic check)...${NC}"
-        echo -e "${YELLOW}💡 Use --web flag for comprehensive frontend checks${NC}"
-        if ! ./scripts/build-web.sh; then
-            echo -e "${RED}❌ Web frontend build failed!${NC}"
-            echo -e "${YELLOW}   Run './scripts/build-web.sh' for details${NC}"
+        echo -e "${BLUE}🏗️  Running web frontend unit tests (basic check)...${NC}"
+        echo -e "${YELLOW}💡 Use --web flag for comprehensive frontend checks (TypeScript, linting, E2E tests)${NC}"
+        if ! (cd web && pnpm run test:unit); then
+            echo -e "${RED}❌ Web frontend unit tests failed!${NC}"
+            echo -e "${YELLOW}   Run 'cd web && pnpm run test:unit' for details${NC}"
             exit 1
         fi
-        echo -e "${GREEN}✅ Web frontend build successful${NC}"
+        echo -e "${GREEN}✅ Web frontend unit tests passed${NC}"
     fi
     
-    # Check if build artifacts exist
-    if [ ! -f "web/dist/index.html" ]; then
-        echo -e "${RED}❌ Web build artifacts not found in web/dist/${NC}"
-        exit 1
+    # Check if build artifacts exist (only for comprehensive checks)
+    if [ "$RUN_WEB_CHECKS" = true ]; then
+        if [ ! -f "web/dist/index.html" ]; then
+            echo -e "${RED}❌ Web build artifacts not found in web/dist/${NC}"
+            exit 1
+        fi
+        echo -e "${GREEN}✅ Web build artifacts verified${NC}"
     fi
-    echo -e "${GREEN}✅ Web build artifacts verified${NC}"
 else
     echo -e "${YELLOW}⚠️  Web directory not found, skipping frontend checks${NC}"
 fi
@@ -226,8 +236,8 @@ echo -e "${GREEN}✅ OpenAPI specification and TypeScript types updated${NC}"
 # 9. Web static file serving smoke test
 echo -e "\n${BLUE}🚀 Step 9/9: Web static file serving smoke test...${NC}"
 
-# Only run if web was built earlier
-if [ -d "web" ] && [ -f "web/dist/index.html" ]; then
+# Only run if web was built (during comprehensive checks)
+if [ -d "web" ] && [ -f "web/dist/index.html" ] && [ "$RUN_WEB_CHECKS" = true ]; then
     echo -e "${BLUE}🧪 Testing static file serving integration...${NC}"
     
     # Start a temporary server for testing
@@ -342,9 +352,9 @@ echo -e "${BLUE}✨ Code is ready for commit${NC}"
 # Optional: Show summary of what was checked
 echo -e "\n${BLUE}📋 Summary of checks performed:${NC}"
 if [ "$RUN_WEB_CHECKS" = true ]; then
-    echo -e "   ✅ Web frontend comprehensive checks (TypeScript, linting, build, tests)"
+    echo -e "   ✅ Web frontend comprehensive checks (TypeScript, linting, build, E2E tests)"
 else
-    echo -e "   ✅ Web frontend build (basic check - use --web for comprehensive)"
+    echo -e "   ✅ Web frontend unit tests (basic check - use --web for comprehensive)"
 fi
 echo -e "   ✅ Cargo check (compilation)"
 echo -e "   ✅ Code formatting (cargo fmt)"
