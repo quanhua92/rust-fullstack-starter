@@ -1,6 +1,11 @@
 // Integration test setup utilities
 import { afterAll, beforeAll } from "vitest";
-import { testServerConfig, waitForServer } from "./mocks";
+import { waitForServer } from "./mocks";
+
+const testServerConfig = {
+	baseUrl: "http://localhost:3000/api/v1",
+	timeout: 10000,
+};
 
 // Helper for integration tests that need a running server
 export const setupIntegrationTest = () => {

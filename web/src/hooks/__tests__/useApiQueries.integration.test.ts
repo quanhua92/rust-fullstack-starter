@@ -6,7 +6,7 @@ import {
 import { createTestUser } from "@/test/mocks";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { renderHook, waitFor } from "@testing-library/react";
-import type { ReactNode } from "react";
+import React, { type ReactNode } from "react";
 import { afterEach, beforeAll, describe, expect, it } from "vitest";
 import {
 	useCurrentUser,
@@ -87,8 +87,8 @@ describeIntegration("useApiQueries Hook Integration Tests", () => {
 			);
 
 			expect(result.current.data?.status).toBe("healthy");
-			expect(result.current.data?.timestamp).toBeDefined();
-			expect(result.current.data?.checks).toBeDefined();
+			// Basic health doesn't have timestamp/checks - only detailed health does
+			expect(result.current.data?.version).toBeDefined();
 			expect(result.current.error).toBeNull();
 		});
 
@@ -146,17 +146,17 @@ describeIntegration("useApiQueries Hook Integration Tests", () => {
 				expect(result.current.isSuccess).toBe(true);
 			});
 
-			const firstTimestamp = result.current.data?.timestamp;
+			const firstUptime = result.current.data?.uptime;
 
 			// Manually refetch
 			await result.current.refetch();
 
 			await waitFor(() => {
-				expect(result.current.data?.timestamp).toBeDefined();
+				expect(result.current.data?.version).toBeDefined();
 			});
 
-			// Should get fresh data (timestamp should be different)
-			expect(result.current.data?.timestamp).not.toBe(firstTimestamp);
+			// Should get fresh data (uptime should be different, version same)
+			expect(result.current.data?.uptime).toBeGreaterThan(firstUptime || 0);
 		});
 	});
 
@@ -519,7 +519,7 @@ describeIntegration("useApiQueries Hook Integration Tests", () => {
 				expect(result1.current.isSuccess).toBe(true);
 			});
 
-			const firstTimestamp = result1.current.data?.timestamp;
+			const firstUptime = result1.current.data?.uptime;
 			unmount1();
 
 			// Second hook instance should use cached data initially
@@ -528,7 +528,7 @@ describeIntegration("useApiQueries Hook Integration Tests", () => {
 			});
 
 			// Should have cached data immediately
-			expect(result2.current.data?.timestamp).toBe(firstTimestamp);
+			expect(result2.current.data?.uptime).toBe(firstUptime);
 		});
 
 		it("should invalidate cache and refetch after mutations", async () => {

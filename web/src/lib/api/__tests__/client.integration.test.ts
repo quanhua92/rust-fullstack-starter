@@ -2,7 +2,7 @@ import {
 	describeIntegration,
 	setupIntegrationTest,
 } from "@/test/integration-setup";
-import { createTestUser, testServerConfig } from "@/test/mocks";
+import { createTestUser } from "@/test/mocks";
 import { afterEach, beforeAll, describe, expect, it } from "vitest";
 import { ApiClient, getAuthToken, setAuthToken } from "../client";
 
@@ -41,8 +41,9 @@ describeIntegration("API Client Integration Tests", () => {
 			expect(response.success).toBe(true);
 			expect(response.data).toBeDefined();
 			expect(response.data?.status).toBe("healthy");
-			expect(response.data?.timestamp).toBeDefined();
-			expect(response.data?.checks).toBeDefined();
+			// Basic health doesn't have timestamp/checks
+			expect(response.data?.version).toBeDefined();
+			expect(response.data?.uptime).toBeGreaterThan(0);
 		});
 
 		it("should get detailed health status", async () => {

@@ -26,10 +26,6 @@ export const mockAuthUser: components["schemas"]["AuthUser"] = {
 	username: "testuser",
 	email: "test@example.com",
 	role: "user",
-	is_active: true,
-	email_verified: true,
-	created_at: "2024-01-01T00:00:00Z",
-	updated_at: "2024-01-01T00:00:00Z",
 };
 
 export const mockUserProfile: components["schemas"]["UserProfile"] = {
@@ -40,7 +36,6 @@ export const mockUserProfile: components["schemas"]["UserProfile"] = {
 	is_active: true,
 	email_verified: true,
 	created_at: "2024-01-01T00:00:00Z",
-	updated_at: "2024-01-01T00:00:00Z",
 };
 
 export const mockTask: components["schemas"]["TaskResponse"] = {
@@ -48,9 +43,8 @@ export const mockTask: components["schemas"]["TaskResponse"] = {
 	task_type: "email",
 	status: "pending",
 	priority: "normal",
-	payload: { to: "test@example.com", subject: "Test" },
 	metadata: {},
-	attempts: 0,
+	current_attempt: 0,
 	max_attempts: 3,
 	created_by: "user-123",
 	created_at: "2024-01-01T00:00:00Z",
@@ -58,16 +52,17 @@ export const mockTask: components["schemas"]["TaskResponse"] = {
 	scheduled_at: null,
 	started_at: null,
 	completed_at: null,
-	error_message: null,
+	last_error: null,
 };
 
 export const mockHealthResponse: components["schemas"]["HealthResponse"] = {
 	status: "healthy",
-	timestamp: "2024-01-01T00:00:00Z",
-	checks: {
-		database: { status: "healthy", response_time_ms: 5 },
-		redis: { status: "healthy", response_time_ms: 2 },
-	},
+	version: "0.1.0",
+	uptime: 123.456,
+	documentation: {
+		api_docs: "/api-docs",
+		openapi_json: "/api-docs/openapi.json"
+	}
 };
 
 export const mockTaskStats: components["schemas"]["TaskStats"] = {
@@ -83,23 +78,22 @@ export const mockTaskStats: components["schemas"]["TaskStats"] = {
 // API response wrappers
 export const mockApiResponse = <T>(
 	data: T,
-): components["schemas"]["ApiResponse"] & { data: T } => ({
+) => ({
 	success: true,
 	data,
-	timestamp: "2024-01-01T00:00:00Z",
+	message: null,
 });
 
 export const mockApiError = (
 	message: string,
 	code = "UNKNOWN_ERROR",
-): components["schemas"]["ErrorResponse"] => ({
+) => ({
 	success: false,
 	error: {
 		code,
-		message,
-		details: {},
+		message
 	},
-	timestamp: "2024-01-01T00:00:00Z",
+	message: null,
 });
 
 // Mock localStorage
