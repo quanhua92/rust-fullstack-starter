@@ -9,8 +9,8 @@ use crate::users::{
     services as user_services,
 };
 use crate::{
-    api::{ApiResponse, ErrorResponse},
     AppState, Error,
+    api::{ApiResponse, ErrorResponse},
 };
 use axum::{
     extract::{Extension, Path, Query, State},

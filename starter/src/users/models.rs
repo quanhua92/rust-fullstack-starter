@@ -1,6 +1,6 @@
 use crate::Error;
-use crate::rbac::UserRole;
 use crate::Result;
+use crate::rbac::UserRole;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;

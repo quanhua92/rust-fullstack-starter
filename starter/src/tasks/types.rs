@@ -1,5 +1,5 @@
-use crate::{Error, Result};
 use crate::tasks::retry::RetryStrategy;
+use crate::{Error, Result};
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use sqlx::FromRow;

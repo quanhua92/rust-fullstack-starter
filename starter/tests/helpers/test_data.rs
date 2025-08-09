@@ -275,7 +275,7 @@ impl TestDataFactory {
 
 /// Test data builders for creating custom requests  
 pub mod builders {
-    use starter::{rbac::UserRole, users::models::{CreateUserRequest, User}};
+    use starter::{rbac::UserRole, users::models::CreateUserRequest};
 
     pub struct UserBuilder {
         username: String,

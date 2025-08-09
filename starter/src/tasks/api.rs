@@ -7,9 +7,9 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use crate::{
+    AppState, Error,
     api::{ApiResponse, ErrorResponse},
     auth::AuthUser,
-    AppState, Error,
     rbac::services as rbac_services,
     tasks::{
         processor::TaskProcessor,

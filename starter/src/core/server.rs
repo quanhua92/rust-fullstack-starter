@@ -4,11 +4,7 @@ use crate::{
         middleware::{admin_middleware, auth_middleware},
     },
     core::{
-        config::AppConfig,
-        database::Database,
-        error::Error,
-        openapi,
-        state::AppState,
+        config::AppConfig, database::Database, error::Error, openapi, state::AppState,
         types::Result,
     },
     health,

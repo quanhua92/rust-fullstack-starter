@@ -1,7 +1,7 @@
-use crate::auth::services;
-use crate::Error;
-use crate::rbac::UserRole;
 use crate::AppState;
+use crate::Error;
+use crate::auth::services;
+use crate::rbac::UserRole;
 use axum::{
     extract::{Request, State},
     middleware::Next,
