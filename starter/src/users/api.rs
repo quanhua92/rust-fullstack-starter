@@ -575,7 +575,7 @@ pub async fn get_user_stats(
 pub fn users_routes() -> Router<AppState> {
     Router::new()
         .route("/{id}", get(get_user_by_id))
-        .route("/me/profile", put(update_own_profile))
+        .route("/me/profile", get(get_profile).put(update_own_profile))
         .route("/me/password", put(change_own_password))
         .route("/me", delete(delete_own_account))
 }
@@ -597,7 +597,7 @@ pub fn users_admin_routes() -> Router<AppState> {
         .route("/{id}", delete(delete_user))
 }
 
-/// Admin user stats routes
+/// Admin user stats routes (for /admin/users path)
 pub fn admin_users_routes() -> Router<AppState> {
     Router::new().route("/stats", get(get_user_stats))
 }
