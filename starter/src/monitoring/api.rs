@@ -13,7 +13,7 @@ use axum::{
     extract::{Path, Query, State},
     http::{StatusCode, header},
     response::{Json, Response},
-    routing::{get, post, put},
+    routing::{get, post},
 };
 use serde::Deserialize;
 use std::collections::HashMap;
@@ -887,7 +887,10 @@ pub fn monitoring_routes() -> Router<AppState> {
         .route("/metrics", post(create_metric).get(get_metrics))
         .route("/alerts", get(get_alerts))
         .route("/incidents", post(create_incident).get(get_incidents))
-        .route("/incidents/{id}", get(get_incident_by_id).put(update_incident))
+        .route(
+            "/incidents/{id}",
+            get(get_incident_by_id).put(update_incident),
+        )
         .route("/incidents/{id}/timeline", get(get_incident_timeline))
 }
 

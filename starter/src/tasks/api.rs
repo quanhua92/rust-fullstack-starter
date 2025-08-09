@@ -2,7 +2,7 @@ use axum::{
     Extension, Router,
     extract::{Path, Query, State},
     response::Json,
-    routing::{delete, get, post},
+    routing::{get, post},
 };
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
@@ -584,8 +584,7 @@ pub async fn list_task_types(
 
 /// Public task routes (no authentication required)
 pub fn tasks_public_routes() -> Router<AppState> {
-    Router::new()
-        .route("/types", get(list_task_types).post(register_task_type))
+    Router::new().route("/types", get(list_task_types).post(register_task_type))
 }
 
 /// Protected task routes (authentication required)
