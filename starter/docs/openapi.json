@@ -343,7 +343,14 @@
             }
           },
           "503": {
-            "description": "Application is unhealthy"
+            "description": "Application is unhealthy",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
           }
         }
       }

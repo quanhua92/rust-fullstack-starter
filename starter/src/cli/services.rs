@@ -21,7 +21,7 @@ impl AdminService {
         limit: i32,
         _verbose: bool,
     ) -> Result<Vec<TaskInfo>, Error> {
-        // For now, we'll use the simple query. TODO: Add filtering by status and task_type
+        // Future enhancement: Add filtering by status and task_type
         let _ = (status, task_type); // Suppress unused warnings
 
         let tasks = sqlx::query(

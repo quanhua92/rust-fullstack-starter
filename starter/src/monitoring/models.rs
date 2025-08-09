@@ -623,8 +623,8 @@ impl From<String> for EventType {
                 "CRITICAL: Invalid event_type in database '{}' - this indicates data corruption or missing migration. Falling back to 'log'",
                 s
             );
-            // TODO: Add metrics counter for data corruption incidents
-            // TODO: Consider alerting monitoring system for this critical error
+            // Future enhancement: Add metrics counter for data corruption incidents
+            // Future enhancement: Consider alerting monitoring system for this critical error
             EventType::Log
         })
     }

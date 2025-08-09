@@ -492,7 +492,7 @@ pub async fn get_metrics(
         metric_type: params.metric_type,
         start_time: params.start_time,
         end_time: params.end_time,
-        labels: None, // TODO: Add label filtering from query params
+        labels: None, // Future enhancement: Add label filtering from query params
         limit: params.limit,
         offset: params.offset,
     };

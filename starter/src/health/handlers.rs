@@ -3,7 +3,7 @@
 //! This module contains the Axum handlers for various health check endpoints,
 //! including basic health, detailed health, and Kubernetes probe endpoints.
 
-use crate::api::response::ApiResponse;
+use crate::api::response::{ApiResponse, ErrorResponse};
 use crate::core::AppState;
 use crate::health::{checks, types::*};
 use axum::{Json, extract::State, http::StatusCode, response::IntoResponse};
@@ -22,14 +22,22 @@ use std::collections::HashMap;
     description = "Returns basic application health status with version and uptime",
     responses(
         (status = 200, description = "Application is healthy", body = ApiResponse<HealthResponse>),
-        (status = 503, description = "Application is unhealthy")
+        (status = 503, description = "Application is unhealthy", body = ErrorResponse)
     )
 )]
 pub async fn health(State(state): State<AppState>) -> impl IntoResponse {
     let uptime_seconds = state.start_time.elapsed().as_secs_f64();
 
+    // Perform basic health checks
+    let db_health = crate::health::checks::check_database(&state).await;
+    let app_health = crate::health::checks::check_application_readiness(&state).await;
+
+    // Determine overall health status
+    let is_healthy = db_health.status == "healthy" && app_health.status == "healthy";
+    let overall_status = if is_healthy { "healthy" } else { "unhealthy" };
+
     let health_response = HealthResponse {
-        status: "healthy".to_string(),
+        status: overall_status.to_string(),
         version: env!("CARGO_PKG_VERSION").to_string(),
         uptime: uptime_seconds,
         documentation: DocumentationLinks {
@@ -38,7 +46,20 @@ pub async fn health(State(state): State<AppState>) -> impl IntoResponse {
         },
     };
 
-    Json(ApiResponse::success(health_response))
+    // Return appropriate status code based on health
+    if is_healthy {
+        (StatusCode::OK, Json(ApiResponse::success(health_response))).into_response()
+    } else {
+        // For unhealthy status, return 503 with error response
+        use crate::api::response::{ErrorDetail, ErrorResponse};
+        let error_response = ErrorResponse {
+            error: ErrorDetail {
+                code: "SERVICE_UNHEALTHY".to_string(),
+                message: format!("Service unhealthy: {}", overall_status),
+            },
+        };
+        (StatusCode::SERVICE_UNAVAILABLE, Json(error_response)).into_response()
+    }
 }
 
 /// Comprehensive health check with dependencies
