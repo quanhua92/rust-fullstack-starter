@@ -145,7 +145,7 @@ cd web && pnpm dev
 - **⚙️ Background Tasks** - Async job processing with retry logic and dead letter queue
 - **🏗️ Module Generator** - Secure template-based code generation with ownership patterns, transaction safety, and comprehensive testing
 - **📊 API Documentation** - Interactive OpenAPI/Swagger docs
-- **🧪 Testing Framework** - 183 integration tests + comprehensive API endpoint testing (48 endpoints) including security vulnerability tests
+- **🧪 Testing Framework** - 184 integration tests + 194 frontend tests (135 unit + 46 integration + 13 E2E) + comprehensive API endpoint testing (48 endpoints) including security vulnerability tests
 - **📊 Monitoring & Observability** - Complete monitoring system with 14 API endpoints, comprehensive security protections, web UI dashboard, advanced tag filtering, RBAC-integrated interface with ownership-based authorization
 - **🔥 Chaos Testing** - Docker-based resilience testing with 10 scenarios
 - **⚙️ Admin CLI** - Direct database access for monitoring and maintenance
@@ -164,14 +164,14 @@ cargo run -- revert module books --dry-run               # Preview revert
 ./scripts/test-template-with-curl.sh books               # Test generated API
 
 # Run tests
-cargo nextest run                    # Integration tests (183 tests)
+cargo nextest run                    # Integration tests (184 tests)
 ./scripts/test-with-curl.sh         # API endpoint tests (48 endpoints)
 ./scripts/test-generate.sh          # Module generator system tests
 ./scripts/test-chaos.sh             # Chaos testing (10 scenarios)
 
 # Quality checks
 ./scripts/check.sh                  # Backend: format, lint, test (run before commits)
-cd web && ./scripts/check-web.sh    # Frontend: dependencies, types, lint, build, tests
+cd web && ./scripts/check-web.sh    # Frontend: 135 unit + 46 integration + 13 E2E tests
 
 # Background tasks
 ./scripts/worker.sh -f              # Start task worker with logs (ID 0)
@@ -201,7 +201,7 @@ rust-fullstack-starter/
     │   ├── monitoring/ # Observability system (14 endpoints)
     │   └── ...       # Health, errors, database, server
     ├── migrations/   # Database schema evolution (6 migrations)
-    └── tests/        # Integration tests (183 tests)
+    └── tests/        # Integration tests (184 tests)
 ```
 
 ## Documentation

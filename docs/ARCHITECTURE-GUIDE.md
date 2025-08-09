@@ -85,7 +85,7 @@ graph TD
         subgraph "🌐 Server Mode"
             HTTP[Axum HTTP Server<br/>Port 3000]
             AUTH[Session Auth<br/>RBAC middleware]
-            ROUTES[REST API<br/>48 endpoints]
+            ROUTES[REST API<br/>37 endpoints]
             STATIC[Static Files<br/>SPA fallback]
         end
         
@@ -358,7 +358,7 @@ async fn test_user_can_create_own_tasks() {
 - **Fast feedback loops** - Changes don't require complex build orchestration
 - **Easy debugging** - Single process, shared error handling, unified logging
 - **Type safety** - End-to-end TypeScript from database to UI
-- **Quality built-in** - 183 integration tests, linting, formatting
+- **Quality built-in** - 184 integration tests, linting, formatting
 
 ### For Production
 - **Single deployment artifact** - Simplifies CI/CD, reduces configuration drift
