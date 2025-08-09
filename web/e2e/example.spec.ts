@@ -25,23 +25,22 @@ test.describe('Basic Application Tests', () => {
   test('navigation works', async ({ page }) => {
     await page.goto('/');
     
-    // Test basic navigation - handle network issues gracefully
+    // Test basic navigation - handle redirects and network issues gracefully
     try {
-      const response = await page.goto('/auth/login');
-      // Accept both successful navigation (200-399) and missing routes (404)
-      // 404 is acceptable in development when auth routes aren't implemented yet
+      const response = await page.goto('/auth/login', { waitUntil: 'domcontentloaded' });
+      // Accept both successful navigation and redirects
       const status = response?.status() || 0;
       expect([200, 201, 202, 204, 301, 302, 404]).toContain(status);
       
-      // If page loads successfully, check that we have some content
-      if (response?.status() && response.status() < 400) {
-        await expect(page.locator('body')).toBeVisible();
-      }
+      // Verify we have some content regardless of where we end up
+      await expect(page.locator('body')).toBeVisible();
     } catch (error) {
-      // Handle network connection issues or browser abort errors
-      if (error instanceof Error && error.message.includes('NS_BINDING_ABORTED')) {
-        // Navigation was aborted - this can happen in test environments
-        // Just verify we can still interact with the page
+      // Handle navigation interruptions (common when app redirects automatically)
+      if (error instanceof Error && (
+        error.message.includes('interrupted by another navigation') ||
+        error.message.includes('NS_BINDING_ABORTED')
+      )) {
+        // Navigation was interrupted by redirect - verify we can still interact
         await expect(page.locator('body')).toBeVisible();
       } else {
         throw error; // Re-throw other errors
