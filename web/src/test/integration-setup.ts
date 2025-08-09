@@ -1,5 +1,5 @@
 // Integration test setup utilities
-import { afterAll, beforeAll } from "vitest";
+import { beforeAll } from "vitest";
 import { waitForServer } from "./mocks";
 
 const testServerConfig = {
@@ -28,10 +28,13 @@ export const setupIntegrationTest = () => {
 // Helper to run tests only if server is available
 export const describeIntegration = (name: string, fn: () => void) => {
 	const shouldSkip = process.env.SKIP_INTEGRATION === "true";
+	
+	// Use global describe from vitest
+	const globalDescribe = (globalThis as any).describe;
 
 	if (shouldSkip) {
-		describe.skip(`${name} (INTEGRATION SKIPPED)`, fn);
+		globalDescribe.skip(`${name} (INTEGRATION SKIPPED)`, fn);
 	} else {
-		describe(`${name} (INTEGRATION)`, fn);
+		globalDescribe(`${name} (INTEGRATION)`, fn);
 	}
 };

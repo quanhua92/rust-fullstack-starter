@@ -53,7 +53,7 @@ describe("Auth Guards", () => {
 			vi.mocked(getAuthToken).mockReturnValue("token");
 			vi.mocked(apiClient.getCurrentUser).mockResolvedValue({
 				...mockApiResponse(mockAuthUser),
-				data: null,
+				data: undefined,
 			});
 
 			await expect(requireAuth()).rejects.toThrow();

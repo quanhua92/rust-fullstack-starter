@@ -83,7 +83,7 @@ describe("useApiQueries Hook Tests", () => {
 			it("should handle error when no data received", async () => {
 				const mockResponse = {
 					...mockApiResponse(mockHealthResponse),
-					data: null,
+					data: undefined,
 				};
 				vi.mocked(apiClient.getHealth).mockResolvedValue(mockResponse);
 
@@ -126,9 +126,9 @@ describe("useApiQueries Hook Tests", () => {
 		describe("useHealthDetailed", () => {
 			it("should fetch detailed health data successfully", async () => {
 				const detailedHealth = {
-					...mockHealthResponse,
-					version: "1.0.0",
-					uptime: 3600,
+					status: "healthy" as const,
+					checks: { database: { status: "healthy", message: "OK" } },
+					timestamp: new Date().toISOString(),
 				};
 				const mockResponse = mockApiResponse(detailedHealth);
 				vi.mocked(apiClient.getDetailedHealth).mockResolvedValue(mockResponse);
@@ -207,7 +207,7 @@ describe("useApiQueries Hook Tests", () => {
 			});
 
 			it("should handle missing task stats data", async () => {
-				const mockResponse = { ...mockApiResponse(mockTaskStats), data: null };
+				const mockResponse = { ...mockApiResponse(mockTaskStats), data: undefined };
 				vi.mocked(apiClient.getTaskStats).mockResolvedValue(mockResponse);
 
 				const { result } = renderHook(() => useTaskStats(), { wrapper });
@@ -281,10 +281,14 @@ describe("useApiQueries Hook Tests", () => {
 				const mockEvents = [
 					{
 						id: "event-1",
-						event_type: "log",
+						event_type: "log" as const,
 						source: "test",
 						message: "Test message",
 						recorded_at: "2024-01-01T00:00:00Z",
+						created_at: "2024-01-01T00:00:00Z",
+						payload: {},
+						tags: {},
+						level: "info",
 					},
 				];
 				const mockResponse = mockApiResponse(mockEvents);
@@ -307,7 +311,7 @@ describe("useApiQueries Hook Tests", () => {
 					level: "info" as const,
 					limit: 10,
 				};
-				const mockEvents = [];
+				const mockEvents: any[] = [];
 				const mockResponse = mockApiResponse(mockEvents);
 				vi.mocked(apiClient.getEvents).mockResolvedValue(mockResponse);
 
@@ -344,9 +348,11 @@ describe("useApiQueries Hook Tests", () => {
 					{
 						id: "metric-1",
 						name: "test_metric",
-						metric_type: "counter",
+						metric_type: "counter" as const,
 						value: 5,
 						recorded_at: "2024-01-01T00:00:00Z",
+						created_at: "2024-01-01T00:00:00Z",
+						labels: {},
 					},
 				];
 				const mockResponse = mockApiResponse(mockMetrics);
@@ -411,7 +417,7 @@ describe("useApiQueries Hook Tests", () => {
 		it("should generate parameterized query keys correctly", () => {
 			const taskId = "task-123";
 			const userId = "user-456";
-			const filters = { limit: 10, offset: 0 };
+			const filters = { limit: "10", offset: "0" };
 
 			expect(QUERY_KEYS.tasks.detail(taskId)).toEqual([
 				"tasks",

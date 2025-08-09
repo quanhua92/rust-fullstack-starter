@@ -7,7 +7,7 @@ import { createTestUser } from "@/test/mocks";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { renderHook, waitFor } from "@testing-library/react";
 import React, { type ReactNode } from "react";
-import { afterEach, beforeAll, describe, expect, it } from "vitest";
+import { afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import {
 	useCurrentUser,
 	useHealthBasic,
@@ -106,8 +106,6 @@ describeIntegration("useApiQueries Hook Integration Tests", () => {
 		});
 
 		it("should handle health endpoint errors gracefully", async () => {
-			// Store original client for restoration
-			const originalClient = { ...apiClient };
 			
 			try {
 				// Create a client with wrong base URL to trigger error
