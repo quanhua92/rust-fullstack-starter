@@ -180,6 +180,8 @@ Gracefully stop background worker(s).
 
 ## 🧪 Testing & Integration
 
+**📖 See [../docs/TESTING-GUIDE.md](../docs/TESTING-GUIDE.md) for comprehensive testing documentation including the complete 7-layer testing architecture, workflows, and best practices.**
+
 ### Rust Integration Tests (Recommended)
 Comprehensive test suite with 149 tests covering all functionality:
 ```bash

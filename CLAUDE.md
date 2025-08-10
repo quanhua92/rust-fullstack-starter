@@ -267,6 +267,8 @@ This starter provides a solid foundation for learning Rust web development with 
 - **E2E auth flow**: Complete registration → login → dashboard testing with proper timeouts
 - **Quality validation**: Use `./scripts/check.sh --web` for complete frontend + backend validation
 
+**📖 See [docs/TESTING-GUIDE.md](docs/TESTING-GUIDE.md) for comprehensive testing documentation including the complete 7-layer testing architecture, workflows, and best practices.**
+
 ## Test Count References
 - `cargo nextest list | grep -c "::"` - Reliable way to count integration tests (184)
 - `cd web && pnpm test:unit` - Frontend unit tests (135)

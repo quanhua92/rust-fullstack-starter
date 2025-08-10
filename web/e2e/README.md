@@ -1,5 +1,7 @@
 # Enhanced Playwright E2E Testing
 
+**📖 See [../../docs/TESTING-GUIDE.md](../../docs/TESTING-GUIDE.md) for comprehensive testing documentation including the complete 7-layer testing architecture, workflows, and best practices.**
+
 This directory contains comprehensive end-to-end tests using Playwright that focus on browser-specific functionality and user interactions that cannot be tested through API calls alone.
 
 ## Test Structure

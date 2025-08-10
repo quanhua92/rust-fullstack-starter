@@ -214,6 +214,7 @@ rust-fullstack-starter/
 - **[Quick Start](docs/QUICK-START.md)** - 2-minute setup guide
 - **[Architecture Guide](docs/ARCHITECTURE-GUIDE.md)** - System design and patterns
 - **[Implementation Guide](docs/IMPLEMENTATION-GUIDE.md)** - Core systems and testing
+- **[Testing Guide](docs/TESTING-GUIDE.md)** - Comprehensive 7-layer testing architecture (415+ tests)
 - **[API Reference](docs/API-REFERENCE.md)** - All 37 endpoints with examples
 - **[Production Deployment](docs/PRODUCTION-DEPLOYMENT.md)** - Docker deployment
 - **[Troubleshooting](docs/TROUBLESHOOTING.md)** - Debugging and diagnostics
@@ -311,6 +312,8 @@ cd web && pnmp test:e2e:page-objects # 13 E2E tests (Playwright ~3.4s)
 - **Real Integration** - Tests against actual database, HTTP server, and browser
 - **Visual Testing** - Screenshot comparison and accessibility compliance
 - **CI-Ready** - Comprehensive validation pipeline (~85s total)
+
+**📖 See [Testing Guide](docs/TESTING-GUIDE.md) for complete testing documentation, best practices, and step-by-step workflows.**
 
 ## Admin CLI Commands
 

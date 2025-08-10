@@ -9,6 +9,7 @@
 | **[QUICK-START](QUICK-START.md)** | 2-minute setup, development commands, troubleshooting basics | 10 minutes |
 | **[ARCHITECTURE-GUIDE](ARCHITECTURE-GUIDE.md)** | System design, database architecture, design philosophy | 30 minutes |
 | **[IMPLEMENTATION-GUIDE](IMPLEMENTATION-GUIDE.md)** | Background tasks, user management, testing, monitoring | 45 minutes |
+| **[TESTING-GUIDE](TESTING-GUIDE.md)** | Comprehensive testing architecture (415+ tests), workflows, best practices | 25 minutes |
 | **[ADVANCED-TOPICS](ADVANCED-TOPICS.md)** | Chaos testing, frontend patterns, module generation | 30 minutes |
 | **[PRODUCTION-DEPLOYMENT](PRODUCTION-DEPLOYMENT.md)** | Docker deployment, security, scaling, operations | 20 minutes |
 | **[API-REFERENCE](API-REFERENCE.md)** | All 37 endpoints with examples and authentication | 15 minutes |
@@ -25,7 +26,8 @@ Perfect for: Demos, POCs, urgent projects, getting something working now.
 ### 🏗️ **Understand the System** *(1 hour)*
 1. **[ARCHITECTURE-GUIDE](ARCHITECTURE-GUIDE.md)** - Why decisions were made this way
 2. **[IMPLEMENTATION-GUIDE](IMPLEMENTATION-GUIDE.md)** - How core systems work
-3. **[TROUBLESHOOTING](TROUBLESHOOTING.md)** - When things go wrong
+3. **[TESTING-GUIDE](TESTING-GUIDE.md)** - Comprehensive testing philosophy and workflows
+4. **[TROUBLESHOOTING](TROUBLESHOOTING.md)** - When things go wrong
 
 Perfect for: Learning, interview preparation, building on the foundation.
 
@@ -58,7 +60,7 @@ This starter provides a complete, production-ready foundation:
 
 ### **Developer Experience**
 - ✅ **Type Safety** - End-to-end TypeScript from database to UI
-- ✅ **Testing** - 183 integration tests with database isolation
+- ✅ **Testing** - 415+ comprehensive tests across 7 layers (see [Testing Guide](TESTING-GUIDE.md))
 - ✅ **Quality Tools** - Linting, formatting, automated checks
 - ✅ **Hot Reloading** - Fast development iteration
 - ✅ **Interactive Docs** - OpenAPI/Swagger UI with live testing
