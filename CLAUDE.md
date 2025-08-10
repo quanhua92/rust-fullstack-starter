@@ -26,13 +26,13 @@ This file provides guidance to Claude Code when working with this Rust fullstack
 ./scripts/reset-all.sh --reset-database  # Clean reset
 
 # Testing
-cargo nextest run                    # 185 integration tests (~21s)
+cargo nextest run                    # 184 integration tests (~21s)
 ./scripts/test-chaos.sh             # Docker-based resilience testing
-cd web && ./scripts/check-web.sh    # Frontend quality checks
+cd web && ./scripts/check-web.sh    # Frontend: 194 comprehensive tests (stateless patterns)
 ```
 
 ### Key Scripts
-- `check.sh` - **Quality validation (9 steps, ~40s) - use `--web` for full frontend checks**
+- `check.sh` - **Quality validation (9 steps, ~85s with --web flag for comprehensive frontend checks)**
 - `dev-server.sh` - Complete development environment
 - `server.sh` / `worker.sh` - Individual services
 - `test-with-curl.sh` - API testing (37+ endpoints)
@@ -173,7 +173,7 @@ cargo run -- revert module products --yes
 - **User Management**: 10 endpoints for profile/admin operations
 - **Monitoring**: 9 endpoints for events/metrics/alerts/incidents
 - **Module Generator**: Template-based code generation with testing validation
-- **Testing**: 183 integration tests with database isolation
+- **Testing**: 184 integration tests with database isolation + comprehensive frontend test suite
 
 ### Module Structure
 ```
@@ -216,10 +216,10 @@ starter/src/
 
 ### Quality Requirements
 1. **Pre-commit**: Always run `./scripts/check.sh`
-2. **Testing**: 183 integration tests must pass
+2. **Testing**: 184 integration tests + 194 frontend tests must pass
 3. **SQLx**: Use `./scripts/prepare-sqlx.sh` for query cache updates
 4. **OpenAPI**: Use `./scripts/prepare-openapi.sh` for API schema updates
-5. **Frontend**: Run `cd web && ./scripts/check-web.sh` for React validation
+5. **Frontend**: Run `cd web && ./scripts/check-web.sh` for React validation (135 unit + 46 integration + 13 E2E tests)
 
 ### Common Tasks
 - **Start workers before creating tasks** (registration requirement)
@@ -256,5 +256,17 @@ validate_project_root
 - `GET /api/v1/admin/users/stats` - User analytics (Admin)
 
 This starter provides a solid foundation for learning Rust web development with modern patterns for authentication, task processing, monitoring, testing, and rapid module scaffolding.
-- cargo nextest list is the reliable way to count for tests
-- parsing docs/openapi.json is the reliable way to count endpoints
+
+## Frontend Testing Integration
+- **Web tests act like `test-with-curl.sh`**: Stateless, resilient, no cleanup dependencies
+- **Test isolation**: Each test creates unique users with timestamps for full independence  
+- **Comprehensive coverage**: 194 total frontend tests (135 unit + 46 integration + 13 E2E)
+- **E2E auth flow**: Complete registration → login → dashboard testing with proper timeouts
+- **Quality validation**: Use `./scripts/check.sh --web` for complete frontend + backend validation
+
+## Test Count References
+- `cargo nextest list | grep -c "::"` - Reliable way to count integration tests (184)
+- `cd web && pnpm test:unit` - Frontend unit tests (135)
+- `cd web && pnpm test:integration` - Frontend integration tests (46)
+- `cd web && pnpm test:e2e` - Frontend E2E tests (13)
+- `jq '.paths | keys | length' docs/openapi.json` - Reliable way to count API endpoints

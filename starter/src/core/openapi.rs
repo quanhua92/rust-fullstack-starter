@@ -32,7 +32,7 @@ use crate::{
 #[openapi(
     info(
         title = "Rust Full-Stack Starter API",
-        description = "A production-ready Rust web application starter with authentication, background tasks, and comprehensive API documentation.",
+        description = "A comprehensive Rust web application starter with authentication, background tasks, and extensive API documentation.",
         version = "0.1.0",
         license(name = "MIT", url = "https://opensource.org/licenses/MIT"),
         contact(

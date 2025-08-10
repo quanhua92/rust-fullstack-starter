@@ -116,7 +116,7 @@ pub enum RetryStrategy {
 
 // Calculate next delay based on strategy
 impl RetryStrategy {
-    pub fn next_delay(&self, attempt: u32) -> Option<Duration> {
+    pub fn calculate_delay(&self, attempt: u32) -> Option<Duration> {
         match self {
             Self::Exponential { base_delay, multiplier, max_delay, max_attempts } => {
                 if attempt >= *max_attempts { return None; }
@@ -201,16 +201,24 @@ pub async fn get_all_user_tasks(
 
 ```rust
 // Self-service endpoints
+GET /api/v1/users/me/profile     // Get own profile
 PUT /api/v1/users/me/profile     // Update own profile
 PUT /api/v1/users/me/password    // Change password
-GET /api/v1/users/me/profile     // Get own profile
 DELETE /api/v1/users/me          // Delete own account
 
-// Moderator+ endpoints
+// Protected endpoints (ownership-based)
+GET /api/v1/users/{id}           // Get user by ID (own or admin)
+
+// Moderator endpoints
 GET /api/v1/users                // List all users
-POST /api/v1/users               // Create user (admin only)
-PUT /api/v1/users/{id}/role      // Change user role (admin)
 PUT /api/v1/users/{id}/status    // Enable/disable user
+POST /api/v1/users/{id}/reset-password  // Reset user password
+
+// Admin endpoints
+POST /api/v1/users               // Create user
+PUT /api/v1/users/{id}/profile   // Update user profile
+PUT /api/v1/users/{id}/role      // Change user role
+DELETE /api/v1/users/{id}        // Delete user
 
 // Admin analytics
 GET /api/v1/admin/users/stats    // User statistics and analytics
@@ -263,7 +271,7 @@ pub fn validate_password(password: &str) -> Result<()> {
 ### Why Integration Tests?
 
 **Testing pyramid inverted for web applications**:
-- **90% Integration tests** (183 tests) - HTTP + Database + Business Logic
+- **90% Integration tests** (185 tests) - HTTP + Database + Business Logic
 - **15% Unit tests** (31 tests) - Pure functions, algorithms
 - **5% E2E tests** (13 tests) - Critical user journeys
 
@@ -305,8 +313,7 @@ pub struct TestApp {
     pub db_pool: PgPool,
 }
 
-impl TestApp {
-    pub async fn spawn() -> Self {
+pub async fn spawn_app() -> TestApp {
         // Initialize tracing for tests
         Lazy::force(&TRACING);
 
@@ -340,7 +347,7 @@ impl TestApp {
 ### Test Categories
 
 ```rust
-// Authentication tests - 21 tests
+// Authentication tests - 22 tests
 mod auth_tests {
     test_user_registration_success()
     test_login_with_valid_credentials()
@@ -348,7 +355,7 @@ mod auth_tests {
     test_password_validation_security_edge_cases()
 }
 
-// Business logic tests - 99 tests
+// Business logic tests - 106 tests
 mod business_logic_tests {
     test_task_creation_and_processing()
     test_rbac_ownership_patterns()
@@ -356,14 +363,14 @@ mod business_logic_tests {
     test_monitoring_event_creation()
 }
 
-// System behavior tests - 18 tests  
+// System behavior tests - 25 tests  
 mod system_tests {
     test_health_checks_all_variants()
-    test_api_error_handling_consistency()
-    test_cors_and_security_headers()
+    test_cli_command_processing()
+    test_middleware_functionality()
 }
 
-// API standards tests - 11 tests
+// API standards tests - 14 tests
 mod api_standards_tests {
     test_openapi_schema_generation()
     test_json_response_consistency()
@@ -387,14 +394,10 @@ alerts     -- Rule-based monitoring
 
 ```rust
 // Log application events
-pub async fn create_monitoring_event(
-    pool: &PgPool,
-    event_type: &str,
-    source: &str, 
-    message: Option<&str>,
-    level: Option<&str>,
-    tags: HashMap<String, serde_json::Value>,
-) -> Result<Event, MonitoringError> {
+pub async fn create_event(
+    conn: &mut DbConn, 
+    request: CreateEventRequest
+) -> Result<Event> {
     
     // Validate inputs
     validate_event_type(event_type)?;
@@ -446,27 +449,20 @@ task_processing_duration_ms{task_type="email",status="completed"} 245.5 17044548
 - **Admins** - Full system configuration access
 
 ```rust
-// Source ownership validation
-pub fn validate_source_ownership(user: &AuthUser, source: &str) -> Result<(), RbacError> {
-    if user.role.has_role_or_higher(UserRole::Moderator) {
-        return Ok(()); // Moderators+ can use any source
+// Source authorization validation
+fn is_user_authorized_for_source(auth_user: &AuthUser, source: &str) -> Result<bool, Error> {
+    // System sources require moderator+ permissions
+    if source.starts_with("system-")
+        || source.starts_with("health-")
+        || source.starts_with("monitoring-")
+    {
+        return Ok(auth_user
+            .role
+            .has_role_or_higher(UserRole::Moderator));
     }
     
-    // Users can only use generic sources or user-prefixed sources
-    if source.starts_with("system-") || source.starts_with("health-") {
-        return Err(RbacError::InsufficientPermission);
-    }
-    
-    if source.starts_with(&format!("{}-", user.username)) {
-        return Ok(());
-    }
-    
-    // Allow generic sources
-    if ["api", "web", "worker"].contains(&source) {
-        return Ok(());
-    }
-    
-    Err(RbacError::UnauthorizedSource)
+    // Other sources are allowed for all authenticated users
+    Ok(true)
 }
 ```
 
@@ -475,10 +471,12 @@ pub fn validate_source_ownership(user: &AuthUser, source: &str) -> Result<(), Rb
 **Automatic incident timeline building**:
 ```rust
 pub async fn get_incident_timeline(
-    pool: &PgPool,
+    conn: &mut DbConn,
     incident_id: Uuid,
     limit: Option<i64>,
-) -> Result<Vec<Event>, MonitoringError> {
+    offset: Option<i64>,
+    lookback_hours: Option<i64>,
+) -> Result<Vec<Event>> {
     
     let incident = get_incident_by_id(pool, incident_id).await?;
     

@@ -7,7 +7,7 @@
 - **Base URL**: `http://localhost:3000/api/v1`
 - **Authentication**: Bearer token in Authorization header
 - **Content Type**: `application/json`
-- **Total Endpoints**: 48 (37 unique paths)
+- **Total Endpoints**: 37
 
 ## 🔐 Authentication Endpoints
 
@@ -727,40 +727,50 @@ Authorization: Bearer <session_token>
 **401 Unauthorized**:
 ```json
 {
-  "success": false,
-  "error": "Authentication required"
+  "error": {
+    "code": "UNAUTHORIZED",
+    "message": "Unauthorized access"
+  }
 }
 ```
 
 **403 Forbidden**:
 ```json
 {
-  "success": false,
-  "error": "Insufficient permissions"
+  "error": {
+    "code": "FORBIDDEN",
+    "message": "Insufficient permissions"
+  }
 }
 ```
 
 **400 Bad Request**:
 ```json
 {
-  "success": false,
-  "error": "Validation failed: email format is invalid"
+  "error": {
+    "code": "VALIDATION_FAILED",
+    "message": "Validation failed for email: Invalid email format"
+  }
 }
 ```
 
 **404 Not Found**:
 ```json
 {
-  "success": false,
-  "error": "Task with id 123e4567-e89b-12d3-a456-426614174000 not found"
+  "error": {
+    "code": "NOT_FOUND",
+    "message": "Task with id 123e4567-e89b-12d3-a456-426614174000 not found"
+  }
 }
 ```
 
 **500 Internal Server Error**:
 ```json
 {
-  "success": false,
-  "error": "Internal server error"
+  "error": {
+    "code": "INTERNAL_ERROR",
+    "message": "Internal server error"
+  }
 }
 ```
 
@@ -793,9 +803,7 @@ GET /tasks?status=pending&task_type=email&created_by=user123
 ```
 
 ### Rate Limiting
-- **Default**: 100 requests per minute per IP
-- **Authentication endpoints**: 10 requests per minute per IP
-- **Headers included**: `X-RateLimit-Limit`, `X-RateLimit-Remaining`, `X-RateLimit-Reset`
+Currently no rate limiting is implemented in this starter project. Consider adding rate limiting middleware for production deployments.
 
 ## 🧪 Testing the API
 
@@ -818,7 +826,7 @@ curl -H "Authorization: Bearer $TOKEN" \
 ./scripts/test-with-curl.sh
 
 # Test specific host/port
-./scripts/test-with-curl.sh localhost 8080
+./scripts/test-with-curl.sh localhost 3000
 ```
 
 ---

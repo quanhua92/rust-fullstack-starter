@@ -91,7 +91,10 @@ class ApiClient {
 
 			return await response.json();
 		} catch (error) {
-			console.error(`API request failed: ${endpoint}`, error);
+			// Only log in non-test environments to avoid stderr noise
+			if (typeof process !== "undefined" && process.env.NODE_ENV !== "test") {
+				console.error(`API request failed: ${endpoint}`, error);
+			}
 			throw error;
 		}
 	}

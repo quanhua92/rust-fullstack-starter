@@ -13,7 +13,7 @@ pub struct Cli {
 pub enum Commands {
     /// Start the web server
     Server {
-        #[arg(long, default_value = "8080")]
+        #[arg(long, default_value = "3000")]
         port: u16,
     },
     /// Start the background worker

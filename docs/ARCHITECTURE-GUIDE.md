@@ -1,6 +1,6 @@
 # Architecture & Design Philosophy
 
-*Understanding the system design and architectural decisions that make this starter educational, maintainable, and production-ready.*
+*Understanding the system design and architectural decisions that make this starter educational, maintainable, and scalable.*
 
 ## 🎯 Learning Philosophy: Why Before How
 
@@ -85,7 +85,7 @@ graph TD
         subgraph "🌐 Server Mode"
             HTTP[Axum HTTP Server<br/>Port 3000]
             AUTH[Session Auth<br/>RBAC middleware]
-            ROUTES[REST API<br/>48 endpoints]
+            ROUTES[REST API<br/>37 endpoints]
             STATIC[Static Files<br/>SPA fallback]
         end
         
@@ -341,7 +341,7 @@ async fn test_user_can_create_own_tasks() {
 ```
 
 **Test categories**:
-- **Authentication** - Registration, login, session management (21 tests)
+- **Authentication** - Registration, login, session management (22 tests)
 - **API standards** - CORS, security headers, error handling (11 tests) 
 - **Business logic** - Task processing, RBAC, user management (99 tests)
 - **System behavior** - Health checks, CLI, middleware (18 tests)
@@ -352,15 +352,15 @@ async fn test_user_can_create_own_tasks() {
 - **Clear boundaries** - Each component has obvious responsibilities
 - **Visible connections** - Easy to trace requests through the system
 - **Gradual complexity** - Start simple, understand fundamentals, then add features
-- **Real-world patterns** - Architecture patterns used in production systems
+- **Real-world patterns** - Architecture patterns used in scalable systems
 
 ### For Development
 - **Fast feedback loops** - Changes don't require complex build orchestration
 - **Easy debugging** - Single process, shared error handling, unified logging
 - **Type safety** - End-to-end TypeScript from database to UI
-- **Quality built-in** - 183 integration tests, linting, formatting
+- **Quality built-in** - 184 integration tests, linting, formatting
 
-### For Production
+### For Deployment
 - **Single deployment artifact** - Simplifies CI/CD, reduces configuration drift
 - **Horizontal scaling** - Run multiple workers, single server per container
 - **Monitoring ready** - Built-in health checks, metrics, observability

@@ -10,7 +10,7 @@ git clone https://github.com/quanhua92/rust-fullstack-starter.git
 cd rust-fullstack-starter
 
 # 2. Start everything (database + unified server with React frontend)
-./scripts/dev-server.sh 3000
+./scripts/dev-server.sh
 
 # 3. Open your browser
 open http://localhost:3000
@@ -68,14 +68,14 @@ Visit **http://localhost:3000/api-docs** for interactive Swagger UI with all 37 
 - **Node.js 18+** and **pnpm** (`npm install -g pnpm`)
 - **Docker 20.10+** and **Docker Compose 2.0+**
 
-> **Performance Note**: Setup takes 2-3 seconds, 183 tests run in ~21 seconds
+> **Performance Note**: Setup takes 2-3 seconds, 184 tests run in ~21 seconds
 
 ## 🔧 Development Commands
 
 ### Start Services
 ```bash
 # Complete environment (recommended)
-./scripts/dev-server.sh 3000                # Database + Web + API
+./scripts/dev-server.sh                     # Database + Web + API (default port 3000)
 
 # Individual services
 ./scripts/server.sh 3000                    # API server only
@@ -92,7 +92,7 @@ cd web && pnpm dev                          # React dev server (port 5173)
 web/scripts/check-web.sh                   # Frontend: 10-step validation
 
 # Testing
-cargo nextest run                           # 183 integration tests
+cargo nextest run                           # 184 integration tests
 ./scripts/test-with-curl.sh                 # Test all 37 API endpoints
 ./scripts/test-chaos.sh                     # Resilience testing
 ```
@@ -161,7 +161,7 @@ docker-compose -f docker-compose.prod.yaml --env-file .env.prod up -d
 ```bash
 # Kill conflicting processes
 lsof -ti:3000 | xargs kill -9
-./scripts/dev-server.sh 3000
+./scripts/dev-server.sh
 ```
 
 **Database issues**
@@ -186,7 +186,7 @@ chmod +x scripts/*.sh
 
 ### Common Issues
 
-- **Port 3000 in use**: Use `./scripts/dev-server.sh 8080`
+- **Port 3000 in use**: Use `./scripts/dev-server.sh -p 3001`
 - **Docker not running**: Start Docker Desktop and wait for full startup
 - **Migration errors**: Ensure you're in the `starter/` directory: `cd starter && sqlx migrate run`
 - **TypeScript errors**: Regenerate types: `cd web && pnpm run generate-api`

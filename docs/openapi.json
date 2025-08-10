@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Rust Full-Stack Starter API",
-    "description": "A production-ready Rust web application starter with authentication, background tasks, and comprehensive API documentation.",
+    "description": "A comprehensive Rust web application starter with authentication, background tasks, and extensive API documentation.",
     "contact": {
       "name": "API Support",
       "email": "support@example.com"

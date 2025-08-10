@@ -8,7 +8,7 @@ services:
       context: .
       dockerfile: Dockerfile.prod
     ports:
-      - "${APP_PORT:-8080}:8080"
+      - "${APP_PORT:-3000}:3000"
     environment:
       # Database configuration
       - STARTER__DATABASE__HOST=postgres
@@ -20,7 +20,7 @@ services:
       
       # Application configuration
       - STARTER__SERVER__HOST=0.0.0.0
-      - STARTER__SERVER__PORT=8080
+      - STARTER__SERVER__PORT=3000
       - STARTER__AUTH__SESSION_SECRET=${SESSION_SECRET}
       - STARTER__AUTH__SESSION_DURATION=${SESSION_DURATION:-86400}
       

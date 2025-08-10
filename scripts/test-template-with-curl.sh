@@ -26,7 +26,7 @@ ARGUMENTS:
 EXAMPLES:
     $0                    # Test 'basics' module on port 3000
     $0 products           # Test 'products' module on port 3000  
-    $0 users 8080         # Test 'users' module on port 8080
+    $0 users 3001         # Test 'users' module on port 3001
 
 DESCRIPTION:
     This script performs comprehensive CRUD testing for generated template modules.
@@ -357,11 +357,11 @@ show_help() {
     echo ""
     echo "Arguments:"
     echo "  module_name  Name of the generated module to test (default: basics)"
-    echo "  port         Server port (default: 8080)"
+    echo "  port         Server port (default: 3000)"
     echo ""
     echo "Examples:"
-    echo "  $0                    # Test 'basics' module on port 8080"
-    echo "  $0 users              # Test 'users' module on port 8080"
+    echo "  $0                    # Test 'basics' module on port 3000"
+    echo "  $0 users              # Test 'users' module on port 3000"
     echo "  $0 products 3000      # Test 'products' module on port 3000"
     echo ""
     echo "Prerequisites:"
