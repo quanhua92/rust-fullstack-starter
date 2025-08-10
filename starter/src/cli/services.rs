@@ -13,7 +13,7 @@ impl AdminService {
         Self { database }
     }
 
-    /// List tasks with optional filtering
+    /// List tasks with optional filtering by status and task_type
     pub async fn list_tasks(
         &self,
         status: Option<String>,
@@ -21,19 +21,44 @@ impl AdminService {
         limit: i32,
         _verbose: bool,
     ) -> Result<Vec<TaskInfo>, Error> {
-        // Future enhancement: Add filtering by status and task_type
-        let _ = (status, task_type); // Suppress unused warnings
+        // Build dynamic query with optional filtering
+        let mut query = "SELECT id, task_type, status::text as status, priority::text as priority, created_at, updated_at, metadata FROM tasks".to_string();
+        let mut conditions = Vec::new();
+        let mut param_count = 0;
 
-        let tasks = sqlx::query(
-            "SELECT id, task_type, status::text as status, priority::text as priority, created_at, updated_at, metadata 
-             FROM tasks 
-             ORDER BY created_at DESC 
-             LIMIT $1"
-        )
-        .bind(limit as i64)
-        .fetch_all(&self.database.pool)
-        .await
-        .map_err(Error::Database)?;
+        if status.is_some() {
+            param_count += 1;
+            conditions.push(format!("status::text = ${}", param_count));
+        }
+        if task_type.is_some() {
+            param_count += 1;
+            conditions.push(format!("task_type = ${}", param_count));
+        }
+
+        if !conditions.is_empty() {
+            query.push_str(" WHERE ");
+            query.push_str(&conditions.join(" AND "));
+        }
+
+        query.push_str(" ORDER BY created_at DESC LIMIT $");
+        param_count += 1;
+        query.push_str(&param_count.to_string());
+
+        let mut db_query = sqlx::query(&query);
+
+        // Bind parameters in order
+        if let Some(ref s) = status {
+            db_query = db_query.bind(s);
+        }
+        if let Some(ref t) = task_type {
+            db_query = db_query.bind(t);
+        }
+        db_query = db_query.bind(limit as i64);
+
+        let tasks = db_query
+            .fetch_all(&self.database.pool)
+            .await
+            .map_err(Error::Database)?;
 
         let mut task_infos = Vec::new();
         for task in tasks {
