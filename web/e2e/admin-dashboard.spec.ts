@@ -19,30 +19,20 @@ test.describe('Admin Dashboard Navigation & UI', () => {
     await page.locator('input[type="password"]').fill(password);
     await page.locator('button:has-text("Sign In")').click();
 
-    // Check for login failure and provide helpful error message
-    const errorSelector = 'text=Invalid credentials, text=Login failed, [data-testid="error"]';
-    const dashboardSelector = 'text=Dashboard, text=Welcome';
+    // Wait a moment for login to process
+    await page.waitForTimeout(2000);
     
-    try {
-      // Wait for either error or success
-      await Promise.race([
-        page.waitForSelector(errorSelector, { timeout: 3000 }),
-        page.waitForSelector(dashboardSelector, { timeout: 3000 })
-      ]);
-      
-      // If we see an error, fail with helpful message
-      if (await page.locator(errorSelector).isVisible()) {
-        console.error('❌ ADMIN LOGIN FAILED!');
-        console.error('💡 Check that STARTER__INITIAL_ADMIN_PASSWORD in .env matches the password in this test');
-        console.error(`   Current test password: "${password}"`);
-        console.error('   Expected: Password from .env file (usually SecureAdminPass123!)');
-        throw new Error('Admin login failed - check .env STARTER__INITIAL_ADMIN_PASSWORD');
-      }
-    } catch (error) {
-      if (error.message.includes('Admin login failed')) {
-        throw error; // Re-throw our custom error
-      }
-      // If timeout, assume success and continue
+    // Check if we're still on login page (indicates login failure)
+    const currentUrl = page.url();
+    if (currentUrl.includes('/auth/login')) {
+      console.error('');
+      console.error('❌ ADMIN LOGIN FAILED!');
+      console.error('💡 Check that STARTER__INITIAL_ADMIN_PASSWORD in .env matches the password in this test');
+      console.error(`   Current test password: "${password}"`);
+      console.error('   Expected: Password from .env file (usually SecureAdminPass123!)');
+      console.error(`   Current URL: ${currentUrl}`);
+      console.error('');
+      throw new Error('Admin login failed - check .env STARTER__INITIAL_ADMIN_PASSWORD');
     }
 
     // Wait for successful login and redirect  
