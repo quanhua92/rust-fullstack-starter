@@ -21,41 +21,34 @@ impl AdminService {
         limit: i32,
         _verbose: bool,
     ) -> Result<Vec<TaskInfo>, Error> {
-        // Build dynamic query with optional filtering
-        let mut query = "SELECT id, task_type, status::text as status, priority::text as priority, created_at, updated_at, metadata FROM tasks".to_string();
-        let mut conditions = Vec::new();
-        let mut param_count = 0;
+        // Build dynamic query with optional filtering using QueryBuilder
+        use sqlx::QueryBuilder;
 
-        if status.is_some() {
-            param_count += 1;
-            conditions.push(format!("status::text = ${}", param_count));
-        }
-        if task_type.is_some() {
-            param_count += 1;
-            conditions.push(format!("task_type = ${}", param_count));
-        }
+        let mut builder: QueryBuilder<sqlx::Postgres> = QueryBuilder::new(
+            "SELECT id, task_type, status::text as status, priority::text as priority, created_at, updated_at, metadata FROM tasks",
+        );
 
-        if !conditions.is_empty() {
-            query.push_str(" WHERE ");
-            query.push_str(&conditions.join(" AND "));
+        let mut has_where = false;
+        if let Some(s) = status {
+            builder.push(" WHERE status::text = ");
+            builder.push_bind(s);
+            has_where = true;
         }
 
-        query.push_str(" ORDER BY created_at DESC LIMIT $");
-        param_count += 1;
-        query.push_str(&param_count.to_string());
-
-        let mut db_query = sqlx::query(&query);
-
-        // Bind parameters in order
-        if let Some(ref s) = status {
-            db_query = db_query.bind(s);
+        if let Some(t) = task_type {
+            if has_where {
+                builder.push(" AND task_type = ");
+            } else {
+                builder.push(" WHERE task_type = ");
+            }
+            builder.push_bind(t);
         }
-        if let Some(ref t) = task_type {
-            db_query = db_query.bind(t);
-        }
-        db_query = db_query.bind(limit as i64);
 
-        let tasks = db_query
+        builder.push(" ORDER BY created_at DESC LIMIT ");
+        builder.push_bind(limit as i64);
+
+        let tasks = builder
+            .build()
             .fetch_all(&self.database.pool)
             .await
             .map_err(Error::Database)?;
