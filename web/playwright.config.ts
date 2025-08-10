@@ -20,6 +20,21 @@ export default defineConfig({
     ['junit', { outputFile: 'test-results/junit.xml' }],
     ['json', { outputFile: 'test-results/results.json' }]
   ],
+  /* Global test timeout */
+  timeout: 30000,
+  /* Expect timeout for assertions */
+  expect: {
+    /* Timeout for expect() calls */
+    timeout: 10000,
+    /* Screenshot comparison threshold */
+    toHaveScreenshot: { 
+      threshold: 0.2,  // Allow small visual differences
+      mode: 'strict'
+    },
+    toMatchSnapshot: { 
+      threshold: 0.2 
+    }
+  },
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
   use: {
     /* Base URL to use in actions like `await page.goto('/')`. */
