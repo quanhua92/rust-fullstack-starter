@@ -29,7 +29,7 @@ This file provides guidance to Claude Code when working with this Rust fullstack
 cargo nextest run                    # 183 integration tests (~21s)
 ./scripts/test-chaos.sh             # Docker-based resilience testing  
 cd web && ./scripts/check-web.sh    # Frontend: 209 tests (135 unit + 61 integration + 13 E2E)
-cd web && pnmp test:e2e:page-objects # 13 E2E tests with Playwright (~3.4s)
+cd web && pnpm test:e2e:page-objects # 13 E2E tests with Playwright (~3.4s)
 cd web && timeout 60s pnpm exec playwright test  # E2E tests with 60s timeout
 ```
 

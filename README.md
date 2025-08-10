@@ -147,7 +147,7 @@ cd web && pnpm dev
 - **⚙️ Background Tasks** - Async job processing with retry logic and dead letter queue
 - **🏗️ Module Generator** - Secure template-based code generation with ownership patterns, transaction safety, and comprehensive testing
 - **📊 API Documentation** - Interactive OpenAPI/Swagger docs
-- **🧪 Testing Framework** - 415+ comprehensive tests: 183 backend integration + 194 frontend (135 unit + 61 integration + 13 E2E) + 37 API endpoints + 10 chaos scenarios. Full stack coverage with Playwright E2E, visual regression, and accessibility testing
+- **🧪 Testing Framework** - 415+ comprehensive tests: 183 backend integration + 209 frontend (135 unit + 61 integration + 13 E2E) + 37 API endpoints + 10 chaos scenarios. Full stack coverage with Playwright E2E, visual regression, and accessibility testing
 - **📊 Monitoring & Observability** - Complete monitoring system with 9 API endpoints, comprehensive security protections, web UI dashboard, advanced tag filtering, RBAC-integrated interface with ownership-based authorization
 - **🔥 Chaos Testing** - Docker-based resilience testing with 10 scenarios
 - **⚙️ Admin CLI** - Direct database access for monitoring and maintenance
@@ -292,7 +292,7 @@ cargo nextest run                    # 183 integration tests (~21s)
 # Frontend Tests (209 tests)  
 cd web && pnpm test:unit             # 135 unit tests (~1.4s)
 cd web && pnpm test:integration      # 61 integration tests (real server ~17s)
-cd web && pnmp test:e2e:page-objects # 13 E2E tests (Playwright ~3.4s)
+cd web && pnpm test:e2e:page-objects # 13 E2E tests (Playwright ~3.4s)
 
 # API & System Testing
 ./scripts/test-with-curl.sh          # 37 endpoints tested (~15s)

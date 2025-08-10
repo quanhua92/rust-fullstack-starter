@@ -1,42 +1,28 @@
 import { test, expect } from '@playwright/test';
 
 test.describe('Admin Dashboard Navigation & UI', () => {
-  // Helper function to create authenticated user when needed
-  async function createAuthenticatedUser(browser: any) {
+  // Helper function to login as admin user
+  async function loginAsAdmin(browser: any) {
     const page = await browser.newPage();
     
-    // Generate unique user for this test session
-    const timestamp = Date.now();
-    const randomSuffix = Math.random().toString(36).substr(2, 9);
-    const username = `dashuser_${timestamp}_${randomSuffix}`;
-    const email = `dash_${timestamp}_${randomSuffix}@example.com`;
-    const password = 'DashboardTest123!';
+    // Use pre-configured admin credentials
+    // Admin account should be created automatically on server startup
+    const email = 'admin@example.com';
+    const password = process.env.STARTER__INITIAL_ADMIN_PASSWORD || 'admin123';
 
-    // Register user
-    await page.goto('/auth/register');
+    // Navigate to login
+    await page.goto('/auth/login');
     await page.waitForLoadState('networkidle');
 
-    await page.locator('input[placeholder*="username" i]').fill(username);
-    await page.locator('input[type="email"]').fill(email);
-    await page.locator('input[placeholder="Enter your password"]').fill(password);
-    await page.locator('input[placeholder="Confirm your password"]').fill(password);
-    await page.locator('button:has-text("Create Account")').click();
-
-    // Navigate to login manually
-    await page.goto('/auth/login');
-
-    // Login
+    // Login with admin credentials
     await page.locator('input[type="email"]').fill(email);
     await page.locator('input[type="password"]').fill(password);
     await page.locator('button:has-text("Sign In")').click();
 
     // Wait for successful login and redirect  
-    await page.waitForLoadState('networkidle', { timeout: 10000 });
+    await page.waitForLoadState('networkidle', { timeout: 15000 });
     
-    // Note: Regular users may not have admin access, login success is enough
-    // TODO: Fix test - may need admin user creation or different auth approach
-    
-    // Store the authenticated context
+    // Store the authenticated admin context
     const context = await browser.newContext({ 
       storageState: await page.context().storageState() 
     });
@@ -47,7 +33,7 @@ test.describe('Admin Dashboard Navigation & UI', () => {
 
   test.describe('Dashboard Loading and Layout', () => {
     test('should load dashboard with all main sections', async ({ browser }) => {
-      const { context } = await createAuthenticatedUser(browser);
+      const { context } = await loginAsAdmin(browser);
       const page = await context.newPage();
       
       await page.goto('/admin');
@@ -82,7 +68,7 @@ test.describe('Admin Dashboard Navigation & UI', () => {
     });
 
     test('should display stats cards with proper loading states', async ({ browser }) => {
-      const { context } = await createAuthenticatedUser(browser);
+      const { context } = await loginAsAdmin(browser);
       const page = await context.newPage();
       
       await page.goto('/admin');
@@ -106,7 +92,7 @@ test.describe('Admin Dashboard Navigation & UI', () => {
     });
 
     test('should render charts and data visualizations', async ({ browser }) => {
-      const { context } = await createAuthenticatedUser(browser);
+      const { context } = await loginAsAdmin(browser);
       const page = await context.newPage();
       
       await page.goto('/admin');
@@ -130,7 +116,7 @@ test.describe('Admin Dashboard Navigation & UI', () => {
 
   test.describe('Sidebar Navigation', () => {
     test('should display sidebar with all navigation items', async ({ browser }) => {
-      const { context } = await createAuthenticatedUser(browser);
+      const { context } = await loginAsAdmin(browser);
       const page = await context.newPage();
       
       await page.goto('/admin');
@@ -155,7 +141,7 @@ test.describe('Admin Dashboard Navigation & UI', () => {
     });
 
     test('should navigate to different admin sections', async ({ browser }) => {
-      const { context } = await createAuthenticatedUser(browser);
+      const { context } = await loginAsAdmin(browser);
       const page = await context.newPage();
       
       await page.goto('/admin');
@@ -198,7 +184,7 @@ test.describe('Admin Dashboard Navigation & UI', () => {
 
   test.describe('Dashboard Interactive Elements', () => {
     test('should have working quick action buttons', async ({ browser }) => {
-      const { context } = await createAuthenticatedUser(browser);
+      const { context } = await loginAsAdmin(browser);
       const page = await context.newPage();
       
       await page.goto('/admin');
@@ -230,7 +216,7 @@ test.describe('Admin Dashboard Navigation & UI', () => {
     });
 
     test('should display real-time data updates', async ({ browser }) => {
-      const { context } = await createAuthenticatedUser(browser);
+      const { context } = await loginAsAdmin(browser);
       const page = await context.newPage();
       
       await page.goto('/admin');
@@ -251,7 +237,7 @@ test.describe('Admin Dashboard Navigation & UI', () => {
 
   test.describe('User Profile Information', () => {
     test('should display current user information', async ({ browser }) => {
-      const { context } = await createAuthenticatedUser(browser);
+      const { context } = await loginAsAdmin(browser);
       const page = await context.newPage();
       
       await page.goto('/admin');
@@ -279,7 +265,7 @@ test.describe('Admin Dashboard Navigation & UI', () => {
 
   test.describe('Responsive Design', () => {
     test('should adapt to mobile viewport', async ({ browser }) => {
-      const { context } = await createAuthenticatedUser(browser);
+      const { context } = await loginAsAdmin(browser);
       const page = await context.newPage();
       
       // Set mobile viewport
@@ -304,7 +290,7 @@ test.describe('Admin Dashboard Navigation & UI', () => {
     });
 
     test('should handle tablet viewport', async ({ browser }) => {
-      const { context } = await createAuthenticatedUser(browser);
+      const { context } = await loginAsAdmin(browser);
       const page = await context.newPage();
       
       // Set tablet viewport
@@ -325,7 +311,7 @@ test.describe('Admin Dashboard Navigation & UI', () => {
 
   test.describe('Loading States and Error Handling', () => {
     test('should handle slow network conditions gracefully', async ({ browser }) => {
-      const { context } = await createAuthenticatedUser(browser);
+      const { context } = await loginAsAdmin(browser);
       const page = await context.newPage();
       
       // Simulate slow network
