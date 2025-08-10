@@ -5,10 +5,10 @@ test.describe('Admin Dashboard Navigation & UI', () => {
   async function loginAsAdmin(browser: any) {
     const page = await browser.newPage();
     
-    // Use pre-configured admin credentials
+    // Use pre-configured admin credentials from .env file
     // Admin account should be created automatically on server startup
     const email = 'admin@example.com';
-    const password = process.env.STARTER__INITIAL_ADMIN_PASSWORD || 'admin123';
+    const password = 'SecureAdminPass123!'; // Match the password in .env file
 
     // Navigate to login
     await page.goto('/auth/login');
