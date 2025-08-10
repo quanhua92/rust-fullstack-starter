@@ -1,314 +1,196 @@
-This app is created using the [TanStack Router](https://tanstack.com/router) and is a great starting point for building your next React application using command:
+# Frontend Web Application
+
+Modern React/TypeScript frontend built with [TanStack Router](https://tanstack.com/router) and comprehensive testing infrastructure.
+
+## Stack
+
+- **React 18** with TypeScript
+- **TanStack Router** - Type-safe file-based routing
+- **TanStack Query** - Server state management  
+- **Tailwind CSS** - Utility-first styling
+- **shadcn/ui** - High-quality component library
+- **Biome** - Linting and formatting
+- **Vitest** - Unit and integration testing
+- **Playwright** - End-to-end testing
+
+## Getting Started
 
 ```bash
-pnpx create-tsrouter-app@latest web --template file-router --tailwind --package-manager pnpm --toolchain biome --no-git --add-ons shadcn,tanstack-query
-```
-
-# Getting Started
-
-To run this application:
-
-```bash
+# Install dependencies
 pnpm install
-pnpm start  
+
+# Start development server (frontend only)
+pnpm dev                    # http://localhost:5173
+
+# Start with backend integration  
+cd .. && ./scripts/dev-server.sh    # Full-stack setup
 ```
 
-# Building For Production
+## Testing - 194 Total Tests
 
-To build this application for production:
+Comprehensive testing strategy with unit, integration, and E2E coverage:
 
 ```bash
-pnpm build
+# Unit Tests (135) - Fast feedback, mocked dependencies
+pnpm test:unit                    # ~2s execution
+
+# Integration Tests (46) - Real backend API communication  
+pnpm test:integration             # Requires running server
+
+# E2E Tests (13) - Complete user workflows
+pnpm test:e2e                     # Full browser testing
+
+# All tests
+pnpm test                         # Run everything
 ```
 
-## Testing
+**Test Categories:**
+- **API Client** (32 tests) - Complete endpoint coverage with error handling
+- **React Hooks** (25 tests) - TanStack Query integration with mock/real modes
+- **RBAC & Auth** (57 tests) - Permission systems and authentication guards  
+- **Type Guards & Utils** (16 tests) - TypeScript utilities and validation
+- **E2E Workflows** (13 tests) - Registration → login → dashboard flows
+- **Integration** (46 tests) - Real API communication with server health checks
 
-This project uses [Vitest](https://vitest.dev/) for testing. You can run the tests with:
+**Key Features:**
+- **Stateless Design** - Tests use unique data (no cleanup dependencies)
+- **Resilient Patterns** - Handle race conditions and async operations gracefully
+- **Browser Coverage** - E2E tests pass on Chromium, Firefox, WebKit, Mobile
+- **CI-Ready** - Fast unit tests for development, comprehensive for validation
+
+## Development Commands
 
 ```bash
-pnpm test
+# Development
+pnpm dev                         # Start dev server (port 5173)
+pnpm build                       # Production build
+pnpm serve                       # Preview production build
+
+# Code Quality
+pnpm lint                        # Biome linting
+pnpm format                      # Code formatting  
+pnpm check                       # Comprehensive checks
+pnpm typecheck                   # TypeScript validation
+
+# Testing (detailed)
+pnpm test:unit                   # 135 unit tests (~2s)
+pnpm test:integration            # 46 integration tests (needs server)
+pnpm test:e2e                    # 13 E2E tests (all browsers)
+pnpm test:watch                  # Watch mode for unit tests
+pnpm test:coverage               # Coverage reports
+
+# Quality Validation (comprehensive)
+./scripts/check-web.sh           # All checks: deps, types, lint, build, tests
 ```
 
-## Styling
+## Project Structure
 
-This project uses [Tailwind CSS](https://tailwindcss.com/) for styling.
-
-
-## Linting & Formatting
-
-This project uses [Biome](https://biomejs.dev/) for linting and formatting. The following scripts are available:
-
-
-```bash
-pnpm lint
-pnpm format
-pnpm check
+```
+web/
+├── src/
+│   ├── components/          # Reusable UI components
+│   │   ├── ui/             # shadcn/ui components
+│   │   ├── auth/           # Authentication forms  
+│   │   └── layout/         # Layout components
+│   ├── hooks/              # Custom React hooks
+│   │   └── __tests__/      # Hook unit & integration tests
+│   ├── lib/
+│   │   ├── api/            # API client & types
+│   │   ├── auth/           # Authentication context
+│   │   └── rbac/           # Role-based access control
+│   ├── routes/             # File-based routing (TanStack Router)
+│   ├── test/               # Test utilities & setup
+│   │   ├── mocks.ts        # Mock factories
+│   │   ├── setup.ts        # Test configuration
+│   │   └── integration-setup.ts  # Integration test helpers
+│   └── types/              # Generated API types
+├── e2e/                    # Playwright E2E tests  
+├── scripts/                # Development scripts
+└── public/                 # Static assets
 ```
 
+## API Integration
 
-## Shadcn
+The frontend integrates with the Rust backend API:
 
-Add components using the latest version of [Shadcn](https://ui.shadcn.com/).
+- **Base URL**: `http://localhost:3000/api/v1`
+- **Authentication**: Session-based with bearer tokens
+- **Generated Types**: Auto-generated from OpenAPI spec (`src/types/api.ts`)
+- **Query Hooks**: TanStack Query integration (`src/hooks/useApiQueries.ts`)
+
+```typescript
+// API client usage
+import { apiClient } from '@/lib/api/client';
+
+const user = await apiClient.getCurrentUser();
+const tasks = await apiClient.getTasks();
+```
+
+## Component Library
+
+Built with [shadcn/ui](https://ui.shadcn.com/) components:
 
 ```bash
+# Add new components  
 pnpx shadcn@latest add button
+pnpx shadcn@latest add dialog
+pnpx shadcn@latest add form
 ```
-
-
 
 ## Routing
-This project uses [TanStack Router](https://tanstack.com/router). The initial setup is a file based router. Which means that the routes are managed as files in `src/routes`.
 
-### Adding A Route
+File-based routing with [TanStack Router](https://tanstack.com/router):
 
-To add a new route to your application just add another a new file in the `./src/routes` directory.
-
-TanStack will automatically generate the content of the route file for you.
-
-Now that you have two routes you can use a `Link` component to navigate between them.
-
-### Adding Links
-
-To use SPA (Single Page Application) navigation you will need to import the `Link` component from `@tanstack/react-router`.
+- Routes defined in `src/routes/`  
+- Type-safe navigation and params
+- Layout support with `__root.tsx`
+- Automatic route generation
 
 ```tsx
-import { Link } from "@tanstack/react-router";
+// Navigation
+import { Link } from '@tanstack/react-router';
+
+<Link to="/auth/login">Login</Link>
 ```
-
-Then anywhere in your JSX you can use it like so:
-
-```tsx
-<Link to="/about">About</Link>
-```
-
-This will create a link that will navigate to the `/about` route.
-
-More information on the `Link` component can be found in the [Link documentation](https://tanstack.com/router/v1/docs/framework/react/api/router/linkComponent).
-
-### Using A Layout
-
-In the File Based Routing setup the layout is located in `src/routes/__root.tsx`. Anything you add to the root route will appear in all the routes. The route content will appear in the JSX where you use the `<Outlet />` component.
-
-Here is an example layout that includes a header:
-
-```tsx
-import { Outlet, createRootRoute } from '@tanstack/react-router'
-import { TanStackRouterDevtools } from '@tanstack/react-router-devtools'
-
-import { Link } from "@tanstack/react-router";
-
-export const Route = createRootRoute({
-  component: () => (
-    <>
-      <header>
-        <nav>
-          <Link to="/">Home</Link>
-          <Link to="/about">About</Link>
-        </nav>
-      </header>
-      <Outlet />
-      <TanStackRouterDevtools />
-    </>
-  ),
-})
-```
-
-The `<TanStackRouterDevtools />` component is not required so you can remove it if you don't want it in your layout.
-
-More information on layouts can be found in the [Layouts documentation](https://tanstack.com/router/latest/docs/framework/react/guide/routing-concepts#layouts).
-
-
-## Data Fetching
-
-There are multiple ways to fetch data in your application. You can use TanStack Query to fetch data from a server. But you can also use the `loader` functionality built into TanStack Router to load the data for a route before it's rendered.
-
-For example:
-
-```tsx
-const peopleRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: "/people",
-  loader: async () => {
-    const response = await fetch("https://swapi.dev/api/people");
-    return response.json() as Promise<{
-      results: {
-        name: string;
-      }[];
-    }>;
-  },
-  component: () => {
-    const data = peopleRoute.useLoaderData();
-    return (
-      <ul>
-        {data.results.map((person) => (
-          <li key={person.name}>{person.name}</li>
-        ))}
-      </ul>
-    );
-  },
-});
-```
-
-Loaders simplify your data fetching logic dramatically. Check out more information in the [Loader documentation](https://tanstack.com/router/latest/docs/framework/react/guide/data-loading#loader-parameters).
-
-### React-Query
-
-React-Query is an excellent addition or alternative to route loading and integrating it into you application is a breeze.
-
-First add your dependencies:
-
-```bash
-pnpm add @tanstack/react-query @tanstack/react-query-devtools
-```
-
-Next we'll need to create a query client and provider. We recommend putting those in `main.tsx`.
-
-```tsx
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-
-// ...
-
-const queryClient = new QueryClient();
-
-// ...
-
-if (!rootElement.innerHTML) {
-  const root = ReactDOM.createRoot(rootElement);
-
-  root.render(
-    <QueryClientProvider client={queryClient}>
-      <RouterProvider router={router} />
-    </QueryClientProvider>
-  );
-}
-```
-
-You can also add TanStack Query Devtools to the root route (optional).
-
-```tsx
-import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
-
-const rootRoute = createRootRoute({
-  component: () => (
-    <>
-      <Outlet />
-      <ReactQueryDevtools buttonPosition="top-right" />
-      <TanStackRouterDevtools />
-    </>
-  ),
-});
-```
-
-Now you can use `useQuery` to fetch your data.
-
-```tsx
-import { useQuery } from "@tanstack/react-query";
-
-import "./App.css";
-
-function App() {
-  const { data } = useQuery({
-    queryKey: ["people"],
-    queryFn: () =>
-      fetch("https://swapi.dev/api/people")
-        .then((res) => res.json())
-        .then((data) => data.results as { name: string }[]),
-    initialData: [],
-  });
-
-  return (
-    <div>
-      <ul>
-        {data.map((person) => (
-          <li key={person.name}>{person.name}</li>
-        ))}
-      </ul>
-    </div>
-  );
-}
-
-export default App;
-```
-
-You can find out everything you need to know on how to use React-Query in the [React-Query documentation](https://tanstack.com/query/latest/docs/framework/react/overview).
 
 ## State Management
 
-Another common requirement for React applications is state management. There are many options for state management in React. TanStack Store provides a great starting point for your project.
+- **Server State**: TanStack Query for API data
+- **Local State**: React hooks and context
+- **Authentication**: Auth context provider
+- **Forms**: React Hook Form with Zod validation
 
-First you need to add TanStack Store as a dependency:
+## Styling
+
+**Tailwind CSS** with shadcn/ui design system:
+
+- Utility-first CSS framework
+- Dark/light mode support  
+- Consistent design tokens
+- Responsive design utilities
+
+## Environment Configuration
 
 ```bash
-pnpm add @tanstack/store
+# Environment files
+.env.local                   # Local development overrides
+.env                         # Development defaults
+
+# Key variables
+VITE_API_BASE_URL           # Backend API URL (default: auto-detected)
 ```
 
-Now let's create a simple counter in the `src/App.tsx` file as a demonstration.
+## Production Build
 
-```tsx
-import { useStore } from "@tanstack/react-store";
-import { Store } from "@tanstack/store";
-import "./App.css";
+```bash
+# Build for production
+pnpm build                   # Output: dist/
 
-const countStore = new Store(0);
+# Preview build locally
+pnpm serve                   # Test production build
 
-function App() {
-  const count = useStore(countStore);
-  return (
-    <div>
-      <button onClick={() => countStore.setState((n) => n + 1)}>
-        Increment - {count}
-      </button>
-    </div>
-  );
-}
-
-export default App;
+# Serve with backend (recommended)
+cd .. && ./scripts/dev-server.sh    # Rust serves frontend
 ```
 
-One of the many nice features of TanStack Store is the ability to derive state from other state. That derived state will update when the base state updates.
-
-Let's check this out by doubling the count using derived state.
-
-```tsx
-import { useStore } from "@tanstack/react-store";
-import { Store, Derived } from "@tanstack/store";
-import "./App.css";
-
-const countStore = new Store(0);
-
-const doubledStore = new Derived({
-  fn: () => countStore.state * 2,
-  deps: [countStore],
-});
-doubledStore.mount();
-
-function App() {
-  const count = useStore(countStore);
-  const doubledCount = useStore(doubledStore);
-
-  return (
-    <div>
-      <button onClick={() => countStore.setState((n) => n + 1)}>
-        Increment - {count}
-      </button>
-      <div>Doubled - {doubledCount}</div>
-    </div>
-  );
-}
-
-export default App;
-```
-
-We use the `Derived` class to create a new store that is derived from another store. The `Derived` class has a `mount` method that will start the derived store updating.
-
-Once we've created the derived store we can use it in the `App` component just like we would any other store using the `useStore` hook.
-
-You can find out everything you need to know on how to use TanStack Store in the [TanStack Store documentation](https://tanstack.com/store/latest).
-
-# Demo files
-
-Files prefixed with `demo` can be safely deleted. They are there to provide a starting point for you to play around with the features you've installed.
-
-# Learn More
-
-You can learn more about all of the offerings from TanStack in the [TanStack documentation](https://tanstack.com).
+The production build is optimized and can be served directly by the Rust backend or any static file server.

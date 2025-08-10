@@ -140,13 +140,13 @@ cd web && pnpm dev
 
 - **🌐 Full-Stack Integration** - React frontend served directly by Rust server with unified deployment
 - **🔐 Authentication & Authorization** - Session-based auth with ownership-based RBAC and transaction safety
-- **👥 User Management System** - Complete user lifecycle with 12 endpoints (profile, admin, analytics)
+- **👥 User Management System** - Complete user lifecycle with 10 endpoints (profile, admin, analytics)
 - **🔑 Role-Based Access Control** - Advanced ownership-based security: users own their data, Admin/Moderator access all
 - **⚙️ Background Tasks** - Async job processing with retry logic and dead letter queue
 - **🏗️ Module Generator** - Secure template-based code generation with ownership patterns, transaction safety, and comprehensive testing
 - **📊 API Documentation** - Interactive OpenAPI/Swagger docs
-- **🧪 Testing Framework** - 184 integration tests + 194 frontend tests (135 unit + 46 integration + 13 E2E) + comprehensive API endpoint testing (48 endpoints) including security vulnerability tests
-- **📊 Monitoring & Observability** - Complete monitoring system with 14 API endpoints, comprehensive security protections, web UI dashboard, advanced tag filtering, RBAC-integrated interface with ownership-based authorization
+- **🧪 Testing Framework** - 184 integration tests + 194 frontend tests (135 unit + 46 integration + 13 E2E) + comprehensive API endpoint testing (37 endpoints) including security vulnerability tests
+- **📊 Monitoring & Observability** - Complete monitoring system with 9 API endpoints, comprehensive security protections, web UI dashboard, advanced tag filtering, RBAC-integrated interface with ownership-based authorization
 - **🔥 Chaos Testing** - Docker-based resilience testing with 10 scenarios
 - **⚙️ Admin CLI** - Direct database access for monitoring and maintenance
 - **🐳 Docker Support** - Development and production containers with multi-stage builds
@@ -165,7 +165,7 @@ cargo run -- revert module books --dry-run               # Preview revert
 
 # Run tests
 cargo nextest run                    # Integration tests (184 tests)
-./scripts/test-with-curl.sh         # API endpoint tests (48 endpoints)
+./scripts/test-with-curl.sh         # API endpoint tests (37 endpoints)
 ./scripts/test-generate.sh          # Module generator system tests
 ./scripts/test-chaos.sh             # Chaos testing (10 scenarios)
 
@@ -194,11 +194,11 @@ rust-fullstack-starter/
 └── starter/         # Main Rust application
     ├── src/
     │   ├── auth/     # Session-based authentication
-    │   ├── users/    # User management (12 endpoints)
+    │   ├── users/    # User management (10 endpoints)
     │   ├── rbac/     # Role-based access control
     │   ├── cli/      # Admin command-line interface
     │   ├── tasks/    # Background job processing
-    │   ├── monitoring/ # Observability system (14 endpoints)
+    │   ├── monitoring/ # Observability system (9 endpoints)
     │   └── ...       # Health, errors, database, server
     ├── migrations/   # Database schema evolution (6 migrations)
     └── tests/        # Integration tests (184 tests)
@@ -212,7 +212,7 @@ rust-fullstack-starter/
 - **[Quick Start](docs/QUICK-START.md)** - 2-minute setup guide
 - **[Architecture Guide](docs/ARCHITECTURE-GUIDE.md)** - System design and patterns
 - **[Implementation Guide](docs/IMPLEMENTATION-GUIDE.md)** - Core systems and testing
-- **[API Reference](docs/API-REFERENCE.md)** - All 48 endpoints with examples
+- **[API Reference](docs/API-REFERENCE.md)** - All 37 endpoints with examples
 - **[Production Deployment](docs/PRODUCTION-DEPLOYMENT.md)** - Docker deployment
 - **[Troubleshooting](docs/TROUBLESHOOTING.md)** - Debugging and diagnostics
 - **[Advanced Topics](docs/ADVANCED-TOPICS.md)** - Chaos testing and frontend patterns
@@ -276,6 +276,31 @@ STARTER__INITIAL_ADMIN_PASSWORD=your_secure_admin_password
 - Access all user tasks and profiles
 - Use admin-only endpoints
 - Full RBAC permissions for system management
+
+## Testing
+
+**378 Total Tests** - Comprehensive coverage across the full stack:
+
+```bash
+# Backend Tests (215 tests)
+cargo test                           # 31 unit tests  
+cargo nextest run                    # 184 integration tests
+
+# Frontend Tests (194 tests)  
+cd web && pnpm test:unit             # 135 unit tests (~2s)
+cd web && pnpm test:integration      # 46 integration tests (real server)
+cd web && pnpm test:e2e              # 13 E2E tests (auth flow, API health)
+
+# API Testing
+./scripts/test-with-curl.sh          # 37 endpoints tested
+./scripts/test-chaos.sh              # Docker resilience testing
+```
+
+**Key Features:**
+- **Stateless Design** - Tests use unique data (no cleanup dependencies)
+- **Resilient Patterns** - Handle race conditions and async operations gracefully  
+- **Full Coverage** - Unit, integration, E2E, API endpoints, security vulnerabilities
+- **CI-Ready** - Fast unit tests for development, comprehensive tests for validation
 
 ## Admin CLI Commands
 
