@@ -655,11 +655,9 @@ describeIntegration("useApiQueries Hook Integration Tests", () => {
 					{ timeout: 3000 }, // Faster recovery timeout
 				);
 			} catch (error) {
-				// If the test times out, it's still acceptable behavior
-				console.log(
-					"Error recovery test timed out - acceptable for testing purposes",
-				);
-				expect(true).toBe(true); // Pass the test
+				// Test failed to recover within timeout - this should fail the test
+				console.log("Error recovery test timed out - recovery mechanism may be too slow");
+				throw new Error(`Error recovery failed: ${error instanceof Error ? error.message : String(error)}`);
 			} finally {
 				// Always restore original baseUrl
 				(apiClient as unknown as { baseUrl: string }).baseUrl = originalBaseUrl;

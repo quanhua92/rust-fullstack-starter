@@ -267,6 +267,6 @@ This starter provides a solid foundation for learning Rust web development with 
 ## Test Count References
 - `cargo nextest list | grep -c "::"` - Reliable way to count integration tests (184)
 - `cd web && pnpm test:unit` - Frontend unit tests (135)
-- `cd web && pnpm test:integration` - Frontend integration tests (46) 
+- `cd web && pnpm test:integration` - Frontend integration tests (46)
 - `cd web && pnpm test:e2e` - Frontend E2E tests (13)
 - `jq '.paths | keys | length' docs/openapi.json` - Reliable way to count API endpoints

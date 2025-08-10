@@ -53,8 +53,8 @@ test.describe('Authentication Flow', () => {
     await page.locator('input[placeholder="Enter your password"]').fill(password);
     await page.locator('input[placeholder="Confirm your password"]').fill(password);
     
-    // Wait a moment for form validation
-    await page.waitForTimeout(500);
+    // Wait for any client-side validation to complete by ensuring the submit button is enabled
+    await expect(page.locator('button:has-text("Create Account"), button:has-text("Register"), button[type="submit"]').first()).toBeEnabled();
 
     // Submit registration
     await page.locator('button:has-text("Create Account"), button:has-text("Register"), button[type="submit"]').first().click();
