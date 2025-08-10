@@ -7,7 +7,7 @@ test.describe('Dashboard with Page Objects', () => {
   let userCredentials: { email: string; password: string };
 
   test.beforeAll(async ({ browser }) => {
-    // Create authenticated context for reuse
+    // Create authenticated regular user context for testing user view of /admin
     const page = await browser.newPage();
     const loginPage = new LoginPage(page);
     const testUser = TestDataGenerator.generateUniqueUser();
@@ -15,7 +15,7 @@ test.describe('Dashboard with Page Objects', () => {
     userCredentials = { email: testUser.email, password: testUser.password };
 
     try {
-      // Register and login
+      // Register and login as regular user
       await page.goto('/auth/register');
       await page.locator('input[placeholder*="username" i]').fill(testUser.username);
       await page.locator('input[type="email"]').fill(testUser.email);
@@ -27,6 +27,9 @@ test.describe('Dashboard with Page Objects', () => {
       
       await loginPage.login(testUser.email, testUser.password);
       await loginPage.expectLoginSuccess();
+      
+      // Verify we're redirected to admin area (regular users get redirected here)
+      await expect(page).toHaveURL(/.*\/admin/, { timeout: 8000 });
 
       // Store authenticated state
       authenticatedContext = await browser.newContext({ 
