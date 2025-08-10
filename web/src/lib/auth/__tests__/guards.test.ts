@@ -74,7 +74,7 @@ describe("Auth Guards", () => {
 			});
 		});
 
-		it("should log errors when API call fails", async () => {
+		it("should handle API call failures without logging in test environment", async () => {
 			const consoleSpy = vi
 				.spyOn(console, "error")
 				.mockImplementation(() => {});
@@ -84,10 +84,11 @@ describe("Auth Guards", () => {
 			);
 
 			await expect(requireAuth()).rejects.toThrow();
-			expect(consoleSpy).toHaveBeenCalledWith(
-				"Authentication check failed:",
-				new Error("Network error"),
-			);
+			// Should NOT log in test environment
+			expect(consoleSpy).not.toHaveBeenCalled();
+			expect(redirect).toHaveBeenCalledWith({
+				to: "/auth/login",
+			});
 
 			consoleSpy.mockRestore();
 		});

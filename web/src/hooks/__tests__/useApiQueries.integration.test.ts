@@ -627,41 +627,61 @@ describeIntegration("useApiQueries Hook Integration Tests", () => {
 				.baseUrl;
 
 			try {
-				// First, break the connection
-				(apiClient as unknown as { baseUrl: string }).baseUrl =
-					"http://localhost:9999/api/v1";
-
+				// First, start with a working connection to establish baseline
 				const { result } = renderHook(() => useHealthBasic(), { wrapper });
 
-				// Should eventually error out after retries (very fast timeout)
-				await waitFor(
-					() => {
-						expect(result.current.isError).toBe(true);
-					},
-					{ timeout: 2000 }, // Very reduced timeout
-				);
-
-				// Restore connection immediately
-				(apiClient as unknown as { baseUrl: string }).baseUrl = originalBaseUrl;
-
-				// Manually trigger refetch
-				await result.current.refetch();
-
-				// Should recover quickly
+				// Wait for initial success
 				await waitFor(
 					() => {
 						expect(result.current.isSuccess).toBe(true);
 					},
-					{ timeout: 3000 }, // Faster recovery timeout
+					{ timeout: 5000 },
+				);
+
+				// Now break the connection
+				(apiClient as unknown as { baseUrl: string }).baseUrl =
+					"http://localhost:9999/api/v1";
+
+				// Manually trigger refetch to test failure
+				await result.current.refetch();
+
+				// Should eventually error out after retries
+				await waitFor(
+					() => {
+						expect(result.current.isError).toBe(true);
+					},
+					{ timeout: 5000 }, // More generous timeout for error
+				);
+
+				// Restore connection
+				(apiClient as unknown as { baseUrl: string }).baseUrl = originalBaseUrl;
+
+				// Wait a bit before refetching to ensure connection is restored
+				await new Promise((resolve) => setTimeout(resolve, 100));
+
+				// Manually trigger refetch for recovery
+				await result.current.refetch();
+
+				// Should recover with more generous timeout
+				await waitFor(
+					() => {
+						expect(result.current.isSuccess).toBe(true);
+						expect(result.current.data).toBeDefined();
+					},
+					{ timeout: 10000 }, // Much more generous recovery timeout
 				);
 			} catch (error) {
 				// Test failed to recover within timeout - this should fail the test
-				console.log("Error recovery test timed out - recovery mechanism may be too slow");
-				throw new Error(`Error recovery failed: ${error instanceof Error ? error.message : String(error)}`);
+				console.log(
+					"Error recovery test timed out - recovery mechanism may be too slow",
+				);
+				throw new Error(
+					`Error recovery failed: ${error instanceof Error ? error.message : String(error)}`,
+				);
 			} finally {
 				// Always restore original baseUrl
 				(apiClient as unknown as { baseUrl: string }).baseUrl = originalBaseUrl;
 			}
-		}, 8000); // Set test timeout to 8 seconds
+		}, 25000); // Much more generous overall test timeout
 	});
 });

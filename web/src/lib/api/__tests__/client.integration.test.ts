@@ -169,10 +169,18 @@ describeIntegration("API Client Integration Tests", () => {
 			// Create unique user for this test (like curl script)
 			const testUserData = createTestUser();
 			await apiClient.register(testUserData);
-			await apiClient.login({
+			const loginResponse = await apiClient.login({
 				email: testUserData.email,
 				password: testUserData.password,
 			});
+			// Fail fast if server returns misaligned response
+			const sessionToken = loginResponse.data?.session_token;
+			if (!sessionToken) {
+				throw new Error(
+					`Server response malformed: missing session_token: ${JSON.stringify(loginResponse)}`,
+				);
+			}
+			setAuthToken(sessionToken);
 
 			const logoutResponse = await apiClient.logout();
 

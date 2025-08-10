@@ -23,7 +23,10 @@ export const requireAuth = async () => {
 		}
 		return response.data;
 	} catch (error) {
-		console.error("Authentication check failed:", error);
+		// Only log in non-test environments to avoid stderr noise
+		if (typeof process !== "undefined" && process.env.NODE_ENV !== "test") {
+			console.error("Authentication check failed:", error);
+		}
 		throw redirect({
 			to: "/auth/login",
 		});

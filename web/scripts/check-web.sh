@@ -67,6 +67,12 @@ fi
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/../../scripts/common.sh"
 
+# Function to check if a port is in use
+check_port() {
+    local port=$1
+    netstat -an 2>/dev/null | grep -q ":${port}.*LISTEN" || lsof -i :${port} >/dev/null 2>&1
+}
+
 # Initialize timing and get project directories
 init_timing
 get_project_dirs
@@ -153,12 +159,6 @@ print_status "step" "🎭 Step 9/9: Running E2E tests with Playwright..."
 if [ "${PLAYWRIGHT_SKIP:-false}" = "true" ]; then
     print_status "info" "Skipping E2E tests (PLAYWRIGHT_SKIP=true)"
 else
-    # Function to check if a port is in use
-    check_port() {
-        local port=$1
-        netstat -an 2>/dev/null | grep -q ":${port}.*LISTEN" || lsof -i :${port} >/dev/null 2>&1
-    }
-    
     # Function to wait for server to be ready
     wait_for_server() {
         local url=$1
