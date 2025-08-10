@@ -22,12 +22,12 @@ export default defineConfig({
     ['junit', { outputFile: 'test-results/junit.xml' }],
     ['json', { outputFile: 'test-results/results.json' }]
   ],
-  /* Global test timeout - max 30 seconds per test */
-  timeout: 30 * 1000,
+  /* Global test timeout - max 15 seconds per test */
+  timeout: 15 * 1000,
   /* Expect timeout for assertions */
   expect: {
-    /* Timeout for expect() calls - max 5 seconds per assertion */
-    timeout: 5000,
+    /* Timeout for expect() calls - max 3 seconds per assertion */
+    timeout: 3000,
     /* Screenshot comparison threshold */
     toHaveScreenshot: { 
       threshold: 0.2  // Allow small visual differences
@@ -41,11 +41,11 @@ export default defineConfig({
     /* Base URL to use in actions like `await page.goto('/')`. */
     baseURL: process.env.PLAYWRIGHT_BASE_URL || 'http://localhost:5173',
     
-    /* Action timeout - max 10 seconds per action */
-    actionTimeout: 10 * 1000,
+    /* Action timeout - max 5 seconds per action */
+    actionTimeout: 5 * 1000,
     
-    /* Navigation timeout - max 15 seconds per page load */
-    navigationTimeout: 15 * 1000,
+    /* Navigation timeout - max 10 seconds per page load */
+    navigationTimeout: 10 * 1000,
 
     /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
     trace: 'on-first-retry',
