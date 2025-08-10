@@ -147,7 +147,7 @@ cd web && pnpm dev
 - **⚙️ Background Tasks** - Async job processing with retry logic and dead letter queue
 - **🏗️ Module Generator** - Secure template-based code generation with ownership patterns, transaction safety, and comprehensive testing
 - **📊 API Documentation** - Interactive OpenAPI/Swagger docs
-- **🧪 Testing Framework** - 184 integration tests + 194 frontend tests (135 unit + 46 integration + 13 E2E) + comprehensive API endpoint testing (37 endpoints) including security vulnerability tests
+- **🧪 Testing Framework** - 415+ comprehensive tests: 183 backend integration + 194 frontend (135 unit + 61 integration + 13 E2E) + 37 API endpoints + 10 chaos scenarios. Full stack coverage with Playwright E2E, visual regression, and accessibility testing
 - **📊 Monitoring & Observability** - Complete monitoring system with 9 API endpoints, comprehensive security protections, web UI dashboard, advanced tag filtering, RBAC-integrated interface with ownership-based authorization
 - **🔥 Chaos Testing** - Docker-based resilience testing with 10 scenarios
 - **⚙️ Admin CLI** - Direct database access for monitoring and maintenance
@@ -281,28 +281,36 @@ STARTER__INITIAL_ADMIN_PASSWORD=your_secure_admin_password
 
 ## Testing
 
-**378 Total Tests** - Comprehensive coverage across the full stack:
+**415+ Total Tests** - Comprehensive 7-layer testing architecture:
 
 ```bash
-# Backend Tests (215 tests)
+# Backend Tests (214 tests)
 cargo test                           # 31 unit tests  
-cargo nextest run                    # 184 integration tests
+cargo nextest run                    # 183 integration tests (~21s)
 
-# Frontend Tests (194 tests)  
-cd web && pnpm test:unit             # 135 unit tests (~2s)
-cd web && pnpm test:integration      # 46 integration tests (real server)
-cd web && pnpm test:e2e              # 13 E2E tests (auth flow, API health)
+# Frontend Tests (209 tests)  
+cd web && pnpm test:unit             # 135 unit tests (~1.4s)
+cd web && pnpm test:integration      # 61 integration tests (real server ~17s)
+cd web && pnmp test:e2e:page-objects # 13 E2E tests (Playwright ~3.4s)
 
-# API Testing
-./scripts/test-with-curl.sh          # 37 endpoints tested
-./scripts/test-chaos.sh              # Docker resilience testing
+# API & System Testing
+./scripts/test-with-curl.sh          # 37 endpoints tested (~15s)
+./scripts/test-chaos.sh              # 10 resilience scenarios
 ```
 
+**Architecture:**
+- **🎭 E2E Layer** - Browser UI, visual regression, accessibility (Playwright)
+- **🔗 Integration Layer** - React + API workflows, real database integration  
+- **⚡ Unit Layer** - Component logic, pure functions, mocked dependencies
+- **📡 API Layer** - HTTP endpoint validation with curl
+- **🔥 Chaos Layer** - Docker-based failure scenario testing
+
 **Key Features:**
-- **Stateless Design** - Tests use unique data (no cleanup dependencies)
-- **Resilient Patterns** - Handle race conditions and async operations gracefully  
-- **Full Coverage** - Unit, integration, E2E, API endpoints, security vulnerabilities
-- **CI-Ready** - Fast unit tests for development, comprehensive tests for validation
+- **Complete Coverage** - Unit → Integration → E2E across full stack
+- **Fast Feedback** - Optimized for development speed (unit tests ~1.4s)
+- **Real Integration** - Tests against actual database, HTTP server, and browser
+- **Visual Testing** - Screenshot comparison and accessibility compliance
+- **CI-Ready** - Comprehensive validation pipeline (~85s total)
 
 ## Admin CLI Commands
 
