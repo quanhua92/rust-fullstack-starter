@@ -19,6 +19,32 @@ test.describe('Admin Dashboard Navigation & UI', () => {
     await page.locator('input[type="password"]').fill(password);
     await page.locator('button:has-text("Sign In")').click();
 
+    // Check for login failure and provide helpful error message
+    const errorSelector = 'text=Invalid credentials, text=Login failed, [data-testid="error"]';
+    const dashboardSelector = 'text=Dashboard, text=Welcome';
+    
+    try {
+      // Wait for either error or success
+      await Promise.race([
+        page.waitForSelector(errorSelector, { timeout: 3000 }),
+        page.waitForSelector(dashboardSelector, { timeout: 3000 })
+      ]);
+      
+      // If we see an error, fail with helpful message
+      if (await page.locator(errorSelector).isVisible()) {
+        console.error('❌ ADMIN LOGIN FAILED!');
+        console.error('💡 Check that STARTER__INITIAL_ADMIN_PASSWORD in .env matches the password in this test');
+        console.error(`   Current test password: "${password}"`);
+        console.error('   Expected: Password from .env file (usually SecureAdminPass123!)');
+        throw new Error('Admin login failed - check .env STARTER__INITIAL_ADMIN_PASSWORD');
+      }
+    } catch (error) {
+      if (error.message.includes('Admin login failed')) {
+        throw error; // Re-throw our custom error
+      }
+      // If timeout, assume success and continue
+    }
+
     // Wait for successful login and redirect  
     await page.waitForLoadState('networkidle', { timeout: 15000 });
     
@@ -45,23 +71,23 @@ test.describe('Admin Dashboard Navigation & UI', () => {
       // Check welcome message
       await expect(page.getByText(/Welcome back! Here's what's happening/)).toBeVisible();
 
-      // Check stats cards section
-      await expect(page.getByText('Total Tasks')).toBeVisible();
-      await expect(page.getByText('Active Tasks')).toBeVisible();
-      await expect(page.getByText('Failed Tasks')).toBeVisible();
-      await expect(page.getByText('Success Rate')).toBeVisible();
+      // Check stats cards section - use more specific selectors to avoid duplicates
+      await expect(page.locator('[data-slot="card-title"]').getByText('Total Tasks')).toBeVisible();
+      await expect(page.locator('[data-slot="card-title"]').getByText('Active Tasks')).toBeVisible();
+      await expect(page.locator('[data-slot="card-title"]').getByText('Failed Tasks')).toBeVisible();
+      await expect(page.locator('[data-slot="card-title"]').getByText('Success Rate')).toBeVisible();
 
-      // Check system health section
-      await expect(page.getByText('System Health')).toBeVisible();
+      // Check system health section (use heading role to be specific)
+      await expect(page.getByRole('heading', { name: 'System Health' })).toBeVisible();
 
       // Check live analytics section
-      await expect(page.getByText('Live Analytics')).toBeVisible();
+      await expect(page.getByRole('heading', { name: 'Live Analytics' })).toBeVisible();
       
-      // Check recent activity section
-      await expect(page.getByText('Recent Activity')).toBeVisible();
+      // Check recent activity section (use heading role to be specific)
+      await expect(page.getByRole('heading', { name: 'Recent Activity' })).toBeVisible();
 
       // Check quick actions section
-      await expect(page.getByText('Quick Actions')).toBeVisible();
+      await expect(page.getByRole('heading', { name: 'Quick Actions' })).toBeVisible();
 
       await page.close();
       await context.close();
@@ -77,11 +103,9 @@ test.describe('Admin Dashboard Navigation & UI', () => {
       const statsSection = page.locator('.grid').first();
       await expect(statsSection).toBeVisible();
 
-      // Should have either loading skeletons or actual stat cards
-      const skeletons = page.locator('.animate-pulse, [data-testid="skeleton"]');
-      const statCards = page.locator('text=Total Tasks').locator('..');
-      
-      await expect(skeletons.or(statCards)).toBeVisible();
+      // Should have stat cards loaded (simplified - just check content exists)
+      const statCards = page.locator('[data-slot="card-title"]').first();
+      await expect(statCards).toBeVisible();
 
       // Wait for content to load and check actual stats
       await page.waitForTimeout(2000);
