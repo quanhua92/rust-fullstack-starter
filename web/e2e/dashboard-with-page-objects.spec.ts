@@ -196,7 +196,7 @@ test.describe('Dashboard with Page Objects', () => {
       const dashboard = new DashboardPage(page);
 
       // Simulate slow network
-      await page.route('**/api/**', async (route) => {
+      await page.route('**/api/**', async (route: any) => {
         await new Promise(resolve => setTimeout(resolve, 1000));
         await route.continue();
       });

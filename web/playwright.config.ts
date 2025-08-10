@@ -14,26 +14,23 @@ export default defineConfig({
   retries: process.env.CI ? 2 : 0,
   /* Opt out of parallel tests on CI. */
   workers: process.env.CI ? 1 : undefined,
+  /* Stop immediately after first test failure - fail fast */
+  maxFailures: 1,
   /* Reporter to use. See https://playwright.dev/docs/test-reporters */
   reporter: [
     ['html'],
     ['junit', { outputFile: 'test-results/junit.xml' }],
     ['json', { outputFile: 'test-results/results.json' }]
   ],
-  /* Global test timeout - max 30 seconds per test */
-  timeout: 30 * 1000,
-  /* Action timeout - max 10 seconds per action */
-  actionTimeout: 10 * 1000,
-  /* Navigation timeout - max 15 seconds per page load */
-  navigationTimeout: 15 * 1000,
+  /* Global test timeout - max 3 seconds per test */
+  timeout: 3 * 1000,
   /* Expect timeout for assertions */
   expect: {
-    /* Timeout for expect() calls - max 5 seconds per assertion */
-    timeout: 5000,
+    /* Timeout for expect() calls - max 1 second per assertion */
+    timeout: 1000,
     /* Screenshot comparison threshold */
     toHaveScreenshot: { 
-      threshold: 0.2,  // Allow small visual differences
-      mode: 'strict'
+      threshold: 0.2  // Allow small visual differences
     },
     toMatchSnapshot: { 
       threshold: 0.2 
@@ -43,6 +40,12 @@ export default defineConfig({
   use: {
     /* Base URL to use in actions like `await page.goto('/')`. */
     baseURL: process.env.PLAYWRIGHT_BASE_URL || 'http://localhost:5173',
+    
+    /* Action timeout - max 1 second per action */
+    actionTimeout: 1 * 1000,
+    
+    /* Navigation timeout - max 2 seconds per page load */
+    navigationTimeout: 2 * 1000,
 
     /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
     trace: 'on-first-retry',
@@ -96,10 +99,10 @@ export default defineConfig({
   ],
 
   /* Run your local dev server before starting the tests */
-  webServer: {
-    command: 'pnpm run dev', 
-    url: 'http://localhost:5173',
-    reuseExistingServer: !process.env.CI,
-    timeout: 30 * 1000,  // 30 seconds max to start dev server
-  },
+  // webServer: {
+  //   command: 'pnpm run dev', 
+  //   url: 'http://localhost:5173',
+  //   reuseExistingServer: true,  // Always reuse existing server - don't start new one
+  //   timeout: 5 * 1000,  // 5 seconds max to check if server exists
+  // },
 });

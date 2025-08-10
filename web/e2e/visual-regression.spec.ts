@@ -1,47 +1,30 @@
-import { test, expect, type BrowserContext } from '@playwright/test';
-import { LoginPage, TestDataGenerator } from './page-objects/AuthPage';
+import { test, expect } from '@playwright/test';
+import { LoginPage, RegisterPage, TestDataGenerator } from './page-objects/AuthPage';
 import { DashboardPage } from './page-objects/DashboardPage';
 
 test.describe('Visual Regression Testing', () => {
-  let authenticatedContext: BrowserContext;
-  let userCredentials: { email: string; password: string };
-
-  test.beforeAll(async ({ browser }) => {
-    // Create authenticated user for dashboard screenshots
-    const page = await browser.newPage();
+  // Helper function to create authenticated user when needed (for dashboard screenshots)
+  async function createAuthenticatedUser(browser: any) {
     const testUser = TestDataGenerator.generateUniqueUser();
-    userCredentials = { email: testUser.email, password: testUser.password };
-
-    try {
-      // Quick registration and login
-      await page.goto('/auth/register');
-      await page.locator('input[placeholder*="username" i]').fill(testUser.username);
-      await page.locator('input[type="email"]').fill(testUser.email);
-      await page.locator('input[placeholder="Enter your password"]').fill(testUser.password);
-      await page.locator('input[placeholder="Confirm your password"]').fill(testUser.password);
-      await page.locator('button:has-text("Create Account")').click();
-      
-      await expect(page).toHaveURL(/.*\/auth\/login/, { timeout: 8000 });
-      
-      const loginPage = new LoginPage(page);
-      await loginPage.login(testUser.email, testUser.password);
-      await loginPage.expectLoginSuccess();
-
-      authenticatedContext = await browser.newContext({ 
-        storageState: await page.context().storageState() 
-      });
-    } catch (error) {
-      console.log('Visual test auth setup failed:', error);
-    } finally {
-      await page.close();
-    }
-  });
-
-  test.afterAll(async () => {
-    if (authenticatedContext) {
-      await authenticatedContext.close();
-    }
-  });
+    const page = await browser.newPage();
+    
+    const registerPage = new RegisterPage(page);
+    await registerPage.goto('/auth/register');
+    await registerPage.register(testUser.username, testUser.email, testUser.password);
+    
+    await page.goto('/auth/login');
+    
+    const loginPage = new LoginPage(page);
+    await loginPage.login(testUser.email, testUser.password);
+    await loginPage.expectLoginSuccess();
+    
+    const context = await browser.newContext({ 
+      storageState: await page.context().storageState() 
+    });
+    
+    await page.close();
+    return { context, credentials: { email: testUser.email, password: testUser.password } };
+  }
 
   test.describe('Authentication Pages Screenshots', () => {
     test('should capture login page', async ({ page }) => {
@@ -117,12 +100,8 @@ test.describe('Visual Regression Testing', () => {
 
   test.describe('Dashboard Screenshots', () => {
     test('should capture main dashboard', async ({ browser }) => {
-      if (!authenticatedContext) {
-        test.skip('No authenticated context available');
-        return;
-      }
-
-      const page = await authenticatedContext.newPage();
+      const { context } = await createAuthenticatedUser(browser);
+      const page = await context.newPage();
       const dashboard = new DashboardPage(page);
 
       await dashboard.goto();
@@ -137,15 +116,12 @@ test.describe('Visual Regression Testing', () => {
       });
 
       await page.close();
+      await context.close();
     });
 
     test('should capture dashboard stats section', async ({ browser }) => {
-      if (!authenticatedContext) {
-        test.skip('No authenticated context available');
-        return;
-      }
-
-      const page = await authenticatedContext.newPage();
+      const { context } = await createAuthenticatedUser(browser);
+      const page = await context.newPage();
       const dashboard = new DashboardPage(page);
 
       await dashboard.goto();
@@ -161,15 +137,12 @@ test.describe('Visual Regression Testing', () => {
       });
 
       await page.close();
+      await context.close();
     });
 
     test('should capture dashboard with charts', async ({ browser }) => {
-      if (!authenticatedContext) {
-        test.skip('No authenticated context available');
-        return;
-      }
-
-      const page = await authenticatedContext.newPage();
+      const { context } = await createAuthenticatedUser(browser);
+      const page = await context.newPage();
       const dashboard = new DashboardPage(page);
 
       await dashboard.goto();
@@ -183,6 +156,7 @@ test.describe('Visual Regression Testing', () => {
       });
 
       await page.close();
+      await context.close();
     });
   });
 
@@ -202,12 +176,8 @@ test.describe('Visual Regression Testing', () => {
     });
 
     test('should capture tablet dashboard', async ({ browser }) => {
-      if (!authenticatedContext) {
-        test.skip('No authenticated context available');
-        return;
-      }
-
-      const page = await authenticatedContext.newPage();
+      const { context } = await createAuthenticatedUser(browser);
+      const page = await context.newPage();
       await page.setViewportSize({ width: 768, height: 1024 });
       
       const dashboard = new DashboardPage(page);
@@ -222,15 +192,12 @@ test.describe('Visual Regression Testing', () => {
       });
 
       await page.close();
+      await context.close();
     });
 
     test('should capture mobile dashboard', async ({ browser }) => {
-      if (!authenticatedContext) {
-        test.skip('No authenticated context available');
-        return;
-      }
-
-      const page = await authenticatedContext.newPage();
+      const { context } = await createAuthenticatedUser(browser);
+      const page = await context.newPage();
       await page.setViewportSize({ width: 375, height: 667 });
       
       const dashboard = new DashboardPage(page);
@@ -245,6 +212,7 @@ test.describe('Visual Regression Testing', () => {
       });
 
       await page.close();
+      await context.close();
     });
   });
 

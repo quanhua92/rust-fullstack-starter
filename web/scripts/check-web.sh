@@ -3,14 +3,15 @@
 # Comprehensive web frontend quality check script
 # Runs all quality checks: format, lint, type check, build, and tests
 #
-# Usage: ./check-web.sh [--skip-lint] [--full] [--smoke] [--max-failures=N] [--no-fail-fast] [--timeout=N] [--global-timeout=N]
+# Usage: ./check-web.sh [--skip-lint] [--full] [--smoke] [--max-failures=N] [--no-fail-fast] [--timeout=N]
 #   --skip-lint: Skip linting and formatting checks
 #   --full: Run comprehensive multi-browser E2E tests (default: Chromium only)
 #   --smoke: Run ultra-fast smoke tests only (~400ms)
 #   --max-failures=N: Stop after N test failures (default: 1 for fail-fast)
 #   --no-fail-fast: Run all tests regardless of failures
-#   --timeout=N: Set timeout per test in milliseconds (default: 5000ms = 5s for fast fail)
-#   --global-timeout=N: Set global timeout for entire E2E test suite in milliseconds (default: 90000ms for single, 15000ms for smoke, 300000ms for full)
+#   --timeout=N: Set timeout for all commands in seconds (default: 60s)
+#
+# DEFAULT: 60-second timeout for all commands
 
 set -euo pipefail
 
@@ -19,8 +20,7 @@ SKIP_LINT=false
 FULL_TESTS=false
 SMOKE_ONLY=false
 MAX_FAILURES=1
-TEST_TIMEOUT=5000      # Default 5 seconds per test (fast fail)
-GLOBAL_TIMEOUT=""      # Will be set based on mode if not specified (in milliseconds)
+TIMEOUT=60             # Default 60-second timeout for all commands
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --skip-lint)
@@ -44,11 +44,7 @@ while [[ $# -gt 0 ]]; do
             shift
             ;;
         --timeout=*)
-            TEST_TIMEOUT="${1#*=}"
-            shift
-            ;;
-        --global-timeout=*)
-            GLOBAL_TIMEOUT="${1#*=}"
+            TIMEOUT="${1#*=}"
             shift
             ;;
         *)
@@ -81,6 +77,7 @@ cd "$WEB_ROOT"
 print_status "step" "Running comprehensive web frontend quality checks..."
 echo -e "${BLUE}================================${NC}"
 print_status "info" "Working directory: $WEB_ROOT"
+print_status "info" "Command timeout: ${TIMEOUT}s (default: 60s, override with --timeout=N)"
 
 # Check if pnpm is available
 if ! check_command "pnpm" "npm install -g pnpm"; then
@@ -91,7 +88,7 @@ fi
 print_status "step" "📦 Step 1/9: Checking dependencies..."
 if [ ! -d "node_modules" ] || [ "package.json" -nt "node_modules" ]; then
     print_status "warning" "Dependencies need to be installed/updated"
-    run_cmd "Installing dependencies" pnpm install
+    run_cmd "Installing dependencies" timeout ${TIMEOUT}s pnpm install
 else
     print_status "success" "Dependencies are up to date"
 fi
@@ -99,20 +96,20 @@ fi
 # 2. Generate API types from OpenAPI spec
 print_status "step" "🔄 Step 2/9: Generating API types from OpenAPI spec..."
 if [ -f "../docs/openapi.json" ]; then
-    run_cmd "Generating API types" pnpm run generate-api
+    run_cmd "Generating API types" timeout ${TIMEOUT}s pnpm run generate-api
 else
     print_status "warning" "OpenAPI spec not found at ../docs/openapi.json"
     print_status "info" "Run './scripts/check.sh' from project root first"
 fi
 
 # 3. TypeScript type checking
-run_cmd "📝 Step 3/9: TypeScript type checking" pnpm exec tsc --noEmit
+run_cmd "📝 Step 3/9: TypeScript type checking" timeout ${TIMEOUT}s pnpm exec tsc --noEmit
 
 # 4. Biome linting
 if [ "$SKIP_LINT" = "true" ]; then
     print_status "info" "📎 Step 4/9: Skipping Biome linting (--skip-lint)"
 else
-    if ! run_cmd "📎 Step 4/9: Biome linting" pnpm run lint; then
+    if ! run_cmd "📎 Step 4/9: Biome linting" timeout ${TIMEOUT}s pnpm run lint; then
         print_status "info" "Run 'pnpm run format' to fix formatting issues"
         exit 1
     fi
@@ -122,7 +119,7 @@ fi
 if [ "$SKIP_LINT" = "true" ]; then
     print_status "info" "🎨 Step 5/9: Skipping code formatting check (--skip-lint)"
 else
-    if ! run_cmd "🎨 Step 5/9: Code formatting check" pnpm biome format .; then
+    if ! run_cmd "🎨 Step 5/9: Code formatting check" timeout ${TIMEOUT}s pnpm biome format .; then
         print_status "info" "Run 'pnpm run format' to fix formatting"
         exit 1
     fi
@@ -132,26 +129,26 @@ fi
 if [ "$SKIP_LINT" = "true" ]; then
     print_status "info" "🔍 Step 6/9: Skipping Biome comprehensive check (--skip-lint)"
 else
-    run_cmd "🔍 Step 6/9: Biome comprehensive check" pnpm run check
+    run_cmd "🔍 Step 6/9: Biome comprehensive check" timeout ${TIMEOUT}s pnpm run check
 fi
 
 # 7. Build check
-run_cmd "🏗️ Step 7/9: Production build test" pnpm run build
+run_cmd "🏗️ Step 7/9: Production build test" timeout ${TIMEOUT}s pnpm run build
 
 # 8. Unit/Integration tests
 print_status "step" "🧪 Step 8/9: Running frontend tests..."
 
 # Run unit tests first (fast, no server dependencies)
-run_cmd "Running unit tests (mocked)" pnpm run test:unit
+run_cmd "Running unit tests (mocked)" timeout ${TIMEOUT}s pnpm run test:unit
 
 # Check if backend server is available for integration tests
 if check_port 3000 || curl -s "http://127.0.0.1:3000/api/v1/health" >/dev/null 2>&1; then
     print_status "info" "Backend server available - running integration tests"
-    run_cmd "Running integration tests (real server)" pnpm run test:integration
+    run_cmd "Running integration tests (real server)" timeout ${TIMEOUT}s pnpm run test:integration
 else
     print_status "warning" "Backend server not available - skipping integration tests"
     print_status "info" "Run './scripts/dev-server.sh' to enable integration tests"
-    run_cmd "Running integration tests (skipped)" pnpm run test:integration:skip
+    run_cmd "Running integration tests (skipped)" timeout ${TIMEOUT}s pnpm run test:integration:skip
 fi
 
 # 9. End-to-end tests with Playwright
@@ -205,7 +202,7 @@ else
     FRONTEND_STARTED=false
     if ! check_port 5173; then
         print_status "info" "Starting frontend dev server on port 5173..."
-        (pnpm run dev >/dev/null 2>&1 &)
+        (timeout ${TIMEOUT}s pnpm run dev >/dev/null 2>&1 &)
         FRONTEND_STARTED=true
         if wait_for_server "http://127.0.0.1:5173" 60; then
             print_status "success" "Frontend dev server started successfully"
@@ -220,52 +217,20 @@ else
     # Set Playwright to use the unified backend server on port 3000
     export PLAYWRIGHT_BASE_URL="http://127.0.0.1:3000"
     
-    # Build Playwright command with options
-    PLAYWRIGHT_FLAGS=""
+    # Run Playwright tests with same timeout as other commands
     if [ -n "$MAX_FAILURES" ]; then
-        PLAYWRIGHT_FLAGS="$PLAYWRIGHT_FLAGS --max-failures=$MAX_FAILURES"
-    fi
-    PLAYWRIGHT_FLAGS="$PLAYWRIGHT_FLAGS --timeout=$TEST_TIMEOUT"
-    
-    # Set default global timeouts if not specified (all in milliseconds)
-    if [ "$SMOKE_ONLY" = "true" ] || [ "${PLAYWRIGHT_SMOKE_ONLY:-false}" = "true" ]; then
-        TEST_COUNT=1
-        BROWSER_COUNT=1
-        MODE="smoke"
-        if [ -z "$GLOBAL_TIMEOUT" ]; then
-            GLOBAL_TIMEOUT="15000"  # 15 seconds for smoke
-        fi
-        EXPECTED_TIME="~1s"
-    elif [ "$FULL_TESTS" = "true" ]; then
-        TEST_COUNT=12
-        BROWSER_COUNT=5
-        MODE="multi-browser"
-        if [ -z "$GLOBAL_TIMEOUT" ]; then
-            GLOBAL_TIMEOUT="300000"  # 5 minutes for full
-        fi
-        EXPECTED_TIME="~5-10min"
+        PLAYWRIGHT_FLAGS="--max-failures=$MAX_FAILURES"
     else
-        TEST_COUNT=12
-        BROWSER_COUNT=1
-        MODE="single-browser"
-        if [ -z "$GLOBAL_TIMEOUT" ]; then
-            GLOBAL_TIMEOUT="90000"  # 90 seconds for single browser
-        fi
-        EXPECTED_TIME="<2min"
+        PLAYWRIGHT_FLAGS=""
     fi
     
-    # Convert global timeout to seconds for display
-    GLOBAL_TIMEOUT_SECONDS=$((GLOBAL_TIMEOUT / 1000))
-    print_status "info" "E2E Testing: $TEST_COUNT tests × $BROWSER_COUNT browsers (${TEST_TIMEOUT}ms/test, ${GLOBAL_TIMEOUT_SECONDS}s global limit)"
-    
-    # Run Playwright tests based on options with configurable timeout enforcement
     if [ "$SMOKE_ONLY" = "true" ] || [ "${PLAYWRIGHT_SMOKE_ONLY:-false}" = "true" ]; then
-        run_cmd "Running Playwright smoke tests (${GLOBAL_TIMEOUT_SECONDS}s max)" timeout ${GLOBAL_TIMEOUT_SECONDS}s pnpm run test:e2e:smoke $PLAYWRIGHT_FLAGS
+        run_cmd "Running Playwright smoke tests (${TIMEOUT}s max)" timeout ${TIMEOUT}s pnpm run test:e2e:smoke $PLAYWRIGHT_FLAGS
     elif [ "$FULL_TESTS" = "true" ]; then
-        run_cmd "Running comprehensive multi-browser E2E tests (${GLOBAL_TIMEOUT_SECONDS}s max)" timeout ${GLOBAL_TIMEOUT_SECONDS}s pnpm run test:e2e $PLAYWRIGHT_FLAGS
+        run_cmd "Running comprehensive multi-browser E2E tests (${TIMEOUT}s max)" timeout ${TIMEOUT}s pnpm run test:e2e $PLAYWRIGHT_FLAGS
     else
         # Default: enhanced page object tests (fast, focused, maintainable)
-        run_cmd "Running enhanced Playwright E2E tests - Chromium only (${GLOBAL_TIMEOUT_SECONDS}s max)" timeout ${GLOBAL_TIMEOUT_SECONDS}s pnpm run test:e2e:page-objects $PLAYWRIGHT_FLAGS
+        run_cmd "Running enhanced Playwright E2E tests - Chromium only (${TIMEOUT}s max)" timeout ${TIMEOUT}s pnpm run test:e2e:page-objects $PLAYWRIGHT_FLAGS
     fi
     
     # Cleanup: Stop servers we started
