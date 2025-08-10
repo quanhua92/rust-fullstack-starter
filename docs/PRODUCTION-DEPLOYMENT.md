@@ -103,56 +103,47 @@ ENTRYPOINT ["/usr/local/bin/starter"]
 ```bash
 # .env.prod - Production configuration template
 # ⚠️ CRITICAL: Change all passwords and secrets before deploying!
+# Copy from .env.prod.example and customize
 
-# Application Settings
-STARTER__SERVER__HOST=0.0.0.0
-STARTER__SERVER__PORT=3000
-STARTER__SERVER__CORS_ORIGINS="https://yourdomain.com"
+# Application Configuration
+APP_PORT=3000
+RUST_LOG=info
+RUST_BACKTRACE=0
 
-# Database (Use strong passwords!)
-STARTER__DATABASE__HOST=postgres
-STARTER__DATABASE__PORT=5432
-STARTER__DATABASE__DATABASE=starter_prod
-STARTER__DATABASE__USER=starter_prod_user
-STARTER__DATABASE__PASSWORD=your_very_secure_database_password_here
-STARTER__DATABASE__MAX_CONNECTIONS=20
-STARTER__DATABASE__MIN_CONNECTIONS=5
-
-# Initial Admin Account (Remove after first login!)
-STARTER__INITIAL_ADMIN_PASSWORD=your_temporary_admin_password_here
-
-# Security Settings
-STARTER__AUTH__SESSION_TIMEOUT_HOURS=24
-STARTER__AUTH__MAX_LOGIN_ATTEMPTS=5
-STARTER__AUTH__LOCKOUT_DURATION_MINUTES=15
-
-# Task Processing
-STARTER__TASKS__MAX_RETRIES=3
-STARTER__TASKS__DEFAULT_TIMEOUT_SECONDS=300
-STARTER__TASKS__BATCH_SIZE=10
-
-# Monitoring
-STARTER__MONITORING__RETENTION_DAYS=30
-STARTER__MONITORING__METRICS_ENABLED=true
-
-# PostgreSQL Settings (for Docker Compose)
+# Database Configuration (Use strong passwords!)
 POSTGRES_DB=starter_prod
-POSTGRES_USER=starter_prod_user
+POSTGRES_USER=starter_user
 POSTGRES_PASSWORD=your_very_secure_database_password_here
+POSTGRES_PORT=5432
 
-# Nginx Settings
-NGINX_SERVER_NAME=yourdomain.com
-SSL_EMAIL=admin@yourdomain.com
+# Session Security (REQUIRED - Generate strong secrets)
+SESSION_SECRET=your_64_character_secret_for_session_signing_change_this_now
+SESSION_DURATION=86400
+
+# Worker Configuration  
+WORKER_CONCURRENCY=4
+WORKER_POLL_INTERVAL=5000
+
+# Nginx Configuration (if using nginx profile)
+NGINX_PORT=80
+NGINX_SSL_PORT=443
+
+# Optional: External Services
+# SMTP_HOST=smtp.example.com
+# SMTP_PORT=587
+# SMTP_USERNAME=your_email@example.com
+# SMTP_PASSWORD=your_app_password
+# WEBHOOK_SECRET=your_webhook_secret
 ```
 
 ### Security Configuration Checklist
 
 **✅ Required Changes**:
-- [ ] Change all database passwords
-- [ ] Set strong initial admin password
-- [ ] Update CORS origins to your domain
-- [ ] Configure SSL email for Let's Encrypt
-- [ ] Remove default secrets and tokens
+- [ ] Change all database passwords from defaults
+- [ ] Generate strong SESSION_SECRET (64+ characters)
+- [ ] Set initial admin password in app config (STARTER__INITIAL_ADMIN_PASSWORD)
+- [ ] Configure appropriate CORS origins in application settings
+- [ ] Update all default passwords in .env.prod
 
 **✅ Optional Hardening**:
 - [ ] Enable rate limiting in Nginx
@@ -166,35 +157,24 @@ SSL_EMAIL=admin@yourdomain.com
 ### Complete Stack Configuration
 
 ```yaml
-# docker-compose.prod.yaml
-version: '3.8'
+# docker-compose.prod.yaml (simplified excerpt)
+# See full file in project root
 
 services:
-  postgres:
-    image: postgres:15-alpine
-    environment:
-      POSTGRES_DB: ${POSTGRES_DB}
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-      - ./backups:/backups  # Directory for database dumps
-    networks:
-      - app-network
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-
-  app-server:
+  app:
     build:
       context: .
       dockerfile: Dockerfile.prod
+    ports:
+      - "${APP_PORT:-3000}:3000"
     environment:
-      - STARTER__MODE=server
-    env_file:
-      - .env.prod
+      # Database configuration
+      - STARTER__DATABASE__HOST=postgres
+      - STARTER__DATABASE__PASSWORD=${POSTGRES_PASSWORD}
+      # Application configuration  
+      - STARTER__SERVER__HOST=0.0.0.0
+      - STARTER__SERVER__PORT=3000
+    restart: unless-stopped
     depends_on:
       postgres:
         condition: service_healthy
@@ -219,19 +199,32 @@ services:
         condition: service_healthy
     networks:
       - app-network
-    # Note: Scale workers using --scale app-worker=N flag
+      
+  worker:
+    # Same build as app but runs worker mode
+    # Scale workers using: --scale worker=N
+    
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - app-network
 
   nginx:
     image: nginx:alpine
     ports:
-      - "80:80"
-      - "443:443"
+      - "${NGINX_PORT:-80}:80"
+      - "${NGINX_SSL_PORT:-443}:443"
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./nginx/ssl:/etc/nginx/ssl:ro  # Directory for SSL certificates
+      - ./nginx/ssl:/etc/nginx/ssl:ro
     depends_on:
-      app-server:
-        condition: service_healthy
+      - app
     networks:
       - app-network
 
@@ -245,79 +238,50 @@ networks:
 
 ### Automated Deployment Script
 
+The repository includes `./scripts/deploy-prod.sh` with:
+
+- **Environment validation**: Checks for required files and variables
+- **Password security**: Prevents deployment with default passwords  
+- **Database backup**: Creates backups before updates
+- **Health monitoring**: Waits for services to be healthy
+- **Rollback capability**: Automatically rolls back on failure
+
+Key features from the real script:
 ```bash
-#!/bin/bash
-# scripts/deploy-prod.sh
+# Basic usage
+./scripts/deploy-prod.sh
 
-set -euo pipefail
-
-echo "🚀 Starting production deployment..."
-
-# 1. Validate environment
-if [[ ! -f .env.prod ]]; then
-    echo "❌ Error: .env.prod not found. Copy from .env.prod.example"
-    exit 1
-fi
-
-source .env.prod
-
-if [[ "${POSTGRES_PASSWORD}" == "change_this_password" ]]; then
-    echo "❌ Error: Default passwords detected. Update .env.prod!"
-    exit 1
-fi
-
-# 2. Backup database (if exists)
-if docker-compose -f docker-compose.prod.yaml ps postgres | grep -q "Up"; then
-    echo "💾 Creating database backup..."
-    docker-compose -f docker-compose.prod.yaml exec postgres \
-        pg_dump -U ${POSTGRES_USER} ${POSTGRES_DB} > "backups/backup_$(date +%Y%m%d_%H%M%S).sql"
-fi
-
-# 3. Build and deploy
-echo "🏗️ Building Docker images..."
-docker-compose -f docker-compose.prod.yaml build
-
-echo "🐳 Starting services..."
-docker-compose -f docker-compose.prod.yaml up -d
-
-# 4. Wait for services
-echo "⏳ Waiting for services to be healthy..."
-timeout 120 docker-compose -f docker-compose.prod.yaml exec app-server \
-    /usr/local/bin/starter health-check
-
-# 5. Verify deployment
-echo "✅ Verifying deployment..."
-curl -f http://localhost/api/v1/health || {
-    echo "❌ Health check failed. Rolling back..."
-    docker-compose -f docker-compose.prod.yaml down
-    exit 1
-}
-
-echo "🎉 Production deployment complete!"
-echo "🌐 Application: https://${NGINX_SERVER_NAME}"
-echo "📊 API Docs: https://${NGINX_SERVER_NAME}/api-docs"
-echo "💓 Health: https://${NGINX_SERVER_NAME}/api/v1/health"
+# The script validates:
+# - .env.prod exists and has required variables
+# - Passwords are changed from defaults  
+# - Services become healthy after deployment
+# - Health endpoints respond correctly
 ```
+
+**Important**: Always review and test the deployment script in a staging environment first.
 
 ## 🔒 Security Hardening
 
 ### SSL/TLS Configuration
 
-**Nginx SSL configuration**:
+**Nginx SSL configuration** (from `nginx/nginx.conf`):
 ```nginx
-# nginx/prod.conf
 server {
     listen 443 ssl http2;
-    server_name yourdomain.com;
+    server_name _;
 
-    # SSL Configuration
-    ssl_certificate /etc/nginx/ssl/fullchain.pem;
-    ssl_certificate_key /etc/nginx/ssl/privkey.pem;
+    # SSL Configuration  
+    ssl_certificate /etc/nginx/ssl/cert.pem;
+    ssl_certificate_key /etc/nginx/ssl/key.pem;
     ssl_protocols TLSv1.2 TLSv1.3;
-    ssl_ciphers HIGH:!aNULL:!MD5;
-    ssl_prefer_server_ciphers on;
+    ssl_ciphers ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256;
+    ssl_prefer_server_ciphers off;
 
     # Security Headers
+    add_header Strict-Transport-Security "max-age=63072000" always;
+    add_header X-Content-Type-Options nosniff;
+    add_header X-Frame-Options DENY;
+    add_header X-XSS-Protection "1; mode=block";
     add_header X-Frame-Options "SAMEORIGIN" always;
     add_header X-Content-Type-Options "nosniff" always;
     add_header X-XSS-Protection "1; mode=block" always;
@@ -391,7 +355,7 @@ global:
 scrape_configs:
   - job_name: 'rust-fullstack-starter'
     static_configs:
-      - targets: ['app-server:3000']
+      - targets: ['app:3000']
     metrics_path: '/api/v1/monitoring/metrics/prometheus'
     scrape_interval: 30s
 ```
@@ -402,44 +366,39 @@ scrape_configs:
 ```yaml
 # docker-compose.prod.yaml (logging section)
 services:
-  app-server:
+  app:
     logging:
       driver: "json-file"
       options:
         max-size: "100m"
         max-file: "3"
-        tag: "app-server"
+        tag: "app"
 
-  app-worker:
+  worker:
     logging:
       driver: "json-file"
       options:
         max-size: "100m"
         max-file: "3"
-        tag: "app-worker"
+        tag: "worker"
 ```
 
 ### Backup Strategy
 
-**Automated database backups**:
+**Automated database backups** (from `scripts/backup-db.sh`):
+
+The repository includes a production-ready backup script that:
+- Runs inside the postgres container
+- Creates compressed backups with timestamps
+- Automatically cleans up old backups
+- Provides detailed logging and error handling
+
 ```bash
-#!/bin/bash
-# scripts/backup-db.sh
+# Manual backup
+docker compose -f docker-compose.prod.yaml exec postgres /usr/local/bin/backup-db.sh
 
-BACKUP_DIR="/backups"
-TIMESTAMP=$(date +%Y%m%d_%H%M%S)
-BACKUP_FILE="$BACKUP_DIR/backup_$TIMESTAMP.sql"
-
-# Create backup
-docker-compose exec postgres pg_dump -U $POSTGRES_USER $POSTGRES_DB > $BACKUP_FILE
-
-# Compress
-gzip $BACKUP_FILE
-
-# Keep only last 7 days
-find $BACKUP_DIR -name "backup_*.sql.gz" -mtime +7 -delete
-
-echo "✅ Backup created: $BACKUP_FILE.gz"
+# Automated backup (run via cron)
+0 2 * * * docker compose -f docker-compose.prod.yaml exec postgres /usr/local/bin/backup-db.sh
 ```
 
 ## 🚀 Scaling & Performance
@@ -449,10 +408,10 @@ echo "✅ Backup created: $BACKUP_FILE.gz"
 **Scale workers independently**:
 ```bash
 # Scale workers for high load
-docker-compose -f docker-compose.prod.yaml up -d --scale app-worker=5
+docker compose -f docker-compose.prod.yaml up -d --scale worker=5
 
 # Scale back during low load
-docker-compose -f docker-compose.prod.yaml up -d --scale app-worker=2
+docker compose -f docker-compose.prod.yaml up -d --scale worker=2
 ```
 
 ### Database Optimization
@@ -477,7 +436,7 @@ log_line_prefix = '[%t] %u@%d '
 **Container resource constraints**:
 ```yaml
 services:
-  app-server:
+  app:
     deploy:
       resources:
         limits:
@@ -487,15 +446,15 @@ services:
           memory: 256M
           cpus: '0.25'
 
-  app-worker:
+  worker:
     deploy:
       resources:
         limits:
-          memory: 1G
-          cpus: '1.0'
-        reservations:
-          memory: 512M
+          memory: 256M
           cpus: '0.5'
+        reservations:
+          memory: 128M
+          cpus: '0.25'
 ```
 
 ## 🔧 Troubleshooting Production
@@ -505,24 +464,24 @@ services:
 **Service won't start**:
 ```bash
 # Check logs
-docker-compose -f docker-compose.prod.yaml logs app-server
+docker compose -f docker-compose.prod.yaml logs app
 
 # Check environment
-docker-compose -f docker-compose.prod.yaml exec app-server env
+docker compose -f docker-compose.prod.yaml exec app env
 
 # Test configuration
-docker-compose -f docker-compose.prod.yaml exec app-server \
-    /usr/local/bin/starter --help
+docker compose -f docker-compose.prod.yaml exec app \
+    ./starter --help
 ```
 
 **Database connection issues**:
 ```bash
 # Test database connectivity
-docker-compose -f docker-compose.prod.yaml exec app-server \
+docker compose -f docker-compose.prod.yaml exec app \
     nc -zv postgres 5432
 
 # Check database logs
-docker-compose -f docker-compose.prod.yaml logs postgres
+docker compose -f docker-compose.prod.yaml logs postgres
 ```
 
 **SSL certificate issues**:

@@ -22,18 +22,19 @@
 
 ### Chaos Testing Framework
 
-**10 chaos scenarios included**:
+**6 difficulty levels for load testing**:
 
 ```bash
 # Docker-based chaos testing
 ./scripts/test-chaos.sh
 
-# Individual scenarios
-./scripts/test-chaos.sh 1    # Database connection failure
-./scripts/test-chaos.sh 2    # High memory pressure
-./scripts/test-chaos.sh 3    # Network partitioning
-./scripts/test-chaos.sh 4    # Disk space exhaustion
-./scripts/test-chaos.sh 5    # CPU saturation
+# Different difficulty levels (1-6)
+./scripts/test-chaos.sh --difficulty 1    # Light load
+./scripts/test-chaos.sh --difficulty 2    # Medium load
+./scripts/test-chaos.sh --difficulty 3    # High load
+./scripts/test-chaos.sh --difficulty 4    # Extreme load
+./scripts/test-chaos.sh --difficulty 5    # Chaos level
+./scripts/test-chaos.sh --difficulty 6    # Maximum chaos
 ```
 
 ### Antifragile System Design
@@ -602,7 +603,7 @@ impl Config {
 
 // Usage:
 // STARTER__SERVER__HOST=0.0.0.0
-// STARTER__SERVER__PORT=8080
+// STARTER__SERVER__PORT=3000
 // STARTER__DATABASE__MAX_CONNECTIONS=20
 ```
 

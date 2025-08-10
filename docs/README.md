@@ -11,7 +11,7 @@
 | **[IMPLEMENTATION-GUIDE](IMPLEMENTATION-GUIDE.md)** | Background tasks, user management, testing, monitoring | 45 minutes |
 | **[ADVANCED-TOPICS](ADVANCED-TOPICS.md)** | Chaos testing, frontend patterns, module generation | 30 minutes |
 | **[PRODUCTION-DEPLOYMENT](PRODUCTION-DEPLOYMENT.md)** | Docker deployment, security, scaling, operations | 20 minutes |
-| **[API-REFERENCE](API-REFERENCE.md)** | All 48 endpoints with examples and authentication | 15 minutes |
+| **[API-REFERENCE](API-REFERENCE.md)** | All 37 endpoints with examples and authentication | 15 minutes |
 | **[TROUBLESHOOTING](TROUBLESHOOTING.md)** | Systematic debugging, common issues, diagnostics | As needed |
 
 ## 📚 Learning Paths
@@ -49,7 +49,7 @@ This starter provides a complete, production-ready foundation:
 
 ### **Complete Application Stack**
 - ✅ **React 18 Frontend** - TypeScript, TanStack Router/Query, shadcn/ui
-- ✅ **Rust API Backend** - Axum, SQLx, 48 endpoints with OpenAPI docs
+- ✅ **Rust API Backend** - Axum, SQLx, 37 endpoints with OpenAPI docs
 - ✅ **PostgreSQL Database** - Migrations, connection pooling, ACID transactions
 - ✅ **Background Tasks** - Async processing with retry logic and monitoring
 - ✅ **Authentication System** - Session-based with 3-tier RBAC
@@ -81,7 +81,7 @@ This starter provides a complete, production-ready foundation:
 
 # Test all functionality
 cargo nextest run                    # 183 integration tests
-./scripts/test-with-curl.sh         # 48 API endpoints
+./scripts/test-with-curl.sh         # 37 API endpoints
 ```
 
 ### Admin Operations
@@ -96,7 +96,7 @@ cargo run -- admin clear-completed  # Maintenance cleanup
 
 **Live Documentation**: Start server and visit http://localhost:3000/api-docs
 
-- **48 endpoints** across authentication, user management, tasks, and monitoring
+- **37 endpoints** across authentication, user management, tasks, and monitoring
 - **Interactive testing** with bearer token authentication
 - **Complete schemas** with request/response examples
 - **OpenAPI 3.0 specification** for client generation
@@ -140,10 +140,10 @@ graph LR
 
 ## 🆘 Need Help?
 
-1. **Quick fixes** → [TROUBLESHOOTING](TROUBLESHOOTING.md#quick-fixes)
-2. **System won't start** → [QUICK-START](QUICK-START.md#troubleshooting)
-3. **Understanding errors** → [TROUBLESHOOTING](TROUBLESHOOTING.md#systematic-debugging)
-4. **Production issues** → [PRODUCTION-DEPLOYMENT](PRODUCTION-DEPLOYMENT.md#troubleshooting-production)
+1. **Quick fixes** → [TROUBLESHOOTING](TROUBLESHOOTING.md#-quick-fixes)
+2. **System won't start** → [QUICK-START](QUICK-START.md#-troubleshooting)
+3. **Understanding errors** → [TROUBLESHOOTING](TROUBLESHOOTING.md#-systematic-debugging)
+4. **Production issues** → [PRODUCTION-DEPLOYMENT](PRODUCTION-DEPLOYMENT.md#-troubleshooting-production)
 
 ## 💡 Additional Resources
 

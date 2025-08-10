@@ -13,7 +13,7 @@ lsof -ti:3000 | xargs kill -9
 ./scripts/reset-all.sh --reset-database
 
 # Start fresh
-./scripts/dev-server.sh 3000
+./scripts/dev-server.sh --port 3000
 ```
 
 ### Database Connection Failed
@@ -22,8 +22,8 @@ lsof -ti:3000 | xargs kill -9
 docker ps | grep postgres
 
 # Reset database completely
-docker-compose down -v
-docker-compose up -d postgres && sleep 5
+docker compose down -v
+docker compose up -d postgres && sleep 5
 cd starter && sqlx migrate run
 ```
 
@@ -90,14 +90,14 @@ free -h
 
 **Debugging steps**:
 ```bash
-# 1. Check password hashing
-cd starter && cargo run -- admin list-users --verbose
+# 1. Check task stats (available admin command)
+cd starter && cargo run -- admin task-stats
 
 # 2. Verify session creation
 grep "session created" /tmp/starter-server-*.log
 
 # 3. Test direct database query
-psql starter_db -c "SELECT username, created_at FROM users WHERE username = 'testuser';"
+psql postgres://starter_user:starter_pass@localhost:5432/starter_db -c "SELECT username, created_at FROM users WHERE username = 'testuser';"
 
 # 4. Check for timing attacks protection
 grep "constant_time" /tmp/starter-server-*.log
@@ -122,7 +122,7 @@ grep "constant_time" /tmp/starter-server-*.log
 curl -H "Authorization: Bearer $TOKEN" http://localhost:3000/api/v1/tasks/types
 
 # 3. Check task queue
-psql starter_db -c "SELECT task_type, status, COUNT(*) FROM tasks GROUP BY task_type, status;"
+psql postgres://starter_user:starter_pass@localhost:5432/starter_db -c "SELECT task_type, status, COUNT(*) FROM tasks GROUP BY task_type, status;"
 
 # 4. Worker logs
 grep "processing task" /tmp/starter-worker-*.log
@@ -144,7 +144,7 @@ grep "processing task" /tmp/starter-worker-*.log
 cd starter && sqlx migrate info
 
 # 2. Check database permissions
-psql starter_db -c "\du"
+psql postgres://starter_user:starter_pass@localhost:5432/starter_db -c "\du"
 
 # 3. Manual migration step
 sqlx migrate run --source migrations
@@ -158,13 +158,13 @@ sqlx migrate run --source migrations
 **Debugging steps**:
 ```bash
 # 1. Check active connections
-psql starter_db -c "SELECT count(*) FROM pg_stat_activity;"
+psql postgres://starter_user:starter_pass@localhost:5432/starter_db -c "SELECT count(*) FROM pg_stat_activity;"
 
 # 2. Check pool configuration
 grep "max_connections\|min_connections" /tmp/starter-server-*.log
 
 # 3. Find long-running queries
-psql starter_db -c "SELECT query, state, query_start FROM pg_stat_activity WHERE state = 'active';"
+psql postgres://starter_user:starter_pass@localhost:5432/starter_db -c "SELECT query, state, query_start FROM pg_stat_activity WHERE state = 'active';"
 ```
 
 ### API Issues
@@ -202,7 +202,7 @@ curl -X POST http://localhost:3000/api/v1/tasks \
 curl http://localhost:3000/api-docs/openapi.json | jq .
 
 # 3. Check for breaking changes
-cd web && pnpm run type-check
+cd web && pnpm run check
 ```
 
 **Problem: React Query cache collisions**
@@ -216,8 +216,8 @@ const { data } = useQuery({
 });
 
 // ✅ Good: Centralized query keys
-import { useTaskList } from '@/hooks/useApiQueries';
-const { data } = useTaskList({ status: 'pending' });
+import { useHealthBasic } from '@/hooks/useApiQueries';
+const { data } = useHealthBasic(15000); // Auto-refresh every 15s
 ```
 
 ## 🏥 Health Check Debugging
@@ -314,7 +314,7 @@ docker run --rm -v volume_name:/test alpine ls -la /test
 curl -w "@curl-format.txt" -s -o /dev/null http://localhost:3000/api/v1/endpoint
 
 # 2. Database query performance
-psql starter_db -c "SELECT query, mean_exec_time FROM pg_stat_statements ORDER BY mean_exec_time DESC LIMIT 5;"
+psql postgres://starter_user:starter_pass@localhost:5432/starter_db -c "SELECT query, mean_exec_time FROM pg_stat_statements ORDER BY mean_exec_time DESC LIMIT 5;"
 
 # 3. Connection pool metrics
 grep "connection_pool" /tmp/starter-server-*.log
@@ -334,7 +334,7 @@ docker exec container_name cat /proc/meminfo
 RUST_LOG=debug cargo run server
 
 # 3. Database memory usage
-psql starter_db -c "SELECT setting FROM pg_settings WHERE name = 'shared_buffers';"
+psql postgres://starter_user:starter_pass@localhost:5432/starter_db -c "SELECT setting FROM pg_settings WHERE name = 'shared_buffers';"
 
 # 4. Identify memory leaks
 valgrind ./target/debug/starter server  # Linux only
@@ -370,8 +370,8 @@ grep "authentication.*failed\|invalid.*credentials" /tmp/starter-server-*.log
 # 2. Suspicious API calls
 grep "401\|403" /tmp/starter-server-*.log | tail -20
 
-# 3. Rate limiting triggers
-grep "rate_limit.*exceeded" /tmp/starter-server-*.log
+# 3. Check nginx rate limiting (if using nginx profile)
+grep "limiting" /var/log/nginx/access.log
 ```
 
 ### Session Management Issues
@@ -379,10 +379,10 @@ grep "rate_limit.*exceeded" /tmp/starter-server-*.log
 **Debugging steps**:
 ```bash
 # 1. Session cleanup
-psql starter_db -c "SELECT COUNT(*) FROM sessions WHERE expires_at < NOW();"
+psql postgres://starter_user:starter_pass@localhost:5432/starter_db -c "SELECT COUNT(*) FROM sessions WHERE expires_at < NOW();"
 
 # 2. Active sessions
-psql starter_db -c "SELECT user_id, COUNT(*) FROM sessions WHERE expires_at > NOW() GROUP BY user_id;"
+psql postgres://starter_user:starter_pass@localhost:5432/starter_db -c "SELECT user_id, COUNT(*) FROM sessions WHERE expires_at > NOW() GROUP BY user_id;"
 
 # 3. Session fixation prevention
 grep "session.*created\|session.*invalidated" /tmp/starter-server-*.log
@@ -489,15 +489,15 @@ docker system events --since 1h
 ```bash
 # Admin CLI (bypasses API authentication)
 cargo run -- admin task-stats
-cargo run -- admin list-tasks --limit 5
+cargo run -- admin list-tasks --limit 5 --verbose
 cargo run -- admin clear-completed --dry-run
 
 # API testing
 ./scripts/test-with-curl.sh localhost 3000
 
 # Database state
-psql starter_db -c "\dt"  # List tables
-psql starter_db -c "SELECT COUNT(*) FROM tasks WHERE status = 'pending';"
+psql postgres://starter_user:starter_pass@localhost:5432/starter_db -c "\dt"  # List tables
+psql postgres://starter_user:starter_pass@localhost:5432/starter_db -c "SELECT COUNT(*) FROM tasks WHERE status = 'pending';"
 ```
 
 ### Performance Metrics
@@ -506,7 +506,7 @@ psql starter_db -c "SELECT COUNT(*) FROM tasks WHERE status = 'pending';"
 curl -w "@curl-format.txt" -s -o /dev/null http://localhost:3000/api/v1/health
 
 # Database performance
-psql starter_db -c "SELECT schemaname, tablename, n_tup_ins, n_tup_upd, n_tup_del FROM pg_stat_user_tables;"
+psql postgres://starter_user:starter_pass@localhost:5432/starter_db -c "SELECT schemaname, tablename, n_tup_ins, n_tup_upd, n_tup_del FROM pg_stat_user_tables;"
 
 # System resources
 top -p $(pgrep starter)
