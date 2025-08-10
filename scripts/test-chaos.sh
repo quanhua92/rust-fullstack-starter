@@ -16,19 +16,17 @@ VERBOSE="${VERBOSE:-false}"
 RESET_DATABASE="${RESET_DATABASE:-true}"
 NO_CLEANUP="${NO_CLEANUP:-false}"
 
-# Color codes
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
+# Source common utilities for colors and functions
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/common.sh"
+
+# Additional colors not in common.sh
 PURPLE='\033[0;35m'
 BOLD='\033[1m'
 BOLD_RED='\033[1;31m'
 BOLD_YELLOW='\033[1;33m'
-NC='\033[0m'
 
-# Path configuration
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# Path configuration (SCRIPT_DIR already set above)
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 HELPERS_DIR="$SCRIPT_DIR/helpers"
 CHAOS_COMPOSE_FILE="$PROJECT_ROOT/docker-compose.chaos.yaml"

@@ -8,6 +8,10 @@
 
 set -e
 
+# Source common utilities
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/common.sh"
+
 # Parse command line arguments
 RUN_WEB_CHECKS=false
 for arg in "$@"; do
@@ -37,22 +41,13 @@ for arg in "$@"; do
     esac
 done
 
-# Color codes
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-CYAN='\033[0;36m'
-NC='\033[0m' # No Color
+# Initialize timing
+init_timing
 
-# Track timing
-start_time=$(date +%s)
-
-echo -e "${CYAN}🚀 Running comprehensive quality checks...${NC}"
+print_status "step" "Running comprehensive quality checks..."
 echo -e "${BLUE}================================${NC}"
 
-# Get project root
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# Get project root (SCRIPT_DIR already set above)
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 cd "$PROJECT_ROOT"
 
@@ -340,13 +335,9 @@ else
     echo -e "${YELLOW}💡 Install cargo-sort for dependency sorting: cargo install cargo-sort${NC}"
 fi
 
-# Calculate total time
-end_time=$(date +%s)
-duration=$((end_time - start_time))
-
 echo -e "\n${BLUE}================================${NC}"
-echo -e "${GREEN}🎉 All quality checks passed!${NC}"
-echo -e "${CYAN}⏱️  Total time: ${duration}s${NC}"
+print_status "success" "All quality checks passed!"
+show_elapsed
 echo -e "${BLUE}✨ Code is ready for commit${NC}"
 
 # Optional: Show summary of what was checked
