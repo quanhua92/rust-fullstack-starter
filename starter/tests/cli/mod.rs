@@ -49,6 +49,70 @@ async fn test_admin_service_list_tasks() {
         .await
         .unwrap();
     assert_eq!(limited_tasks.len(), 1, "Should respect limit parameter");
+
+    // Test filtering by task_type
+    let email_tasks = admin_service
+        .list_tasks(None, Some("email".to_string()), 10, false)
+        .await
+        .unwrap();
+    assert!(!email_tasks.is_empty(), "Should find email tasks");
+    for task in &email_tasks {
+        assert_eq!(task.task_type, "email", "All tasks should be email type");
+    }
+
+    let data_processing_tasks = admin_service
+        .list_tasks(None, Some("data_processing".to_string()), 10, false)
+        .await
+        .unwrap();
+    assert!(
+        !data_processing_tasks.is_empty(),
+        "Should find data_processing tasks"
+    );
+    for task in &data_processing_tasks {
+        assert_eq!(
+            task.task_type, "data_processing",
+            "All tasks should be data_processing type"
+        );
+    }
+
+    // Test filtering by status (all newly created tasks should be 'pending')
+    let pending_tasks = admin_service
+        .list_tasks(Some("pending".to_string()), None, 10, false)
+        .await
+        .unwrap();
+    assert!(!pending_tasks.is_empty(), "Should find pending tasks");
+    for task in &pending_tasks {
+        assert_eq!(task.status, "pending", "All tasks should be pending status");
+    }
+
+    // Test filtering by both status AND task_type
+    let email_pending_tasks = admin_service
+        .list_tasks(
+            Some("pending".to_string()),
+            Some("email".to_string()),
+            10,
+            false,
+        )
+        .await
+        .unwrap();
+    assert!(
+        !email_pending_tasks.is_empty(),
+        "Should find pending email tasks"
+    );
+    for task in &email_pending_tasks {
+        assert_eq!(task.status, "pending", "All tasks should be pending");
+        assert_eq!(task.task_type, "email", "All tasks should be email type");
+    }
+
+    // Test filtering with no matches should return empty
+    let no_matches = admin_service
+        .list_tasks(None, Some("nonexistent_type".to_string()), 10, false)
+        .await
+        .unwrap();
+    assert!(
+        no_matches.is_empty(),
+        "Should return empty for nonexistent task type"
+    );
 }
 
 #[tokio::test]

@@ -5,22 +5,17 @@
 
 set -e
 
-# Color codes
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-CYAN='\033[0;36m'
-NC='\033[0m' # No Color
+# Source common utilities
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/common.sh"
 
-# Track timing
-start_time=$(date +%s)
+# Initialize timing
+init_timing
 
-echo -e "${CYAN}🚀 Building web frontend...${NC}"
+print_status "step" "Building web frontend..."
 echo -e "${BLUE}================================${NC}"
 
-# Get project root
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# Get project directories (SCRIPT_DIR already set above)
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 WEB_DIR="$PROJECT_ROOT/web"
 
@@ -87,12 +82,9 @@ if [ ! -f "dist/index.html" ]; then
 fi
 
 # Calculate total time
-end_time=$(date +%s)
-duration=$((end_time - start_time))
-
 echo -e "\n${BLUE}================================${NC}"
-echo -e "${GREEN}🎉 Web frontend build completed successfully!${NC}"
-echo -e "${CYAN}⏱️  Total time: ${duration}s${NC}"
+print_status "success" "Web frontend build completed successfully!"
+show_elapsed
 echo -e "${BLUE}📂 Build output: $WEB_DIR/dist${NC}"
 
 # Show build summary

@@ -13,7 +13,7 @@ impl AdminService {
         Self { database }
     }
 
-    /// List tasks with optional filtering
+    /// List tasks with optional filtering by status and task_type
     pub async fn list_tasks(
         &self,
         status: Option<String>,
@@ -21,19 +21,37 @@ impl AdminService {
         limit: i32,
         _verbose: bool,
     ) -> Result<Vec<TaskInfo>, Error> {
-        // Future enhancement: Add filtering by status and task_type
-        let _ = (status, task_type); // Suppress unused warnings
+        // Build dynamic query with optional filtering using QueryBuilder
+        use sqlx::QueryBuilder;
 
-        let tasks = sqlx::query(
-            "SELECT id, task_type, status::text as status, priority::text as priority, created_at, updated_at, metadata 
-             FROM tasks 
-             ORDER BY created_at DESC 
-             LIMIT $1"
-        )
-        .bind(limit as i64)
-        .fetch_all(&self.database.pool)
-        .await
-        .map_err(Error::Database)?;
+        let mut builder: QueryBuilder<sqlx::Postgres> = QueryBuilder::new(
+            "SELECT id, task_type, status::text as status, priority::text as priority, created_at, updated_at, metadata FROM tasks",
+        );
+
+        let mut has_where = false;
+        if let Some(s) = status {
+            builder.push(" WHERE status::text = ");
+            builder.push_bind(s);
+            has_where = true;
+        }
+
+        if let Some(t) = task_type {
+            if has_where {
+                builder.push(" AND task_type = ");
+            } else {
+                builder.push(" WHERE task_type = ");
+            }
+            builder.push_bind(t);
+        }
+
+        builder.push(" ORDER BY created_at DESC LIMIT ");
+        builder.push_bind(limit as i64);
+
+        let tasks = builder
+            .build()
+            .fetch_all(&self.database.pool)
+            .await
+            .map_err(Error::Database)?;
 
         let mut task_infos = Vec::new();
         for task in tasks {

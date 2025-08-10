@@ -5,18 +5,15 @@
 
 set -e
 
-# Color codes for output
-GREEN='\033[0;32m'
-BLUE='\033[0;34m'
-RED='\033[0;31m'
-NC='\033[0m' # No Color
-
-# Get script directory and project root
+# Source common utilities
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/common.sh"
+
+# Get project directories (SCRIPT_DIR already set above)
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 STARTER_DIR="$PROJECT_ROOT/starter"
 
-echo -e "${BLUE}🔄 SQLx Prepare - Updating query cache for offline compilation${NC}"
+print_status "step" "SQLx Prepare - Updating query cache for offline compilation"
 echo "================================================="
 
 # Check if starter directory exists

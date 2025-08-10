@@ -3,19 +3,16 @@
 
 set -e
 
-# Colors for output
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-NC='\033[0m' # No Color
+# Source common utilities
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/common.sh"
 
 # Configuration
 ENV_FILE=".env.prod"
 COMPOSE_FILE="docker-compose.prod.yaml"
 BACKUP_DIR="./backups"
 
-echo -e "${BLUE}🚀 Production Deployment Script${NC}"
+print_status "step" "Production Deployment Script"
 echo "=================================="
 
 # Check if running as root (not recommended)

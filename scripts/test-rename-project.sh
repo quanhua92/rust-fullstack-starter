@@ -4,14 +4,10 @@
 
 set -e
 
-# Colors for output
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-CYAN='\033[0;36m'
-BOLD='\033[1m'
-NC='\033[0m' # No Color
+# Source common utilities
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/common.sh"
+BOLD='\033[1m' # Keep BOLD since it's not in common.sh
 
 # Default values
 PROJECT_NAME="hello"
@@ -19,7 +15,7 @@ VERBOSE=false
 ATTEMPT_NUM=""
 KEEP_ON_FAILURE=false
 TIMEOUT=600
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# SCRIPT_DIR already set above
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 # Test tracking
