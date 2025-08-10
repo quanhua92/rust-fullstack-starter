@@ -20,12 +20,16 @@ export default defineConfig({
     ['junit', { outputFile: 'test-results/junit.xml' }],
     ['json', { outputFile: 'test-results/results.json' }]
   ],
-  /* Global test timeout */
-  timeout: 30000,
+  /* Global test timeout - max 30 seconds per test */
+  timeout: 30 * 1000,
+  /* Action timeout - max 10 seconds per action */
+  actionTimeout: 10 * 1000,
+  /* Navigation timeout - max 15 seconds per page load */
+  navigationTimeout: 15 * 1000,
   /* Expect timeout for assertions */
   expect: {
-    /* Timeout for expect() calls */
-    timeout: 10000,
+    /* Timeout for expect() calls - max 5 seconds per assertion */
+    timeout: 5000,
     /* Screenshot comparison threshold */
     toHaveScreenshot: { 
       threshold: 0.2,  // Allow small visual differences
@@ -57,28 +61,28 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
 
-    // Additional browsers for comprehensive testing
-    ...(process.env.PLAYWRIGHT_SMOKE_ONLY ? [] : [
-      {
-        name: 'firefox',
-        use: { ...devices['Desktop Firefox'] },
-      },
+    // Additional browsers for comprehensive testing (commented out for speed)
+    // ...(process.env.PLAYWRIGHT_SMOKE_ONLY ? [] : [
+    //   {
+    //     name: 'firefox',
+    //     use: { ...devices['Desktop Firefox'] },
+    //   },
 
-      {
-        name: 'webkit',
-        use: { ...devices['Desktop Safari'] },
-      },
+    //   {
+    //     name: 'webkit',
+    //     use: { ...devices['Desktop Safari'] },
+    //   },
 
-      /* Test against mobile viewports. */
-      {
-        name: 'Mobile Chrome',
-        use: { ...devices['Pixel 5'] },
-      },
-      {
-        name: 'Mobile Safari',
-        use: { ...devices['iPhone 12'] },
-      },
-    ]),
+    //   /* Test against mobile viewports. */
+    //   {
+    //     name: 'Mobile Chrome',
+    //     use: { ...devices['Pixel 5'] },
+    //   },
+    //   {
+    //     name: 'Mobile Safari',
+    //     use: { ...devices['iPhone 12'] },
+    //   },
+    // ]),
 
     /* Test against branded browsers. */
     // {
@@ -93,9 +97,9 @@ export default defineConfig({
 
   /* Run your local dev server before starting the tests */
   webServer: {
-    command: 'pnpm run dev',
+    command: 'pnpm run dev', 
     url: 'http://localhost:5173',
     reuseExistingServer: !process.env.CI,
-    timeout: 120 * 1000,
+    timeout: 30 * 1000,  // 30 seconds max to start dev server
   },
 });

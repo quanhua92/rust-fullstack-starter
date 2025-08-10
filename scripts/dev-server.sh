@@ -5,7 +5,7 @@ set -e
 PORT=3000
 FOREGROUND=false
 BUILD_WEB=true
-START_WORKER=false
+START_WORKER=true  # Default to true for better E2E testing experience
 
 # Parse command line arguments
 while [[ $# -gt 0 ]]; do
@@ -22,8 +22,8 @@ while [[ $# -gt 0 ]]; do
             BUILD_WEB=false
             shift
             ;;
-        -w|--with-worker)
-            START_WORKER=true
+        --no-worker)
+            START_WORKER=false
             shift
             ;;
         -h|--help)
@@ -31,7 +31,7 @@ while [[ $# -gt 0 ]]; do
             echo "Options:"
             echo "  -p, --port PORT     Set server port (default: 3000)"
             echo "  -f, --foreground    Run server in foreground mode"
-            echo "  -w, --with-worker   Also start background worker (ID 0)"
+            echo "  --no-worker         Skip starting the background worker (default: enabled)"
             echo "  --api-only          Skip web frontend build (API only)"
             echo "  -h, --help          Show this help message"
             exit 0

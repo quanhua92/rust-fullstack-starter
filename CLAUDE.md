@@ -19,7 +19,7 @@ This file provides guidance to Claude Code when working with this Rust fullstack
 ### Development Workflow
 ```bash
 # Quick start (recommended)
-./scripts/dev-server.sh              # Complete environment: DB + web + API + worker
+./scripts/dev-server.sh              # Complete environment: DB + web + API + worker (default)
 ./scripts/check.sh                   # Quality checks (MANDATORY before commit)
 ./scripts/check.sh --web             # Comprehensive checks including frontend tests
 ./scripts/test-with-curl.sh          # 37+ API endpoint tests

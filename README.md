@@ -23,20 +23,22 @@ cd rust-fullstack-starter
 ./scripts/dev-server.sh
 
 # Or with options:
-./scripts/dev-server.sh -w          # Also start worker (complete setup)
 ./scripts/dev-server.sh -f          # Foreground mode
+./scripts/dev-server.sh --no-worker  # Skip worker (faster startup)
 ./scripts/dev-server.sh --api-only  # API only (skip web build)
 ./scripts/dev-server.sh -p 3001     # Custom port
 ```
 
-### 3. Start the Worker
+### 3. Worker (Background Tasks)
 
-**Option A: Included with server** (easiest):
+**Default behavior**: Worker starts automatically with `./scripts/dev-server.sh`
+
+**To skip worker** (faster startup):
 ```bash
-./scripts/dev-server.sh -w    # Starts everything: database + web + API + worker
+./scripts/dev-server.sh --no-worker    # API + web only, no background tasks
 ```
 
-**Option B: Separate terminal**:
+**Separate worker terminals** (for debugging):
 ```bash
 # Start background task worker with log following
 ./scripts/worker.sh -f

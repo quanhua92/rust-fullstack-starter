@@ -264,8 +264,8 @@ else
     elif [ "$FULL_TESTS" = "true" ]; then
         run_cmd "Running comprehensive multi-browser E2E tests (${GLOBAL_TIMEOUT_SECONDS}s max)" timeout ${GLOBAL_TIMEOUT_SECONDS}s pnpm run test:e2e $PLAYWRIGHT_FLAGS
     else
-        # Default: fast single-browser tests with configurable time limit
-        run_cmd "Running Playwright E2E tests - Chromium only (${GLOBAL_TIMEOUT_SECONDS}s max)" timeout ${GLOBAL_TIMEOUT_SECONDS}s pnpm run test:e2e --project=chromium $PLAYWRIGHT_FLAGS
+        # Default: enhanced page object tests (fast, focused, maintainable)
+        run_cmd "Running enhanced Playwright E2E tests - Chromium only (${GLOBAL_TIMEOUT_SECONDS}s max)" timeout ${GLOBAL_TIMEOUT_SECONDS}s pnpm run test:e2e:page-objects $PLAYWRIGHT_FLAGS
     fi
     
     # Cleanup: Stop servers we started

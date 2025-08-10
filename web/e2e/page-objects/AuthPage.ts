@@ -11,7 +11,7 @@ export class AuthPage {
   constructor(page: Page) {
     this.page = page;
     this.emailInput = page.locator('input[type="email"]');
-    this.passwordInput = page.locator('input[type="password"]');
+    this.passwordInput = page.locator('input[placeholder="Enter your password"]');
     this.errorAlert = page.locator('[role="alert"]');
   }
 
@@ -54,6 +54,8 @@ export class LoginPage extends AuthPage {
 
   constructor(page: Page) {
     super(page);
+    // Override password input for login page (single password field)
+    this.passwordInput = page.locator('input[type="password"]');
     this.submitButton = page.locator('button:has-text("Sign In")');
     this.signUpLink = page.locator('button:has-text("Sign Up")');
     this.loadingButton = page.locator('button:has-text("Signing In...")');
