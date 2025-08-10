@@ -8,7 +8,7 @@ services:
       context: .
       dockerfile: Dockerfile.prod
     ports:
-      - "8888:8080"
+      - "8888:8888"
     env_file:
       - .env.example
     environment:
@@ -20,7 +20,7 @@ services:
       
       # Application configuration
       - STARTER__SERVER__HOST=0.0.0.0
-      - STARTER__SERVER__PORT=8080
+      - STARTER__SERVER__PORT=8888
       
       # Chaos testing optimizations
       - RUST_LOG=debug
@@ -68,7 +68,7 @@ services:
       - STARTER__WORKER__CONCURRENCY=2
       
       # API server connection for task type registration
-      - API_BASE_URL=http://server:8080
+      - API_BASE_URL=http://server:8888
       
       # Chaos testing optimizations
       - RUST_LOG=debug

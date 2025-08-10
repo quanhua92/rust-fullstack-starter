@@ -53,7 +53,7 @@ impl CliApp {
         let mut config = self.config.clone();
 
         // Override port from CLI if provided
-        if port != 8080 {
+        if port != 3000 {
             config.server.port = port;
         }
 
@@ -829,6 +829,6 @@ mod tests {
         let config = AppConfig::default();
         let app = CliApp::new(config);
         // Basic test to ensure the app can be created
-        assert_eq!(app.config.server.port, 8080);
+        assert_eq!(app.config.server.port, 3000);
     }
 }

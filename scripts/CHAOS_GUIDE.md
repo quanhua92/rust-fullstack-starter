@@ -284,7 +284,7 @@ Creates test users and returns authentication tokens.
 ./scripts/helpers/auth-helper.sh
 
 # Custom configuration
-./scripts/helpers/auth-helper.sh --prefix "loadtest" --url "http://localhost:8080"
+./scripts/helpers/auth-helper.sh --prefix "loadtest" --url "http://localhost:8888"
 
 # Output: {"token": "abc123...", "user_id": "uuid-here"}
 ```
@@ -444,7 +444,7 @@ Monitors task completion and validates retry behavior.
 
 ```bash
 # Custom configuration
-export PORT=8080
+export PORT=8888
 export BASE_URL="https://staging.example.com"
 export OUTPUT_DIR="chaos-results"
 export VERBOSE=true

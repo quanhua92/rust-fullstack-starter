@@ -643,7 +643,7 @@ pub enum ChunkingStrategy {
 
 // Multi-modal embeddings
 pub struct EmbeddingService {
-    text_model: String,        // text-embedding-ada-002
+    text_model: String,        // text-embedding-3-small, text-embedding-ada-002 (legacy)
     image_model: String,       // CLIP
     code_model: String,        // code-search-ada-001
 }
@@ -1128,7 +1128,7 @@ CREATE TABLE conversations (
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     title TEXT NOT NULL,
     system_prompt TEXT,
-    model TEXT NOT NULL DEFAULT 'gpt-4',
+    model TEXT NOT NULL DEFAULT 'gpt-4o-mini', -- or gpt-4o for higher quality
     temperature DECIMAL(3,2) DEFAULT 0.7,
     max_tokens INTEGER DEFAULT 2000,
     metadata JSONB DEFAULT '{}',
@@ -1152,7 +1152,7 @@ CREATE TABLE knowledge_bases (
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     name TEXT NOT NULL,
     description TEXT,
-    embedding_model TEXT NOT NULL DEFAULT 'text-embedding-ada-002',
+    embedding_model TEXT NOT NULL DEFAULT 'text-embedding-3-small', -- or text-embedding-ada-002 for compatibility
     embedding_dimensions INTEGER NOT NULL DEFAULT 1536, -- Configurable per model
     chunk_size INTEGER DEFAULT 1000,
     chunk_overlap INTEGER DEFAULT 200,
@@ -2656,7 +2656,7 @@ const PRICING_TIERS: PricingTier[] = [
     features: {
       contentGeneration: 100,
       aiOptimization: true,
-      workflowAutomization: true,
+      workflowAutomation: true,
       customAgents: 3,
       apiIntegrations: 15,
       advancedAnalytics: true

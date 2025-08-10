@@ -26,7 +26,7 @@ cd rust-fullstack-starter
 ./scripts/dev-server.sh -w          # Also start worker (complete setup)
 ./scripts/dev-server.sh -f          # Foreground mode
 ./scripts/dev-server.sh --api-only  # API only (skip web build)
-./scripts/dev-server.sh -p 8080     # Custom port
+./scripts/dev-server.sh -p 3001     # Custom port
 ```
 
 ### 3. Start the Worker

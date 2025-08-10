@@ -28,7 +28,7 @@ This file provides guidance to Claude Code when working with this Rust fullstack
 # Testing
 cargo nextest run                    # 184 integration tests (~21s)
 ./scripts/test-chaos.sh             # Docker-based resilience testing
-cd web && ./scripts/check-web.sh    # Frontend: 135 unit + 46 integration + 13 E2E tests
+cd web && ./scripts/check-web.sh    # Frontend: 194 comprehensive tests (stateless patterns)
 ```
 
 ### Key Scripts

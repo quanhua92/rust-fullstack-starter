@@ -224,7 +224,7 @@ impl Default for AppConfig {
         Self {
             server: ServerConfig {
                 host: "127.0.0.1".to_string(),
-                port: 8080,
+                port: 3000,
                 cors_origins: vec!["http://localhost:5173".to_string()],
                 request_timeout_secs: 30,
                 web_build_path: "web/dist".to_string(),
