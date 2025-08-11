@@ -4,6 +4,8 @@
 
 ## 🌪️ Chaos Engineering
 
+**📖 See [Testing Guide](TESTING-GUIDE.md) for complete chaos testing documentation, system resilience testing, and the full testing architecture.**
+
 ### Why Chaos Testing?
 
 **The fundamental gap**: We test for known problems, but production creates unknown problems.
@@ -428,6 +430,8 @@ pub async fn create_book_service(
 ```
 
 ## 🧪 End-to-End Testing with Playwright
+
+**📖 See [Testing Guide](TESTING-GUIDE.md) for comprehensive E2E testing documentation, frontend testing layers, and complete testing workflows.**
 
 ### Multi-Browser Testing Strategy
 

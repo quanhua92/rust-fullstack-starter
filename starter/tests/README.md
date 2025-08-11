@@ -1,5 +1,7 @@
 # Integration Tests
 
+**📖 See [../../docs/TESTING-GUIDE.md](../../docs/TESTING-GUIDE.md) for comprehensive testing documentation including the complete 7-layer testing architecture, workflows, and best practices.**
+
 This directory contains comprehensive integration tests for the Rust starter application, following the excellent patterns from the production codebase.
 
 ## Test Architecture

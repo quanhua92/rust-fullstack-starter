@@ -19,16 +19,18 @@ This file provides guidance to Claude Code when working with this Rust fullstack
 ### Development Workflow
 ```bash
 # Quick start (recommended)
-./scripts/dev-server.sh              # Complete environment: DB + web + API + worker
+./scripts/dev-server.sh              # Complete environment: DB + web + API + worker (default)
 ./scripts/check.sh                   # Quality checks (MANDATORY before commit)
 ./scripts/check.sh --web             # Comprehensive checks including frontend tests
 ./scripts/test-with-curl.sh          # 37+ API endpoint tests
 ./scripts/reset-all.sh --reset-database  # Clean reset
 
-# Testing
-cargo nextest run                    # 184 integration tests (~21s)
-./scripts/test-chaos.sh             # Docker-based resilience testing
-cd web && ./scripts/check-web.sh    # Frontend: 194 comprehensive tests (stateless patterns)
+# Testing (415+ Total Tests)
+cargo nextest run                    # 183 integration tests (~21s)
+./scripts/test-chaos.sh             # Docker-based resilience testing  
+cd web && ./scripts/check-web.sh    # Frontend: 209 tests (135 unit + 61 integration + 13 E2E)
+cd web && pnpm test:e2e:page-objects # 13 E2E tests with Playwright (~3.4s)
+cd web && timeout 60s pnpm exec playwright test  # E2E tests with 60s timeout
 ```
 
 ### Key Scripts
@@ -216,10 +218,11 @@ starter/src/
 
 ### Quality Requirements
 1. **Pre-commit**: Always run `./scripts/check.sh`
-2. **Testing**: 184 integration tests + 194 frontend tests must pass
+2. **Testing**: 183 integration tests + 209 frontend tests must pass
 3. **SQLx**: Use `./scripts/prepare-sqlx.sh` for query cache updates
 4. **OpenAPI**: Use `./scripts/prepare-openapi.sh` for API schema updates
-5. **Frontend**: Run `cd web && ./scripts/check-web.sh` for React validation (135 unit + 46 integration + 13 E2E tests)
+5. **Frontend**: Run `cd web && ./scripts/check-web.sh` for React validation (135 unit + 61 integration + 13 E2E tests)
+6. **Playwright E2E Tests**: Always run with timeout: `cd web && timeout 30s pnpm exec playwright test` (fail-fast, max 30s)
 
 ### Common Tasks
 - **Start workers before creating tasks** (registration requirement)
@@ -260,9 +263,11 @@ This starter provides a solid foundation for learning Rust web development with 
 ## Frontend Testing Integration
 - **Web tests act like `test-with-curl.sh`**: Stateless, resilient, no cleanup dependencies
 - **Test isolation**: Each test creates unique users with timestamps for full independence  
-- **Comprehensive coverage**: 194 total frontend tests (135 unit + 46 integration + 13 E2E)
+- **Comprehensive coverage**: 209 total frontend tests (135 unit + 61 integration + 13 E2E)
 - **E2E auth flow**: Complete registration → login → dashboard testing with proper timeouts
 - **Quality validation**: Use `./scripts/check.sh --web` for complete frontend + backend validation
+
+**📖 See [docs/TESTING-GUIDE.md](docs/TESTING-GUIDE.md) for comprehensive testing documentation including the complete 7-layer testing architecture, workflows, and best practices.**
 
 ## Test Count References
 - `cargo nextest list | grep -c "::"` - Reliable way to count integration tests (184)

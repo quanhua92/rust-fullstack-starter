@@ -28,6 +28,8 @@ cd .. && ./scripts/dev-server.sh    # Full-stack setup
 
 ## Testing - 194 Total Tests
 
+**📖 See [../docs/TESTING-GUIDE.md](../docs/TESTING-GUIDE.md) for comprehensive testing documentation including the complete 7-layer testing architecture, workflows, and best practices.**
+
 Comprehensive testing strategy with unit, integration, and E2E coverage:
 
 ```bash

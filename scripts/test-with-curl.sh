@@ -190,8 +190,8 @@ if [ -n "$USER_TOKEN" ]; then
     echo ""
     echo -e "${YELLOW}📋 Task Management${NC}"
     
-    # Get initial task stats
-    test_api "GET /api/v1/tasks/stats" "GET" "/api/v1/tasks/stats" "200" "$USER_TOKEN"
+    # Test task stats access control (regular users should be denied)
+    test_api "GET /api/v1/tasks/stats (regular user)" "GET" "/api/v1/tasks/stats" "403" "$USER_TOKEN"
     
     # Test task type management
     echo ""
@@ -272,8 +272,8 @@ if [ -n "$USER_TOKEN" ]; then
         test_api "GET /api/v1/tasks/{id}" "GET" "/api/v1/tasks/$TASK_ID" "200" "$USER_TOKEN"
     fi
     
-    # Get updated task stats
-    test_api "GET /api/v1/tasks/stats (updated)" "GET" "/api/v1/tasks/stats" "200" "$USER_TOKEN"
+    # Test task stats still requires moderator access
+    test_api "GET /api/v1/tasks/stats (still restricted)" "GET" "/api/v1/tasks/stats" "403" "$USER_TOKEN"
     
     # Test task cancellation (might fail if task already processed)
     if [ -n "$TASK_ID" ]; then
@@ -600,10 +600,10 @@ echo ""
 echo -e "${YELLOW}📊 Monitoring & Observability API${NC}"
 
 # Create a new user for monitoring tests since previous token was invalidated by logout
-MONITORING_USER_DATA="{\"username\": \"monitoring_$TIMESTAMP\", \"email\": \"monitoring_$TIMESTAMP@example.com\", \"password\": \"SecurePass123\"}"
+MONITORING_USER_DATA="{\"username\": \"testmon_$TIMESTAMP\", \"email\": \"testmon_$TIMESTAMP@example.com\", \"password\": \"SecurePass123\"}"
 curl -s -X POST "$BASE_URL/api/v1/auth/register" -H "Content-Type: application/json" -d "$MONITORING_USER_DATA" > /dev/null
 
-MONITORING_LOGIN_DATA="{\"email\": \"monitoring_$TIMESTAMP@example.com\", \"password\": \"SecurePass123\"}"
+MONITORING_LOGIN_DATA="{\"email\": \"testmon_$TIMESTAMP@example.com\", \"password\": \"SecurePass123\"}"
 MONITORING_LOGIN_RESPONSE=$(curl -s -X POST "$BASE_URL/api/v1/auth/login" -H "Content-Type: application/json" -d "$MONITORING_LOGIN_DATA")
 MONITORING_TOKEN=$(echo "$MONITORING_LOGIN_RESPONSE" | python3 -c "import json,sys; print(json.load(sys.stdin)['data']['session_token'])" 2>/dev/null || echo "")
 
@@ -652,7 +652,9 @@ if [ -n "$MONITORING_TOKEN" ]; then
     fi
     
     # Test metric creation and retrieval
-    METRIC_DATA='{"name": "test_api_response_time", "metric_type": "histogram", "value": 123.45, "labels": {"endpoint": "/api/v1/test", "status": "200", "test_id": "'$TIMESTAMP'"}}'
+    # Use metric name that includes the monitoring user for ownership validation
+    MONITORING_USER_PREFIX="testmon_$TIMESTAMP"
+    METRIC_DATA='{"name": "'$MONITORING_USER_PREFIX'_response_time", "metric_type": "histogram", "value": 123.45, "labels": {"endpoint": "/api/v1/test", "status": "200", "test_id": "'$TIMESTAMP'"}}'
     test_api "POST /api/v1/monitoring/metrics" "POST" "/api/v1/monitoring/metrics" "200" "$MONITORING_TOKEN" "$METRIC_DATA"
     
     test_api "GET /api/v1/monitoring/metrics" "GET" "/api/v1/monitoring/metrics?limit=10" "200" "$MONITORING_TOKEN"
@@ -712,6 +714,9 @@ if [ -n "$ADMIN_TOKEN" ]; then
     
     # Test monitoring stats (should work for admin)
     test_api "GET /api/v1/monitoring/stats (admin)" "GET" "/api/v1/monitoring/stats" "200" "$ADMIN_TOKEN"
+    
+    # Test task stats (should work for admin)
+    test_api "GET /api/v1/tasks/stats (admin)" "GET" "/api/v1/tasks/stats" "200" "$ADMIN_TOKEN"
 else
     echo -e "${YELLOW}⚠️  No admin token available - admin monitoring features not tested${NC}"
 fi

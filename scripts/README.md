@@ -8,13 +8,13 @@ This directory contains comprehensive scripts for developing, testing, and manag
 **Complete full-stack development environment with database, web build, and unified server (recommended).**
 - **Default port:** 3000
 - **Includes:** PostgreSQL startup, web frontend build, unified API + static serving, migrations
-- **Optional:** Background worker startup with `-w` flag
+- **Default:** Background worker included (use `--no-worker` to skip)
 - **Auto-creates:** .env file if missing
 - **Validates:** Prerequisites and working directory
-- **Options:** `-f` (foreground), `-w` (with worker), `-p PORT`, `--api-only`, `-h` (help)
+- **Options:** `-f` (foreground), `--no-worker` (skip worker), `-p PORT`, `--api-only`, `-h` (help)
 ```bash
-./scripts/dev-server.sh              # Database + web + API
-./scripts/dev-server.sh -w           # Complete setup: database + web + API + worker
+./scripts/dev-server.sh              # Complete setup: database + web + API + worker (default)
+./scripts/dev-server.sh --no-worker  # Skip worker: database + web + API only
 ./scripts/dev-server.sh -f           # Foreground mode
 ./scripts/dev-server.sh --api-only   # Skip web build (API only)
 ./scripts/dev-server.sh -p 8080      # Custom port
@@ -179,6 +179,8 @@ Gracefully stop background worker(s).
 - After updating utoipa schema annotations
 
 ## 🧪 Testing & Integration
+
+**📖 See [../docs/TESTING-GUIDE.md](../docs/TESTING-GUIDE.md) for comprehensive testing documentation including the complete 7-layer testing architecture, workflows, and best practices.**
 
 ### Rust Integration Tests (Recommended)
 Comprehensive test suite with 149 tests covering all functionality:

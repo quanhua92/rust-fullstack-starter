@@ -268,6 +268,8 @@ pub fn validate_password(password: &str) -> Result<()> {
 
 ## 🧪 Testing Strategy
 
+**📖 See [Testing Guide](TESTING-GUIDE.md) for comprehensive testing documentation including complete workflows, best practices, frontend testing, and the full 7-layer testing architecture.**
+
 ### Why Integration Tests?
 
 **Testing pyramid inverted for web applications**:
