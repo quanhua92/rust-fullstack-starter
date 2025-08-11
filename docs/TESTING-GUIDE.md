@@ -188,6 +188,12 @@ cd web && pnpm test:e2e:accessibility   # WCAG compliance testing
 - `accessibility.spec.ts` - Screen reader and ARIA compliance
 - `admin-dashboard.spec.ts` - Dashboard UI interactions
 
+**⚠️ Admin Password Configuration:**
+Dashboard tests require the `.env` file to have `STARTER__INITIAL_ADMIN_PASSWORD=SecureAdminPass123!` to match the hardcoded password in the test files. If dashboard tests fail with admin authentication errors, verify that:
+- Your `.env` file contains the exact password: `STARTER__INITIAL_ADMIN_PASSWORD=SecureAdminPass123!`  
+- The development server has been restarted after changing the `.env` file
+- The admin account was created successfully on first startup
+
 ### Step 4: System Resilience Testing
 
 #### 4.1 Chaos Testing (10 scenarios, variable time)
